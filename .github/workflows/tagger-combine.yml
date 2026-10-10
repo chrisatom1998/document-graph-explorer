@@ -22,7 +22,7 @@ permissions:
 jobs:
   combine:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 300   # above the longest Hugging Face cap a request sets (4 h)
     steps:
       - uses: actions/checkout@v4
       - name: Combine, score and publish on Hugging Face Jobs
@@ -40,9 +40,10 @@ jobs:
           if [ "${{ github.event_name }}" = push ]; then
             read RUNS KEEP REPO LICENSE FLAVOR TIMEOUT < <(python3 -c "import json; r = json.load(open('scripts/audio-model/combine-request.json')); print(' '.join([','.join(r['runs']), r.get('keep', 'drums'), r.get('public_repo', 'dge-all-tags-tagger'), r.get('license', 'mit'), r.get('flavor', 'cpu-upgrade'), r.get('timeout', '2h')]))")
             RUNS=${RUNS//,/ }
+            ONLY=$(python3 -c 'import json; r = json.load(open("scripts/audio-model/combine-request.json")); print(";".join(k + "=" + ",".join(v) for k, v in r.get("only", {}).items()))')
           else
             RUNS="$IN_RUNS"; KEEP="$IN_KEEP"; REPO="$IN_REPO"; LICENSE="$IN_LICENSE"; FLAVOR="$IN_FLAVOR"; TIMEOUT="$IN_TIMEOUT"
           fi
           USER=$(python3 -c "from huggingface_hub import whoami; print(whoami()['name'])")
           python3 scripts/audio-model/hf-launch.py "$FLAVOR" "$TIMEOUT" REPO_SHA=${{ github.sha }} JOB_SCRIPT=hf-combine-job.sh JOB_NAME=dge-tagger-combine \
-            "RUNS=$RUNS" "KEEP=$KEEP" "PUBLIC_REPO=$USER/$REPO" "LICENSE=$LICENSE"
+            "RUNS=$RUNS" "KEEP=$KEEP" "ONLY=${ONLY:-}" "PUBLIC_REPO=$USER/$REPO" "LICENSE=$LICENSE"

@@ -20,8 +20,9 @@ graph) that onnxruntime-web can run on 10 s windows of 32 kHz audio.
 `hf-launch.py`) with the `HF_TOKEN` repository secret, and uploads the run to that account's private
 `dge-instrument-tagger` model repo.
 
-The app runs a blend of runs 3 and 5 (each tag in `src/audio/taggerPolicy.json` from the run listed in
-`public/tagger-model/model.json`'s `outputRun`); see docs/evaluations/all-tags-blend-2026-10-09.
+The app runs a blend of runs 3, 5, 7 and 8 (each tag in `src/audio/taggerPolicy.json` from the run listed in
+`public/tagger-model/model.json`'s `outputRun`); see docs/evaluations/all-tags-blend-2026-10-09. Runs 7 and 8 each add only the tags they won on
+held-out real clips (`combine-request.json`'s `only`).
 
 FSD50K's supplemental app-tag labels are applied at load time, including coverage counts. Before comparing runs,
 `hf-combine-job.sh` re-exports each input and re-scores its FSD50K benchmark with the current label mapping and its
@@ -29,3 +30,10 @@ original frozen thresholds. It replaces only the local `eval-fsd50k` rows; other
 export/evaluation time to combining, but prevents comparisons between different label populations. For a manual
 combine, run `python3 scripts/audio-model/refresh-fsd50k-eval.py <prep-dir>/eval-fsd50k <run-dir> [...]` first.
 Offline regression checks: `python3 scripts/audio-model/test_fsd50k_review.py` (requires NumPy, no model downloads).
+
+Prepared data is cached in the private dataset `<user>/dge-tagger-data`: the base sources under `prep-cache/<key>`, and
+each extra source (raw stems, Iowa, chris-drive, VCSL, more Slakh, SAO, fsnew, run 9, round 10) under
+`prep-cache/src/<name>/<key>` (`prep-cache.py`). A source's key covers its prepare script, the local modules and files it
+uses, its output-changing arguments and a content hash of its private input, so a job rebuilds only the sources whose
+inputs changed. `prep_only` in `extra_sets` (on a CPU flavor) fills the caches without training. Offline check:
+`python3 scripts/audio-model/test_prep_cache.py`.

@@ -1,11 +1,12 @@
 import type { DocNode } from '../model/types';
 import type { MusicAnalysis } from './musicTypes';
 import type { DisplaySound } from './confidentSoundSummary';
-import { DJ_CATALOG } from './djTags';
+import { DJ_CATALOG, mergedDjLabel, type DjGroup } from './djTags';
 import { musicNameHints } from './nameHints';
 import { confirmedInstrumentList, sourceReviewAllows } from './instrumentEvidence';
 import { latestSoundReview } from './soundReviewPolicy';
 
+const DIMENSION_OF: Record<DjGroup, FilenameSound['dimension']> = { source: 'source', production: 'effect', character: 'character' };
 const words = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 export interface FilenameSound { dimension: 'source' | 'effect' | 'character'; label: string; origin: 'From filename' }
 /** Read-only presentation fallback. Filename semantics are never audio evidence or training truth. */
@@ -36,10 +37,11 @@ export function filenameSoundFallback(audio: MusicAnalysis, node: Pick<DocNode, 
   for (const {c, alias} of matches) {
     if (consumed.some(longer => ` ${longer} `.includes(` ${alias} `))) continue;
     consumed.push(alias);
-    const dimension = c.group === 'character' ? 'character' : 'effect';
-    if (occupied(dimension) || !allowed(dimension, c.label) || !compatibleSource(c.source ?? undefined)) continue;
-    const materialHit = c.label === 'impact' && text.match(/\b(glass|metal|wood|stone|plastic) (?:hit|impact)\b/);
-    const label = materialHit ? `${materialHit[1]} hit` : c.label;
+    // Merged look-alike tags (djTags MERGED_DJ_LABELS) show under their surviving name and group.
+    const merged = mergedDjLabel(c.group as DjGroup, c.label), dimension = DIMENSION_OF[merged.group];
+    if (occupied(dimension) || !allowed(dimension, merged.label) || !compatibleSource(c.source ?? undefined)) continue;
+    const materialHit = merged.label === 'impact' && text.match(/\b(glass|metal|wood|stone|plastic) (?:hit|impact)\b/);
+    const label = materialHit ? `${materialHit[1]} hit` : merged.label;
     if (!allowed(dimension, label)) continue;
     if (!result.some(item => item.dimension === dimension && item.label === label)) result.push({dimension, label, origin: 'From filename'});
   }

@@ -104,8 +104,14 @@ describe('the 50/50 shipping bar', () => {
 
   it('marks the tagger outputs measured at 50/50 on real held-out audio as tested', () => {
     const tested = (output: string) => TAGGER_POLICY.tags.find(t => t.output === output)!.tested;
-    // trumpet: DJ clips rounds 1 and 2 (0.79/0.88, 0.68/0.83); rain ambience: FSD50K eval (0.86/0.66).
+    // trumpet: DJ clips rounds 1 and 2 (0.79/0.88, 0.68/0.83); rain ambience: FSD50K eval (0.87/0.70, run 7).
     expect([tested('trumpet'), tested('cat:rain ambience')]).toEqual([true, true]);
+    // Runs 5, 7 and 8 (tagger-run7/run8-results-2026-10-10): weakest real held-out set at 50/50 or better.
+    expect(['synthesizer', 'cat:animal sound', 'cat:percussion', 'cat:tambourine', 'cat:vocal scream', 'cat:glockenspiel', 'cat:whistle'].map(tested))
+      .toEqual([true, true, true, true, true, true, true]);
+    // Runs 3/5 outputs at 50/50 on FSD50K eval (tagger-promotions-2026-10-10).
+    expect(['cat:environmental sound', 'cat:foley', 'cat:turntable', 'cat:finger snap', 'cat:water ambience'].map(tested))
+      .toEqual([true, true, true, true, true]);
     // Measured only on NSynth and its effect renders: unchanged.
     expect(['cat:bright', 'cat:dark', 'cat:distorted', 'cat:falling'].map(tested)).toEqual([false, false, false, false]);
     expect(['cat:percussive', 'cat:pulsing', 'cat:swelling', 'cat:wobbling', 'cat:reverse effect'].map(tested)).toEqual([true, true, true, true, true]);
