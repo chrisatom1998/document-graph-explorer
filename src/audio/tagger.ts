@@ -38,6 +38,9 @@ export interface TaggerTag {
 export interface TaggerLongRule {
   rule: 'max' | 'windows' | 'mean' | 'agree' | 'detectors';
   threshold?: number;
+  /** The rule covers only recordings longer than this; shorter multi-window clips keep the best window, as the held-out
+   * scorer read them (scripts/audio-model/evaluate.py). */
+  afterSeconds?: number;
   windows?: number;
 }
 export interface TaggerPolicy {
@@ -162,10 +165,11 @@ export interface TaggerDisplay {
 }
 /** The recording-level score a tag's rule reads, and the threshold it is compared with. Undefined when the tagger does
  * not decide the tag on this recording (the 'detectors' rule, or per-window scores missing for a rule that needs them). */
-function ruleScore(tag: TaggerTag, tagger: TaggerAnalysis): { raw: number; threshold: number; agree: boolean } | undefined {
+function ruleScore(tag: TaggerTag, tagger: TaggerAnalysis, durationSeconds: number): { raw: number; threshold: number; agree: boolean } | undefined {
   const best = tagger.scores[tag.output];
   if (!finite(best) || best < 0 || best > 1) return;
-  const long = tagger.windows > 1 ? tag.long : undefined;
+  const after = tag.long?.afterSeconds;
+  const long = tagger.windows > 1 && (after === undefined || !(durationSeconds <= after + 1e-6)) ? tag.long : undefined;
   if (!long || long.rule === 'max') return { raw: best, threshold: long?.threshold ?? tag.threshold, agree: false };
   const threshold = long.threshold ?? tag.threshold;
   if (long.rule === 'detectors') return;
@@ -183,7 +187,7 @@ function ruleScore(tag: TaggerTag, tagger: TaggerAnalysis): { raw: number; thres
 export function taggerDecisions(tagger: TaggerAnalysis | undefined, durationSeconds: number): TaggerDisplay[] | undefined {
   if (!tagger || tagger.revision !== TAGGER_REVISION) return;
   return TAGGER_POLICY.tags.filter(tag => !tag.minSeconds || (Number.isFinite(durationSeconds) && durationSeconds >= tag.minSeconds - 1e-6)).flatMap(tag => {
-    const rule = ruleScore(tag, tagger);
+    const rule = ruleScore(tag, tagger, durationSeconds);
     if (!rule) return [];
     const { raw, threshold } = rule;
     const shown = raw >= threshold;

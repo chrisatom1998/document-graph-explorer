@@ -362,7 +362,8 @@
    ],
    "tested": true,
    "long": {
-    "rule": "detectors"
+    "rule": "detectors",
+    "afterSeconds": 30
    }
   },
   {
@@ -375,7 +376,8 @@
    ],
    "tested": true,
    "long": {
-    "rule": "detectors"
+    "rule": "detectors",
+    "afterSeconds": 30
    }
   },
   {
@@ -388,7 +390,8 @@
    ],
    "tested": true,
    "long": {
-    "rule": "detectors"
+    "rule": "detectors",
+    "afterSeconds": 30
    }
   },
   {
@@ -401,7 +404,8 @@
    ],
    "tested": true,
    "long": {
-    "rule": "detectors"
+    "rule": "detectors",
+    "afterSeconds": 30
    }
   },
   {
@@ -414,7 +418,8 @@
    ],
    "tested": true,
    "long": {
-    "rule": "detectors"
+    "rule": "detectors",
+    "afterSeconds": 30
    }
   }
  ]

@@ -12,7 +12,7 @@ The shipped tagger blend already scores these five outputs, but the app left the
 
 - Thresholds come from the published `thresholds.json` of the blended tagger. They were picked on FSD50K's validation split, not on eval.
 - These outputs come from the runs 3/5 networks, which the runs 3+5+7+8 blend (#206) keeps unchanged, so the scores carry over.
-- The held-out clips are 30 s or shorter. With no full-song evidence, long recordings defer to the existing detectors (`long: detectors`).
+- The held-out clips are 30 s or shorter and were scored on their best 10 s window. Recordings up to 30 s keep that rule, including clips with two or three windows. Longer recordings have no full-song evidence, so they defer to the existing detectors (`long: { rule: 'detectors', afterSeconds: 30 }`).
 - `INSTRUMENT_ANALYSIS_REVISION` moves to 93/94 so tracks that were already analysed pick up the new tags.
 
 Source: `reports/tagger-run7-results-2026-10-10.md` in the project files (the "shipped file" column).
