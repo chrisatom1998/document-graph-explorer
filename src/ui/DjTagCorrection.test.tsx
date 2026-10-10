@@ -23,4 +23,10 @@ it('finds a merged tag by the old name and its aliases', () => {
   fireEvent.change(screen.getByRole('searchbox'),{target:{value:'303 bass'}});
   expect(screen.getByLabelText('acid synth')).toBeDefined();
   expect(screen.queryByLabelText('acid bass')).toBeNull();
+  fireEvent.change(screen.getByRole('searchbox'),{target:{value:'marimba'}});
+  expect(screen.getByLabelText('mallet instrument')).toBeDefined();
+  expect(screen.queryByLabelText('marimba')).toBeNull();
+  fireEvent.change(screen.getByRole('searchbox'),{target:{value:'viola'}});
+  expect(screen.getByLabelText('strings')).toBeDefined();
+  expect(screen.queryByLabelText('viola')).toBeNull();
 });

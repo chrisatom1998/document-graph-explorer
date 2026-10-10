@@ -9,6 +9,8 @@ describe('merged look-alike tags share one review identity', () => {
     expect(soundReviewKey('source', 'turntable')).toBe(soundReviewKey('effect', 'vinyl scratch'));
     expect(soundReviewKey('effect', 'vocal harmony')).toBe(soundReviewKey('effect', 'choir'));
     expect(soundReviewKey('effect', 'acid bass')).toBe(soundReviewKey('effect', 'acid synth'));
+    expect(soundReviewKey('source', 'marimba')).toBe(soundReviewKey('source', 'mallet instrument'));
+    expect(soundReviewKey('source', 'viola')).toBe(soundReviewKey('source', 'strings'));
     expect(soundReviewKey('effect', 'vocal breath')).toBe(soundReviewKey('source', 'breath'));
     expect(soundReviewKey('effect', 'synth hit')).not.toBe(soundReviewKey('effect', 'static noise'));
   });

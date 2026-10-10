@@ -14,7 +14,9 @@ export type ConfirmedDjTags = Record<DjGroup, string[]>;
 /** Look-alike tags shown and confirmed under one name (Chris, 2026-10-10): the models could not tell each pair apart
  * (breath and vocal breath are taught by the same labels; static noise already covers white noise; turntable and vinyl
  * scratch both come from FSD50K's one Scratching class; vocal harmony has no tagger output and too little audio to tell
- * apart from choir; acid bass and acid synth are the same 303 squelch). The old labels stay
+ * apart from choir; acid bass and acid synth are the same 303 squelch; the marimba and viola heads score under 50/50 on
+ * runtime-eligible held-out clips (0.48 / 0.59 and 0.49 / 0.53), while the mallet instrument and strings tags that name
+ * their families already ship as full tags). The old labels stay
  * in the catalog because trained heads, prompts and saved analyses use them; only what people see and confirm merges. */
 export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: string }>> = {
   'production:vocal breath': { group: 'source', label: 'breath' },
@@ -24,6 +26,8 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'source:turntable': { group: 'production', label: 'vinyl scratch' },
   'production:vocal harmony': { group: 'production', label: 'choir' },
   'production:acid bass': { group: 'production', label: 'acid synth' },
+  'source:marimba': { group: 'source', label: 'mallet instrument' },
+  'source:viola': { group: 'source', label: 'strings' },
 };
 export const mergedDjLabel = (group: DjGroup, label: string): { group: DjGroup; label: string } => MERGED_DJ_LABELS[`${group}:${label}`] ?? { group, label };
 /** Labels people can pick: the catalog minus the merged names. */

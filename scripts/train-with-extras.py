@@ -9,6 +9,7 @@ of the extra data instead, and reported separately as new coverage.
 MIXTEST=manifest.json@dir also scores each sound on held-out layered mixtures (build-mixtures.py), split by
 target level; EXCLUDE=manifest.json drops that manifest's `excludeIds` (the mixture-test targets) from every
 extra dataset, so no test sound is heard in training. Use both in every round being compared.
+CAL=test-like picks each cut-off on out-of-fold rows like the test (library or real recordings) instead of on every row.
 Usage: train-with-extras.py <out.json> [name=manifest.json@fingerprint_dir ...]
 Every manifest clip needs: id, labels (app label names), group (independence unit)."""
 import json, sys, glob, hashlib, os, datetime, re
@@ -192,7 +193,15 @@ def run(kind, name):
             o = oof_for(a, c); v = oof_score(o)
             if v > best[0] + 0.01: best = (v, c, o)
         _, C, oof = best; ok = ~np.isnan(oof); r['C'] = C
-    th = threshold(pos[a][ok], oof[ok])
+    # CAL=test-like picks the cut-off only on out-of-fold training rows from the same kind of source as the test (library
+    # brands, real recordings or extra sources), so other sources do not set it. The held-out test plays no part.
+    cal = ok
+    if os.environ.get('CAL') == 'test-like':
+        src = np.array([i.split(':')[0] + ':' for i in np.array(IDS, dtype=object)[a]])
+        like = (IS_VAULT[a] if where == 'library brands' else ~IS_VAULT[a] if where == 'extra sources'
+                else np.isin(src, (REAL if kind == 'instrument' else REAL_LABEL) or ('',)))
+        if (pos[a] & ok & like).sum() >= 10: cal = ok & like; r['calibratedOn'] = where
+    th = threshold(pos[a][cal], oof[cal])
     if th is None: return {**r, 'verdict': 'no usable threshold'}
     model = fit(X[a], pos[a], C)
     b = np.where(test)[0]; pr = model.predict_proba(X[b])[:, 1] >= th; t = pos[b]

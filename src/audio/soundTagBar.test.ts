@@ -36,7 +36,15 @@ const PROMOTED: [label: string, threshold: number, precision: number, recall: nu
   ['air horn', .857, .92, .65, 'dj-effects-2026-10-09/shipped.json'],
   ['impact', .8206, .63, .72, 'dj-effects-2026-10-09/shipped.json'],
   ['riser', .8384, .68, .69, 'dj-effects-2026-10-09/shipped.json'],
-  ['laser', .7867, .51, .53, 'dj-effects-2026-10-09/shipped.json'],
+  ['laser', .7867, .51, .53, 'dj-effects-2026-10-09/shipped.json'],  // Second pass (scorecard 2026-10-10 afternoon): no contrary library-brand score and at least 30 held-out positives.
+  ['acid synth', .99, 1, .525, 'dj-labels-2026-10-04/added-heads-round20.json'],
+  ['bird ambience', .98, .86, .58, 'dj-labels-2026-10-04/added-heads-round14-bar45.json'],
+  ['clarinet', .99, .84, .52, 'dj-labels-2026-10-04/added-heads-round16.json'],
+  ['triangle', .989, .72, .53, 'dj-labels-2026-10-04/added-heads-round16.json'],
+  ['vocal phrase', .979, .91, .59, 'dj-labels-2026-10-04/added-heads-round16.json'],
+  ['oboe', .5, 1, .80, 'open-vocab-2026-10-05/added-heads-zero-shot.json'],
+  ['xylophone', .5, .96, .62, 'open-vocab-2026-10-05/added-heads-zero-shot.json'],
+  ['trombone', .5, .83, .57, 'open-vocab-2026-10-05/added-heads-zero-shot.json'],
 ];
 /** tag-heads-2026-10-09 heads are not cleared for one-shots, so ship.py tiers them on the held-out clips longer than
  * 2.25 s where the browser actually runs them (heldOutLongClip), not on the aggregate that included short clips. */
@@ -50,6 +58,10 @@ const RUNTIME_DROPPED = ['conga', 'gliding', 'tambourine'];
 /** Held back: their 50/50 was measured only on NSynth (incl. code-made effect renders), with no real held-out clips that
  * confirm the shipped head; glassy is a timbre rule word. They keep their current tier. */
 const STILL_MAYBE = ['bright', 'dark', 'glassy', 'percussive', 'pulsing', 'swelling', 'wobbling', 'noise sweep', 'filter sweep'];
+/** Pass 50/50 on held-out real recordings but stay maybe: 808 bass and bass growl failed on held-out library brands in
+ * rounds 14-20 (808 recall 0.34-0.43, bass growl precision 0.30-0.45); clave, vibraphone, tabla and mandolin have fewer
+ * than 30 held-out positives. */
+const HELD_BACK = ['808 bass', 'bass growl', 'clave', 'vibraphone', 'tabla', 'mandolin'];
 
 interface Head { label: string; threshold: number; maybe?: boolean; oneShot?: boolean }
 const learned = (JSON.parse(readFileSync('public/sound-model/learned.json', 'utf8')) as { heads: Head[] }).heads;
@@ -101,6 +113,7 @@ describe('the 50/50 shipping bar', () => {
   });
 
   it.each(STILL_MAYBE)('leaves %s as a maybe head', label => { expect(head(label).maybe).toBe(true); });
+  it.each(HELD_BACK)('holds back %s as a maybe head', label => { expect(head(label).maybe).toBe(true); });
 
   it('marks the tagger outputs measured at 50/50 on real held-out audio as tested', () => {
     const tested = (output: string) => TAGGER_POLICY.tags.find(t => t.output === output)!.tested;
@@ -125,6 +138,16 @@ describe('the 50/50 shipping bar', () => {
       expect(confidentSoundSummary(withTag(label, group, 'Trained head'))[0]).toMatchObject({ label, origin: 'model estimate', tier: 'likely', scores: [{ model: 'Trained head score', score: .9 }] });
     expect(confidentSoundSummary(withTag('beatbox', 'production', 'Trained head'))[0].maybe).toBeUndefined();
     expect(confidentSoundSummary(withTag('gliding', 'character', 'Trained head (maybe)'))[0]).toMatchObject({ label: 'gliding', maybe: true });
+  });
+
+  it('shows a maybe marimba or viola under the full mallet instrument or strings tag it merged into', () => {
+    const tags = (djTags: { group: 'source'; label: string; score: number; model: 'Trained head' | 'Trained head (maybe)' }[]): MusicAnalysis =>
+      ({ version: 2, durationSeconds: 8, analyzedSeconds: 8, instruments: [], notes: [], soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false, djTags } });
+    const shown = confidentSoundSummary(tags([{ group: 'source', label: 'marimba', score: .9, model: 'Trained head (maybe)' },
+      { group: 'source', label: 'mallet instrument', score: .8, model: 'Trained head' }, { group: 'source', label: 'viola', score: .9, model: 'Trained head (maybe)' }]));
+    expect(shown.map(s => s.label).sort()).toEqual(['mallet instrument', 'strings']);
+    expect(shown.find(s => s.label === 'mallet instrument')?.maybe).toBeUndefined();
+    expect(shown.find(s => s.label === 'strings')?.maybe).toBe(true);
   });
 
   it('shows a tagger trumpet on a full recording as a normal tag', () => {
