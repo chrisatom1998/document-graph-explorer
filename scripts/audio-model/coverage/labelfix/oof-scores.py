@@ -91,11 +91,15 @@ def main():
         part = f'{a.out}.fold{k}.pt'
         if a.merge:
             d = torch.load(part, weights_only=False)   # our own fold files, written below by this script
-            want = {'ids': [meta[i][0] for i in np.where(fold == k)[0]], 'vocab': vocab, 'folds': a.folds, 'epochs': a.epochs}
+            want = {'ids': [meta[i][0] for i in np.where(fold == k)[0]], 'vocab': vocab, 'folds': a.folds, 'epochs': a.epochs,
+                    'rows': meta, 'min_pos': a.min_pos}
             got = {key: d.get(key) for key in want}
             if got != want:   # rows, tags or fold setup changed since this fold was fit: its va indices would hit other clips
                 sys.exit(f'{part} was fit on different inputs ({", ".join(key for key in want if got[key] != want[key])} differ); refit it')
-            S[d['va']] = d['s']; states.append(d['state']); continue
+            va = np.where(fold == k)[0]
+            if not np.array_equal(d['va'], va):
+                sys.exit(f'{part} has stale validation row indices; refit it')
+            S[va] = d['s']; states.append(d['state']); continue
         if a.fold is not None and k != a.fold: continue
         torch.manual_seed(k)
         tr, va = np.where(fold != k)[0], np.where(fold == k)[0]
@@ -119,7 +123,7 @@ def main():
             S[va] = torch.sigmoid(model(Xt[va])).numpy()
         states.append(model.state_dict())
         torch.save({'va': va, 's': S[va], 'state': model.state_dict(), 'ids': [meta[i][0] for i in va], 'vocab': vocab,
-                    'folds': a.folds, 'epochs': a.epochs}, part)
+                    'folds': a.folds, 'epochs': a.epochs, 'rows': meta, 'min_pos': a.min_pos}, part)
         print(f'fold {k} done, loss {tot / len(tr):.4f}', flush=True)
     if len(states) < a.folds:
         return

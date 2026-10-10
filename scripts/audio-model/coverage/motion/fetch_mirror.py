@@ -41,10 +41,11 @@ def decode(b):
 
 def save(i, f, row, role, b):
     flac = decode(b)
-    if not flac: return
+    if not flac: return False
     open(f'{a.out}/{i}.flac', 'wb').write(flac)
     with open(log_path, 'a') as lg:   # one short append per clip, safe across worker processes
         lg.write(json.dumps({'id': i, 'file': f, 'row': row, 'role': role, 'encoded_sha256': hashlib.sha256(b).hexdigest()}) + '\n')
+    return True
 
 
 def one(item):
@@ -65,7 +66,8 @@ def one(item):
                     off = j['row'] - starts[g]
                     assert ids[off] == int(j['id']), (f, j, ids[off])
                     if int(j['id']) in saved: continue
-                    save(int(j['id']), f, j['row'], j.get('role', 'pick'), tb.slice(off, 1).to_pylist()[0]['audio']['bytes']); saved.add(int(j['id']))
+                    if save(int(j['id']), f, j['row'], j.get('role', 'pick'), tb.slice(off, 1).to_pylist()[0]['audio']['bytes']):
+                        saved.add(int(j['id']))
                 n = 0
                 for k, x in enumerate(ids):
                     if n >= a.extra: break
@@ -73,8 +75,10 @@ def one(item):
                     if x in NEG and x not in done:
                         u = NE['user'][str(x)]
                         if u in used_users: continue   # per worker; build_test.py keeps one negative per uploader overall
-                        used_users.add(u)
-                        save(x, f, starts[g] + k, 'negative', tb.slice(k, 1).to_pylist()[0]['audio']['bytes']); saved.add(x); n += 1
+                        if save(x, f, starts[g] + k, 'negative', tb.slice(k, 1).to_pylist()[0]['audio']['bytes']):
+                            used_users.add(u)
+                            saved.add(x)
+                            n += 1
             print('ok', f, len(js), flush=True); return
         except Exception as e:
             err = e; time.sleep(5 * (t + 1))
