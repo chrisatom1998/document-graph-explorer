@@ -3,7 +3,8 @@
     "all-tags",
     "all-tags-run5",
     "all-tags-run7",
-    "all-tags-run8"
+    "all-tags-run8",
+    "all-tags-run9"
   ],
   "only": {
     "all-tags-run7": [
@@ -18,6 +19,10 @@
       "cat:fm synth",
       "cat:glockenspiel",
       "cat:whistle"
+    ],
+    "all-tags-run9": [
+      "cat:rain ambience",
+      "violin"
     ]
   },
   "keep": "drums",
@@ -25,5 +30,5 @@
   "license": "cc-by-nc-sa-4.0",
   "flavor": "cpu-xl",
   "timeout": "4h",
-  "attempt": 5
+  "attempt": 6
 }
