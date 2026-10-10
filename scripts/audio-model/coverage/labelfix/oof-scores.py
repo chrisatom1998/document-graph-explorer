@@ -71,6 +71,7 @@ def main():
                 if m is not None:
                     X.append(F[i]); meta.append(m)
     X = np.stack(X).astype(np.float32)
+    feat_sha = hashlib.sha256(np.ascontiguousarray(X).tobytes()).hexdigest()   # fold files must match these exact features
     tags = [m[4] for m in meta]
     cnt = {}
     for ts in tags:
@@ -92,7 +93,7 @@ def main():
         if a.merge:
             d = torch.load(part, weights_only=False)   # our own fold files, written below by this script
             want = {'ids': [meta[i][0] for i in np.where(fold == k)[0]], 'vocab': vocab, 'folds': a.folds, 'epochs': a.epochs,
-                    'rows': meta, 'min_pos': a.min_pos}
+                    'rows': meta, 'min_pos': a.min_pos, 'feat_sha': feat_sha}
             got = {key: d.get(key) for key in want}
             if got != want:   # rows, tags or fold setup changed since this fold was fit: its va indices would hit other clips
                 sys.exit(f'{part} was fit on different inputs ({", ".join(key for key in want if got[key] != want[key])} differ); refit it')
@@ -123,7 +124,7 @@ def main():
             S[va] = torch.sigmoid(model(Xt[va])).numpy()
         states.append(model.state_dict())
         torch.save({'va': va, 's': S[va], 'state': model.state_dict(), 'ids': [meta[i][0] for i in va], 'vocab': vocab,
-                    'folds': a.folds, 'epochs': a.epochs, 'rows': meta, 'min_pos': a.min_pos}, part)
+                    'folds': a.folds, 'epochs': a.epochs, 'rows': meta, 'min_pos': a.min_pos, 'feat_sha': feat_sha}, part)
         print(f'fold {k} done, loss {tot / len(tr):.4f}', flush=True)
     if len(states) < a.folds:
         return

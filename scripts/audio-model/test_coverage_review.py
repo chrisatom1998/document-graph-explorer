@@ -85,13 +85,13 @@ class FoldMergeTests(unittest.TestCase):
         self.code = compile(ast.Module(body=merge.body[1:-1], type_ignores=[]), str(path), 'exec')
         self.meta = [('other-fold',), ('held-out',)]
         self.saved = {'ids': ['held-out'], 'vocab': ['tag'], 'folds': 2, 'epochs': 1,
-                      'min_pos': 1, 'rows': self.meta, 'va': np.array([1]), 's': np.array([[.8]]), 'state': {}}
+                      'min_pos': 1, 'rows': self.meta, 'feat_sha': 'f1', 'va': np.array([1]), 's': np.array([[.8]]), 'state': {}}
 
-    def merge(self, saved=None, meta=None, fold=None):
+    def merge(self, saved=None, meta=None, fold=None, feat_sha='f1'):
         np = self.np
         meta = self.meta if meta is None else meta
         ns = {'np': np, 'sys': sys, 'd': self.saved if saved is None else saved, 'meta': meta,
-              'fold': np.array([1, 0]) if fold is None else fold, 'k': 0, 'vocab': ['tag'],
+              'fold': np.array([1, 0]) if fold is None else fold, 'k': 0, 'vocab': ['tag'], 'feat_sha': feat_sha,
               'a': types.SimpleNamespace(folds=2, epochs=1, min_pos=1),
               'S': np.zeros((len(meta), 1)), 'states': [], 'part': 'synthetic-fold'}
         exec(self.code, ns)
@@ -107,6 +107,10 @@ class FoldMergeTests(unittest.TestCase):
     def test_same_rows_with_stale_indices_are_rejected(self):
         with self.assertRaises(SystemExit):
             self.merge(saved={**self.saved, 'va': self.np.array([0])})
+
+    def test_changed_features_with_same_rows_are_rejected(self):
+        with self.assertRaises(SystemExit):
+            self.merge(feat_sha='f2')
 
     def test_legacy_fold_without_full_rows_is_rejected(self):
         saved = dict(self.saved)
