@@ -61,7 +61,10 @@ for path in SHARDS:
                      'review_status': 'tag-evidenced negative (not listened)', 'fold_group': f'freesound:{user}', 'split': 'train',
                      'transformations': 'first 10 s, mono 48 kHz WAV', 'path': wav})
 with open(os.path.join(OUT, 'negatives.csv'), 'w', newline='') as f:
-    w = csv.DictWriter(f, list(rows[0])); w.writeheader(); w.writerows(rows)
+    fields = ['id', 'freesound_id', 'uploader', 'original_url', 'mirror', 'license', 'title', 'music', 'duration_s', 'encoded_sha256',
+              'pcm16k_sha256', 'bass guitar', 'foley hit', 'laser', 'label_evidence', 'review_status', 'fold_group', 'split',
+              'transformations', 'path']
+    w = csv.DictWriter(f, fields); w.writeheader(); w.writerows(rows)
 summary = {'kept': len(rows), 'uploaders': len(per_user), 'music': sum(r['music'] for r in rows), 'dropped': why}
 json.dump(summary, open(os.path.join(OUT, 'summary.json'), 'w'), indent=1)
 print(json.dumps(summary, indent=1))

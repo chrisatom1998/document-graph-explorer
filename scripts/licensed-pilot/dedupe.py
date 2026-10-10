@@ -36,8 +36,10 @@ if missing_holdout:
 os.makedirs(OUT, exist_ok=True)
 hpcm = {}
 for i in hold:
-    raw = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-i', os.path.join(FTS, i['path']), '-ac', '1', '-ar', '16000', '-f', 's16le', '-'], capture_output=True).stdout
-    hpcm[hashlib.sha256(raw).hexdigest()] = i['id']
+    dec = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-i', os.path.join(FTS, i['path']), '-ac', '1', '-ar', '16000', '-f', 's16le', '-'], capture_output=True)
+    # A holdout file that cannot be decoded cannot get the exact-PCM test, so the run stops rather than skip it.
+    if dec.returncode != 0 or not dec.stdout: sys.exit(f"holdout {i['id']} failed to decode: exact-PCM check impossible")
+    hpcm[hashlib.sha256(dec.stdout).hexdigest()] = i['id']
 H = np.stack([unit(emb[i['id']]) for i in hold if i['id'] in emb]); hids = [i['id'] for i in hold if i['id'] in emb]
 dropped, regrouped, kept_pcm, kept, outputs = [], [], {}, [], []
 parent = {}  # union-find over fold groups: every group a near-copy touches becomes one group
@@ -45,7 +47,7 @@ def root(g):
     while parent.get(g, g) != g: g = parent[g]
     return g
 for m in MANIFESTS:
-    rows = list(csv.DictReader(open(m))); out = []
+    reader = csv.DictReader(open(m)); rows = list(reader); fields = reader.fieldnames or []; out = []
     for r in rows:
         why = None
         if r['pcm16k_sha256'] in hpcm: why = f"decoded audio identical to holdout {hpcm[r['pcm16k_sha256']]}"
@@ -63,12 +65,12 @@ for m in MANIFESTS:
         kept_pcm[r['pcm16k_sha256']] = r['id']
         kept.append((r['id'], unit(emb[r['id']]), r['fold_group']))
         out.append(r)
-    outputs.append((m, rows, out))
+    outputs.append((m, fields, rows, out))
 # Groups are written only after every manifest is seen, so a merge reaches rows kept earlier too.
-for m, rows, out in outputs:
+for m, fields, rows, out in outputs:
     for r in out: r['fold_group'] = root(r['fold_group'])
     with open(os.path.join(OUT, os.path.basename(m)), 'w', newline='') as f:
-        w = csv.DictWriter(f, list(rows[0])); w.writeheader(); w.writerows(out)
+        w = csv.DictWriter(f, fields); w.writeheader(); w.writerows(out)
     print(f'{os.path.basename(m)}: kept {len(out)} of {len(rows)}')
 json.dump({'dropped': dropped, 'regrouped': regrouped, 'holdout_files_compared': len(hold), 'holdout_embedded': len(hids),
            'holdout_not_embedded': [i['id'] for i in hold if i['id'] not in emb]},

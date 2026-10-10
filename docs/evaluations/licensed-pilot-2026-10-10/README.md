@@ -82,14 +82,19 @@ Out-of-fold scores on the training data look excellent:
 | foley hit | 0.95 | 0.96 |
 | laser | 0.60 | 0.80 |
 
-On the holdout they do not carry over. Screen from the app's own CLAP embedding of each file's first 10 s
-(`score_offline.py`). Every locked file is scored. Eight one-shots under 0.1 s, three of them foley hit positives,
-are too short for that embedding script and count as never firing; the ceiling searches every observed score:
+On the holdout they do not carry over. Screen from the app's own CLAP embedding (`score_offline.py`): each file's
+first 10 s, plus every later 10 s window the app plans in Full mode for longer files (every 5 s and the last full
+window, 442 windows from `window_clips.py`), taking the max as the app does. Every locked file is scored. Eight
+one-shots under 0.1 s, three of them foley hit positives, are too short for that embedding script and count as never
+firing; the ceiling searches every observed score. The app also runs one-shot heads (foley hit, laser) on short
+windows around onsets inside long files; the screen does not reproduce those, so their "longer" rows are not a bound.
+That does not change the outcome: foley hit is decided on the short route (30 of 40 positives), and the current
+laser beats the pilot on both routes.
 
 | Detector | Route | P / R at its threshold | False positives | Best min(P, R) at any threshold |
 |---|---|---|---|---|
 | pilot bass guitar | 2.25 s or shorter | – / 0.00 | 0 | 0.05 |
-| pilot bass guitar | longer | 0.00 / 0.00 | 11 | 0.21 |
+| pilot bass guitar | longer | 0.00 / 0.00 | 12 | 0.18 |
 | pilot foley hit | 2.25 s or shorter | 0.19 / 0.33 | 44 | 0.20 (0.30 if the 3 skipped positives were all found) |
 | pilot foley hit | longer | – / 0.00 | 0 | 0.28 |
 | pilot laser | 2.25 s or shorter | 1.00 / 0.50 | 0 | 0.50 |
@@ -99,7 +104,7 @@ are too short for that embedding script and count as never firing; the ceiling s
 
 The screen reproduces the real app's numbers for the current laser detector exactly (shown P/R above), so it agrees
 with the full app on this holdout. For bass guitar and foley hit, even the best threshold picked on the holdout itself
-stays far under 50/50 (bass guitar 0.21, foley hit 0.30 at best). No bass guitar or foley hit detector the training data could produce would ship, so the full-app run of the candidate
+stays far under 50/50 (bass guitar 0.18, foley hit 0.30 at best). No bass guitar or foley hit detector the training data could produce would ship, so the full-app run of the candidate
 build was stopped part-way. The pilot laser is worse than the current one on both routes.
 
 **Against the bars:**
@@ -139,7 +144,9 @@ THREADS=4 node scripts/embed-clap.mjs ...                                    # a
 python3 -I scripts/licensed-pilot/dedupe.py ...
 python3 -I scripts/licensed-pilot/train_heads.py <heads dir> <emb.jsonl,...> <manifests...>
 scripts/licensed-pilot/run_app.sh <dist> <holdout.json> <free-tag-set> <out> 2   # real app, baseline
-python3 -I scripts/licensed-pilot/score_offline.py <holdout.json> <holdout.jsonl> <heads.json> <learned.json> <out.json>
+python3 -I scripts/licensed-pilot/window_clips.py <holdout.json> <free-tag-set> <windows-clips.json>
+THREADS=4 node scripts/embed-clap.mjs <windows-clips.json> <windows.jsonl>     # later 10 s windows of longer files
+python3 -I scripts/licensed-pilot/score_offline.py <holdout.json> <holdout.jsonl> <heads.json> <learned.json> <out.json> <windows.jsonl>
 python3 -I scripts/licensed-pilot/apply_heads.py <heads.json> <plan.json>   # only for a head that clears the bar
 ```
 

@@ -294,6 +294,8 @@
   }
  },
  "offline_screen": {
+  "windows": "all 10 s windows",
+  "later_windows": 442,
   "missing_embeddings": 8,
   "missing_ids": [
    "h5a998dab5e8815d",
@@ -326,10 +328,10 @@
      "precision": 0.0,
      "recall": 0.0,
      "tp": 0,
-     "false_positives": 11,
-     "ceiling_min_pr": 0.206,
+     "false_positives": 12,
+     "ceiling_min_pr": 0.184,
      "ceiling_threshold": 0.474,
-     "ceiling_if_skipped_positives_found": 0.206,
+     "ceiling_if_skipped_positives_found": 0.184,
      "skipped_positives": 0
     }
    },

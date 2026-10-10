@@ -1,9 +1,12 @@
 """Score pilot heads and the shipped heads on the locked holdout from CLAP embeddings, per label and duration route.
 
-Usage: python3 -I scripts/licensed-pilot/score_offline.py <holdout.json> <holdout.jsonl> <pilot heads.json> <main learned.json> <out.json>
+Usage: python3 -I scripts/licensed-pilot/score_offline.py <holdout.json> <holdout.jsonl> <pilot heads.json> <main learned.json> <out.json> [<windows.jsonl>]
 <holdout.jsonl>: scripts/embed-clap.mjs over the holdout files (the app's own CLAP embedding of the first 10 s).
-The app scores long files over every 10 s window and keeps the max, so this is the first-window view of the full-mode
-route; it is a screen, not a replacement for run_app.sh. "ceiling" is the best min(P, R) any threshold reaches on the
+<windows.jsonl>: embed-clap.mjs over every later 10 s window of the longer files, ids "<holdout id>@<start s>", starts
+as the app plans them in Full mode (instrumentWindowStarts: every 5 s, plus the last full window). With it, a long file
+scores the max over all its windows, as the app does for 10 s heads; without it, only the first window ("first-window").
+The app also runs one-shot heads on short windows around onsets inside long files (eventWindows.ts); this screen does
+not reproduce those, so for a one-shot head on the longer route it is not a bound. It is a screen, not run_app.sh. "ceiling" is the best min(P, R) any threshold reaches on the
 holdout itself, searched over every observed score. It is diagnostic only and never used to choose a threshold: if
 even the ceiling is under the ship bar, no threshold the training data could pick would clear it.
 Every locked item is scored. A file embed-clap.mjs skipped (under 0.1 s) is listed and counted as never firing: a
@@ -12,18 +15,29 @@ miss when it is a positive, never a false positive. Its ceiling is also given as
 import hashlib, json, math, os, sys
 
 HOLD, EMB, PILOT, MAIN, OUT = sys.argv[1:6]
+WINDOWS = sys.argv[6] if len(sys.argv) > 6 else None
 if hashlib.sha256(open(HOLD, 'rb').read()).hexdigest() != open(os.path.join(os.path.dirname(HOLD), 'holdout.lock')).read().split()[0]:
     sys.exit(f'{HOLD} does not match holdout.lock')
 items = json.load(open(HOLD))['items']
 emb = {}
 for line in open(EMB):
     r = json.loads(line); n = math.sqrt(sum(x * x for x in r['embedding'])); emb[r['id']] = [x / n for x in r['embedding']]
+later = {}
+if WINDOWS:
+    for line in open(WINDOWS):
+        r = json.loads(line); n = math.sqrt(sum(x * x for x in r['embedding']))
+        later.setdefault(r['id'].rsplit('@', 1)[0], []).append([x / n for x in r['embedding']])
 sets = {'pilot': {h['label']: h for h in json.load(open(PILOT))['heads']},
         'main': {h['label']: h for h in json.load(open(MAIN))['heads']}}
 labels = json.load(open(HOLD))['labels']
 
 def prob(h, v):
     return 1 / (1 + math.exp(-(h['bias'] + sum(a * b for a, b in zip(h['weights'], v)))))
+
+def score(h, i):
+    # The max over windows of a logistic head is the head on the max-scoring window, as the app aggregates.
+    if i['id'] not in emb: return None
+    return max(prob(h, v) for v in [emb[i['id']], *later.get(i['id'], [])])
 
 def pr(rows, t):
     fire = lambda s: s is not None and s >= t
@@ -41,14 +55,15 @@ unexpected_missing = [i['id'] for i in items if i['id'] not in emb
                                and math.isfinite(i['seconds']) and 0 < i['seconds'] < 0.1)]
 if unexpected_missing:
     sys.exit(f'{len(unexpected_missing)} holdout embeddings missing outside the documented under-0.1 s exception; rerun embedding before scoring')
-report = {'missing_embeddings': len(missing), 'missing_ids': missing, 'heads': {}}
+report = {'windows': 'all 10 s windows' if WINDOWS else 'first-window', 'later_windows': sum(map(len, later.values())),
+          'missing_embeddings': len(missing), 'missing_ids': missing, 'heads': {}}
 for name, heads in sets.items():
     for label in labels:
         h = heads.get(label)
         if not h: continue
         out = report['heads'].setdefault(f'{name}:{label}', {'threshold': h['threshold']})
         for route in ('short', 'long'):
-            rows = [(prob(h, emb[i['id']]) if i['id'] in emb else None, i['labels'][label]) for i in items
+            rows = [(score(h, i), i['labels'][label]) for i in items
                     if i['short'] == (route == 'short') and i['labels'][label] is not None]
             P, R, tp, fp = pr(rows, h['threshold'])
             best = ceiling(rows)

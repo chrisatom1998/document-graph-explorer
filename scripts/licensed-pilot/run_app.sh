@@ -13,7 +13,8 @@ import json, os, sys
 hold, out = sys.argv[1], sys.argv[3]; fts = os.path.abspath(sys.argv[2]); items = json.load(open(hold))['items']; man = []
 for i in items:
     ext = os.path.splitext(i['path'])[1].lower(); dst = os.path.join(out, 'audio', i['id'] + ext)
-    if not os.path.exists(dst): os.symlink(os.path.join(fts, i['path']), dst)
+    if os.path.lexists(dst): os.unlink(dst)  # refresh links from an earlier run, dangling ones included
+    os.symlink(os.path.join(fts, i['path']), dst)
     man.append({'id': i['id'], 'split': 'test', 'file': i['id'] + ext})
 json.dump({'items': man}, open(os.path.join(out, 'driver-manifest.json'), 'w'))
 PY
