@@ -82,13 +82,14 @@ Out-of-fold scores on the training data look excellent:
 | laser | 0.60 | 0.80 |
 
 On the holdout they do not carry over. Screen from the app's own CLAP embedding of each file's first 10 s
-(`score_offline.py`):
+(`score_offline.py`). Every locked file is scored. Eight one-shots under 0.1 s, three of them foley hit positives,
+are too short for that embedding script and count as never firing; the ceiling searches every observed score:
 
 | Detector | Route | P / R at its threshold | False positives | Best min(P, R) at any threshold |
 |---|---|---|---|---|
-| pilot bass guitar | 2.25 s or shorter | – / 0.00 | 0 | 0.04 |
-| pilot bass guitar | longer | 0.00 / 0.00 | 11 | 0.20 |
-| pilot foley hit | 2.25 s or shorter | 0.19 / 0.37 | 44 | 0.22 |
+| pilot bass guitar | 2.25 s or shorter | – / 0.00 | 0 | 0.05 |
+| pilot bass guitar | longer | 0.00 / 0.00 | 11 | 0.21 |
+| pilot foley hit | 2.25 s or shorter | 0.19 / 0.33 | 44 | 0.20 (0.30 if the 3 skipped positives were all found) |
 | pilot foley hit | longer | – / 0.00 | 0 | 0.28 |
 | pilot laser | 2.25 s or shorter | 1.00 / 0.50 | 0 | 0.50 |
 | pilot laser | longer | 1.00 / 0.09 | 0 | 0.83 |
@@ -97,7 +98,7 @@ On the holdout they do not carry over. Screen from the app's own CLAP embedding 
 
 The screen reproduces the real app's numbers for the current laser detector exactly (shown P/R above), so it agrees
 with the full app on this holdout. For bass guitar and foley hit, even the best threshold picked on the holdout itself
-stays far under 50/50. No detector the training data could produce would ship, so the full-app run of the candidate
+stays far under 50/50 (bass guitar 0.21, foley hit 0.30 at best). No detector the training data could produce would ship, so the full-app run of the candidate
 build was stopped part-way. The pilot laser is worse than the current one on both routes.
 
 **Against the bars:**

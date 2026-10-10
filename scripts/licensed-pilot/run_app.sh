@@ -10,7 +10,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$OUT/audio"
 python3 -I - "$HOLD" "$FTS" "$OUT" <<'PY'
 import json, os, sys
-hold, fts, out = sys.argv[1:4]; items = json.load(open(hold))['items']; man = []
+hold, out = sys.argv[1], sys.argv[3]; fts = os.path.abspath(sys.argv[2]); items = json.load(open(hold))['items']; man = []
 for i in items:
     ext = os.path.splitext(i['path'])[1].lower(); dst = os.path.join(out, 'audio', i['id'] + ext)
     if not os.path.exists(dst): os.symlink(os.path.join(fts, i['path']), dst)
