@@ -63,18 +63,20 @@ def _upload(doc):
     HfApi().batch_bucket_files(_mirror['bucket'], add=[(doc, _mirror['path'])])
 
 
-def _push():
+def _push(done=False):
     """Upload the JSON mirror in the background; a slow or failed upload never holds up training."""
     if _mirror['busy']: return
     _mirror['busy'] = True; _mirror['sent'] = time.time()
-    doc = _doc(False)
+    doc = _doc(done)
 
     def go():
         try: _upload(doc)
         except Exception as e:  # noqa: BLE001
-            print(f'chart mirror upload failed: {e}', flush=True)
+            print(f'chart mirror {"final " if done else ""}upload failed: {e}', flush=True)
         finally: _mirror['busy'] = False
-    threading.Thread(target=go, daemon=True).start()
+    thread = threading.Thread(target=go, daemon=True)
+    thread.start()
+    return thread
 
 
 def finish():
@@ -84,13 +86,20 @@ def finish():
     for _ in range(120):   # let a running background upload end first so it cannot overwrite the final file
         if not _mirror['busy']: break
         time.sleep(1)
-    else: print('chart mirror: an earlier upload is still running; sending the final one anyway', flush=True)
-    try: _upload(_doc(True))
-    except Exception as e:  # noqa: BLE001
-        print(f'chart mirror final upload failed: {e}', flush=True)
+    if _mirror['busy']:
+        print('chart mirror final upload skipped: timed out waiting for an earlier upload', flush=True)
+    else:
+        try:
+            thread = _push(done=True)
+            thread.join(120)
+            if thread.is_alive():
+                print('chart mirror final upload timed out; publication is not confirmed', flush=True)
+        except Exception as e:  # noqa: BLE001
+            print(f'chart mirror final upload failed: {e}', flush=True)
     try:
         import trackio
         trackio.finish()
     except Exception as e:  # noqa: BLE001
         print(f'live charts finish failed: {e}', flush=True)
     _started = False
+
