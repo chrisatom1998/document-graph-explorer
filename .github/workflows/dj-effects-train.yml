@@ -37,8 +37,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -68,8 +68,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 340
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - run: pip install -q pyarrow numpy scipy scikit-learn
@@ -92,14 +92,14 @@ jobs:
           except urllib.error.HTTPError as e: code = e.code
           print('freesound page status:', code); sys.exit(0 if code in (200, 404) else 1)
           PY
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - run: command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
       - name: Restore downloaded previews
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: work/fs
           key: dj-effects-audio-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json') }}
@@ -108,19 +108,19 @@ jobs:
         run: CONCURRENCY=4 node scripts/fetch-freesound-previews.mjs "$DOCS/candidates.json" work/fs
       - name: Save downloaded previews
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: work/fs
           key: dj-effects-audio-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json') }}-${{ github.run_id }}
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
           restore-keys: music-models-
       - run: npm run setup:music
       - name: Restore fingerprints
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: work/emb
           key: dj-effects-emb-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json', 'scripts/embed-clap.mjs') }}
@@ -132,14 +132,14 @@ jobs:
           rc=0; for p in "${pids[@]}"; do wait $p || rc=1; done; tail -n 3 work/emb-*.log; exit $rc
       - name: Save fingerprints
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: work/emb
           key: dj-effects-emb-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json', 'scripts/embed-clap.mjs') }}-${{ github.run_id }}
       - name: Render effects onto training-split music clips (training only)
         run: python3 scripts/dj-effects/render.py work/fs/manifest.json work/render
       - name: Restore render fingerprints
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: work/remb
           key: dj-effects-remb-${{ hashFiles('scripts/dj-effects/render.py', 'scripts/embed-clap.mjs') }}-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json') }}
@@ -151,7 +151,7 @@ jobs:
           rc=0; for p in "${pids[@]}"; do wait $p || rc=1; done; tail -n 3 work/remb-*.log; exit $rc
       - name: Save render fingerprints
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: work/remb
           key: dj-effects-remb-${{ hashFiles('scripts/dj-effects/render.py', 'scripts/embed-clap.mjs') }}-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json') }}-${{ github.run_id }}

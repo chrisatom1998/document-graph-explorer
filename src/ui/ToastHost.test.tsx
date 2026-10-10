@@ -40,10 +40,10 @@ describe('ToastHost', () => {
     expect(screen.getByText('Memory running low')).toBeInTheDocument();
     expect(screen.getByText('Failed to process file')).toBeInTheDocument();
 
-    const toastEls = screen.getAllByText(/Operation|Memory|Failed/).map((el) => el.closest('.toast'));
-    expect(toastEls[0]).toHaveClass('toast--info');
-    expect(toastEls[1]).toHaveClass('toast--warning');
-    expect(toastEls[2]).toHaveClass('toast--error');
+    const toastEls = screen.getAllByText(/Operation|Memory|Failed/).map((el) => el.closest('.app-toast'));
+    expect(toastEls[0]).toHaveClass('app-toast--info');
+    expect(toastEls[1]).toHaveClass('app-toast--warning');
+    expect(toastEls[2]).toHaveClass('app-toast--error');
   });
 
   it('auto-dismisses info toasts after 5000ms', () => {

@@ -90,7 +90,7 @@ export default defineConfig(({ mode }) => ({
   worker: {
     format: 'es',
     plugins: () => [essentiaCsp()],
-    rollupOptions: {
+    rolldownOptions: {
       output: {
         entryFileNames: `assets/[name]-[hash]-${BUILD_ID}.js`,
         assetFileNames: workerAssetFileNames,
@@ -107,22 +107,23 @@ export default defineConfig(({ mode }) => ({
     // The largest chunk is the demand-loaded WebGL renderer. Eager code has a
     // much tighter, separately enforced budget in scripts/check-bundle.mjs.
     chunkSizeWarningLimit: 1200,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        // Keep Rollup from pulling shared preload helpers into a named vendor
-        // chunk and accidentally turning an async scene into an eager preload.
-        onlyExplicitManualChunks: true,
         assetFileNames: workerAssetFileNames,
-        manualChunks(id) {
-          // Follow-mode framing is used by the eager collaboration store, but
-          // keeping that feature seam separate prevents camera sync growth from
-          // consuming the tightly budgeted application entry chunk.
-          if (/[/\\]src[/\\]collab[/\\]viewFrame\.ts$/.test(id)) return 'collab-view';
-          if (!id.includes('node_modules')) return undefined;
-          // React is the only eager framework vendor. Feature libraries stay
-          // with their lazy route/panel so they cannot leak into index.html.
-          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor-react';
-          return undefined;
+        codeSplitting: {
+          groups: [
+            // React is the only eager framework vendor. Feature libraries stay
+            // with their lazy route/panel so they cannot leak into index.html.
+            { name: 'vendor-react', test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/, priority: 30 },
+            // Follow-mode framing is used by the eager collaboration store, but
+            // keeping that feature seam separate prevents camera sync growth from
+            // consuming the tightly budgeted application entry chunk.
+            { name: 'collab-view', test: /[\\/]src[\\/]collab[\\/]viewFrame\.ts$/, priority: 20 },
+            // Rolldown otherwise gives every module the entry shares with a lazy
+            // chunk its own small file, so the first load becomes ~20 requests and
+            // an extra round trip (modulePreload is off). Keep them in one chunk.
+            { name: 'app-shell', tags: ['$initial'], test: /^(?![\s\S]*[\\/]node_modules[\\/])/, priority: 10 },
+          ],
         },
       },
     },

@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 480
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Check the Hugging Face token
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
         run: |
@@ -61,7 +61,7 @@ jobs:
           python3 -c "from huggingface_hub import whoami; w = whoami(); print('HF account:', w['name'], '| PRO:', w.get('isPro'))"
       - name: Fetch the SoundCloud excerpts
         if: ${{ (inputs.soundcloud || 'true') == 'true' }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: sc-audio-*
           merge-multiple: true
