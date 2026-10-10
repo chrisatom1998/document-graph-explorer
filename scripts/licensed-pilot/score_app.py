@@ -25,8 +25,9 @@ for f in TAGS:
         if hid not in items: continue
         tags = {}
         for t in r['tags']:
-            m = re.match(r'^[^:]+:(.+?)(?: \[(\w+)\])?( \(maybe\))? ', t + ' ')
-            if not m: continue
+            # "<dimension>:<label> [<tier>][ (maybe)] <scores>"; every displayed tag carries a tier.
+            m = re.match(r'^[^:]+:(.+?) \[(\w+)\]( \(maybe\))?(?: |$)', t)
+            if not m: raise ValueError(f'unparsed tag: {t}')
             label, tier, maybe = m[1], m[2], bool(m[3])
             conf = tier == 'likely' and not maybe
             tags[label] = max(tags.get(label, 0), 2 if conf else 1)

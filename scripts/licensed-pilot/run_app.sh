@@ -20,7 +20,7 @@ PY
 CHROME=${CHROME_PATH:-$(ls -d /opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell 2>/dev/null | head -1)}
 start=$(date +%s)
 for ((k = 0; k < SHARDS; k++)); do
-  MANIFEST="$OUT/driver-manifest.json" AUDIO_DIR="$OUT/audio" FILE_FIELD=file DIST="$DIST" CHROME_PATH="$CHROME" SHARD="$k/$SHARDS" PORT=$((4291 + k)) \
+  MANIFEST="$OUT/driver-manifest.json" AUDIO_DIR="$OUT/audio" FILE_FIELD=file DIST="$DIST" CHROME_PATH="$CHROME" SHARD="$k/$SHARDS" PORT=$((${PORT_BASE:-4291} + k)) \
     node scripts/short-clip-upload-eval.mjs "$OUT/run-$k" test 20 > "$OUT/run-$k.log" 2>&1 &
 done
 wait
