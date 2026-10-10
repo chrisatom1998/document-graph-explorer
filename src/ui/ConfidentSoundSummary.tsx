@@ -6,13 +6,15 @@ import type { MusicAnalysis } from '../audio/musicTypes';
 import { soundLabelText } from '../audio/djTags';
 import { likelyExtraSounds } from './MainSoundAttributes';
 import { TIMBRE_DEFINITIONS, timbreDescriptions } from '../audio/timbreDescriptions';
-import { djReviewAllows } from '../audio/soundReviewPolicy';
+import { djReviewAllows, resolvedNonSourceLabels } from '../audio/soundReviewPolicy';
 
 /** The rule-measured words for how it sounds (timbreDescriptions.ts), as one plain line: not tags, no scores.
  * Words you rejected, and words already shown as tags, are left out; old analyses without a measurement show nothing. */
 export function SoundDescription({audio,exclude=[]}:{audio:MusicAnalysis;exclude?:Iterable<string>}) {
   const shown=new Set(exclude);
-  const words=timbreDescriptions(audio.timbre).filter(word=>!shown.has(word)&&djReviewAllows(audio,'character',word));
+  // A saved correction replaces automatic character evidence; later individual reviews still take precedence.
+  const confirmed=audio.confirmedDjTags===undefined?undefined:new Set(resolvedNonSourceLabels(audio).filter(label=>label.group==='character').map(label=>label.label));
+  const words=timbreDescriptions(audio.timbre).filter(word=>!shown.has(word)&&(!confirmed||confirmed.has(word))&&djReviewAllows(audio,'character',word));
   if(!words.length)return null;
   const hover=`Measured from the audio by fixed rules, not a trained model or a tested tag. ${words.map(word=>`${word}: ${TIMBRE_DEFINITIONS[word]}`).join('; ')}.`;
   return <p className="sound-description" title={hover}>Sound: {words.join(', ')}<span className="sr-only"> — {hover}</span></p>;

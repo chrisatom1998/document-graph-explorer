@@ -3,15 +3,19 @@ import { fftInPlace } from './structure';
 /**
  * A small, fixed-rule measurement of how a recording sounds (band balance, noisiness, clipping via the crest factor, decay, a mid scoop,
  * a 1–2.5 kHz resonance, how many octaves carry sound, and partials that do not line up as harmonics). Plain DSP, no model: the plain-English words
- * built from it live in timbreDescriptions.ts. Computed from up to three 4 s excerpts of 32 kHz mono audio, every
- * other 64 ms frame, so it costs under a hundred 2048-point FFTs per recording (a few milliseconds).
+ * built from it live in timbreDescriptions.ts. Computed from up to three 4 s excerpts of 32 kHz mono audio in
+ * 64 ms frames with 50% overlap, so it costs under four hundred 2048-point FFTs per recording.
  */
 export const TIMBRE_SAMPLE_RATE = 32000;
-export const TIMBRE_VERSION = 1;
+/** v2 gives every sample nonzero spectral coverage and uses a 16 ms decay envelope. Older preview measurements are discarded on load;
+ * this does not invalidate the model-analysis cache, so those recordings need reanalysis to regain a description. */
+export const TIMBRE_VERSION = 2;
 const FFT = 2048, HALF = FFT / 2, HZ = TIMBRE_SAMPLE_RATE / FFT;
 const EXCERPT_SECONDS = 4;
-/** Every other frame is measured: a level estimate per 128 ms is plenty and halves the FFTs. */
-const HOP = 2 * FFT;
+/** Overlap keeps frame-boundary transients near a window peak. */
+const HOP = HALF;
+/** A finer envelope keeps a short hit's decay visible even when it fits in one FFT frame. */
+const LEVEL_FRAME = FFT / 4;
 /** Recordings up to this long are measured whole (one-shots and short loops keep their real decay). */
 const WHOLE_SECONDS = 12;
 /** Band edges in Hz for `bands`: sub, body, mid, presence, brightness, air. */
@@ -21,7 +25,7 @@ export const TIMBRE_BAND_NAMES = ['sub', 'body', 'mid', 'presence', 'brightness'
 const SILENT = 1e-8;
 
 export interface TimbreSummary {
-  version: 1;
+  version: typeof TIMBRE_VERSION;
   /** Share of 20 Hz–16 kHz energy per TIMBRE_BAND_EDGES band (sums to about 1). */
   bands: number[];
   /** Mean spectral flatness 150 Hz–16 kHz: 0 = pure tones, about 0.5 = white noise. */
@@ -32,7 +36,7 @@ export interface TimbreSummary {
   crest: number;
   /** Share of the 21 third-octaves (125 Hz–12.5 kHz) within 30 dB of the loudest: a pure tone is about 0.05, a full mix near 1. */
   richness: number;
-  /** Median frame level over peak frame level (amplitude): 1 = steady, near 0 = a hit that dies away. */
+  /** Median 16 ms frame level over peak frame level (amplitude): 1 = steady, near 0 = a hit that dies away. */
   sustain: number;
   /** dB by which the 500 Hz–2 kHz third-octaves sit below the quieter of their two neighbours (150–500 Hz, 2–5 kHz). */
   scoopDb: number;
@@ -42,7 +46,9 @@ export interface TimbreSummary {
   inharmonicity: number;
 }
 
-const window = Float64Array.from({ length: FFT }, (_, i) => .5 - .5 * Math.cos(2 * Math.PI * i / FFT));
+// Hamming retains nonzero weight at excerpt edges without adding padded, broadband edge frames.
+const window = Float64Array.from({ length: FFT }, (_, i) => .54 - .46 * Math.cos(2 * Math.PI * i / FFT));
+const windowPower = window.reduce((sum, value) => sum + value * value, 0);
 const binOf = (hz: number) => Math.min(HALF, Math.max(0, Math.round(hz / HZ)));
 const THIRDS = Array.from({ length: 21 }, (_, i) => 125 * 2 ** (i / 3));
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -55,7 +61,7 @@ export function frameInharmonicity(p: ArrayLike<number>): number | undefined {
   for (let k = lo; k <= hi; k++) if (p[k] > max) max = p[k];
   if (max <= 0) return;
   const peaks: { f: number; p: number }[] = [];
-  // −25 dB keeps Hann side lobes (−31 dB) out of the peak list.
+  // −25 dB keeps Hamming side lobes (about −43 dB) out of the peak list.
   for (let k = lo; k <= hi; k++) if (p[k] > p[k - 1] && p[k] >= p[k + 1] && p[k] >= max * 10 ** -2.5) {
     const a = Math.log(p[k - 1] + 1e-30), b = Math.log(p[k]), c = Math.log(p[k + 1] + 1e-30);
     const d = a - 2 * b + c, delta = d < 0 ? clamp(.5 * (a - c) / d, -.5, .5) : 0;
@@ -80,7 +86,7 @@ export class TimbreFeatures {
   private power = new Float64Array(HALF + 1);
   private re = new Float64Array(FFT); private im = new Float64Array(FFT);
   private frames = 0; private flat = 0; private airFlat = 0; private airFrames = 0;
-  private crests: number[] = []; private sustain = 0; private excerpts = 0;
+  private crests: { value: number; weight: number }[] = []; private sustain = 0; private excerpts = 0;
   private inharm = 0; private inharmFrames = 0;
 
   add(samples: Float32Array): void {
@@ -89,24 +95,43 @@ export class TimbreFeatures {
     for (const v of samples) { const a = Math.abs(v); if (a > peak) peak = a; }
     if (!(peak >= 1e-4)) return;
     const levels: number[] = [];
+    for (let start = 0; start < samples.length; start += LEVEL_FRAME) {
+      const end = Math.min(start + LEVEL_FRAME, samples.length);
+      let ms = 0;
+      for (let i = start; i < end; i++) ms += samples[i] * samples[i];
+      levels.push(Math.sqrt(ms / (end - start)));
+    }
     const flatLo = binOf(150), airLo = binOf(8000);
-    for (let start = 0; start === 0 || start + FFT <= samples.length; start += HOP) {
+    const frames: { start: number; weight: number; powerScale?: number }[] = [];
+    if (samples.length < FFT) {
+      // Centre short clips under the window peak, including a single-sample transient.
+      const start = -Math.floor((FFT - samples.length) / 2);
+      const coveredPower = window.subarray(-start, -start + samples.length).reduce((sum, value) => sum + value * value, 0);
+      // Match the full-frame power scale before duration weighting; padding must not count duration twice.
+      frames.push({ start, weight: samples.length / FFT, powerScale: windowPower / coveredPower });
+    } else {
+      // Count the first frame once and subsequent frames only for their newly covered half.
+      for (let start = 0; start + FFT <= samples.length; start += HOP) frames.push({ start, weight: start === 0 ? 1 : HOP / FFT });
+      // Keep real audio in the end-aligned spectrum; only its newly covered duration counts.
+      const last = samples.length - FFT, remainder = last % HOP;
+      if (remainder) frames.push({ start: last, weight: remainder / FFT });
+    }
+    for (const { start, weight, powerScale = 1 } of frames) {
       let ms = 0, top = 0;
       for (let i = 0; i < FFT; i++) { const v = samples[start + i] ?? 0; ms += v * v; top = Math.max(top, Math.abs(v)); this.re[i] = v * window[i]; this.im[i] = 0; }
-      ms /= Math.min(FFT, samples.length - start);
-      levels.push(Math.sqrt(ms));
+      ms /= Math.min(samples.length, start + FFT) - Math.max(0, start);
       if (ms < SILENT) continue;
-      this.crests.push(top / Math.sqrt(ms));
+      this.crests.push({ value: top / Math.sqrt(ms), weight });
       fftInPlace(this.re, this.im);
       const p = this.re;
-      for (let k = 0; k <= HALF; k++) { p[k] = this.re[k] * this.re[k] + this.im[k] * this.im[k]; this.power[k] += p[k]; }
-      this.frames++;
-      this.flat += flatness(p, flatLo, HALF);
+      for (let k = 0; k <= HALF; k++) { p[k] = this.re[k] * this.re[k] + this.im[k] * this.im[k]; this.power[k] += p[k] * weight * powerScale; }
+      this.frames += weight;
+      this.flat += flatness(p, flatLo, HALF) * weight;
       let air = 0, all = 0;
       for (let k = 1; k <= HALF; k++) { all += p[k]; if (k >= airLo) air += p[k]; }
-      if (all > 0 && air / all >= .02) { this.airFlat += flatness(p, airLo, HALF); this.airFrames++; }
+      if (all > 0 && air / all >= .02) { this.airFlat += flatness(p, airLo, HALF) * weight; this.airFrames += weight; }
       const inharm = frameInharmonicity(p);
-      if (inharm !== undefined) { this.inharm += inharm; this.inharmFrames++; }
+      if (inharm !== undefined) { this.inharm += inharm * weight; this.inharmFrames += weight; }
     }
     const top = Math.max(...levels);
     if (top > 0) { const sorted = [...levels].sort((a, b) => a - b); this.sustain += sorted[Math.floor(sorted.length / 2)] / top; this.excerpts++; }
@@ -135,12 +160,17 @@ export class TimbreFeatures {
     const scoop = Math.min(avg(150, 499), avg(2001, 5000)) - avg(500, 2000);
     const around = thirds.filter(t => t.c >= 300 && t.c <= 6000).map(t => t.db).sort((a, b) => a - b);
     const resonance = Math.max(...thirds.filter(t => t.c >= 1000 && t.c <= 2500).map(t => t.db)) - around[Math.floor(around.length / 2)];
+    let crest = 1, crestWeight = 0;
+    for (const frame of this.crests.sort((a, b) => a.value - b.value)) {
+      crest = frame.value; crestWeight += frame.weight;
+      if (crestWeight > this.frames / 2) break;
+    }
     return {
       version: TIMBRE_VERSION,
       bands: bands.map(b => round(b / total)),
       flatness: round(clamp(this.flat / this.frames, 0, 1)),
       airFlatness: round(this.airFrames ? clamp(this.airFlat / this.airFrames, 0, 1) : 0),
-      crest: round(clamp(this.crests.sort((a, b) => a - b)[Math.floor(this.crests.length / 2)], 1, 30)),
+      crest: round(clamp(crest, 1, 30)),
       richness: round(thirds.filter(t => t.db >= loudest - 30).length / thirds.length),
       sustain: round(this.excerpts ? clamp(this.sustain / this.excerpts, 0, 1) : 0),
       scoopDb: round(clamp(scoop, -60, 60)),

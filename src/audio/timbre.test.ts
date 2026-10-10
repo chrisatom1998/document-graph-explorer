@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeTimbre, sanitizeTimbre, TimbreFeatures, timbreExcerpts, TIMBRE_SAMPLE_RATE, type TimbreSummary } from './timbre';
+import { computeTimbre, sanitizeTimbre, TimbreFeatures, timbreExcerpts, TIMBRE_SAMPLE_RATE, TIMBRE_VERSION, type TimbreSummary } from './timbre';
 import { isRuleDescribedLabel, MAX_TIMBRE_WORDS, RULE_DESCRIBED_LABELS, TIMBRE_DEFINITIONS, timbreDescriptions } from './timbreDescriptions';
 import { clip, highPass, mix, noise, partials, saw, sine } from './timbreSignals.testutil';
 import { sanitizeMusicAnalysis } from './musicTypes';
@@ -44,6 +44,97 @@ describe('timbre descriptor', () => {
     const f = new TimbreFeatures(); f.add(new Float32Array(TIMBRE_SAMPLE_RATE)); expect(f.summary()).toBeUndefined();
   });
 
+  it.each([
+    { seconds: .12, onset: .07 },
+    { seconds: .22, onset: .2 },
+    { seconds: 1, onset: .07 },
+  ])('measures a brief sound at $onset s in a $seconds s clip', ({ seconds, onset }) => {
+    const samples = new Float32Array(Math.round(seconds * TIMBRE_SAMPLE_RATE));
+    samples.set(sine(300, .02), Math.round(onset * TIMBRE_SAMPLE_RATE));
+    const measured = measure(samples);
+    expect(measured).toBeDefined();
+    expect(measured.bands[1]).toBeGreaterThan(.7);
+  });
+
+  it.each([0, 1, 1023, 1024, 2047, 2048, 2049, 3072, 4095])('measures an impulse at sample %i without window blind spots', offset => {
+    const samples = new Float32Array(4096);
+    samples[offset] = .5;
+    const measured = measure(samples);
+    expect(measured).toBeDefined();
+    expect(sanitizeTimbre(measured)).toEqual(measured);
+    expect(measured.flatness).toBeCloseTo(1, 2);
+    expect(measured.bands.reduce((sum, share) => sum + share, 0)).toBeCloseTo(1, 2);
+  });
+
+  it('retains the same transient over a quiet tone at a frame boundary and a frame centre', () => {
+    const withImpulse = (offset: number) => {
+      const samples = sine(250, 16384 / TIMBRE_SAMPLE_RATE, .01);
+      samples[offset] += 1;
+      return measure(samples);
+    };
+    const boundary = withImpulse(4096), centre = withImpulse(5120);
+    expect(boundary.bands[5]).toBeGreaterThan(.1);
+    expect(boundary.bands).toEqual(centre.bands);
+    expect(boundary.flatness).toEqual(centre.flatness);
+  });
+
+  it('weights a sub-frame excerpt by its duration when accumulating excerpts', () => {
+    const tone = sine(250, 2048 / TIMBRE_SAMPLE_RATE);
+    const features = new TimbreFeatures();
+    features.add(new Float32Array([.5]));
+    features.add(tone);
+    const measured = features.summary()!;
+    expect(measured.flatness).toBeLessThan(.01);
+    expect(measured.crest).toBeCloseTo(measure(tone).crest, 2);
+  });
+
+  it.each([128, 256, 1024].flatMap(length => [.15, .3, .6].map(amplitude => ({ length, amplitude }))))(
+    'keeps mixed-excerpt energy proportional for $length samples at amplitude $amplitude, in either order', ({ length, amplitude }) => {
+    const short = sine(6000, length / TIMBRE_SAMPLE_RATE, amplitude), full = sine(250, 2048 / TIMBRE_SAMPLE_RATE, .3);
+    const forwards = new TimbreFeatures(), backwards = new TimbreFeatures();
+    forwards.add(short); forwards.add(full);
+    backwards.add(full); backwards.add(short);
+    const expected = length * amplitude ** 2 / (length * amplitude ** 2 + 2048 * .3 ** 2);
+    expect(forwards.summary()!.bands[4]).toBeCloseTo(expected, 2);
+    expect(backwards.summary()).toEqual(forwards.summary());
+  });
+
+  it('keeps the decay of a sub-frame hit instead of treating it as a held tone', () => {
+    const samples = new Float32Array(Math.round(.12 * TIMBRE_SAMPLE_RATE));
+    samples.set(sine(300, .03));
+    const measured = measure(samples);
+    expect(measured.sustain).toBeLessThan(.1);
+    expect(timbreDescriptions(measured)).not.toContain('warm');
+    expect(timbreDescriptions(measured)).not.toContain('smooth');
+  });
+
+  it.each([1, 2, 31, 511, 512, 513, 2047, 2048, 2049])('keeps a %i-sample partial frame finite', length => {
+    const samples = Float32Array.from({ length }, (_, i) => .3 * Math.cos(2 * Math.PI * 300 * i / TIMBRE_SAMPLE_RATE));
+    const measured = measure(samples);
+    expect(measured).toBeDefined();
+    expect(sanitizeTimbre(measured)).toEqual(measured);
+    expect(measured.bands.reduce((sum, share) => sum + share, 0)).toBeCloseTo(1, 2);
+  });
+
+  it.each([2050, 3074, 4098, 16386])('does not treat a tiny tail as a full noisy frame at %i samples', length => {
+    const measured = measure(sine(300, length / TIMBRE_SAMPLE_RATE));
+    expect(measured.flatness).toBeLessThan(.01);
+    expect(timbreDescriptions(measured)).toEqual(['warm', 'smooth']);
+  });
+
+  it.each([3072, 4096])('does not overcount the overlapping end frame when two samples extend a %i-sample clip', length => {
+    const clip = (tail: number) => {
+      const samples = new Float32Array(length + tail);
+      samples.set(sine(300, 2048 / TIMBRE_SAMPLE_RATE));
+      samples.set(sine(3000, (length - 2048 + tail) / TIMBRE_SAMPLE_RATE), 2048);
+      return measure(samples);
+    };
+    const exact = clip(0), extended = clip(2);
+    expect(extended.bands[1]).toBeCloseTo(exact.bands[1], 2);
+    expect(extended.bands[3]).toBeCloseTo(exact.bands[3], 2);
+    expect(timbreDescriptions(extended)).toEqual(timbreDescriptions(exact));
+  });
+
   it('reads the whole of a short clip and three 4 s excerpts of a long track', async () => {
     expect(timbreExcerpts(10)).toEqual([{ start: 0, seconds: 10 }]);
     expect(timbreExcerpts(200).map(e => e.seconds)).toEqual([4, 4, 4]);
@@ -59,12 +150,19 @@ describe('timbre descriptor', () => {
     expect(sanitizeTimbre(JSON.parse(JSON.stringify(t)))).toEqual(t);
     expect(sanitizeTimbre({ ...t, crest: 0 })).toBeUndefined();
     expect(sanitizeTimbre({ ...t, bands: [1, 0] })).toBeUndefined();
-    expect(sanitizeTimbre({ ...t, version: 2 })).toBeUndefined();
+    expect(sanitizeTimbre({ ...t, version: TIMBRE_VERSION + 1 })).toBeUndefined();
     expect(sanitizeTimbre({ ...t, scoopDb: 999 })).toBeUndefined();
     const base = { version: 2, durationSeconds: 8, analyzedSeconds: 8, instruments: [], notes: [] };
     expect(sanitizeMusicAnalysis({ ...base, timbre: t })?.timbre).toEqual(t);
     expect(sanitizeMusicAnalysis({ ...base, timbre: { ...t, flatness: 'x' } })?.timbre).toBeUndefined();
     expect(sanitizeMusicAnalysis(base)?.timbre).toBeUndefined();
+  });
+
+  it('drops measurements made before continuous coverage and the finer decay envelope', () => {
+    const old = { ...measure(sine(220)), version: 1 };
+    expect(sanitizeTimbre(old)).toBeUndefined();
+    const base = { version: 2, durationSeconds: 1, analyzedSeconds: 1, instruments: [], notes: [] };
+    expect(sanitizeMusicAnalysis({ ...base, timbre: old })?.timbre).toBeUndefined();
   });
 });
 
@@ -85,7 +183,7 @@ describe('timbre descriptions', () => {
   it('is conservative: a plain sawtooth gets no word, and no sound gets more than three', () => {
     expect(words(saw(110))).toEqual([]);
     expect(words(saw(110)).length + words(noise()).length).toBeLessThanOrEqual(1);
-    const everything: TimbreSummary = { version: 1, bands: [0, .45, .05, .4, .05, .05], flatness: 0, airFlatness: 0, crest: 1.4, richness: .1, sustain: 1, scoopDb: 0, resonanceDb: 0, inharmonicity: 0 };
+    const everything: TimbreSummary = { version: TIMBRE_VERSION, bands: [0, .45, .05, .4, .05, .05], flatness: 0, airFlatness: 0, crest: 1.4, richness: .1, sustain: 1, scoopDb: 0, resonanceDb: 0, inharmonicity: 0 };
     expect(timbreDescriptions(everything).length).toBeLessThanOrEqual(MAX_TIMBRE_WORDS);
     expect(timbreDescriptions(undefined)).toEqual([]);
   });
