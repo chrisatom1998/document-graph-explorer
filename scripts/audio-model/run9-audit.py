@@ -17,6 +17,10 @@ stage-run9.py (imported from RUN9_SHA), the same caps (15 per uploader; a tag's 
 and their uploader must not be held out anywhere in the staged manifests. Staged under <IN>/nc-supplement/ like
 stage-run9.py does (Freesound preview MP3) and audited the same way. Weights trained on them stay CC BY-NC-SA.
 Never uploads unless the repo is private. No held-out audio is read except the staged held-out rows themselves.
+
+EXTRA_EXCL (optional): paths, comma-separated, to training-exclusions.json files made by other held-out test sets
+({"freesound_ids": [...], "freesound_uploaders": [...], "audio_md5": [...]}; md5 of the 32 kHz mono s16le decode, whole
+or first 10 s). Training items matching any of them are dropped.
 """
 import csv, hashlib, importlib.util, io, json, os, re, subprocess, sys, tarfile, tempfile, urllib.parse
 from collections import Counter, defaultdict
@@ -26,6 +30,12 @@ from huggingface_hub import HfApi, hf_hub_download
 
 REPO, IN, OUT = os.environ['STAGE_REPO'], os.environ['IN'].rstrip('/'), os.environ['OUT'].rstrip('/')
 TARGETS = {t.strip() for t in os.environ.get('TARGETS', '').split(',') if t.strip()}
+EXTRA = {'ids': set(), 'users': set(), 'md5': set()}
+for _p in filter(None, os.environ.get('EXTRA_EXCL', '').split(',')):
+    _x = json.load(open(_p))
+    EXTRA['ids'] |= {int(i) for i in _x.get('freesound_ids', [])}
+    EXTRA['users'] |= {u.casefold() for u in _x.get('freesound_uploaders', [])}
+    EXTRA['md5'] |= set(_x.get('audio_md5', []))
 api = HfApi()
 
 
@@ -48,13 +58,19 @@ def lic_class(lic):
 
 
 def pcm_hash(data):
-    """sha256 of the decoded audio (16 kHz mono s16le) and its length in seconds, or (None, 0) if undecodable."""
+    """sha256 of the decoded audio (16 kHz mono s16le), its length in seconds, and whether its 32 kHz decode (whole or
+    first 10 s) has an EXTRA_EXCL md5; (None, 0, False) if undecodable."""
+    def dec(sr):
+        return subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', 'pipe:0', '-ac', '1', '-ar', str(sr), '-f', 's16le', 'pipe:1'],
+                              input=data, capture_output=True, check=True).stdout
     try:
-        pcm = subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', 'pipe:0', '-ac', '1', '-ar', '16000', '-f', 's16le', 'pipe:1'],
-                             input=data, capture_output=True, check=True).stdout
+        pcm = dec(16000)
+        x32 = dec(32000) if EXTRA['md5'] and pcm else b''
     except subprocess.CalledProcessError:
-        return None, 0.0
-    return (hashlib.sha256(pcm).hexdigest(), round(len(pcm) / 32000, 3)) if pcm else (None, 0.0)
+        return None, 0.0, False
+    if not pcm: return None, 0.0, False
+    hit = bool(x32) and (hashlib.md5(x32).hexdigest() in EXTRA['md5'] or hashlib.md5(x32[:640000]).hexdigest() in EXTRA['md5'])
+    return hashlib.sha256(pcm).hexdigest(), round(len(pcm) / 32000, 3), hit
 
 
 def freesound_meta(ids):
@@ -120,6 +136,7 @@ def stage_nc(st, sha, staged_rows):
         uc = u.casefold()
         reason = ('already staged' if f'freesound:{i}' in staged_ids else 'reserved uploader rule' if st.reserved_rule(u)
                   else 'held-out uploader in run 9' if uc in held_users else 'FSD50K eval' if i in ex['fsd_eval']
+                  else 'other held-out test set' if i in EXTRA['ids'] or uc in EXTRA['users']
                   else 'reserved test id' if i in ex['bad_ids'] else 'reserved family uploader' if uc in ex['bad_users']
                   else 'cached Freesound test' if i in ex['fs_eval'] else 'DJ-effect held-out uploader' if uc in ex['dj_users']
                   else 'run 7 held-out id' if i in ex['r7_held'] else 'already in run 7 training' if i in ex['r7_train']
@@ -171,9 +188,9 @@ def main():
     for p in parts:
         rows, blobs = read_part(p)
         with ThreadPoolExecutor(os.cpu_count() or 4) as pool:
-            hashes = list(pool.map(lambda r: (hashlib.sha256(blobs[r['file']]).hexdigest(), *pcm_hash(blobs[r['file']])) if r.get('file') in blobs else (None, None, 0.0), rows))
-        for r, (enc, pcm, secs) in zip(rows, hashes):
-            items.append(dict(r, part=p, encoded_sha256=enc or '', pcm16k_sha256=pcm or '', seconds=secs))
+            hashes = list(pool.map(lambda r: (hashlib.sha256(blobs[r['file']]).hexdigest(), *pcm_hash(blobs[r['file']])) if r.get('file') in blobs else (None, None, 0.0, False), rows))
+        for r, (enc, pcm, secs, hit) in zip(rows, hashes):
+            items.append(dict(r, part=p, encoded_sha256=enc or '', pcm16k_sha256=pcm or '', seconds=secs, _extra_md5=hit))
         print(f'{p}: {len(rows)} items hashed', flush=True)
     ids = {int(r['id'].split(':')[1]) for r in items if r['source'] == 'freesound'}
     meta = freesound_meta(ids)
@@ -184,6 +201,13 @@ def main():
         r['keep'], r['drop_reason'] = '1', ''
         if not r['pcm16k_sha256']: r['keep'], r['drop_reason'] = '0', 'missing or undecodable audio'; continue
         by_pcm[r['pcm16k_sha256']].append(r)
+    # other held-out test sets (EXTRA_EXCL): id, uploader or decoded-audio match drops a training copy
+    for r in items:
+        if r['keep'] != '1' or r['split'] != 'train': continue
+        fid = int(r['id'].split(':')[1]) if r['source'] == 'freesound' and r['id'].split(':')[1].isdigit() else None
+        user = r['group'].removeprefix('freesound-user:').casefold() if r['source'] == 'freesound' else None
+        if r['_extra_md5'] or fid in EXTRA['ids'] or (user and user in EXTRA['users']):
+            r['keep'], r['drop_reason'] = '0', 'in another held-out test set'
     dup_groups = 0
     for h, rs in by_pcm.items():
         if len(rs) < 2: continue
