@@ -294,8 +294,13 @@
   }
  },
  "offline_screen": {
-  "windows": "all 10 s windows",
+  "windows": "all 10 s windows except 3 not embedded",
   "later_windows": 442,
+  "missing_windows": [
+   "h6dd370c300a2294@5.0",
+   "h6dd370c300a2294@6.364",
+   "hb4c6e5245807f17@23.809"
+  ],
   "missing_embeddings": 8,
   "missing_ids": [
    "h5a998dab5e8815d",

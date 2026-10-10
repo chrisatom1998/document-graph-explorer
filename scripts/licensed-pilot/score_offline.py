@@ -22,11 +22,25 @@ items = json.load(open(HOLD))['items']
 emb = {}
 for line in open(EMB):
     r = json.loads(line); n = math.sqrt(sum(x * x for x in r['embedding'])); emb[r['id']] = [x / n for x in r['embedding']]
-later = {}
+def planned_windows(i):
+    # Same plan as window_clips.py: later Full-mode window starts of a longer file.
+    if i['short'] or i['seconds'] <= 10: return []
+    last, starts, s = i['seconds'] - 10, [], 0.0
+    while s <= last + 1e-9: starts.append(round(s, 3)); s += 5
+    if last > starts[-1] + 1e-6: starts.append(round(last, 3))
+    return [f"{i['id']}@{s}" for s in starts[1:]]
+
+later, missing_windows = {}, []
 if WINDOWS:
+    plan = {w for i in items for w in planned_windows(i)}; seen = set()
     for line in open(WINDOWS):
-        r = json.loads(line); n = math.sqrt(sum(x * x for x in r['embedding']))
+        r = json.loads(line)
+        if r['id'] not in plan: sys.exit(f"{r['id']} is not a planned window of the locked holdout")
+        seen.add(r['id']); n = math.sqrt(sum(x * x for x in r['embedding']))
         later.setdefault(r['id'].rsplit('@', 1)[0], []).append([x / n for x in r['embedding']])
+    # embed-clap.mjs skips near-silent windows, which the app also gives no CLAP scores; any other gap
+    # would hide a window, so every unembedded window is listed and the screen is labelled by it.
+    missing_windows = sorted(plan - seen)
 sets = {'pilot': {h['label']: h for h in json.load(open(PILOT))['heads']},
         'main': {h['label']: h for h in json.load(open(MAIN))['heads']}}
 labels = json.load(open(HOLD))['labels']
@@ -55,7 +69,8 @@ unexpected_missing = [i['id'] for i in items if i['id'] not in emb
                                and math.isfinite(i['seconds']) and 0 < i['seconds'] < 0.1)]
 if unexpected_missing:
     sys.exit(f'{len(unexpected_missing)} holdout embeddings missing outside the documented under-0.1 s exception; rerun embedding before scoring')
-report = {'windows': 'all 10 s windows' if WINDOWS else 'first-window', 'later_windows': sum(map(len, later.values())),
+mode = 'first-window' if not WINDOWS else 'all 10 s windows' if not missing_windows else f'all 10 s windows except {len(missing_windows)} not embedded'
+report = {'windows': mode, 'later_windows': sum(map(len, later.values())), 'missing_windows': missing_windows,
           'missing_embeddings': len(missing), 'missing_ids': missing, 'heads': {}}
 for name, heads in sets.items():
     for label in labels:

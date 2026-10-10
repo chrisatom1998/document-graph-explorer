@@ -93,6 +93,39 @@ class ScoringTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads((self.root / 'out.json').read_text())['heads']['pilot:laser']['short']['ceiling_min_pr'], 1)
 
+    def long_positive(self):
+        # The positive becomes a 22 s file: later windows at 5, 10 and 12 s; it scores low in its first window.
+        self.hold['items'][0].update(short=False, seconds=22)
+        self.hold['items'][1].update(short=False, seconds=5)
+        self.write('holdout.json', self.hold)
+        self.lock()
+        self.embeddings((.4, .45))
+
+    def windows(self, ids, p=.7):
+        logit = math.log(p / (1 - p))
+        (self.root / 'win.jsonl').write_text('\n'.join(json.dumps({'id': i, 'embedding': [logit, math.sqrt(1 - logit * logit)]}) for i in ids))
+        return self.run_script('score_offline.py', 'holdout.json', 'emb.jsonl', 'heads.json', 'heads.json', 'out.json', 'win.jsonl')
+
+    def test_offline_scores_max_over_later_windows(self):
+        self.long_positive()
+        result = self.windows(['positive@5.0', 'positive@10.0', 'positive@12'])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads((self.root / 'out.json').read_text())
+        self.assertEqual(report['windows'], 'all 10 s windows')
+        self.assertEqual(report['heads']['pilot:laser']['long']['recall'], 1)
+
+    def test_offline_labels_missing_later_windows(self):
+        self.long_positive()
+        result = self.windows(['positive@5.0', 'positive@10.0'])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads((self.root / 'out.json').read_text())
+        self.assertEqual(report['missing_windows'], ['positive@12'])
+        self.assertEqual(report['windows'], 'all 10 s windows except 1 not embedded')
+
+    def test_offline_rejects_unplanned_window(self):
+        self.long_positive()
+        self.assert_invalid(self.windows(['positive@7.0']))
+
     def test_offline_rejects_changed_holdout(self):
         self.embeddings()
         self.hold['items'][0]['labels']['laser'] = 0

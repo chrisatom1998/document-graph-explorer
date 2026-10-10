@@ -84,7 +84,9 @@ Out-of-fold scores on the training data look excellent:
 
 On the holdout they do not carry over. Screen from the app's own CLAP embedding (`score_offline.py`): each file's
 first 10 s, plus every later 10 s window the app plans in Full mode for longer files (every 5 s and the last full
-window, 442 windows from `window_clips.py`), taking the max as the app does. Every locked file is scored. Eight
+window, 445 planned by `window_clips.py`), taking the max as the app does. Three planned windows are near-silent
+(mean energy at most 1e-8), so they have no embedding, and the app gives such windows no CLAP scores either; the
+script lists them and refuses any window id the plan does not contain. Every locked file is scored. Eight
 one-shots under 0.1 s, three of them foley hit positives, are too short for that embedding script and count as never
 firing; the ceiling searches every observed score. The app also runs one-shot heads (foley hit, laser) on short
 windows around onsets inside long files; the screen does not reproduce those, so their "longer" rows are not a bound.
