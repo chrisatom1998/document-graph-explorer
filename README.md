@@ -259,6 +259,14 @@ React 19 · React Three Fiber · Three.js · TypeScript 6 · Vite · Zustand · 
 
 ## Testing
 
+The suite also runs offline Python tag-head regressions, which require Python 3.11+ and NumPy. CI uses Python 3.12 and `numpy==2.3.5`. For local tests, activate a virtual environment first:
+
+```bash
+python3 -m venv /tmp/dge-test-venv
+source /tmp/dge-test-venv/bin/activate
+python3 -m pip install numpy==2.3.5
+```
+
 ```bash
 npm test
 ```

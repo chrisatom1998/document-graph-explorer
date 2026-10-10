@@ -37,16 +37,19 @@ const PROMOTED: [label: string, threshold: number, precision: number, recall: nu
   ['impact', .8206, .63, .72, 'dj-effects-2026-10-09/shipped.json'],
   ['riser', .8384, .68, .69, 'dj-effects-2026-10-09/shipped.json'],
   ['laser', .7867, .51, .53, 'dj-effects-2026-10-09/shipped.json'],
-  ['falling', .777, .61, .63, 'tag-heads-2026-10-09/shipped.json'],
-  ['viola', .8987, .51, .53, 'tag-heads-2026-10-09/shipped.json'],
-  ['whistle', .8491, .65, .64, 'tag-heads-2026-10-09/shipped.json'],
-  ['conga', .9037, .61, .72, 'tag-heads-2026-10-09/shipped.json'],
-  ['bongo', .9228, .61, .60, 'tag-heads-2026-10-09/shipped.json'],
-  ['tom', .8114, .60, .73, 'tag-heads-2026-10-09/shipped.json'],
 ];
+/** tag-heads-2026-10-09 heads are not cleared for one-shots, so ship.py tiers them on the held-out clips longer than
+ * 2.25 s where the browser actually runs them (heldOutLongClip), not on the aggregate that included short clips. */
+const RUNTIME_ELIGIBLE: [label: string, threshold: number, precision: number, recall: number][] = [
+  ['kalimba', .8026, .74, .86], ['falling', .777, .61, .65], ['djembe', .9096, .62, .70], ['whistle', .8491, .62, .62],
+  ['bongo', .9228, .54, .625], ['tom', .8114, .64, .69],
+];
+/** Below 50/50 on those clips: viola and marimba stay maybe; conga, gliding and tambourine (precision < 0.45) do not ship. */
+const RUNTIME_MAYBE = ['viola', 'marimba'];
+const RUNTIME_DROPPED = ['conga', 'gliding', 'tambourine'];
 /** Held back: their 50/50 was measured only on NSynth (incl. code-made effect renders), with no real held-out clips that
  * confirm the shipped head; glassy is a timbre rule word. They keep their current tier. */
-const STILL_MAYBE = ['bright', 'dark', 'glassy', 'percussive', 'pulsing', 'swelling', 'wobbling', 'gliding', 'marimba', 'tambourine', 'noise sweep', 'filter sweep'];
+const STILL_MAYBE = ['bright', 'dark', 'glassy', 'percussive', 'pulsing', 'swelling', 'wobbling', 'noise sweep', 'filter sweep'];
 
 interface Head { label: string; threshold: number; maybe?: boolean; oneShot?: boolean }
 const learned = (JSON.parse(readFileSync('public/sound-model/learned.json', 'utf8')) as { heads: Head[] }).heads;
@@ -69,6 +72,28 @@ describe('the 50/50 shipping bar', () => {
     expect(row, `${label} @ ${threshold} in ${report}`).toBeDefined();
     expect(row!.precision!).toBeCloseTo(precision, 2);
     expect(row!.recall!).toBeCloseTo(recall, 2);
+  });
+
+  it.each(RUNTIME_ELIGIBLE)('ships %s as a normal head from its runtime-eligible held-out score', (label, threshold, precision, recall) => {
+    const h = head(label);
+    expect(h.maybe).toBeUndefined();
+    expect(h.oneShot).toBeUndefined();
+    expect(h.threshold).toBeCloseTo(threshold, 4);
+    expect(Math.min(precision, recall)).toBeGreaterThanOrEqual(SOUND_TAG_BAR);
+    const row = rows('tag-heads-2026-10-09/shipped.json').find(r => r.label === label) as Row & { shipped?: boolean; tier?: string; evaluationSubset?: string };
+    expect(row).toMatchObject({ shipped: true, tier: 'full', evaluationSubset: 'held-out clips > 2.25 s' });
+    expect(row.precision!).toBeCloseTo(precision, 2);
+    expect(row.recall!).toBeCloseTo(recall, 2);
+  });
+
+  it.each(RUNTIME_MAYBE)('keeps %s as a maybe head below 50/50 on runtime-eligible clips', label => {
+    expect(head(label).maybe).toBe(true);
+    const row = rows('tag-heads-2026-10-09/shipped.json').find(r => r.label === label)!;
+    expect(Math.min(row.precision!, row.recall!)).toBeLessThan(SOUND_TAG_BAR);
+  });
+
+  it.each(RUNTIME_DROPPED)('does not ship %s, which fails on the clips where it would run', label => {
+    expect(learned.some(h => h.label === label)).toBe(false);
   });
 
   it('keeps the one-shot safeguard on promoted one-shot heads', () => {
