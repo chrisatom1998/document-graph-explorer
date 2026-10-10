@@ -43,6 +43,9 @@ LIC = {0: 'CC0', 1: 'BY4', 2: 'BY3', 3: 'NC3', 4: 'NC4'}
 CED_MIN = float(os.environ.get('CED_MIN', '0.5')); TEACHER_Q = float(os.environ.get('TEACHER_Q', '0.3'))
 PER_UPLOADER = int(os.environ.get('PER_UPLOADER', '15')); PER_TAG = int(os.environ.get('PER_TAG', '800'))
 TIERS = ['two-votes', 'teacher-only', 'ced-only']
+# opt-in (default off): ced-only also for clips WITH teacher features when the tag has no usable teacher (sitar, saxophone...),
+# so featuring more mirror clips can't remove CED rows the teacher has no say on
+CED_ONLY_UNVOICED = os.environ.get('CED_ONLY_UNVOICED', '') == '1'
 
 
 def main():
@@ -90,7 +93,7 @@ def main():
             cv = c >= CED_MIN if c is not None else np.zeros(len(ids), bool)
             tvote = (tv >= thr[t]) & has if tv is not None else np.zeros(len(ids), bool)
             tier = np.full(len(ids), -1)
-            if t in spec_map: tier[cv & ~has] = 2
+            if t in spec_map: tier[cv & (~has if tv is not None or not CED_ONLY_UNVOICED else True)] = 2
             if t not in spec_map and t not in broad and tv is not None and t in hp and t not in one_source: tier[has & (tv >= hp[t])] = 1
             tier[cv & tvote] = 0
             if tv is not None: why[t]['disputed (CED yes, teacher no)'] += int((cv & has & ~tvote).sum())
