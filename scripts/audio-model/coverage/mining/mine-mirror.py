@@ -14,14 +14,17 @@ Votes per (clip, tag):
            stand alone; broad-ced-map.json classes (this folder) only agree with the teacher, never stand alone.
   teacher  fold-averaged teacher prob >= the tag's frozen out-of-fold threshold, used only where the teacher's out-of-fold
            min(P, R) on the tag >= TEACHER_Q (0.3). 'teacher-strong' = prob >= the tag's out-of-fold 0.9-precision cutoff.
-Tiers (best first): two-votes (CED + teacher), teacher-only (no CED mapping for the tag, teacher-strong; lower tier),
+Tiers (best first): two-votes (CED + teacher), teacher-only (no CED mapping for the tag, teacher-strong, and the tag's
+  training positives not >80% from one non-Freesound source; lower tier),
   ced-only (specific CED map, no teacher features for the clip; lower tier). CED >= CED_MIN with teacher features that say no
   is counted as 'disputed' and dropped.
 Filters (heldout.py): held-out / reserved / FSD50K-eval / re-hosted ids for all tags, held-out uploaders for all tags, the
   three reserved-uploader hash rules, uploaders held out for the same tag; CC Sampling+ is already absent from the run; ids
   already in training are dropped; at most PER_UPLOADER clips per uploader per tag and PER_TAG per tag (tiers in order).
 Writes <out dir>/candidates.csv (train-only; tag, freesound_id, username, licence, seconds, tier, ced, teacher) and
-  per-tag.csv (counts per tier and why rows were dropped). Licence codes: 0 CC0, 1 BY 4.0, 2 BY 3.0, 3 NC 3.0, 4 NC 4.0.
+  per-tag.csv (counts per tier and why rows were dropped). uploader_heldout_other_tag = 1 when the keyword list holds that
+  uploader out for some OTHER tag: allowed by the same-tag rule, but ced-select.py's stricter rule drops it (strict_kept counts
+  what survives that). Licence codes: 0 CC0, 1 BY 4.0, 2 BY 3.0, 3 NC 3.0, 4 NC 4.0.
 """
 import argparse, csv, glob, importlib.util, json, os, sys
 from collections import Counter, defaultdict
@@ -59,6 +62,12 @@ def main():
     hp = json.load(open(a.hp))   # tag -> out-of-fold 0.9-precision cutoff (train-side clips only)
     usable = [t for t in vocab if t in thr and min(val[t].get('oof_p', 0), val[t].get('oof_r', 0)) >= TEACHER_Q]
     tcol = {t: vocab.index(t) for t in usable}
+    # teacher-only needs positives from more than one source: a tag taught by one dataset (chorused = EGFxSet guitar, organ synth
+    # = NSynth, sub drop = code renders) teaches that dataset's sound, not the tag. Freesound-led tags are fine (the mirror is Freesound).
+    z = np.load(os.path.join(a.teacher, 'oof.npz')); src_n = defaultdict(Counter)
+    for sname, o in zip(z['source'], z['own']):
+        for t in str(o).split('|'): src_n[t][str(sname)] += 1
+    one_source = {t for t, c in src_n.items() if c and c.most_common(1)[0][0] != 'freesound' and c.most_common(1)[0][1] > 0.8 * sum(c.values())}
     teach = {}
     for fn in sorted(glob.glob(os.path.join(a.mirror, '*.npz'))):
         z = np.load(fn); P = f(ft.feats(z, kind))
@@ -81,7 +90,7 @@ def main():
             tvote = (tv >= thr[t]) & has if tv is not None else np.zeros(len(ids), bool)
             tier = np.full(len(ids), -1)
             if t in spec_map: tier[cv & ~has] = 2
-            if t not in spec_map and t not in broad and tv is not None and t in hp: tier[has & (tv >= hp[t])] = 1
+            if t not in spec_map and t not in broad and tv is not None and t in hp and t not in one_source: tier[has & (tv >= hp[t])] = 1
             tier[cv & tvote] = 0
             if tv is not None: why[t]['disputed (CED yes, teacher no)'] += int((cv & has & ~tvote).sum())
             for k in np.where(tier >= 0)[0]:
@@ -100,14 +109,15 @@ def main():
             if per[r[3]] >= PER_UPLOADER: why[t]['uploader cap'] += 1; continue
             if sum(kept.values()) >= PER_TAG: why[t]['tag cap'] += 1; continue
             per[r[3]] += 1; kept[r[6]] += 1
-            out.append((t, r[2], r[3], r[4], r[5], r[6], r[7], r[8]))
+            out.append((t, r[2], r[3], r[4], r[5], r[6], r[7], r[8], int(r[3].casefold() in H.kw_users)))
         s = {'tag': t, 'focus': int(t in focus), 'ced_map': 'specific' if t in spec_map else 'broad' if t in broad else 'none',
-             'teacher_usable': int(t in tcol), **{k: kept[k] for k in TIERS}, 'kept': sum(kept.values()),
-             'uploaders': len({o[2] for o in out if o[0] == t}), 'open_licence': sum(1 for o in out if o[0] == t and o[3] in ('CC0', 'BY4', 'BY3'))}
+             'teacher_usable': int(t in tcol), 'one_source': int(t in one_source), **{k: kept[k] for k in TIERS}, 'kept': sum(kept.values()),
+             'uploaders': len({o[2] for o in out if o[0] == t}), 'open_licence': sum(1 for o in out if o[0] == t and o[3] in ('CC0', 'BY4', 'BY3')),
+             'strict_kept': sum(1 for o in out if o[0] == t and not o[8])}
         s.update({f'dropped: {k}': v for k, v in why[t].items()})
         summ.append(s)
     with open(os.path.join(a.out, 'candidates.csv'), 'w', newline='') as fh:
-        w = csv.writer(fh); w.writerow(['tag', 'freesound_id', 'username', 'licence', 'seconds', 'tier', 'ced', 'teacher']); w.writerows(out)
+        w = csv.writer(fh); w.writerow(['tag', 'freesound_id', 'username', 'licence', 'seconds', 'tier', 'ced', 'teacher', 'uploader_heldout_other_tag']); w.writerows(out)
     cols = []
     for s in summ:
         for k in s:

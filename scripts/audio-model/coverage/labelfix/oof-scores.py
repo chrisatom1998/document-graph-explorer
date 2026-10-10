@@ -56,6 +56,8 @@ def main():
     ap.add_argument('feat'); ap.add_argument('audit'); ap.add_argument('out')
     ap.add_argument('--epochs', type=int, default=40); ap.add_argument('--folds', type=int, default=5); ap.add_argument('--min-pos', type=int, default=15)
     ap.add_argument('--threads', type=int, default=os.cpu_count())
+    ap.add_argument('--fold', type=int, help='fit only this fold and save <out>.fold<k>.pt (run the folds in parallel, then --merge)')
+    ap.add_argument('--merge', action='store_true', help='assemble the saved folds instead of fitting')
     a = ap.parse_args()
     torch.set_num_threads(a.threads)
     man = rows(a.feat, a.audit)
@@ -86,6 +88,10 @@ def main():
     Xt, Yt = torch.from_numpy(X), torch.from_numpy(Y)
     S = np.zeros_like(Y); states = []
     for k in range(a.folds):   # fit-teacher.py's loop, unchanged
+        part = f'{a.out}.fold{k}.pt'
+        if a.merge:
+            d = torch.load(part, weights_only=False); S[d['va']] = d['s']; states.append(d['state']); continue
+        if a.fold is not None and k != a.fold: continue
         torch.manual_seed(k)
         tr, va = np.where(fold != k)[0], np.where(fold == k)[0]
         pos = Y[tr].sum(0)
@@ -107,7 +113,10 @@ def main():
         with torch.no_grad():
             S[va] = torch.sigmoid(model(Xt[va])).numpy()
         states.append(model.state_dict())
+        torch.save({'va': va, 's': S[va], 'state': model.state_dict()}, part)
         print(f'fold {k} done, loss {tot / len(tr):.4f}', flush=True)
+    if len(states) < a.folds:
+        return
     thr, rep = {}, {}
     for t, i in ix.items():
         r = ft.pick(S[:, i], Y[:, i] > 0)

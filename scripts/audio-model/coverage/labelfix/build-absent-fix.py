@@ -20,6 +20,10 @@ Rules per tag (teacher vocabulary only; the threshold thr is the frozen out-of-f
         mapping (ced-tag-map.json) CED-base must agree (best mapped class >= CED_MIN on the same clip); a Freesound clip
         whose uploader is held out for that tag is skipped (heldout.py); at most ADD_CAP x the tag's current positives,
         best scores first. An added positive is not also dropped.
+  both  never on a clip whose own tags name a look-alike sibling of the tag (prepare-run9.py LOOKALIKES + round12.json): a
+        clip labelled oboe keeps "not clarinet", since the teacher's score there is look-alike confusion, not a missed label;
+        and, outside Freesound, never on a clip labelled with another single instrument (INSTRUMENTS); never on an item whose
+        Freesound id is in any held-out list (heldout.py).
 Writes <out dir>/absent-fix.json (train.py --absent-fix), per-tag.csv, changes.csv (item, tag, action, score; private) and
 hp-cutoffs.json (each tag's ADD_P cutoff, for mining/mine-mirror.py --hp).
 """
@@ -45,6 +49,14 @@ oofm = mod('oofm', os.path.join(HERE, 'oof-scores.py'))
 R12 = json.load(open(os.path.join(AM, 'round12', 'round12.json')))
 DROP_Q, ADD_Q, ADD_P, ADD_CAP, CED_MIN = (float(os.environ.get(k, v)) for k, v in
                                           (('DROP_Q', '0.3'), ('ADD_Q', '0.5'), ('ADD_P', '0.9'), ('ADD_CAP', '0.5'), ('CED_MIN', '0.3')))
+
+
+# Single-instrument tags. Outside Freesound (sample packs, Philharmonia, NSynth, VSCO, IRMAS...) a file names the one instrument
+# it holds, so a clip labelled cello keeps "not clarinet" / "not string synth" even when the teacher confuses the two.
+INSTRUMENTS = {'clarinet', 'oboe', 'flute', 'bassoon', 'saxophone', 'cello', 'viola', 'violin / fiddle', 'double bass', 'trumpet',
+               'trombone', 'tuba', 'horn', 'harp', 'piano', 'electric piano', 'organ', 'accordion', 'acoustic guitar', 'electric guitar',
+               'bass guitar', 'mandolin', 'banjo', 'sitar', 'ukulele', 'marimba', 'vibraphone', 'xylophone', 'glockenspiel',
+               'string synth', 'brass synth', 'harmonica', 'kalimba', 'steel drum'}
 
 
 def hp_cutoff(s, y, p_min, min_pos=10):
@@ -90,6 +102,10 @@ def main():
             if r.get('source') == 'freesound': users[r['id']] = r['creator']
     H = heldout.HeldOut(hcfg)
 
+    # Conservative: no change on an item whose Freesound id sits in any held-out list (run 9 re-split the keyword list by its
+    # own uploader rule, so some run 9 train clips are held-out rows of the keyword list; those keep their labels untouched).
+    held_item = np.array([(heldout.fs_id(it) or -1) in H._id for it in items])
+    print(f'{int(held_item.sum())} train items have an id in a held-out list; left unchanged', flush=True)
     ix = {t: j for j, t in enumerate(vocab)}
     Y = np.zeros_like(S, dtype=bool); W = np.zeros_like(S, dtype=bool)   # labelled present / weak absence
     for i in range(len(items)):
@@ -100,6 +116,13 @@ def main():
             if t in ix: Y[i, ix[t]] = True
         for t in weak:
             if t in ix: W[i, ix[t]] = True
+    siblings = defaultdict(set)
+    for g in p9.LOOKALIKES:
+        for t in g: siblings[t] |= set(g) - {t}
+    own_m = [set(o) | {merge[c] for c in o if c in merge} for o in own]
+    for i in range(len(items)):   # sample packs and datasets name the one instrument a file holds (see INSTRUMENTS)
+        if sources[i] != 'freesound' and own_m[i] & INSTRUMENTS: own_m[i] = own_m[i] | {'@instrument'}
+    for t in INSTRUMENTS: siblings[t] = siblings[t] | {'@instrument'}
     drop, add, rows, changes, hp = defaultdict(list), defaultdict(list), [], [], {}
     for t, j in ix.items():
         s = S[:, j]; v = val.get(t, {}); q = min(v.get('oof_p', 0), v.get('oof_r', 0))
@@ -109,13 +132,15 @@ def main():
         if hpc is not None: hp[t] = hpc
         cut = hpc if q >= ADD_Q else None
         nd = na = 0; why = Counter()
+        sib = np.array([bool(own_m[i] & siblings.get(t, set())) for i in range(len(items))]) | held_item   # sibling labelled / held-out id
         if th is not None and q >= DROP_Q:
-            cand = np.where(W[:, j] & (s >= th))[0]
+            cand = np.where(W[:, j] & (s >= th) & ~sib)[0]
+            why['drop skipped: sibling/instrument labelled or held-out id'] = int((W[:, j] & (s >= th) & sib).sum())
         else:
             cand = np.array([], int)
         adds = []
         if cut is not None:
-            for i in np.where(W[:, j] & (s >= cut))[0]:
+            for i in np.where(W[:, j] & (s >= cut) & ~sib)[0]:
                 if t in cmap and ced.get(items[i], {}).get(t, 0) < CED_MIN: why['CED disagrees'] += 1; continue
                 u = users.get(items[i])
                 if u is not None and H.why(heldout.fs_id(items[i]) or -1, u, t): why['held-out rule'] += 1; continue
@@ -133,7 +158,7 @@ def main():
                      'oof_p': v.get('oof_p', ''), 'oof_r': v.get('oof_r', ''), 'threshold': round(th, 4) if th is not None else '',
                      'absences_dropped': nd, 'positives_added': na, 'add_cutoff': round(cut, 4) if cut is not None else '',
                      'ced_mapped': int(t in cmap), 'add_skipped_ced': why['CED disagrees'], 'add_skipped_heldout': why['held-out rule'],
-                     'add_skipped_cap': why['cap']})
+                     'add_skipped_cap': why['cap'], 'drop_skipped_sibling': why['drop skipped: sibling/instrument labelled or held-out id']})
     for d in (drop, add):
         for k in d: d[k] = sorted(set(d[k]))
     meta = {'about': 'coverage idea #2: out-of-fold round 11 teacher (refit on run 9 + round 10 + empty-tags train clips); '
