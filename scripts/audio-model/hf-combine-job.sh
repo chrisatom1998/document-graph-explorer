@@ -15,7 +15,7 @@ git clone -q https://github.com/fschmid56/EfficientAT.git && git -C EfficientAT 
 export EFFICIENTAT=$W/EfficientAT
 S=$W/dge/scripts/audio-model
 # The held-out sets come from the training jobs' prep cache (same key as hf-job.sh with ALL_TAGS=1).
-KEY=$( (ls $S/prepare*.py | grep -v prepare-rawstems.py | xargs cat; cat $S/labelmap.py; echo "prep prepj holdout fsdprep nsprep fsprep xprep") | sha256sum | cut -c1-12)
+KEY=$( (ls $S/prepare*.py | grep -v -e prepare-rawstems.py -e prepare-iowa.py -e prepare-chrisdrive.py -e prepare-vcsl.py -e prepare-slakh-more.py -e prepare-sao.py -e prepare-fsnew.py -e prepare-run9.py -e prepare-round10.py | xargs cat; cat $S/labelmap.py; echo "prep prepj holdout fsdprep nsprep fsprep xprep") | sha256sum | cut -c1-12)
 python3 - "$KEY" $RUNS <<'PY'
 import os, sys
 from huggingface_hub import HfApi, snapshot_download
