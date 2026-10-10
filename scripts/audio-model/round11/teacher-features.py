@@ -167,9 +167,9 @@ def main():
     if count:
         files = files[:count]
     key = lambda f: f.replace("/", "__").rsplit(".", 1)[0] + ".npz"  # noqa: E731
-    if allow is not None:  # a partial shard gets its own name (hash of its ids), so a full or different-list run never takes it as done
+    if allow is not None:  # a partial shard gets its own name (hash of its ids), so a full, different-list or row-limited run never takes it as done
         full = key
-        key = lambda f: full(f)[:-4] + ".allow-" + hashlib.sha256(",".join(map(str, sorted(allow[f]))).encode()).hexdigest()[:8] + ".npz"  # noqa: E731
+        key = lambda f: full(f)[:-4] + ".allow-" + hashlib.sha256((",".join(map(str, sorted(allow[f]))) + (f"|max_rows={max_rows}" if max_rows else "")).encode()).hexdigest()[:8] + ".npz"  # noqa: E731
     todo = [f for f in files if not os.path.exists(os.path.join(out, key(f)))]
     print(f"{len(files)} inputs in slice, {len(todo)} to do", flush=True)
 
