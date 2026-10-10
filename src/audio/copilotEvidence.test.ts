@@ -59,3 +59,49 @@ it.each(['rejected','uncertain'] as const)('excludes %s DJ source confirmations 
  expect(sample.confirmedTags).toEqual(['vocal chops']);
  expect(sample.confirmedInstruments).toEqual([]);
 });
+
+describe('cached merged source evidence', () => {
+  const cached = (both = false): DocNode => ({ ...node, audio: {
+    version: 2, durationSeconds: 10, analyzedSeconds: 5, instruments: [], notes: [],
+    soundProfile: { version: 1, models: [], character: [], roles: [], disagreement: false,
+      djTags: [{ group: 'source', label: 'turntable', score: .63, model: 'Trained head' },
+        ...(both ? [{ group: 'production' as const, label: 'vinyl scratch', score: .94, model: 'Music CLAP' as const }] : [])] },
+  } });
+  it('sends only the surviving label, keeping the original score and cache untouched', () => {
+    const n = cached(), before = structuredClone(n.audio), evidence = copilotEvidence(n, 0)!;
+    expect(evidence.estimates).toEqual([{ label: 'vinyl scratch', score: .63 }]);
+    expect(evidence.confirmedTags).toBeNull();
+    expect(parseCopilotSamples([evidence])[0]).toEqual(evidence);
+    expect(n.audio).toEqual(before);
+  });
+  it('deduplicates aliases using detector provenance rather than a larger untested score', () => {
+    expect(copilotEvidence(cached(true), 0)!.estimates).toEqual([{ label: 'vinyl scratch', score: .63 }]);
+    const reversed = cached(true);
+    reversed.audio!.soundProfile!.djTags!.reverse();
+    expect(copilotEvidence(reversed, 0)!.estimates).toEqual([{ label: 'vinyl scratch', score: .63 }]);
+  });
+  it.each(['rejected', 'uncertain'] as const)('does not send a %s merged estimate', decision => {
+    for (const [dimension, labelId] of [['source', 'turntable'], ['effect', 'vinyl scratch']] as const) {
+      const n = cached(true);
+      n.audio!.soundReviews = [{ dimension, labelId, decision, scope: 'track', at: '2026-10-10T12:00:00Z', evidenceRunId: 'old' }];
+      expect(copilotEvidence(n, 0)!.estimates).toEqual([]);
+    }
+  });
+  it('does not duplicate a legacy source confirmation under the old source name', () => {
+    const n = cached(true);
+    n.audio!.soundReviews = [{ dimension: 'source', labelId: 'turntable', decision: 'confirmed', scope: 'track', at: '2026-10-10T12:00:00Z', evidenceRunId: 'old' }];
+    const evidence = copilotEvidence(n, 0)!;
+    expect(evidence.confirmedTags).toEqual(['vinyl scratch']);
+    expect(evidence.confirmedInstruments).toEqual([]);
+    expect(evidence.estimates).toEqual([]);
+  });
+  it('keeps a target-group confirmation separate from stale merged model estimates', () => {
+    const n = cached(true);
+    n.audio!.soundReviews = [{ dimension: 'effect', labelId: 'vinyl scratch', decision: 'confirmed', scope: 'track', at: '2026-10-10T12:00:00Z', evidenceRunId: 'old' }];
+    expect(copilotEvidence(n, 0)!.confirmedTags).toEqual(['vinyl scratch']);
+    expect(copilotEvidence(n, 0)!.estimates).toEqual([]);
+    n.audio!.soundReviews = undefined;
+    n.audio!.confirmedDjTags = { source: [], production: [], character: [] };
+    expect(copilotEvidence(n, 0)!.estimates).toEqual([]);
+  });
+});

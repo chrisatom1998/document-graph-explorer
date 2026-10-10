@@ -182,7 +182,11 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   // a recording-wide negative would claim the tagger listened to audio it never received.
   // An 'agree' rule (long recordings) also needs the existing detectors to show the tag: they are asked without the tagger.
   const tagKeys=(tag:TaggerTag)=>[...tag.decides.map(label=>({dimension:tag.dimension,label})),...(tag.alsoDecides??[])]
-    .map(({dimension,label})=>`${dimension}:${canonical(dimension,label)}`);
+    .flatMap(({dimension,label})=>{
+      const name=canonical(dimension,label),group=GROUP_OF[dimension],merged=group?mergedDjLabel(group,name):undefined;
+      // Replacement applies to the stored identity and its surviving display identity before the final fold.
+      return [`${dimension}:${name}`,...(merged?[`${DIMENSION_OF[merged.group]}:${merged.label}`]:[])];
+    });
   let detectors:Set<string>|undefined;
   const detectorsShow=(tag:TaggerTag)=>{
     detectors??=new Set(confidentSoundSummary({...audio,tagger:undefined},fusionMode).map(s=>`${s.dimension}:${s.label}`));

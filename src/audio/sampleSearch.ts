@@ -1,6 +1,6 @@
 import { djReviewAllows, resolvedNonSourceLabels } from './soundReviewPolicy';
 import type { DocNode } from '../model/types';
-import { DJ_CATALOG, MERGED_DJ_LABELS } from './djTags';
+import { DJ_CATALOG, MERGED_DJ_LABELS, mergedDjLabel } from './djTags';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { keyName, type MusicAnalysis } from './musicTypes';
 import { energyFromScore, genreFromScores, genreFamily, genreText } from './genreEnergy';
@@ -38,7 +38,7 @@ export function sampleLabels(node: DocNode): Evidence[] {
   if (!a) return [];
   const confirmedInstruments = confirmedInstrumentList(a);
   const tags: Evidence[] = resolvedNonSourceLabels(a, true).map(({label,source})=>({label,source}));
-  if (a.confirmedDjTags === undefined && confirmedInstruments === undefined) tags.push(...(a.soundProfile?.djTags ?? []).filter(t=>t.group==='source'&&sourceReviewAllows(a,t.label)).map(t=>({label:t.label,source:'estimated' as const})));
+  if (a.confirmedDjTags === undefined && confirmedInstruments === undefined) tags.push(...(a.soundProfile?.djTags ?? []).filter(t=>t.group==='source'&&mergedDjLabel(t.group,t.label).group==='source'&&sourceReviewAllows(a,t.label)).map(t=>({label:t.label,source:'estimated' as const})));
   // Confirmed DJ labels supersede inconsistent automatic instrument names too.
   if (confirmedInstruments !== undefined) tags.push(...confirmedInstruments.map(label => ({ label, source: 'confirmed' as const })));
   else if (a.confirmedDjTags === undefined) tags.push(...reliableInstruments(a).map(t => ({ label: t.label, source: 'estimated' as const })));
@@ -47,7 +47,14 @@ export function sampleLabels(node: DocNode): Evidence[] {
     tags.push(...proposed.source.filter(label=>sourceReviewAllows(a,label))
       .map(label => ({ label, source: 'suggested' as const })));
   }
-  return tags;
+  // Merged names count once for retrieval/similarity, retaining the strongest provenance.
+  const unique = new Map<string,Evidence>();
+  const priority = { suggested: 0, estimated: 1, confirmed: 2 };
+  for (const tag of tags) {
+    const label = MERGED.get(tag.label) ?? tag.label, previous = unique.get(label);
+    if (!previous || priority[tag.source] > priority[previous.source]) unique.set(label,{...tag,label});
+  }
+  return [...unique.values()];
 }
 export interface SampleMatch { node: DocNode; reasons: string[]; score: number }
 export function searchSamples(nodes: DocNode[], query: SampleQuery, referenceId?: string): SampleMatch[] {

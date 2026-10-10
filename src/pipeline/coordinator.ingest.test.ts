@@ -1,3 +1,4 @@
+import { confidentSoundSummary } from '../audio/confidentSoundSummary';
 import { handleMusic } from '../workers/aggregatorHandlers';
 import { cancelMusicJob, cancelAllMusicJobs, useMusicJobs } from '../store/musicJobs';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, sanitizeMusicAnalysis } from '../audio/musicTypes';
@@ -1113,6 +1114,25 @@ describe('WAV music ingestion', () => {
     await setAudioDjTags(node.id, { source: [], production: ['vinyl scratch'], character: [] });
     expect(current().soundReviews).toEqual(history);
     expect(latestSoundReview(current().soundReviews, 'effect', 'vinyl scratch')?.decision).toBe('confirmed');
+  });
+  it.each(['confirmed', 'rejected', 'uncertain'] as const)('reconciles historical turntable %s reviews when vinyl scratch is selected and cleared', async decision => {
+    await ingestFiles([wav('turntable-reconcile.wav')]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    useGraphStore.getState().patchNodes(new Map([[node.id, { audio: { ...node.audio!, recognition: createRecognition(node.audio!.durationSeconds, 'full') } }]]));
+    await setAudioReview(node.id, 'turntable', 'source', decision);
+    const current = () => useGraphStore.getState().nodes.find(n => n.id === node.id)!.audio!;
+    const original = current().soundReviews![0];
+    await setAudioDjTags(node.id, { source: [], production: ['vinyl scratch'], character: [] });
+    expect(latestSoundReview(current().soundReviews, 'effect', 'vinyl scratch')?.decision).toBe('confirmed');
+    expect(confidentSoundSummary(current()).map(s => s.label)).toContain('vinyl scratch');
+    expect(current().soundReviews![0]).toEqual(original);
+    await setAudioDjTags(node.id, { source: [], production: [], character: [] });
+    expect(latestSoundReview(current().soundReviews, 'effect', 'vinyl scratch')?.decision).toBe('rejected');
+    expect(confidentSoundSummary(current()).map(s => s.label)).not.toContain('vinyl scratch');
+    const history = current().soundReviews;
+    await setAudioDjTags(node.id, { source: [], production: [], character: [] });
+    expect(current().soundReviews).toEqual(history);
+    expect(confidentSoundSummary(sanitizeMusicAnalysis(current())!).map(s => s.label)).not.toContain('vinyl scratch');
   });
   it('refuses a character correction atomically when reconciliation would exceed the review history limit', async () => {
     await ingestFiles([wav('character-review-limit.wav')]);
