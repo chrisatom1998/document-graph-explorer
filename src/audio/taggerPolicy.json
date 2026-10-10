@@ -156,7 +156,7 @@
    "decides": [
     "percussion"
    ],
-   "tested": false,
+   "tested": true,
    "long": {
     "rule": "detectors"
    }
@@ -182,7 +182,7 @@
    "decides": [
     "glockenspiel"
    ],
-   "tested": false,
+   "tested": true,
    "long": {
     "rule": "detectors"
    }
@@ -195,7 +195,7 @@
    "decides": [
     "whistle"
    ],
-   "tested": false,
+   "tested": true,
    "long": {
     "rule": "detectors"
    }
@@ -334,7 +334,7 @@
      "label": "tambourine"
     }
    ],
-   "tested": false,
+   "tested": true,
    "long": {
     "rule": "detectors"
    }
@@ -347,7 +347,7 @@
    "decides": [
     "vocal scream"
    ],
-   "tested": false,
+   "tested": true,
    "long": {
     "rule": "detectors"
    }
