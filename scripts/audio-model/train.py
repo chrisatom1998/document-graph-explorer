@@ -115,13 +115,13 @@ def main():
     ap.add_argument('--repeat', default='', help='name=k,...: times each training window of that source is seen per epoch (e.g. iowa=2,chrisdrive=4)')
     ap.add_argument('--merge', help="round 12: JSON whose 'merge' maps a merged-away tag to the tag it is shown as (round12/round12.json)")
     ap.add_argument('--soft', help="round 11 teacher soft labels (round11/build-soft.py JSON: {'items': {id: {tag: p}}})")
-    ap.add_argument('--absent-fix', help="coverage #2: JSON {'drop': {id: [tag]}, 'add': {id: [tag]}} (coverage/labelfix/build-absent-fix.py); "
+    ap.add_argument('--absent-fix', help="coverage #2: JSON {'drop': {id: [tag]}, 'add': {id: [tag]}, 'absent': {id: [tag]}} (coverage/labelfix/build-absent-fix.py, coverage/merge-absent.py); "
                     'drop sets a likely-present weak absence to weight 0, add makes it a full-weight positive. Default off')
     args = ap.parse_args()
     if args.merge:
         MERGE.update(json.load(open(args.merge)).get('merge', {})); print(f'merged tags: {MERGE or "none"}', flush=True)
     if args.absent_fix:
-        nd, na = absent_fix.load(args.absent_fix); print(f'absent fix: weak absences dropped on {nd} items, positives added on {na} items', flush=True)
+        nd, na = absent_fix.load(args.absent_fix); print(f'absent fix: weak absences dropped on {nd} items, positives added on {na} items, sure absences on {len(absent_fix.FIX["absent"])} items', flush=True)
     if args.soft:
         SOFT.update(json.load(open(args.soft))['items']); print(f'teacher soft labels for {len(SOFT)} items', flush=True)
     dev = torch.device(args.device)

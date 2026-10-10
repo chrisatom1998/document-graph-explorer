@@ -27,9 +27,19 @@ class AbsentFixTests(unittest.TestCase):
         self.assertEqual(labels['cat:mandolin'], 0.0)   # the inputs are only read
         self.assertEqual(weak, {'cat:mandolin', 'cat:banjo', 'cat:bongo'})
 
+    def test_sure_absent_wins(self):
+        json.dump({'add': {'a': ['bongo']}, 'drop': {'a': ['conga']}, 'absent': {'a': ['bongo', 'conga', 'guitar']}}, open(self.path, 'w'))
+        self.fix.load(self.path)
+        labels = {'cat:guitar': 1.0, 'cat:bongo': 0.0, 'cat:conga': 0.0}
+        out = self.fix.edits('a', labels, {'cat:bongo', 'cat:conga'})
+        self.assertEqual(out, {'cat:bongo': (0.0, 1.0), 'cat:conga': (0.0, 1.0)})   # the clip's own guitar stays present
+        json.dump({'absent': {'a': ['oboe']}, 'add': {'a': ['oboe']}}, open(self.path, 'w'))
+        self.fix.load(self.path)
+        self.assertEqual(self.fix.edits('a', {}, set()), {'cat:oboe': (0.0, 1.0)})   # unscored tag: only a sure absence fills it
+
     def test_unlisted_item_and_off_by_default(self):
         self.assertEqual(self.fix.edits('zzz', {'cat:oboe': 0.0}, {'cat:oboe'}), {})
-        self.fix.FIX.update(drop={}, add={})
+        self.fix.FIX.update(drop={}, add={}, absent={})
         self.assertEqual(self.fix.edits('b', {'cat:oboe': 0.0}, {'cat:oboe'}), {})
 
 
