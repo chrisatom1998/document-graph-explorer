@@ -28,9 +28,11 @@ export function resolvedNonSourceLabels(analysis: MusicAnalysis, includeSuggesti
   const priority = { suggested: 0, estimated: 1, confirmed: 2 };
   const evidence = new Map<string,DjTag>();
   const add = (rawGroup: DjGroup, raw: string, source: ResolvedDjLabel['source'], score?: number, model?: DjTag['model']) => {
-    // Route old cached labels before choosing their consumer policy; turntable is now an effect.
+    // Route old cached labels before choosing their consumer policy; turntable is now an effect and vocal harmony is
+    // choir. A non-source label merged into a source (vocal breath) keeps its group here; source consumers own it.
     const canonical = canonicalDjLabel(rawGroup, raw) ?? raw;
-    const {group,label} = rawGroup === 'source' ? mergedDjLabel(rawGroup, canonical) : {group:rawGroup,label:canonical};
+    const merged = mergedDjLabel(rawGroup, canonical);
+    const {group,label} = rawGroup === 'source' || merged.group !== 'source' ? merged : {group:rawGroup,label:canonical};
     if (group === 'source') return;
     const dimension = djReviewDimension(group, label);
     const review = dimension && latestSoundReview(analysis.soundReviews, dimension, label);

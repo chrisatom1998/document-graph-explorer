@@ -66,3 +66,10 @@ it('projects explicit merged source confirmations but preserves unrelated shared
   const a = audio([review('source', 'turntable', 'confirmed'), review('source', 'cymbals', 'confirmed')]);
   expect(resolvedNonSourceLabels(a)).toEqual([{ group: 'production', label: 'vinyl scratch', source: 'confirmed' }]);
 });
+
+it('projects merged production labels under their surviving name', () => {
+  const a = audio([review('effect', 'vocal harmony', 'confirmed')]);
+  a.soundProfile!.djTags = [{ group: 'production', label: 'choir', score: .7, model: 'Trained head' }];
+  a.copilotProperties = { model: 'draft', tags: { source: [], production: ['harmony vocals', 'choir'], character: [] } };
+  expect(resolvedNonSourceLabels(a, true)).toEqual([{ group: 'production', label: 'choir', source: 'confirmed' }]);
+});
