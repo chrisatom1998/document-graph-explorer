@@ -2,7 +2,8 @@
   "runs": [
     "all-tags",
     "all-tags-run5",
-    "all-tags-run7"
+    "all-tags-run7",
+    "all-tags-run8"
   ],
   "only": {
     "all-tags-run7": [
@@ -12,6 +13,11 @@
       "cat:tambourine",
       "cat:vocal scream",
       "synthesizer"
+    ],
+    "all-tags-run8": [
+      "cat:fm synth",
+      "cat:glockenspiel",
+      "cat:whistle"
     ]
   },
   "keep": "drums",
@@ -19,5 +25,5 @@
   "license": "cc-by-nc-sa-4.0",
   "flavor": "cpu-xl",
   "timeout": "4h",
-  "attempt": 4
+  "attempt": 5
 }
