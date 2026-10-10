@@ -105,3 +105,10 @@ describe('cached merged source evidence', () => {
     expect(copilotEvidence(n, 0)!.estimates).toEqual([]);
   });
 });
+
+it('sends a cached production estimate under its merged name', () => {
+  const n: DocNode = { ...node, audio: { version: 2, durationSeconds: 10, analyzedSeconds: 5, instruments: [], notes: [],
+    soundProfile: { version: 1, models: [], character: [], roles: [], disagreement: false,
+      djTags: [{ group: 'production', label: 'vocal harmony', score: .6, model: 'Trained head' }] } } };
+  expect(copilotEvidence(n, 0)!.estimates).toEqual([{ label: 'choir', score: .6 }]);
+});
