@@ -31,7 +31,7 @@ ONLY_ARGS=()
 if [ -n "${ONLY:-}" ]; then IFS=';' read -ra ONLY_PARTS <<< "$ONLY"; for o in "${ONLY_PARTS[@]}"; do ONLY_ARGS+=(--only "$o"); done; fi
 python3 $S/combine.py out $W/dge/src/audio/taggerPolicy.json $(for r in $RUNS; do echo runs/$r; done) --keep "${KEEP:-}" "${ONLY_ARGS[@]}" | tee out/combine.txt
 python3 $S/evaluate.py out/model.onnx out/thresholds.json out/eval.json $C/prep/eval-round1 $C/prep/eval-round2 $C/holdout/holdout-r3 \
-  $C/fsdprep/eval-fsd50k $C/nsprep/eval-nsynth-test $C/nsprep/eval-nsynth-test-fx $C/fsprep/eval-freesound > out/eval.txt
+  $C/fsdprep/eval-fsd50k $C/nsprep/eval-nsynth-test $C/nsprep/eval-nsynth-test-fx $C/fsprep/eval-freesound | tee out/eval.txt
 mkdir -p pub/onnx && mv out/model.onnx out/model.json pub/onnx/ && cp out/thresholds.json out/picks.json out/eval.json out/eval.txt out/combine.txt pub/
 python3 $S/parity.py pub/onnx/model.onnx pub/parity.json
 python3 - <<'PY'
