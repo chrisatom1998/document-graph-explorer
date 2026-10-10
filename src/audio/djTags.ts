@@ -29,6 +29,16 @@ export const mergedDjLabel = (group: DjGroup, label: string): { group: DjGroup; 
 /** Labels people can pick: the catalog minus the merged names. */
 const pickable = (group: DjGroup) => DJ_LABELS[group].filter(label => !MERGED_DJ_LABELS[`${group}:${label}`]);
 export const DJ_PICKER_LABELS: Record<DjGroup, readonly string[]> = { source: pickable('source'), production: pickable('production'), character: pickable('character') };
+/** Tags DJs and mixers rarely browse by (orchestral and folk detail, feel and music-theory words, vague catch-alls and
+ * mixer-only effects; Chris, 2026-10-10, reports/dj-tag-review-2026-10-10). They still run, show on clips and can be
+ * found by searching the picker; they just aren't listed until searched for. */
+export const DJ_HIDDEN_LABELS: ReadonlySet<string> = new Set([
+  ...['bassoon', 'oboe', 'clarinet', 'tuba', 'trombone', 'cello', 'double bass', 'banjo', 'mandolin', 'sitar', 'jaw harp',
+    'singing bowl', 'waterphone', 'kalimba', 'sound effect', 'environmental sound'].map(l => `source:${l}`),
+  ...['percussion hit', 'foley hit'].map(l => `production:${l}`),
+  ...['sustained', 'staccato', 'syncopated', 'rhythmic', 'rolling', 'gliding', 'rising', 'plucked', 'percussive', 'pulsing',
+    'swelling', 'wobbling', 'flanged', 'chorused'].map(l => `character:${l}`),
+]);
 export interface DjTag { group: DjGroup; label: string; score: number; model?: 'AudioSet AST' | 'MTG-Jamendo' | 'Music CLAP' | 'Reviewed examples' | 'Trained head' | 'Trained head (maybe)'; segments?: { start: number; end: number }[]; windowEvidence?: NativeWindowEvidence }
 export const DJ_TYPE_SOURCE: Record<string, string> = Object.fromEntries(
   DJ_CATALOG.filter(c => c.group === 'production' && c.source).map(c => [c.label, c.source!]),
