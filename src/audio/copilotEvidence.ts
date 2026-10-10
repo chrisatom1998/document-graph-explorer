@@ -3,7 +3,7 @@ import { resolvedNonSourceLabels } from './soundReviewPolicy';
 import type { DocNode } from '../model/types';
 import { sanitizeMusicAnalysis, keyName } from './musicTypes';
 import { musicNameHints } from './nameHints';
-import { DJ_CATALOG } from './djTags';
+import { DJ_CATALOG, mergedDjLabel } from './djTags';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { confirmedInstrumentList } from './instrumentEvidence';
 
@@ -31,13 +31,14 @@ export function copilotEvidence(node: DocNode, index: number): CopilotSample | n
   const hints = musicNameHints(node);
   const nonSource = resolvedNonSourceLabels(a);
   const confirmed = nonSource.filter(t=>t.source==='confirmed').map(t=>t.label);
+  const instruments = confirmedInstrumentList(a)?.filter(label=>mergedDjLabel('source',label).group==='source');
   return {
     ref: `Sample ${index + 1}`, durationSeconds: a.durationSeconds, analyzedSeconds: a.analyzedSeconds,
     preview: a.stage === 'preview', tempo: a.tempo ? { bpm: a.tempo.bpm, confidence: a.tempo.confidence } : null,
     key: a.key ? { name: keyName(a.key), strength: a.key.strength } : null,
-    confirmedTags: a.confirmedDjTags === undefined && !confirmed.length ? null : [...(confirmedInstrumentList(a)??[]),...confirmed],
-    confirmedInstruments: confirmedInstrumentList(a) ?? null,
-    estimates: [...(a.soundProfile?.djTags ?? []).filter(t=>t.group==='source'), ...a.instruments, ...nonSource.filter((t): t is typeof t & {score:number}=>t.source==='estimated'&&t.score!==undefined)].filter(t => labels.has(t.label)).slice(0, 30).map(t => ({ label: t.label, score: t.score })),
+    confirmedTags: a.confirmedDjTags === undefined && !confirmed.length ? null : [...(instruments??[]),...confirmed],
+    confirmedInstruments: instruments ?? null,
+    estimates: [...(a.soundProfile?.djTags ?? []).filter(t=>t.group==='source'&&mergedDjLabel(t.group,t.label).group==='source'), ...a.instruments, ...nonSource.filter((t): t is typeof t & {score:number}=>t.source==='estimated'&&t.score!==undefined)].filter(t => labels.has(t.label)).slice(0, 30).map(t => ({ label: t.label, score: t.score })),
     filenameHints: { bpm: hints.tempo?.value ?? null, key: hints.key?.displayName ?? null },
   };
 }

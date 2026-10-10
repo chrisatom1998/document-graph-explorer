@@ -249,3 +249,29 @@ describe('cymbal aliases across source and effect dimensions', () => {
     expect(shown(a)).toEqual([]);
   });
 });
+
+
+describe('merged turntable and vinyl scratch tagger coverage', () => {
+  it('suppresses the surviving effect when the tagger rejects its merged source', () => {
+    const a = native(audio(10, [{start:0,end:10}], 1), 'vinyl scratch');
+    a.tagger!.scores['cat:turntable'] = 0;
+    expect(shown(a)).not.toContain('effect:vinyl scratch');
+  });
+  it('uses only the tagger score for a covered positive merged identity', () => {
+    const a = native(audio(10, [{start:0,end:10}], 1), 'vinyl scratch');
+    a.tagger!.scores['cat:turntable'] = 1;
+    expect(confidentSoundSummary(a)).toMatchObject([{dimension:'effect',label:'vinyl scratch',scores:[{model:'Trained tagger score',score:1}]}]);
+    expect(confidentSoundSummary(a)).toHaveLength(1);
+  });
+  it('keeps native vinyl scratch outside tagger coverage', () => {
+    const a = native(audio(19.9, [{start:0,end:10}], 1), 'vinyl scratch', [{start:9.9,end:19.9}]);
+    a.tagger!.scores['cat:turntable'] = 0;
+    expect(shown(a)).toContain('effect:vinyl scratch');
+  });
+  it('keeps a surviving effect confirmation when the tagger rejects its old source', () => {
+    const a = native(audio(10, [{start:0,end:10}], 1), 'vinyl scratch');
+    a.tagger!.scores['cat:turntable'] = 0;
+    a.soundReviews = [{dimension:'effect',labelId:'vinyl scratch',decision:'confirmed',scope:'track',at:'now',evidenceRunId:'r'}];
+    expect(confidentSoundSummary(a)).toEqual([{dimension:'effect',label:'vinyl scratch',origin:'confirmed by you'}]);
+  });
+});

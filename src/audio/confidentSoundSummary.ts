@@ -14,7 +14,7 @@ import { isRuleDescribedLabel } from './timbreDescriptions';
 
 /** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
  * musicLinks), so a display change also changes which instrument links a track can form, by design. */
-export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v9';
+export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v10';
 /** The shipping bar (Chris, 2026-10-10): a detector shows as a normal tag when its held-out precision AND recall on clips and
  * samples are both at least this; below it, a useful detector shows as a faded "maybe". Full songs are a no-regression check
  * only. scripts/head-scorecard.py, scripts/dj-effects/ship.py and the tagger's `tested` flags use the same bar. */
@@ -182,7 +182,11 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   // a recording-wide negative would claim the tagger listened to audio it never received.
   // An 'agree' rule (long recordings) also needs the existing detectors to show the tag: they are asked without the tagger.
   const tagKeys=(tag:TaggerTag)=>[...tag.decides.map(label=>({dimension:tag.dimension,label})),...(tag.alsoDecides??[])]
-    .map(({dimension,label})=>`${dimension}:${canonical(dimension,label)}`);
+    .flatMap(({dimension,label})=>{
+      const name=canonical(dimension,label),group=GROUP_OF[dimension],merged=group?mergedDjLabel(group,name):undefined;
+      // Replacement applies to the stored identity and its surviving display identity before the final fold.
+      return [`${dimension}:${name}`,...(merged?[`${DIMENSION_OF[merged.group]}:${merged.label}`]:[])];
+    });
   let detectors:Set<string>|undefined;
   const detectorsShow=(tag:TaggerTag)=>{
     detectors??=new Set(confidentSoundSummary({...audio,tagger:undefined},fusionMode).map(s=>`${s.dimension}:${s.label}`));

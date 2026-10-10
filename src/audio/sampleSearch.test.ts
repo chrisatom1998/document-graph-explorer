@@ -111,3 +111,51 @@ it('finds a merged look-alike tag under its surviving name',()=>{
   const n=clip('stab',{confirmedDjTags:{source:[],production:['synth stab'],character:[]}});
   expect(searchSamples([n],{...empty,terms:['synth hit']})).toHaveLength(1);
 });
+
+describe('cached merged source tags', () => {
+  const profile = (both = false): NonNullable<DocNode['audio']>['soundProfile'] => ({
+    version: 1, models: [], character: [], roles: [], disagreement: false,
+    djTags: [{ group: 'source', label: 'turntable', score: .63, model: 'Trained head' },
+      ...(both ? [{ group: 'production' as const, label: 'vinyl scratch', score: .94, model: 'Music CLAP' as const }] : [])],
+  });
+  it('shows the surviving name in labels and search reasons without mutating cached evidence', () => {
+    const n = clip('cached', { soundProfile: profile() }), before = structuredClone(n.audio);
+    expect(sampleLabels(n)).toEqual([{ label: 'vinyl scratch', source: 'estimated' }]);
+    for (const term of ['turntable', 'vinyl scratch']) {
+      expect(searchSamples([n], { ...empty, terms: [term] })[0].reasons).toEqual(['Estimated from audio: vinyl scratch']);
+    }
+    expect(n.audio).toEqual(before);
+  });
+  it('counts merged source/effect aliases once when scoring similar samples', () => {
+    const reference = clip('reference', { soundProfile: profile() });
+    const n = clip('cached', { soundProfile: profile(true) });
+    expect(sampleLabels(n)).toEqual([{ label: 'vinyl scratch', source: 'estimated' }]);
+    const result = searchSamples([reference, n], { ...empty, similar: true }, reference.id);
+    expect(result[0].score).toBe(2);
+    expect(result[0].reasons).toEqual(['Shared labels: vinyl scratch (includes estimates)']);
+  });
+  it.each(['rejected', 'uncertain'] as const)('does not revive a %s merged label through either review dimension', decision => {
+    for (const [dimension, labelId] of [['source', 'turntable'], ['effect', 'vinyl scratch']] as const) {
+      const n = clip('turntable vinyl scratch.wav', { soundProfile: profile(true), soundReviews: [
+        { dimension, labelId, decision, scope: 'track', at: '2026-10-10T12:00:00Z', evidenceRunId: 'old' },
+      ] });
+      expect(sampleLabels(n)).toEqual([]);
+      for (const term of ['turntable', 'vinyl scratch']) expect(searchSamples([n], { ...empty, terms: [term] })).toEqual([]);
+    }
+  });
+  it('keeps confirmation and suggestion provenance under the surviving label', () => {
+    const confirmed = clip('confirmed', { soundProfile: profile(true), soundReviews: [
+      { dimension: 'source', labelId: 'turntable', decision: 'confirmed', scope: 'track', at: '2026-10-10T12:00:00Z', evidenceRunId: 'old' },
+    ] });
+    expect(sampleLabels(confirmed)).toEqual([{ label: 'vinyl scratch', source: 'confirmed' }]);
+    expect(searchSamples([confirmed], { ...empty, terms: ['vinyl scratch'], confirmedOnly: true })[0].reasons).toEqual(['Confirmed by you: vinyl scratch']);
+    const suggested = clip('suggested', { copilotProperties: { model: 'old', tags: { source: ['turntable'], production: ['vinyl scratch'], character: [] } } });
+    expect(sampleLabels(suggested)).toEqual([{ label: 'vinyl scratch', source: 'suggested' }]);
+  });
+  it('applies target-group corrections while leaving ordinary source snapshots independent', () => {
+    expect(sampleLabels(clip('cached', { soundProfile: profile(), confirmedDjTags: { source: [], production: [], character: [] } }))).toEqual([]);
+    expect(sampleLabels(clip('cached', { soundProfile: profile(), confirmedInstruments: ['piano'] }))).toEqual([
+      { label: 'vinyl scratch', source: 'estimated' }, { label: 'piano', source: 'confirmed' },
+    ]);
+  });
+});

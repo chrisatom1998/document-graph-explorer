@@ -46,3 +46,23 @@ it('accepts only declared cymbal review aliases beyond the existing recognition 
     review('vocal', 'cymbal', 'confirmed'), review('effect', 'invented cymbal', 'confirmed'),
   ])).toEqual([exact, { ...alias, labelId: 'cymbal' }, validSource]);
 });
+
+it('projects cached source labels into the surviving non-source group without changing raw evidence', () => {
+  const a = audio([]);
+  a.soundProfile!.djTags = [
+    { group: 'source', label: 'turntable', score: .63, model: 'Trained head' },
+    { group: 'production', label: 'vinyl scratch', score: .94, model: 'Music CLAP' },
+    { group: 'source', label: 'noise', score: .72, model: 'Trained head' },
+  ];
+  const before = structuredClone(a);
+  expect(resolvedNonSourceLabels(a)).toEqual([
+    { group: 'production', label: 'vinyl scratch', source: 'estimated', score: .63 },
+    { group: 'production', label: 'static noise', source: 'estimated', score: .72 },
+  ]);
+  expect(a).toEqual(before);
+});
+
+it('projects explicit merged source confirmations but preserves unrelated shared-alias dimensions', () => {
+  const a = audio([review('source', 'turntable', 'confirmed'), review('source', 'cymbals', 'confirmed')]);
+  expect(resolvedNonSourceLabels(a)).toEqual([{ group: 'production', label: 'vinyl scratch', source: 'confirmed' }]);
+});
