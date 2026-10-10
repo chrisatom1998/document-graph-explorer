@@ -8,6 +8,7 @@ on:
     inputs:
       runs: { description: 'folders of the private dge-instrument-tagger repo, the shipped run first', default: 'all-tags all-tags-run5' }
       keep: { description: 'tags that stay with the shipped run', default: 'drums' }
+      only: { description: 'optional RUN=TAG,TAG,...: that run may take only these tags (combine.py --only)', default: '' }
       public_repo: { description: 'public model repo to publish to (under the HF_TOKEN account)', default: 'dge-all-tags-tagger-nc' }
       license: { description: 'licence of the published weights (cc-by-nc-sa-4.0 when a run used Mixing Secrets)', default: 'cc-by-nc-sa-4.0' }
       flavor: { default: 'cpu-upgrade' }
@@ -31,6 +32,7 @@ jobs:
           # Dispatch inputs reach the script as variables, never as script text.
           IN_RUNS: '${{ inputs.runs }}'
           IN_KEEP: '${{ inputs.keep }}'
+          IN_ONLY: '${{ inputs.only }}'
           IN_REPO: '${{ inputs.public_repo }}'
           IN_LICENSE: '${{ inputs.license }}'
           IN_FLAVOR: '${{ inputs.flavor }}'
@@ -40,9 +42,10 @@ jobs:
           if [ "${{ github.event_name }}" = push ]; then
             read RUNS KEEP REPO LICENSE FLAVOR TIMEOUT < <(python3 -c "import json; r = json.load(open('scripts/audio-model/combine-request.json')); print(' '.join([','.join(r['runs']), r.get('keep', 'drums'), r.get('public_repo', 'dge-all-tags-tagger'), r.get('license', 'mit'), r.get('flavor', 'cpu-upgrade'), r.get('timeout', '2h')]))")
             RUNS=${RUNS//,/ }
+            ONLY=$(python3 -c "import json; print(json.load(open('scripts/audio-model/combine-request.json')).get('only', ''))")   # tag names hold spaces
           else
-            RUNS="$IN_RUNS"; KEEP="$IN_KEEP"; REPO="$IN_REPO"; LICENSE="$IN_LICENSE"; FLAVOR="$IN_FLAVOR"; TIMEOUT="$IN_TIMEOUT"
+            RUNS="$IN_RUNS"; KEEP="$IN_KEEP"; ONLY="$IN_ONLY"; REPO="$IN_REPO"; LICENSE="$IN_LICENSE"; FLAVOR="$IN_FLAVOR"; TIMEOUT="$IN_TIMEOUT"
           fi
           USER=$(python3 -c "from huggingface_hub import whoami; print(whoami()['name'])")
           python3 scripts/audio-model/hf-launch.py "$FLAVOR" "$TIMEOUT" REPO_SHA=${{ github.sha }} JOB_SCRIPT=hf-combine-job.sh JOB_NAME=dge-tagger-combine \
-            "RUNS=$RUNS" "KEEP=$KEEP" "PUBLIC_REPO=$USER/$REPO" "LICENSE=$LICENSE"
+            "RUNS=$RUNS" "KEEP=$KEEP" "ONLY=$ONLY" "PUBLIC_REPO=$USER/$REPO" "LICENSE=$LICENSE"
