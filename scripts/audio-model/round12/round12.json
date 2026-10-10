@@ -1,5 +1,5 @@
 {
-  "about": "Round 12 (reports/round12-plan-2026-10-10 in the project folder). Read by hf-job.sh when ROUND12=1. oversample: tags whose positive windows train.py sees RARE_REPEAT times per epoch (--rare-tags); tags with 2,500+ training clips are left out on purpose. lookalikes: extra look-alike groups for prepare-run9.py (a Freesound train clip naming exactly one member is a full-weight absence for the others; never put a parent and its child in one group). merge: child -> parent, applied by train.py --merge (a clip with the child present also counts the parent present); empty until Chris approves the merge list.",
+  "about": "Round 12 (reports/round12-plan-2026-10-10 in the project folder). Read by hf-job.sh when ROUND12=1. oversample: tags whose positive windows train.py sees RARE_REPEAT times per epoch (--rare-tags); tags with 2,500+ training clips are left out on purpose. lookalikes: extra look-alike groups for prepare-run9.py (a Freesound train clip naming exactly one member is a full-weight absence for the others; never put a parent and its child in one group). merge: child -> parent, applied by train.py --merge (a clip with the child present also counts the parent present); Chris approved the 8 merges and 6 hides on 2026-10-10, 6:31 am Pacific.",
   "oversample": [
     "crash cymbal", "hi-hat loop", "drum fill", "glockenspiel", "acid synth", "tuned percussion", "whoosh", "vocal gasp",
     "chiptune synth", "breath", "choir", "clap", "shaker", "trombone", "djembe", "flute",
@@ -22,7 +22,10 @@
     ["drum fill", "snare roll", "breakbeat"],
     ["hi-hat", "shaker", "tambourine"]
   ],
-  "merge": {},
+  "merge": {
+    "chops": "vocal chops", "foghorn bass": "synth bass", "stutter effect": "glitch effect", "record stop": "turntable",
+    "foley hit": "foley", "percussion hit": "percussion", "closed hi-hat": "hi-hat", "vocal-like synth": "vocoder vocal"
+  },
   "merge_proposed": {
     "chops": "vocal chops", "foghorn bass": "synth bass", "stutter effect": "glitch effect", "record stop": "turntable",
     "foley hit": "foley", "percussion hit": "percussion", "closed hi-hat": "hi-hat", "vocal-like synth": "vocoder vocal"
