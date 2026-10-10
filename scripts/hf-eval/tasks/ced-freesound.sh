@@ -3,6 +3,9 @@
 # so the "Raise sound tag accuracy" thread can pick confident extra training clips for weak tags. GPU flavor (l4x1).
 # Each part takes every PARTS-th parquet shard; outputs one .npz per shard (ids, uploader, licence, length and the
 # 527 AudioSet probabilities, no audio). task_args: extra env, e.g. "COUNT=2" for a dry run, "STOP_AFTER_MIN=40".
+# collect: per tag in data/ced-tag-map.json, clips whose best mapped AudioSet score is >= 0.3 (best first, at most
+# 1,000) go to runs/<run key>/candidates.csv in the private dataset only; Freesound ids and uploaders stay out of the
+# public repo and the workflow artifact.
 set -euo pipefail
 case "$1" in
 run)
@@ -11,17 +14,6 @@ run)
   WORKERS=${WORKERS:-$CPUS} OUT=$OUT python3 "$HARNESS/scripts/hf-eval/ced-freesound.py" ;;
 collect)
   SHARDS=$2; R=$3; mkdir -p "$R"
-  pip install -q --break-system-packages numpy 2>/dev/null || pip install -q numpy
-  python3 - "$SHARDS" "$R" <<'PY'
-import glob, json, os, sys
-import numpy as np
-shards, r = sys.argv[1:3]
-files = sorted(glob.glob(f'{shards}/part-*/*.npz'))
-rows = sum(int(np.load(f, allow_pickle=False)['freesound_id'].shape[0]) for f in files)
-labels = glob.glob(f'{shards}/part-*/labels.txt')
-if labels: open(f'{r}/labels.txt', 'w').write(open(labels[0]).read())
-s = {'shards_done': len(files), 'shards_total': 1475, 'clips_scored': rows, 'run_key': os.environ.get('RUN_KEY', '')}
-json.dump(s, open(f'{r}/summary.json', 'w'), indent=1); print(s)
-PY
-  ;;
+  pip install -q --break-system-packages numpy huggingface_hub 2>/dev/null || pip install -q numpy huggingface_hub
+  python3 "$HARNESS/scripts/hf-eval/ced-freesound-collect.py" "$SHARDS" "$R" "$HARNESS/scripts/hf-eval/data/ced-tag-map.json" ;;
 esac

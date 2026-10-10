@@ -71,6 +71,7 @@ jobs:
           [ -f hf-job-ids ] && python3 -c "from huggingface_hub import cancel_job; [cancel_job(job_id=j) for j in open('hf-job-ids').read().split()]" || true
       - name: Collect
         id: collect
+        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
         run: |
           R=docs/evaluations/hf-eval/$TASK/$(echo "$APP_REF" | tr -c 'A-Za-z0-9._\n-' '-' | cut -c1-40)-${APP_SHA::7}-$GITHUB_RUN_ID
           echo "R=$R" >> "$GITHUB_ENV"; mkdir -p "$R"
