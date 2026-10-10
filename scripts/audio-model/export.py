@@ -48,19 +48,22 @@ class FrontEnd(nn.Module):
         return ((m + 1e-5).log() + 4.5) / 5.
 
 class Tagger(nn.Module):
-    def __init__(self, net):
-        super().__init__(); self.front = FrontEnd(); self.net = net
+    def __init__(self, net, n_classes):
+        super().__init__(); self.front = FrontEnd(); self.net = net; self.n_classes = n_classes
     def forward(self, samples32k):
         mel = self.front(samples32k)[:, :, :FRAMES].unsqueeze(1)
         logits, _ = self.net(mel)
-        return torch.sigmoid(logits.reshape(-1, len(CLASSES)))        # the net squeezes away a batch of one
+        return torch.sigmoid(logits.reshape(-1, self.n_classes))        # the net squeezes away a batch of one
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('weights'); ap.add_argument('out'); ap.add_argument('--model', default='mn10_as')
     args = ap.parse_args(); os.makedirs(args.out, exist_ok=True)
-    net = get_model(width_mult=WIDTH[args.model], pretrained_name=None, num_classes=len(CLASSES))
+    # A run trained on an extended class list (more tags than train.py's CLASSES) records its own list in log.json.
+    log = os.path.join(os.path.dirname(os.path.abspath(args.weights)), 'log.json')
+    classes = (json.load(open(log)).get('classes') if os.path.exists(log) else None) or CLASSES
+    net = get_model(width_mult=WIDTH[args.model], pretrained_name=None, num_classes=len(classes))
     net.load_state_dict(torch.load(args.weights, map_location='cpu')); net.eval()
-    tagger = Tagger(net).eval()
+    tagger = Tagger(net, len(classes)).eval()
     ref = AugmentMelSTFT(n_mels=MELS, sr=SR, win_length=WIN, hopsize=HOP, n_fft=N_FFT, freqm=0, timem=0, fmin=0, fmax=None).eval()
     g = torch.Generator().manual_seed(0)
     t = torch.arange(320000) / SR
@@ -75,10 +78,10 @@ def main():
                       dynamic_axes={'samples32k': {0: 'batch'}, 'scores': {0: 'batch'}}, dynamo=False)
     import onnxruntime as ort
     got = ort.InferenceSession(path, providers=['CPUExecutionProvider']).run(None, {'samples32k': probe.numpy()})[0]
-    assert got.shape == want.shape and ort.InferenceSession(path, providers=['CPUExecutionProvider']).run(None, {'samples32k': probe[:1].numpy()})[0].shape == (1, len(CLASSES))
+    assert got.shape == want.shape and ort.InferenceSession(path, providers=['CPUExecutionProvider']).run(None, {'samples32k': probe[:1].numpy()})[0].shape == (1, len(classes))
     err = float(np.abs(got - want).max()); assert err < 1e-3, f'ONNX differs from PyTorch by {err}'
     data = open(path, 'rb').read()
-    json.dump({'classes': CLASSES, 'input': {'name': 'samples32k', 'sampleRate': SR, 'samples': 320000, 'channels': 1},
+    json.dump({'classes': classes, 'input': {'name': 'samples32k', 'sampleRate': SR, 'samples': 320000, 'channels': 1},
                'output': {'name': 'scores', 'activation': 'sigmoid'}, 'base': f'EfficientAT {args.model} (AudioSet), MIT',
                'sha256': {'model.onnx': hashlib.sha256(data).hexdigest()}, 'bytes': len(data), 'maxAbsErrorVsPyTorch': err},
               open(os.path.join(args.out, 'model.json'), 'w'), indent=1)

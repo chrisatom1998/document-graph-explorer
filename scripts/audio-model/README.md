@@ -20,8 +20,9 @@ graph) that onnxruntime-web can run on 10 s windows of 32 kHz audio.
 `hf-launch.py`) with the `HF_TOKEN` repository secret, and uploads the run to that account's private
 `dge-instrument-tagger` model repo.
 
-The app runs a blend of runs 3 and 5 (each tag in `src/audio/taggerPolicy.json` from the run listed in
-`public/tagger-model/model.json`'s `outputRun`); see docs/evaluations/all-tags-blend-2026-10-09.
+The app runs a blend of runs 3, 5, 7 and 8 (each tag in `src/audio/taggerPolicy.json` from the run listed in
+`public/tagger-model/model.json`'s `outputRun`); see docs/evaluations/all-tags-blend-2026-10-09. Runs 7 and 8 each add only the tags they won on
+held-out real clips (`combine-request.json`'s `only`).
 
 FSD50K's supplemental app-tag labels are applied at load time, including coverage counts. Before comparing runs,
 `hf-combine-job.sh` re-exports each input and re-scores its FSD50K benchmark with the current label mapping and its
