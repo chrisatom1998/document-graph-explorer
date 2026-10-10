@@ -27,6 +27,7 @@
 # presets, effect pairs), extra NSynth bright / dark train notes (r13-nsynth-notes.py) and drops the listed training ids
 # (train.py --drop); MERGE_ONLY=1 applies round 12's merges without its oversampling or look-alikes.
 set -euo pipefail
+if [ "${ROUND12:-0}" = 1 ] && [ "${MERGE_ONLY:-0}" = 1 ]; then echo "stopping: MERGE_ONLY=1 is round 12's merges without its oversampling; it cannot be combined with ROUND12=1"; exit 1; fi
 START=$(date +%s)
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q && apt-get install -yq --no-install-recommends ffmpeg git ca-certificates curl > /dev/null
