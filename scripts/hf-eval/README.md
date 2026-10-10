@@ -23,6 +23,8 @@ Tasks:
   headless Chromium, several browsers per machine, scored like `all-tags-eval.yml`.
 - `dj-clips`: DJ clip rounds 1 and 2 (`task_args`: `r1` = OpenMIC tags + GiantSteps tempo, `r2` = OpenMIC + MTG key),
   scored with the rounds' own scorers.
+- `ced-freesound`: CED-base AudioSet scores for every clip of the Freesound mirror `benjamin-paine/freesound-laion-640k`
+  (GPU flavor `l4x1`; `task_args` `COUNT=2` for a dry run), used to pick extra training clips for weak tags.
 - `genre-energy`: genre/energy features for one list (`task_args`: `beatport-judge`, `jamendo-fit`, ...) with the
   genre thread's `scripts/genre-energy` from `app_ref`; merged into `data/<list>.json.gz` on `claude/genre-energy-data`.
 
