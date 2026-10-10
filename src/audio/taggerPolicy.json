@@ -1,7 +1,7 @@
 {
  "version": 1,
- "revision": "all-tags-blend-2026-10-09-r1",
- "modelSha256": "bd231add526cc8d2229fd09a8cd8df550ef974667463704c0e7d49f8d80fa184",
+ "revision": "all-tags-blend-2026-10-10-r1",
+ "modelSha256": "09c1a2b157c85abc0a41a461493006d9ca84e060cd691db365f07bb03f792f85",
  "input": {
   "name": "samples32k",
   "output": "scores",
@@ -135,6 +135,72 @@
    }
   },
   {
+   "output": "synthesizer",
+   "label": "synthesizer",
+   "dimension": "source",
+   "threshold": 0.5495,
+   "decides": [
+    "synthesizer"
+   ],
+   "tested": true,
+   "minSeconds": 10,
+   "long": {
+    "rule": "max"
+   }
+  },
+  {
+   "output": "cat:percussion",
+   "label": "percussion",
+   "dimension": "source",
+   "threshold": 0.457,
+   "decides": [
+    "percussion"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:animal sound",
+   "label": "animal sound",
+   "dimension": "source",
+   "threshold": 0.2411,
+   "decides": [
+    "animal sound"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:glockenspiel",
+   "label": "glockenspiel",
+   "dimension": "source",
+   "threshold": 0.0462,
+   "decides": [
+    "glockenspiel"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:whistle",
+   "label": "whistle",
+   "dimension": "source",
+   "threshold": 0.4791,
+   "decides": [
+    "whistle"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
    "output": "cat:percussive",
    "label": "percussive",
    "dimension": "character",
@@ -238,7 +304,7 @@
    "output": "cat:rain ambience",
    "label": "rain ambience",
    "dimension": "effect",
-   "threshold": 0.7014,
+   "threshold": 0.6128,
    "decides": [
     "rain ambience"
    ],
@@ -253,6 +319,38 @@
     "vocal breath"
    ],
    "tested": false
+  },
+  {
+   "output": "cat:tambourine",
+   "label": "tambourine",
+   "dimension": "effect",
+   "threshold": 0.1181,
+   "decides": [
+    "tambourine"
+   ],
+   "alsoDecides": [
+    {
+     "dimension": "source",
+     "label": "tambourine"
+    }
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:vocal scream",
+   "label": "vocal scream",
+   "dimension": "effect",
+   "threshold": 0.1959,
+   "decides": [
+    "vocal scream"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
   }
  ]
 }
