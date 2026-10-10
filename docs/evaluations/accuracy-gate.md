@@ -9,8 +9,10 @@ with the PR's base branch (main), not with the fixed 0.60 bar, so a tag that is 
   gate itself: the fast slice, 150 of the 500 Jamendo tracks plus all 318 MTG key tracks (about 25 minutes once the
   audio is cached). Other PRs pass at once.
 - Every push to main: the full set (500 + 318). Its graph exports are cached per commit and become the baseline that
-  later PRs compare with, so a PR normally analyses only itself. If main's numbers for the PR's base commit aren't
-  cached yet (main's run still going, or the cache expired after 7 idle days), the PR analyses the base commit too.
+  later PRs compare with, so a PR normally analyses only itself. Main runs one at a time: when several merges land
+  while one is analysed, only the newest waits and the ones in between are skipped. If main's numbers for the PR's
+  base commit aren't cached (main's run still going or skipped, or the cache expired after 7 idle days), the PR
+  analyses the base commit too.
 - A PR labelled `full-accuracy-check`: also the full set (`accuracy-gate-full.yml`, advisory).
 
 The fast slice is fixed by labels and ids only (`scripts/accuracy-gate/subset.mjs`): rarest class first, tracks in id

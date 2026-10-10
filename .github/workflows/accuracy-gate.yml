@@ -15,7 +15,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: accuracy-gate-${{ github.event.pull_request.number || github.sha }}
+  # A PR's newer push cancels its older run. Pushes to main share one queue: the run in flight finishes (its numbers
+  # become a baseline), and of the merges that land meanwhile only the newest waits; GitHub drops the older pending
+  # ones. Main's full run is report-only and takes over an hour, so analysing every merge left several 14-job runs
+  # queued at once, and PRs (whose required verdict needs runners from the same pool) waited behind them.
+  group: accuracy-gate-${{ github.event.pull_request.number || 'main' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
