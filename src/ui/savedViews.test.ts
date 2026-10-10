@@ -54,6 +54,7 @@ describe('applySavedView', () => {
       style: null,
       sounds: null,
       clipShape: null,
+      stem: null,
     });
     expect(state.cameraCommand?.kind).toBe('pose');
     expect(state.cameraCommand?.pose).toEqual({ px: 10, py: 20, pz: 30, tx: 1, ty: 2, tz: 3 });

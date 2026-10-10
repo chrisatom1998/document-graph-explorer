@@ -55,6 +55,7 @@ export async function saveCurrentView(name: string): Promise<SavedViewRecord | n
       style: ui.filter.style,
       sounds: ui.filter.sounds ? [...ui.filter.sounds] : null,
       clipShape: ui.filter.clipShape ?? null,
+      stem: ui.filter.stem ?? null,
     },
   };
   const existing = (await getCorpusRecord(corpusId))?.views ?? [];
@@ -85,6 +86,7 @@ export function applySavedView(view: SavedViewRecord): void {
     style: null,
     sounds: null,
     clipShape: null,
+    stem: null,
     ...sanitizeAudioFacets(view.filter as unknown as Record<string, unknown>),
   });
   ui.sendCameraPose(view.pose);

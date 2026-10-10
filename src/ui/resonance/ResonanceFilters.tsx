@@ -8,6 +8,7 @@ import { styleTags } from '../../audio/styleTags';
 import { nodeSoundTags } from '../../audio/soundFilterTags';
 import { soundLabelText } from '../../audio/djTags';
 import { clipShape, type ClipShape } from '../../audio/clipShape';
+import { nodeStemRoles, STEM_ROLES, type StemRole } from '../../audio/stemRole';
 import { openFilePicker } from '../../ingest/DropZone';
 import { openFolderPicker } from '../../ingest/folderPicker';
 import { lazy, Suspense } from 'react';
@@ -67,7 +68,7 @@ export default function ResonanceFilters() {
   // document-only library. Keep its value and a way to clear it on screen, or the
   // remaining files fail the audio facets with nothing to show why.
   const audioFilterActive = filter.bpmRange !== null || filter.musicKey !== null
-    || filter.style !== null || !!filter.sounds?.length || !!filter.clipShape;
+    || filter.style !== null || !!filter.sounds?.length || !!filter.clipShape || !!filter.stem;
   const kindsPresent = useMemo(() => new Set(edges.map(e => e.kind)), [edges]);
   const similarity = SIMILARITY.filter(s => kindsPresent.has(s.kind));
   const tempoKeys = useMemo(() => docs.filter(n => n.fileType === 'audio').map(resolveTempoKey), [docs]);
@@ -81,6 +82,11 @@ export default function ResonanceFilters() {
   const shapeCounts = useMemo(() => {
     const counts: Record<ClipShape, number> = { loop: 0, 'one-shot': 0 };
     for (const n of docs) { const shape = clipShape(n); if (shape) counts[shape]++; }
+    return counts;
+  }, [docs]);
+  const stemCounts = useMemo(() => {
+    const counts: Record<StemRole, number> = { drums: 0, bass: 0, vocals: 0, melody: 0 };
+    for (const n of docs) for (const role of nodeStemRoles(n)) counts[role]++;
     return counts;
   }, [docs]);
   const styles = useMemo(() => [...new Set(docs.flatMap(n => styleTags(n.audio)))].sort(), [docs]);
@@ -172,7 +178,7 @@ export default function ResonanceFilters() {
       </section>
 
       {(audio || audioFilterActive) && <>
-      {audioFilterActive && <button type="button" className="rs-show-more" onClick={() => setFilter({ bpmRange: null, musicKey: null, style: null, sounds: null, clipShape: null })}>Clear audio filters</button>}
+      {audioFilterActive && <button type="button" className="rs-show-more" onClick={() => setFilter({ bpmRange: null, musicKey: null, style: null, sounds: null, clipShape: null, stem: null })}>Clear audio filters</button>}
       <section className="rs-group rs-group--rule">
         <h3>Tempo (BPM)</h3>
         <div className="rs-range" style={{ '--lo': `${((range[0] - bpmMin) / Math.max(1, bpmMax - bpmMin)) * 100}%`, '--hi': `${((range[1] - bpmMin) / Math.max(1, bpmMax - bpmMin)) * 100}%` } as React.CSSProperties}>
@@ -207,6 +213,14 @@ export default function ResonanceFilters() {
           <option value="">Loops and one-shots</option>
           <option value="loop">Loops ({shapeCounts.loop})</option>
           <option value="one-shot">One-shots ({shapeCounts['one-shot']})</option>
+        </select>
+      </section>
+
+      <section className="rs-group">
+        <h3 title="The stem a clip's sounds belong to, as in DJ stem players. A full mix can be in all four; effects and ambiences are in none.">Part</h3>
+        <select className="rs-select" aria-label="Part" value={filter.stem ?? ''} onChange={e => setFilter({ stem: (e.target.value || null) as StemRole | null })}>
+          <option value="">Any part</option>
+          {STEM_ROLES.map(role => <option key={role} value={role}>{role[0].toUpperCase() + role.slice(1)} ({stemCounts[role]})</option>)}
         </select>
       </section>
 

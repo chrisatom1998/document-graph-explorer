@@ -106,6 +106,7 @@ function cloneFilter(filter: GraphFilter): GraphFilter {
     style: filter.style,
     sounds: filter.sounds ? [...filter.sounds] : null,
     clipShape: filter.clipShape ?? null,
+    stem: filter.stem ?? null,
   };
 }
 
