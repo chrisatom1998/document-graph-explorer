@@ -2,7 +2,7 @@
 # Train DGE's own instrument tagger on a Hugging Face Jobs GPU (launched by .github/workflows/audio-model-train.yml).
 # Fetches every dataset itself (nothing is uploaded from GitHub), trains, calibrates on validation artists, exports the
 # browser model, scores DJ clip rounds 1 and 2 and the round 3 held-out Jamendo set (aggregates only), and uploads the
-# run to the private model repo $HF_REPO. Env: REPO_SHA, HF_REPO, MODEL, EPOCHS, LR, BATCH, WEAK, optional RARE_REPEAT, JOB_HOURS, SOUNDCLOUD_DATA, HF_TOKEN (secret).
+# run to the private model repo $HF_REPO. Env: REPO_SHA, HF_REPO, MODEL, EPOCHS, LR, BATCH, WEAK, optional RARE_REPEAT, JOB_HOURS, SOUNDCLOUD_DATA, TRACKIO_SPACE, HF_TOKEN (secret).
 # ALL_TAGS=1 adds the app-named head (FSD50K dev, NSynth train + effect renders, Freesound; judged on FSD50K eval, NSynth
 # test and held-out Freesound uploaders), plus TinySOL, EGFxSet, FSLD, WaivOps drum loops, Surge presets (prepare-extra.py)
 # and Slakh stems when scripts/audio-model/prepare-slakh.py exists. RAWSTEMS=1 adds Mixing Secrets songs (non-commercial).
@@ -12,6 +12,9 @@ START=$(date +%s)
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q && apt-get install -yq --no-install-recommends ffmpeg git ca-certificates curl > /dev/null
 pip install -q scikit-learn scipy pyarrow onnx onnxruntime huggingface_hub
+# TRACKIO_SPACE=<user>/<space> turns on live training charts in that private Space (charts.py): training loss and
+# validation mAP only, never held-out per-clip results. Unset by default.
+[ -n "${TRACKIO_SPACE:-}" ] && pip install -q trackio==0.42.0
 W=/work; mkdir -p $W && cd $W
 git clone -q https://github.com/chrisatom1998/document-graph-explorer.git dge && git -C dge checkout -q "$REPO_SHA"
 git clone -q https://github.com/fschmid56/EfficientAT.git && git -C EfficientAT checkout -q a425fdce92572e602a1d5634799bd9f1f2efa806
