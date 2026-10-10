@@ -41,7 +41,7 @@ from labelmap import CAT, FREESOUND, FSLD_ROLES, SAME  # noqa: E402
 # Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth, the effect renders and Freesound, plus the music
 # sources' labels below wherever one names the same sound.
 CLASSES = OPENMIC + [f'jamendo:{t}' for t in JAMENDO_TAGS] + [f'cat:{l}' for l in CAT] + [f'fsld:{r}' for r in FSLD_ROLES]
-from labels_extra import EXTRA_CAT  # noqa: E402  (run 7: outputs only the uncached sources label)
+from labels_extra import EXTRA_CAT, RUN9_TAGS  # noqa: E402  (run 7: outputs only the uncached sources label)
 CLASSES += [f'cat:{l}' for l in EXTRA_CAT if l not in CAT]
 ALIAS = {'voice': 'voice', 'piano': 'piano', 'organ': 'organ', 'trumpet': 'trumpet', 'drums': 'drums', 'guitar': 'guitar', 'synthesizer': 'synthesizer',
          'mallet_percussion': 'mallet instrument', 'accordion': 'accordion', 'flute': 'flute', 'cymbals': 'cymbal',
@@ -58,6 +58,9 @@ def load_source(name, mel_path, items, weak):
     for i, it in enumerate(items):
         weak_set = set(it.get('weakAbsent', []))
         labels = dict(it['labels'])
+        if it.get('weakAll') == 'run9':   # run 9 (prepare-run9.py): every run 9 tag the item does not list is a weak absence
+            for l in RUN9_TAGS:
+                if f'cat:{l}' not in labels: labels[f'cat:{l}'] = 0.0; weak_set.add(f'cat:{l}')
         for c, l in ALIAS.items():   # the same sound under the app's name, unless the source labels that name itself
             if c in labels and f'cat:{l}' not in labels: labels[f'cat:{l}'] = labels[c]; weak_set |= {f'cat:{l}'} if c in weak_set else set()
         for c, r in labels.items():

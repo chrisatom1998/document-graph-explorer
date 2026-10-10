@@ -16,6 +16,8 @@
 # the cached 600 that carry rare orchestral or mallet patches (prepare-slakh-more.py); SAO=1 adds the private Stable Audio Open
 # effect clips (prepare-sao.py) and scores their held-out prompt groups (eval-sao); FSNEW_DATA=<private dataset>:<folder> adds the
 # staged Freesound sounds for tags with little or no audio (stage-freesound.py, prepare-fsnew.py) and scores their heldout rows (eval-fsnew).
+# Run 9: RUN9_DATA=<private dataset>:<folder> adds the staged run 9 audio (stage-run9.py, prepare-run9.py: Freesound keyword and
+# CED-base checked rows, labelled sets, code renders; unreviewed) and scores its held-out split (eval-run9).
 set -euo pipefail
 START=$(date +%s)
 export DEBIAN_FRONTEND=noninteractive
@@ -39,7 +41,7 @@ nproc; free -g | head -2; df -h $W | tail -1
 # scripts and label map, so a rerun with the same data skips the ~3 h prep. The upload runs alongside training.
 DIRS="prep prepj holdout"; [ "${ALL_TAGS:-0}" = 1 ] && DIRS="$DIRS fsdprep nsprep fsprep xprep"
 # The run 7 sources are built in every job (not cached), so their scripts stay out of the key.
-KEY=$( (ls $S/prepare*.py | grep -v -e prepare-rawstems.py -e prepare-iowa.py -e prepare-chrisdrive.py -e prepare-vcsl.py -e prepare-slakh-more.py -e prepare-sao.py -e prepare-fsnew.py | xargs cat; cat $S/labelmap.py; echo "$DIRS") | sha256sum | cut -c1-12)
+KEY=$( (ls $S/prepare*.py | grep -v -e prepare-rawstems.py -e prepare-iowa.py -e prepare-chrisdrive.py -e prepare-vcsl.py -e prepare-slakh-more.py -e prepare-sao.py -e prepare-fsnew.py -e prepare-run9.py | xargs cat; cat $S/labelmap.py; echo "$DIRS") | sha256sum | cut -c1-12)
 # RAWSTEMS=1 adds Mixing Secrets full songs (prepare-rawstems.py, non-commercial licence), built alongside the rest.
 RS_PID=
 if [ "${RAWSTEMS:-0}" = 1 ]; then python3 $S/prepare-rawstems.py rsprep --workers 16 --fx "${RAWSTEMS_FX:-0}" > rawstems.log 2>&1 & RS_PID=$!; fi
@@ -60,6 +62,11 @@ FN_PID=
 if [ -n "${FSNEW_DATA:-}" ]; then   # private staged Freesound sounds for tags with little or no training audio (stage-freesound.py)
   ( python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='fnstage', max_workers=16)" "$FSNEW_DATA" \
     && python3 $S/prepare-fsnew.py "fnstage/${FSNEW_DATA#*:}" fnprep && rm -rf fnstage ) > fsnew.log 2>&1 & FN_PID=$!
+fi
+RN_PID=
+if [ -n "${RUN9_DATA:-}" ]; then   # private staged run 9 audio (stage-run9.py): Freesound keyword / CED rows and labelled sets
+  ( python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='r9stage', max_workers=16)" "$RUN9_DATA" \
+    && python3 $S/prepare-run9.py "r9stage/${RUN9_DATA#*:}" r9prep --workers 6 && rm -rf r9stage ) > run9.log 2>&1 & RN_PID=$!
 fi
 CACHE_PID=
 if python3 - "$KEY" $DIRS <<'PY'
@@ -96,9 +103,9 @@ else
     for x in tinysol egfx fsld waivops surge; do python3 $S/prepare-extra.py $x xprep > $x.log 2>&1 & done
     if [ -f $S/prepare-slakh.py ]; then python3 $S/prepare-slakh.py xprep > slakh.log 2>&1 & fi
   fi
-  LOGS=$(ls *.log | grep -v -e rawstems.log -e iowa.log -e chrisdrive.log -e vcsl.log -e slakhmore.log -e sao.log -e fsnew.log)
+  LOGS=$(ls *.log | grep -v -e rawstems.log -e iowa.log -e chrisdrive.log -e vcsl.log -e slakhmore.log -e sao.log -e fsnew.log -e run9.log)
   # The raw-stems, Iowa and chris-drive preps are waited on (and their logs shown) separately below.
-  for job in $(jobs -p); do case " ${RS_PID:-} ${IOWA_PID:-} ${CD_PID:-} ${VCSL_PID:-} ${SM_PID:-} ${SAO_PID:-} ${FN_PID:-} " in *" $job "*) continue;; esac; wait $job || { tail -n 20 $LOGS; exit 1; }; done
+  for job in $(jobs -p); do case " ${RS_PID:-} ${IOWA_PID:-} ${CD_PID:-} ${VCSL_PID:-} ${SM_PID:-} ${SAO_PID:-} ${FN_PID:-} ${RN_PID:-} " in *" $job "*) continue;; esac; wait $job || { tail -n 20 $LOGS; exit 1; }; done
   tail -n 3 $LOGS; echo "data prep took $(( ($(date +%s) - START) / 60 )) min"; df -h $W | tail -1
   python3 - "$KEY" $DIRS > cache-upload.txt 2>&1 <<'PY' &
 import sys
@@ -122,6 +129,7 @@ if [ -n "$VCSL_PID" ]; then wait $VCSL_PID || { tail -n 30 vcsl.log; exit 1; }; 
 if [ -n "$SM_PID" ]; then wait $SM_PID || { tail -n 30 slakhmore.log; exit 1; }; tail -n 2 slakhmore.log; EXTRA+=(--extra slakhmore=smprep); fi
 if [ -n "$SAO_PID" ]; then wait $SAO_PID || { tail -n 30 sao.log; exit 1; }; tail -n 2 sao.log; EXTRA+=(--extra sao=saoprep); fi
 if [ -n "$FN_PID" ]; then wait $FN_PID || { tail -n 30 fsnew.log; exit 1; }; tail -n 3 fsnew.log; EXTRA+=(--extra fsnew=fnprep); fi
+if [ -n "$RN_PID" ]; then wait $RN_PID || { tail -n 30 run9.log; exit 1; }; tail -n 4 run9.log; EXTRA+=(--extra fs9=r9prep --extra ls9=r9prep); fi
 echo "all data ready after $(( ($(date +%s) - START) / 60 )) min"
 if [ -n "${SOUNDCLOUD_DATA:-}" ]; then   # "<dataset repo>:<folder>", uploaded by the workflow from its SoundCloud artifacts
   python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='scdl')" "$SOUNDCLOUD_DATA"
@@ -160,6 +168,16 @@ if os.path.exists('saoprep/eval-sao.json'):
     e = json.load(open('saoprep/eval-sao.json')); man.setdefault('heldOutTest', {})['eval-sao'] = {'groups': sorted({i['artist'] for i in e['items']}), 'clips': len(e['items']), 'note': 'generated clips; never trained, tuned or calibrated on'}
 if os.path.exists('fnprep/eval-fsnew.json'):
     e = json.load(open('fnprep/eval-fsnew.json')); man.setdefault('heldOutTest', {})['eval-fsnew'] = {'ids': sorted(i['id'] for i in e['items']), 'uploaders': len({i['artist'] for i in e['items']}), 'note': 'Freesound heldout rows; never trained, tuned or calibrated on'}
+if os.path.exists('r9prep/eval-run9.json'):
+    from collections import Counter
+    e = json.load(open('r9prep/eval-run9.json')); pos = Counter(c[4:] for i in e['items'] for c, v in i['labels'].items() if v == 'present')
+    man.setdefault('heldOutTest', {})['eval-run9'] = {'ids': sorted(i['id'] for i in e['items']), 'groups': sorted({i['artist'] for i in e['items']}),
+        'positives': dict(sorted(pos.items())), 'clips': len(e['items']), 'reviewed': False,
+        'note': 'run 9 held-out rows split by uploader / performer / pack and renders of them; never trained, tuned or calibrated on; '
+                'nobody has listened to these clips; open-vocab round-19 test ids are NOT de-duplicated (not available)'}
+    for n in ('fs9', 'ls9'):
+        if n in man['sources']: man['sources'][n]['reviewed'] = False
+    man['run9Ids'] = json.load(open('r9prep/run9-ids.json'))
 if os.path.exists('cdprep/chrisdrive-files.json'): man['chrisDrive'] = json.load(open('cdprep/chrisdrive-files.json'))
 json.dump(man, open('run/data-manifest.json', 'w'), indent=1)
 print('data manifest: ' + ', '.join(f"{n} {s['windows']}" for n, s in man['sources'].items()))
@@ -183,6 +201,7 @@ CAL=(openmic=prep jamendo=prepj); EVAL=(prep/eval-round1 prep/eval-round2 holdou
 [ -n "$SM_PID" ] && CAL+=(slakhmore=smprep)
 [ -n "$SAO_PID" ] && CAL+=(sao=saoprep) && EVAL+=(saoprep/eval-sao)
 [ -n "$FN_PID" ] && CAL+=(fsnew=fnprep) && EVAL+=(fnprep/eval-fsnew)
+[ -n "$RN_PID" ] && CAL+=(fs9=r9prep ls9=r9prep) && EVAL+=(r9prep/eval-run9)
 if [ "${ALL_TAGS:-0}" = 1 ]; then CAL+=(fsd50k=fsdprep nsynth=nsprep freesound=fsprep); for x in $XS; do CAL+=($x=xprep); done; EVAL+=(fsdprep/eval-fsd50k nsprep/eval-nsynth-test nsprep/eval-nsynth-test-fx fsprep/eval-freesound); fi
 python3 $S/calibrate.py run "${CAL[@]}" | tee run/calibrate.txt
 python3 $S/coverage.py run "${CAL[@]}" 
