@@ -12,18 +12,33 @@ export const DJ_LABELS: Record<DjGroup, readonly string[]> = {
 };
 export type ConfirmedDjTags = Record<DjGroup, string[]>;
 /** Look-alike tags shown and confirmed under one name (Chris, 2026-10-10): the models could not tell each pair apart
- * (breath and vocal breath are taught by the same labels; static noise already covers white noise). The old labels stay
+ * (breath and vocal breath are taught by the same labels; static noise already covers white noise; turntable and vinyl
+ * scratch both come from FSD50K's one Scratching class; vocal harmony has no tagger output and too little audio to tell
+ * apart from choir; acid bass and acid synth are the same 303 squelch). The old labels stay
  * in the catalog because trained heads, prompts and saved analyses use them; only what people see and confirm merges. */
 export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: string }>> = {
   'production:vocal breath': { group: 'source', label: 'breath' },
   'source:noise': { group: 'production', label: 'static noise' },
   'production:synth stab': { group: 'production', label: 'synth hit' },
   'production:downlifter': { group: 'character', label: 'falling' },
+  'source:turntable': { group: 'production', label: 'vinyl scratch' },
+  'production:vocal harmony': { group: 'production', label: 'choir' },
+  'production:acid bass': { group: 'production', label: 'acid synth' },
 };
 export const mergedDjLabel = (group: DjGroup, label: string): { group: DjGroup; label: string } => MERGED_DJ_LABELS[`${group}:${label}`] ?? { group, label };
 /** Labels people can pick: the catalog minus the merged names. */
 const pickable = (group: DjGroup) => DJ_LABELS[group].filter(label => !MERGED_DJ_LABELS[`${group}:${label}`]);
 export const DJ_PICKER_LABELS: Record<DjGroup, readonly string[]> = { source: pickable('source'), production: pickable('production'), character: pickable('character') };
+/** Tags DJs and mixers rarely browse by (orchestral and folk detail, feel and music-theory words, vague catch-alls and
+ * mixer-only effects; Chris, 2026-10-10, reports/dj-tag-review-2026-10-10). They still run, show on clips and can be
+ * found by searching the picker; they just aren't listed until searched for. */
+export const DJ_HIDDEN_LABELS: ReadonlySet<string> = new Set([
+  ...['bassoon', 'oboe', 'clarinet', 'tuba', 'trombone', 'cello', 'double bass', 'banjo', 'mandolin', 'sitar', 'jaw harp',
+    'singing bowl', 'waterphone', 'kalimba', 'sound effect', 'environmental sound'].map(l => `source:${l}`),
+  ...['percussion hit', 'foley hit'].map(l => `production:${l}`),
+  ...['sustained', 'staccato', 'syncopated', 'rhythmic', 'rolling', 'gliding', 'rising', 'plucked', 'percussive', 'pulsing',
+    'swelling', 'wobbling', 'flanged', 'chorused'].map(l => `character:${l}`),
+]);
 export interface DjTag { group: DjGroup; label: string; score: number; model?: 'AudioSet AST' | 'MTG-Jamendo' | 'Music CLAP' | 'Reviewed examples' | 'Trained head' | 'Trained head (maybe)'; segments?: { start: number; end: number }[]; windowEvidence?: NativeWindowEvidence }
 export const DJ_TYPE_SOURCE: Record<string, string> = Object.fromEntries(
   DJ_CATALOG.filter(c => c.group === 'production' && c.source).map(c => [c.label, c.source!]),

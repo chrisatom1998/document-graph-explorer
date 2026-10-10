@@ -13,3 +13,24 @@ it('searches category aliases while retaining checked tags outside the search', 
   fireEvent.change(screen.getByRole('searchbox'),{target:{value:'uplifter'}});
   expect(screen.getByLabelText('riser')).toBeDefined();
 });
+it('finds a merged tag by the old name and its aliases', () => {
+  const node = {id:'clip', audio:{confirmedDjTags:{source:[],production:[],character:[]}}} as unknown as DocNode;
+  render(<DjTagCorrection node={node}/>);
+  for (const value of ['vocal harmony', 'harmony vocals']) {
+    fireEvent.change(screen.getByRole('searchbox'),{target:{value}});
+    expect(screen.getByLabelText('choir')).toBeDefined();
+  }
+  fireEvent.change(screen.getByRole('searchbox'),{target:{value:'303 bass'}});
+  expect(screen.getByLabelText('acid synth')).toBeDefined();
+  expect(screen.queryByLabelText('acid bass')).toBeNull();
+});
+it('lists rarely used tags only when searched for, or when already picked', () => {
+  const node = {id:'clip', audio:{confirmedDjTags:{source:['cello'],production:[],character:[]}}} as unknown as DocNode;
+  render(<DjTagCorrection node={node}/>);
+  expect(screen.getByLabelText('kick')).toBeDefined();
+  expect(screen.queryByLabelText('oboe')).toBeNull();
+  expect(screen.queryByLabelText('syncopated')).toBeNull();
+  expect(screen.getByLabelText('cello')).toHaveProperty('checked',true);
+  fireEvent.change(screen.getByRole('searchbox'),{target:{value:'oboe'}});
+  expect(screen.getByLabelText('oboe')).toBeDefined();
+});

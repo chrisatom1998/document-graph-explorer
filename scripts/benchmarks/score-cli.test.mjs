@@ -16,7 +16,7 @@ test('score CLI writes a real report and fails incomplete audio instead of silen
     const manifestPath = join(dir, 'manifest.json'), graphPath = join(dir, 'graph.json'), output = join(dir, 'score.json');
     writeFileSync(manifestPath, JSON.stringify(manifest));
     writeFileSync(graphPath, JSON.stringify({ nodes: [], edges: [] }));
-    const result = spawnSync(process.execPath, ['node_modules/vite-node/vite-node.mjs',
+    const result = spawnSync(process.execPath, ['node_modules/vite-node/dist/cli.mjs',
       'scripts/benchmarks/score.mjs', manifestPath, graphPath, output, 'test'], { encoding: 'utf8', timeout: 60_000 });
     assert.equal(result.status, 1, result.stderr || result.stdout);
     assert.equal(existsSync(output), true, 'CLI must write a score report');

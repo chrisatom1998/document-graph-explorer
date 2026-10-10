@@ -27,8 +27,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 93/94: the tagger decides environmental sound, foley, turntable, finger snap and water ambience (held-out FSD50K 50/50).
 // 95/96: tag-heads-2026-10-09 heads re-tiered on runtime-eligible long clips (conga, gliding, tambourine
 // removed; viola back to maybe).
-// 97/98: tagger blend adds run 9 (bell, fm synth, water ambience).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 98 : 97;
+// 97/98: short-clip bass guitar head retrained on real recorded basses (licensed-pilot round two).
+// 99/100: tagger blend adds run 9 (bell, fm synth, water ambience).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 100 : 99;
 export interface InstrumentEstimate {
   label: string;
   score: number;

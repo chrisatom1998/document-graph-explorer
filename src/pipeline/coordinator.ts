@@ -2213,21 +2213,22 @@ export function setAudioDjTags(id: string, labels?: ConfirmedDjTags): Promise<bo
     const audio=node.audio!;
     const confirmedDjTags=labels===undefined?undefined:sanitizeConfirmedDjTags(labels);
     if(labels!==undefined&&!confirmedDjTags)throw new Error('Invalid DJ corrections.');
-    // A newly saved snapshot must supersede earlier character reviews, including effects merged into character labels.
+    // A newly saved snapshot supersedes earlier reviews, including labels merged across dimensions.
     // Append canonical decisions instead of clearing history, so a later individual review can still override it.
-    const reviewedLabels=new Map<string, {labelId:string;dimension:'source'|'character'}>();
+    const reviewedLabels=new Map<string, {labelId:string;dimension:'source'|'effect'|'character'}>();
     for(const review of audio.soundReviews??[]){
       let dimension=review.dimension, labelId=canonicalReviewLabel(dimension,review.labelId);
-      if(dimension==='effect'){
-        const merged=mergedDjLabel('production',labelId);
-        if(merged.group!=='character')continue;
-        dimension='character';labelId=merged.label;
+      if(dimension==='effect'||dimension==='source'){
+        // Keep historical source-to-effect identities governed by the surviving production snapshot.
+        const merged=mergedDjLabel(dimension==='effect'?'production':'source',labelId);
+        if(dimension==='effect'&&merged.group==='production')continue;
+        dimension=merged.group==='production'?'effect':merged.group;labelId=merged.label;
       }
-      if(dimension!=='source'&&dimension!=='character')continue;
+      if(dimension!=='source'&&dimension!=='character'&&dimension!=='effect')continue;
       reviewedLabels.set(`${dimension}:${labelId}`,{labelId,dimension});
     }
     const reconciliations:SoundReview[]=confirmedDjTags===undefined?[]:[...reviewedLabels.values()].map<SoundReview>(({labelId,dimension})=>({labelId,dimension,scope:'track',at:new Date().toISOString(),
-      evidenceRunId:audio.recognition?.runId??'unknown',decision:confirmedDjTags[dimension].includes(labelId)?'confirmed':'rejected'}))
+      evidenceRunId:audio.recognition?.runId??'unknown',decision:confirmedDjTags[dimension==='effect'?'production':dimension].includes(labelId)?'confirmed':'rejected'}))
       .filter(review=>latestSoundReview(audio.soundReviews,review.dimension,review.labelId)?.decision!==review.decision);
     if((audio.soundReviews?.length??0)+reconciliations.length>500)throw new Error('Review history limit reached. Export this graph before adding more reviews.');
     useGraphStore.getState().patchNodes(new Map([[id,{audio:{...audio,confirmedDjTags,

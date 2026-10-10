@@ -1,0 +1,93 @@
+{
+  "note": "Coverage idea #1: extra DGE tag -> CED-base AudioSet class indices for recall-starved tags that ced-tag-map.json (branch claude/project-thread-9ioynb) leaves out because the class is broader than the tag. A broad class can only AGREE with the round 11 teacher (two-vote tier); it never makes a candidate on its own. Indices follow labels.txt of runs/ced-freesound-38026076860-1. steel guitar is left out until Chris says what it means (idea #11).",
+  "tags": {
+    "xylophone": [
+      180
+    ],
+    "vinyl crackle": [
+      299
+    ],
+    "tuba": [
+      185
+    ],
+    "viola": [
+      189,
+      191
+    ],
+    "oboe": [
+      195
+    ],
+    "bongo": [
+      164
+    ],
+    "tom": [
+      164
+    ],
+    "clave": [
+      173
+    ],
+    "vocal vowel": [
+      27,
+      32,
+      33
+    ],
+    "pitched vocal": [
+      27,
+      35
+    ],
+    "vocal phrase": [
+      255,
+      254,
+      27
+    ],
+    "vocal pad": [
+      27,
+      28,
+      35
+    ],
+    "atmospheric pad": [
+      246,
+      158
+    ],
+    "string synth": [
+      158,
+      190
+    ],
+    "brass synth": [
+      158,
+      185
+    ],
+    "supersaw": [
+      158
+    ],
+    "synth lead": [
+      158
+    ],
+    "reese bass": [
+      158
+    ],
+    "808 bass": [
+      158,
+      168
+    ],
+    "acid bass": [
+      158
+    ],
+    "bass pluck": [
+      158,
+      142
+    ],
+    "vocoder vocal": [
+      7,
+      35
+    ],
+    "breakbeat": [
+      162,
+      163,
+      243
+    ],
+    "plucked": [
+      139
+    ]
+  }
+}

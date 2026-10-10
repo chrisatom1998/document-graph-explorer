@@ -3489,7 +3489,9 @@ mark.passage-mark {
   max-height: min(45dvh, calc(100dvh - 288px));
 }
 
-.toast {
+/* app- prefix: HeroUI (imported above) styles its own .toast, .toast--warning and
+   .toast__action, and from 3.2.6 collapses any .toast it does not manage to 0px. */
+.app-toast {
   /* Keep the scrollable notification stack and its controls interactive. */
   pointer-events: none;
   position: relative;
@@ -3504,17 +3506,17 @@ mark.passage-mark {
   animation: kn-slide-in-up 220ms var(--ease-out) both;
 }
 
-.toast--error {
+.app-toast--error {
   border-left-color: var(--danger);
 }
-.toast--warning {
+.app-toast--warning {
   border-left-color: var(--warning);
 }
-.toast--info {
+.app-toast--info {
   border-left-color: var(--accent);
 }
 
-.toast__text {
+.app-toast__text {
   min-width: 0;
   overflow-wrap: anywhere;
   flex: 1 1 auto;
@@ -3523,7 +3525,7 @@ mark.passage-mark {
   color: var(--text-primary);
 }
 
-.toast__action {
+.app-toast__action {
   pointer-events: auto;
   flex: none;
   align-self: center;
@@ -3532,19 +3534,19 @@ mark.passage-mark {
   white-space: nowrap;
 }
 
-.toast .icon-btn-close {
+.app-toast .icon-btn-close {
   flex: none;
   pointer-events: auto;
 }
 
 @media (max-width: 480px) {
-  .toast {
+  .app-toast {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
   }
-  .toast__text { grid-column: 1; grid-row: 1; }
-  .toast .icon-btn-close { grid-column: 2; grid-row: 1; }
-  .toast__action { grid-column: 1 / -1; justify-self: start; }
+  .app-toast__text { grid-column: 1; grid-row: 1; }
+  .app-toast .icon-btn-close { grid-column: 2; grid-row: 1; }
+  .app-toast__action { grid-column: 1 / -1; justify-self: start; }
 }
 
 /* ==========================================================================
@@ -5909,7 +5911,7 @@ input {
 /* Short phone windows cannot fit two help surfaces at once. Let notices be
    dismissed first, then reveal the tour in its existing position. */
 @media (max-width: 640px) and (max-height: 640px) {
-  .app-root:has(.toast) .first-run-guide { visibility: hidden; }
+  .app-root:has(.app-toast) .first-run-guide { visibility: hidden; }
 }
 /* Untested model guesses: visible near the top, but visibly weaker than tested Sounds tags. */
 .sound-guesses { margin: 12px 0 0; }

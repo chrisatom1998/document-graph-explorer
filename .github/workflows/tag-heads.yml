@@ -47,8 +47,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - run: pip install -q pyarrow
@@ -59,7 +59,7 @@ jobs:
       - name: Pick clips
         run: |
           mkdir -p work; python3 scripts/dj-effects/mine.py "$RUNNER_TEMP/meta.parquet" work/candidates.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: candidates
           path: work/candidates.json
@@ -73,12 +73,12 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3, 4, 5]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v7
         with:
           name: candidates
           path: work
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - run: pip install -q numpy scipy
@@ -102,14 +102,14 @@ jobs:
           except urllib.error.HTTPError as e: code = e.code
           print('freesound page status:', code); sys.exit(0 if code in (200, 404) else 1)
           PY
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - run: command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
       - name: Restore downloaded previews
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: work/fs
           key: tag-heads-audio-${{ matrix.shard }}-${{ hashFiles('work/shard.json') }}
@@ -118,7 +118,7 @@ jobs:
         run: CONCURRENCY=2 node scripts/fetch-freesound-previews.mjs work/shard.json work/fs
       - name: Save downloaded previews
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: work/fs
           key: tag-heads-audio-${{ matrix.shard }}-${{ hashFiles('work/shard.json') }}-${{ github.run_id }}
@@ -132,14 +132,14 @@ jobs:
           json.dump(m, open(p, 'w')); print(before - len(m['clips']), 'training clips dropped for their licence;', len(m['clips']), 'kept')
           EOF
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
           restore-keys: music-models-
       - run: npm run setup:music
       - name: Restore fingerprints
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: work/emb
           key: tag-heads-emb-${{ matrix.shard }}-${{ hashFiles('work/shard.json', 'scripts/embed-clap.mjs', 'scripts/dj-effects/render.py', 'scripts/dj-effects/labels-tags.json') }}
@@ -157,7 +157,7 @@ jobs:
           rc=0; for p in "${pids[@]}"; do wait $p || rc=1; done; tail -n 3 work/remb-*.log; exit $rc
       - name: Save fingerprints
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: work/emb
           key: tag-heads-emb-${{ matrix.shard }}-${{ hashFiles('work/shard.json', 'scripts/embed-clap.mjs', 'scripts/dj-effects/render.py', 'scripts/dj-effects/labels-tags.json') }}-${{ github.run_id }}
@@ -177,7 +177,7 @@ jobs:
           mkdir -p out; cp work/emb/*.jsonl out/
           cp work/fs/manifest.json out/manifest-${{ matrix.shard }}.json; cp work/fs/state.json out/state-${{ matrix.shard }}.json
           cp work/render/manifest.json out/renders-${{ matrix.shard }}.json; cp work/durations.json out/durations-${{ matrix.shard }}.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: shard-${{ matrix.shard }}
           path: out
@@ -189,12 +189,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 300
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - run: pip install -q numpy scipy scikit-learn
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: shard-*
           path: work/emb

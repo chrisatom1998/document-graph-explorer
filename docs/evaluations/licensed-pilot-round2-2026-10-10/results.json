@@ -1,0 +1,985 @@
+{
+ "holdout_lock": "9a59776ed1002ea248b694bee6754779e582683c38702af3e81f49bc24766b7f",
+ "app_before": {
+  "bass guitar": {
+   "short": {
+    "support_pos": 12,
+    "support_neg": 543,
+    "strict": {
+     "precision": 1.0,
+     "recall": 0.25,
+     "f1": 0.4,
+     "tp": 3,
+     "false_positives": 0,
+     "misses": 9,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": 1.0,
+     "recall": 0.25,
+     "f1": 0.4,
+     "tp": 3,
+     "false_positives": 0,
+     "misses": 9,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "abstentions_pos": 0,
+    "abstentions_neg": 0,
+    "fires_on_unlabelled": {
+     "n": 39,
+     "confident": 0,
+     "any": 0
+    }
+   },
+   "long": {
+    "support_pos": 28,
+    "support_neg": 674,
+    "strict": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 28,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 28,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "abstentions_pos": 0,
+    "abstentions_neg": 0,
+    "fires_on_unlabelled": {
+     "n": 159,
+     "confident": 0,
+     "any": 0
+    }
+   },
+   "all": {
+    "support_pos": 40,
+    "support_neg": 1217,
+    "strict": {
+     "precision": 1.0,
+     "recall": 0.075,
+     "f1": 0.14,
+     "tp": 3,
+     "false_positives": 0,
+     "misses": 37,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": 1.0,
+     "recall": 0.075,
+     "f1": 0.14,
+     "tp": 3,
+     "false_positives": 0,
+     "misses": 37,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "abstentions_pos": 0,
+    "abstentions_neg": 0,
+    "fires_on_unlabelled": {
+     "n": 198,
+     "confident": 0,
+     "any": 0
+    }
+   }
+  },
+  "foley hit": {
+   "short": {
+    "support_pos": 30,
+    "support_neg": 510,
+    "strict": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 30,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 30,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "abstentions_pos": 0,
+    "abstentions_neg": 0,
+    "fires_on_unlabelled": {
+     "n": 54,
+     "confident": 0,
+     "any": 0
+    }
+   },
+   "long": {
+    "support_pos": 10,
+    "support_neg": 767,
+    "strict": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 10,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 10,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "abstentions_pos": 0,
+    "abstentions_neg": 0,
+    "fires_on_unlabelled": {
+     "n": 84,
+     "confident": 0,
+     "any": 0
+    }
+   },
+   "all": {
+    "support_pos": 40,
+    "support_neg": 1277,
+    "strict": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 40,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 40,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "abstentions_pos": 0,
+    "abstentions_neg": 0,
+    "fires_on_unlabelled": {
+     "n": 138,
+     "confident": 0,
+     "any": 0
+    }
+   }
+  },
+  "laser": {
+   "short": {
+    "support_pos": 2,
+    "support_neg": 570,
+    "strict": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 2,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": 0.667,
+     "recall": 1.0,
+     "f1": 0.8,
+     "tp": 2,
+     "false_positives": 1,
+     "misses": 0,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "abstentions_pos": 2,
+    "abstentions_neg": 1,
+    "fires_on_unlabelled": {
+     "n": 22,
+     "confident": 0,
+     "any": 0
+    }
+   },
+   "long": {
+    "support_pos": 11,
+    "support_neg": 800,
+    "strict": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 11,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": 0.9,
+     "recall": 0.818,
+     "f1": 0.857,
+     "tp": 9,
+     "false_positives": 1,
+     "misses": 2,
+     "meets_70": true,
+     "meets_90": false
+    },
+    "abstentions_pos": 9,
+    "abstentions_neg": 1,
+    "fires_on_unlabelled": {
+     "n": 50,
+     "confident": 0,
+     "any": 3
+    }
+   },
+   "all": {
+    "support_pos": 13,
+    "support_neg": 1370,
+    "strict": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 13,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": 0.846,
+     "recall": 0.846,
+     "f1": 0.846,
+     "tp": 11,
+     "false_positives": 2,
+     "misses": 2,
+     "meets_70": true,
+     "meets_90": false
+    },
+    "abstentions_pos": 11,
+    "abstentions_neg": 2,
+    "fires_on_unlabelled": {
+     "n": 72,
+     "confident": 0,
+     "any": 3
+    }
+   }
+  }
+ },
+ "app_after": {
+  "bass guitar": {
+   "short": {
+    "support_pos": 12,
+    "support_neg": 543,
+    "strict": {
+     "precision": 0.846,
+     "recall": 0.917,
+     "f1": 0.88,
+     "tp": 11,
+     "false_positives": 2,
+     "misses": 1,
+     "meets_70": true,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": 0.846,
+     "recall": 0.917,
+     "f1": 0.88,
+     "tp": 11,
+     "false_positives": 2,
+     "misses": 1,
+     "meets_70": true,
+     "meets_90": false
+    },
+    "abstentions_pos": 0,
+    "abstentions_neg": 0,
+    "fires_on_unlabelled": {
+     "n": 39,
+     "confident": 0,
+     "any": 0
+    }
+   },
+   "long": {
+    "support_pos": 28,
+    "support_neg": 674,
+    "strict": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 28,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 28,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "abstentions_pos": 0,
+    "abstentions_neg": 0,
+    "fires_on_unlabelled": {
+     "n": 159,
+     "confident": 0,
+     "any": 0
+    }
+   },
+   "all": {
+    "support_pos": 40,
+    "support_neg": 1217,
+    "strict": {
+     "precision": 0.846,
+     "recall": 0.275,
+     "f1": 0.415,
+     "tp": 11,
+     "false_positives": 2,
+     "misses": 29,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": 0.846,
+     "recall": 0.275,
+     "f1": 0.415,
+     "tp": 11,
+     "false_positives": 2,
+     "misses": 29,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "abstentions_pos": 0,
+    "abstentions_neg": 0,
+    "fires_on_unlabelled": {
+     "n": 198,
+     "confident": 0,
+     "any": 0
+    }
+   }
+  },
+  "foley hit": {
+   "short": {
+    "support_pos": 30,
+    "support_neg": 510,
+    "strict": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 30,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 30,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "abstentions_pos": 0,
+    "abstentions_neg": 0,
+    "fires_on_unlabelled": {
+     "n": 54,
+     "confident": 0,
+     "any": 0
+    }
+   },
+   "long": {
+    "support_pos": 10,
+    "support_neg": 767,
+    "strict": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 10,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 10,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "abstentions_pos": 0,
+    "abstentions_neg": 0,
+    "fires_on_unlabelled": {
+     "n": 84,
+     "confident": 0,
+     "any": 0
+    }
+   },
+   "all": {
+    "support_pos": 40,
+    "support_neg": 1277,
+    "strict": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 40,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 40,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "abstentions_pos": 0,
+    "abstentions_neg": 0,
+    "fires_on_unlabelled": {
+     "n": 138,
+     "confident": 0,
+     "any": 0
+    }
+   }
+  },
+  "laser": {
+   "short": {
+    "support_pos": 2,
+    "support_neg": 570,
+    "strict": {
+     "precision": 0.667,
+     "recall": 1.0,
+     "f1": 0.8,
+     "tp": 2,
+     "false_positives": 1,
+     "misses": 0,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": 0.667,
+     "recall": 1.0,
+     "f1": 0.8,
+     "tp": 2,
+     "false_positives": 1,
+     "misses": 0,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "abstentions_pos": 0,
+    "abstentions_neg": 0,
+    "fires_on_unlabelled": {
+     "n": 22,
+     "confident": 0,
+     "any": 0
+    }
+   },
+   "long": {
+    "support_pos": 11,
+    "support_neg": 800,
+    "strict": {
+     "precision": null,
+     "recall": 0.0,
+     "f1": null,
+     "tp": 0,
+     "false_positives": 0,
+     "misses": 11,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": 0.9,
+     "recall": 0.818,
+     "f1": 0.857,
+     "tp": 9,
+     "false_positives": 1,
+     "misses": 2,
+     "meets_70": true,
+     "meets_90": false
+    },
+    "abstentions_pos": 9,
+    "abstentions_neg": 1,
+    "fires_on_unlabelled": {
+     "n": 50,
+     "confident": 0,
+     "any": 3
+    }
+   },
+   "all": {
+    "support_pos": 13,
+    "support_neg": 1370,
+    "strict": {
+     "precision": 0.667,
+     "recall": 0.154,
+     "f1": 0.25,
+     "tp": 2,
+     "false_positives": 1,
+     "misses": 11,
+     "meets_70": false,
+     "meets_90": false
+    },
+    "shown": {
+     "precision": 0.846,
+     "recall": 0.846,
+     "f1": 0.846,
+     "tp": 11,
+     "false_positives": 2,
+     "misses": 2,
+     "meets_70": true,
+     "meets_90": false
+    },
+    "abstentions_pos": 9,
+    "abstentions_neg": 1,
+    "fires_on_unlabelled": {
+     "n": 72,
+     "confident": 0,
+     "any": 3
+    }
+   }
+  }
+ },
+ "app_after_note": "candidate build (current main plus the A2 head at threshold 0.6537) run on the 594 holdout clips of at most 2.25 s, all complete; longer clips reuse the baseline run (short-clip.json does not apply to them)",
+ "screens": {
+  "A": {
+   "windows": "all 10 s windows except 3 not embedded",
+   "later_windows": 442,
+   "missing_embeddings": 8,
+   "heads": {
+    "pilot:bass guitar": {
+     "threshold": 0.7979,
+     "short": {
+      "support_pos": 12,
+      "support_neg": 543,
+      "precision": 0.733,
+      "recall": 0.917,
+      "tp": 11,
+      "false_positives": 4,
+      "ceiling_min_pr": 0.846,
+      "ceiling_threshold": 0.8692,
+      "ceiling_if_skipped_positives_found": 0.846,
+      "skipped_positives": 0
+     },
+     "long": {
+      "support_pos": 28,
+      "support_neg": 674,
+      "precision": 0.474,
+      "recall": 0.964,
+      "tp": 27,
+      "false_positives": 30,
+      "ceiling_min_pr": 0.893,
+      "ceiling_threshold": 0.9446,
+      "ceiling_if_skipped_positives_found": 0.893,
+      "skipped_positives": 0
+     }
+    },
+    "pilot:foley hit": {
+     "threshold": 0.6302,
+     "short": {
+      "support_pos": 30,
+      "support_neg": 510,
+      "precision": 0.302,
+      "recall": 0.533,
+      "tp": 16,
+      "false_positives": 37,
+      "ceiling_min_pr": 0.4,
+      "ceiling_threshold": 0.7713,
+      "ceiling_if_skipped_positives_found": 0.5,
+      "skipped_positives": 3
+     },
+     "long": {
+      "support_pos": 10,
+      "support_neg": 767,
+      "precision": 0.1,
+      "recall": 0.1,
+      "tp": 1,
+      "false_positives": 9,
+      "ceiling_min_pr": 0.1,
+      "ceiling_threshold": 0.7684,
+      "ceiling_if_skipped_positives_found": 0.1,
+      "skipped_positives": 0
+     }
+    },
+    "main:laser": {
+     "threshold": 0.7867,
+     "short": {
+      "support_pos": 2,
+      "support_neg": 570,
+      "precision": 0.667,
+      "recall": 1.0,
+      "tp": 2,
+      "false_positives": 1,
+      "ceiling_min_pr": 0.667,
+      "ceiling_threshold": 0.9041,
+      "ceiling_if_skipped_positives_found": 0.667,
+      "skipped_positives": 0
+     },
+     "long": {
+      "support_pos": 11,
+      "support_neg": 800,
+      "precision": 0.9,
+      "recall": 0.818,
+      "tp": 9,
+      "false_positives": 1,
+      "ceiling_min_pr": 0.818,
+      "ceiling_threshold": 0.9623,
+      "ceiling_if_skipped_positives_found": 0.818,
+      "skipped_positives": 0
+     }
+    }
+   }
+  },
+  "A2": {
+   "windows": "all 10 s windows except 3 not embedded",
+   "later_windows": 442,
+   "missing_embeddings": 8,
+   "heads": {
+    "pilot:bass guitar": {
+     "threshold": 0.6537,
+     "short": {
+      "support_pos": 12,
+      "support_neg": 543,
+      "precision": 0.6,
+      "recall": 1.0,
+      "tp": 12,
+      "false_positives": 8,
+      "ceiling_min_pr": 0.917,
+      "ceiling_threshold": 0.8386,
+      "ceiling_if_skipped_positives_found": 0.917,
+      "skipped_positives": 0
+     },
+     "long": {
+      "support_pos": 28,
+      "support_neg": 674,
+      "precision": 0.281,
+      "recall": 0.964,
+      "tp": 27,
+      "false_positives": 69,
+      "ceiling_min_pr": 0.862,
+      "ceiling_threshold": 0.9318,
+      "ceiling_if_skipped_positives_found": 0.862,
+      "skipped_positives": 0
+     }
+    },
+    "pilot:foley hit": {
+     "threshold": 0.6302,
+     "short": {
+      "support_pos": 30,
+      "support_neg": 510,
+      "precision": 0.302,
+      "recall": 0.533,
+      "tp": 16,
+      "false_positives": 37,
+      "ceiling_min_pr": 0.4,
+      "ceiling_threshold": 0.7713,
+      "ceiling_if_skipped_positives_found": 0.5,
+      "skipped_positives": 3
+     },
+     "long": {
+      "support_pos": 10,
+      "support_neg": 767,
+      "precision": 0.1,
+      "recall": 0.1,
+      "tp": 1,
+      "false_positives": 9,
+      "ceiling_min_pr": 0.1,
+      "ceiling_threshold": 0.7684,
+      "ceiling_if_skipped_positives_found": 0.1,
+      "skipped_positives": 0
+     }
+    },
+    "main:laser": {
+     "threshold": 0.7867,
+     "short": {
+      "support_pos": 2,
+      "support_neg": 570,
+      "precision": 0.667,
+      "recall": 1.0,
+      "tp": 2,
+      "false_positives": 1,
+      "ceiling_min_pr": 0.667,
+      "ceiling_threshold": 0.9041,
+      "ceiling_if_skipped_positives_found": 0.667,
+      "skipped_positives": 0
+     },
+     "long": {
+      "support_pos": 11,
+      "support_neg": 800,
+      "precision": 0.9,
+      "recall": 0.818,
+      "tp": 9,
+      "false_positives": 1,
+      "ceiling_min_pr": 0.818,
+      "ceiling_threshold": 0.9623,
+      "ceiling_if_skipped_positives_found": 0.818,
+      "skipped_positives": 0
+     }
+    }
+   }
+  },
+  "A3": {
+   "windows": "all 10 s windows except 3 not embedded",
+   "later_windows": 442,
+   "missing_embeddings": 8,
+   "heads": {
+    "pilot:bass guitar": {
+     "threshold": 0.6499,
+     "short": {
+      "support_pos": 12,
+      "support_neg": 543,
+      "precision": 0.6,
+      "recall": 1.0,
+      "tp": 12,
+      "false_positives": 8,
+      "ceiling_min_pr": 0.917,
+      "ceiling_threshold": 0.8427,
+      "ceiling_if_skipped_positives_found": 0.917,
+      "skipped_positives": 0
+     },
+     "long": {
+      "support_pos": 28,
+      "support_neg": 674,
+      "precision": 0.29,
+      "recall": 0.964,
+      "tp": 27,
+      "false_positives": 66,
+      "ceiling_min_pr": 0.857,
+      "ceiling_threshold": 0.9571,
+      "ceiling_if_skipped_positives_found": 0.857,
+      "skipped_positives": 0
+     }
+    },
+    "pilot:foley hit": {
+     "threshold": 0.6302,
+     "short": {
+      "support_pos": 30,
+      "support_neg": 510,
+      "precision": 0.302,
+      "recall": 0.533,
+      "tp": 16,
+      "false_positives": 37,
+      "ceiling_min_pr": 0.4,
+      "ceiling_threshold": 0.7713,
+      "ceiling_if_skipped_positives_found": 0.5,
+      "skipped_positives": 3
+     },
+     "long": {
+      "support_pos": 10,
+      "support_neg": 767,
+      "precision": 0.1,
+      "recall": 0.1,
+      "tp": 1,
+      "false_positives": 9,
+      "ceiling_min_pr": 0.1,
+      "ceiling_threshold": 0.7684,
+      "ceiling_if_skipped_positives_found": 0.1,
+      "skipped_positives": 0
+     }
+    },
+    "main:laser": {
+     "threshold": 0.7867,
+     "short": {
+      "support_pos": 2,
+      "support_neg": 570,
+      "precision": 0.667,
+      "recall": 1.0,
+      "tp": 2,
+      "false_positives": 1,
+      "ceiling_min_pr": 0.667,
+      "ceiling_threshold": 0.9041,
+      "ceiling_if_skipped_positives_found": 0.667,
+      "skipped_positives": 0
+     },
+     "long": {
+      "support_pos": 11,
+      "support_neg": 800,
+      "precision": 0.9,
+      "recall": 0.818,
+      "tp": 9,
+      "false_positives": 1,
+      "ceiling_min_pr": 0.818,
+      "ceiling_threshold": 0.9623,
+      "ceiling_if_skipped_positives_found": 0.818,
+      "skipped_positives": 0
+     }
+    }
+   }
+  }
+ },
+ "shipped_head": "A2 bass guitar, threshold 0.6537, in public/sound-model/short-clip.json",
+ "training": {
+  "bass guitar": {
+   "positives": 119,
+   "negatives": 1262,
+   "positive_groups": 37,
+   "negative_groups": 983,
+   "by_family": {
+    "freesound-cc0": 119
+   },
+   "threshold": 0.6537,
+   "oof_all": {
+    "precision": 0.991,
+    "recall": 0.975,
+    "f1": 0.983,
+    "tp": 116,
+    "fp": 1,
+    "fn": 3,
+    "support": 119
+   },
+   "oof_short": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "tp": 5,
+    "fp": 0,
+    "fn": 0,
+    "support": 5
+   },
+   "oof_long": {
+    "precision": 0.991,
+    "recall": 0.974,
+    "f1": 0.982,
+    "tp": 111,
+    "fp": 1,
+    "fn": 3,
+    "support": 114
+   }
+  },
+  "foley hit": {
+   "positives": 302,
+   "negatives": 1023,
+   "positive_groups": 225,
+   "negative_groups": 786,
+   "by_family": {
+    "freesound-cc0": 302
+   },
+   "threshold": 0.6302,
+   "oof_all": {
+    "precision": 0.887,
+    "recall": 0.887,
+    "f1": 0.887,
+    "tp": 268,
+    "fp": 34,
+    "fn": 34,
+    "support": 302
+   },
+   "oof_short": {
+    "precision": 0.917,
+    "recall": 0.901,
+    "f1": 0.909,
+    "tp": 100,
+    "fp": 9,
+    "fn": 11,
+    "support": 111
+   },
+   "oof_long": {
+    "precision": 0.87,
+    "recall": 0.88,
+    "f1": 0.875,
+    "tp": 168,
+    "fp": 25,
+    "fn": 23,
+    "support": 191
+   }
+  }
+ },
+ "fetch": {
+  "pos": {
+   "kept": {
+    "bass guitar": 119,
+    "foley hit": 302,
+    "bass guitar hard negatives": 13
+   },
+   "uploaders": 267,
+   "dropped": {
+    "foley hit: uploader text does not confirm an impact": 298,
+    "bass guitar: uploader text does not confirm a bass guitar": 73,
+    "hard negative: uploader text does not confirm the other instrument": 2
+   }
+  },
+  "neg2": {
+   "kept": {
+    "bass guitar": 0,
+    "foley hit": 0,
+    "bass guitar hard negatives": 120
+   },
+   "uploaders": 88,
+   "dropped": {
+    "hard negative: uploader text does not confirm the other instrument": 189
+   }
+  },
+  "neg3": {
+   "kept": {
+    "bass guitar": 0,
+    "foley hit": 0,
+    "bass guitar negatives": 314
+   },
+   "uploaders": 189,
+   "dropped": {
+    "drum negative: uploader text does not confirm drums without bass": 86
+   }
+  }
+ },
+ "select": {
+  "planned": {
+   "foley hit": 600,
+   "bass guitar": 192,
+   "hard negative": 15
+  },
+  "row_groups_hint": 770,
+  "dropped": {
+   "foley hit: licence not CC0/BY": 208,
+   "foley hit: uploader in an exclusion set": 1068,
+   "bass guitar: uploader in an exclusion set": 785,
+   "foley hit: uploader under a dynamic held-out rule": 184,
+   "hard negative: uploader in an exclusion set": 80,
+   "bass guitar: uploader under a dynamic held-out rule": 56,
+   "bass guitar: licence not CC0/BY": 83,
+   "foley hit: id in an exclusion set": 89,
+   "hard negative: licence not CC0/BY": 11,
+   "bass guitar: id in an exclusion set": 96,
+   "hard negative: id in an exclusion set": 8,
+   "foley hit: uploader cap (4)": 108,
+   "foley hit: over the 600-clip limit": 17,
+   "bass guitar: uploader cap (10)": 25,
+   "hard negative: uploader cap (4)": 71
+  }
+ },
+ "fold_groups_note": "Every Freesound row uses the fold group freesound:<uploader>. The first build of this report used freesound-user:<uploader> for round-two rows, which split 17 uploaders across two groups and gave a threshold of 0.7738 (holdout short 0.846/0.917); the screens and training here are rerun with one namespace.",
+ "select_note": "\"select\" is the positives run (out-dir pos). Its bass guitar and foley hit rows, and 13 hard negatives from an earlier, narrower low-sound class list (cap 4), were fetched and trained. The other hard negatives came from a separate \"hard negative\" run (cap 3, 309 planned) and the drum negatives from a \"drum negative\" run (400 planned); see positives_from_mirror.py."
+}

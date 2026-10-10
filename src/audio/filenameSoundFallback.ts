@@ -30,7 +30,7 @@ export function filenameSoundFallback(audio: MusicAnalysis, node: Pick<DocNode, 
   const compatibleSource = (source?: string) => !source || (sourceSnapshot === undefined || sourceSnapshot.includes(source))
     && sourceReviewAllows(audio, source) && (!sources.length || sources.includes(source));
   // Long phrases precede their nested aliases, e.g. "reverse impact" before "impact".
-  const matches = DJ_CATALOG.filter(c => c.group !== 'source').flatMap(c => [c.label, ...c.aliases]
+  const matches = DJ_CATALOG.filter(c => c.group !== 'source' || mergedDjLabel('source', c.label).group !== 'source').flatMap(c => [c.label, ...c.aliases]
     .map(words).filter(alias => /[a-z]/.test(alias) && text.includes(` ${alias} `)).map(alias => ({c, alias})))
     .sort((a, b) => b.alias.length - a.alias.length);
   const consumed: string[] = [];
