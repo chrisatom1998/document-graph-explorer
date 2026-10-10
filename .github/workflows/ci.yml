@@ -29,7 +29,9 @@ env:
     !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
 
 jobs:
-  build-and-test:
+  # Lint, type-check and every build. The unit tests run beside it in unit-tests; build-and-test below is the one
+  # check that is green only when both passed.
+  lint-and-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -74,9 +76,6 @@ jobs:
       - name: Type-check
         run: npm run typecheck
 
-      - name: Test
-        run: npm test
-
       - name: Build (production)
         run: npm run build
 
@@ -102,6 +101,57 @@ jobs:
             console.log('run.exe has', iconCount, 'embedded icon(s)');
           "
           test -f docker/downloads/Document\ Graph\ Explorer.exe || (echo "exe was not staged for Docker downloads" && exit 1)
+
+  # The unit tests took ~10 of build-and-test's 14 minutes in one job, and ~9 of those were one test: the graph
+  # accuracy check on 61 real Python PEPs (src/eval/graphAccuracy.test.ts), which embeds every document with the real
+  # model. It gets a machine of its own; the other ~350 test files take about 3 minutes in the job beside it.
+  unit-tests:
+    name: unit tests (${{ matrix.part }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - part: all but graph accuracy
+            args: --exclude src/eval/graphAccuracy.test.ts
+          - part: graph accuracy
+            args: src/eval/graphAccuracy.test.ts
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Same weights as lint-and-build; tests that read them see the same files. Restore only: lint-and-build saves.
+      - name: Restore audio model weights
+        id: music-models
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+
+      - name: Download audio model weights
+        if: steps.music-models.outputs.cache-hit != 'true'
+        run: npm run setup:music
+
+      - name: Test
+        run: npm test -- ${{ matrix.args }}
+
+  # Keeps the single `build-and-test` check, green only when lint, builds and both unit-test parts passed.
+  build-and-test:
+    if: always()
+    needs: [lint-and-build, unit-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require lint, builds and both unit-test parts to pass
+        run: test "${{ needs.lint-and-build.result }}" = success && test "${{ needs.unit-tests.result }}" = success
 
   # The browser suite takes ~37 min serially, so it runs as four parallel jobs
   # balanced by measured duration (groups are defined in playwright.config.ts).
