@@ -129,10 +129,10 @@ def main():
         report['sets'][sname]['_meanAP'] = round(float(np.mean(aps)), 4)
         print(f'{sname}: mean AP {np.mean(aps):.4f}', flush=True)
     json.dump(report, open(report_path, 'w'), indent=1)
+    if model_path: export(model_path, metas, items, blocks, classes, report)
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'audio-model'))
     import charts  # noqa: E402  one finished point on the live training chart: cross-validated mean AP per feature set
     charts.summary('full-mix-heads', {}, {'validation mAP': max(v['_meanAP'] for v in report['sets'].values()), **{f'validation mAP {n}': v['_meanAP'] for n, v in report['sets'].items()}})
-    if model_path: export(model_path, metas, items, blocks, classes, report)
 
 EXPORT_SET = 'clap+astmap+jam'   # the inputs the app already has per window, with no worker change
 def export(model_path, metas, items, blocks, classes, report):
