@@ -75,4 +75,5 @@ it('names merged look-alike tags by their surviving label and group',()=>{
   expect(soundMatchLabels({title:'downlifter.wav',audio:audio()}).map(t=>t.label)).toEqual(['falling']);
   expect(labels('turntable.wav')).toEqual([{dimension:'effect',label:'vinyl scratch',origin:'From filename'}]);
   expect(labels('harmony_vocals.wav').filter(x=>x.dimension==='effect')).toEqual([{dimension:'effect',label:'choir',origin:'From filename'}]);
+  expect(labels('acid_bass_loop.wav').filter(x=>x.dimension==='effect')).toEqual([{dimension:'effect',label:'acid synth',origin:'From filename'}]);
 });
