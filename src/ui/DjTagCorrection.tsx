@@ -8,7 +8,10 @@ const names: Record<DjGroup,string> = {source:'Source',production:'Production ty
 const PICKER_COUNT = Object.values(DJ_PICKER_LABELS).flat().length;
 /** Merged-away names still find the tag they now show under. */
 const MERGED_FROM: Record<string,string[]> = {};
-for (const [from, to] of Object.entries(MERGED_DJ_LABELS)) (MERGED_FROM[`${to.group}:${to.label}`] ??= []).push(from.split(':')[1]);
+for (const [from, to] of Object.entries(MERGED_DJ_LABELS)) {
+  const [group, label] = from.split(':');
+  (MERGED_FROM[`${to.group}:${to.label}`] ??= []).push(label, ...(DJ_CATALOG.find(c => c.group === group && c.label === label)?.aliases ?? []));
+}
 /** Automatic tags under their merged names, so a box for a merged-away label never shows up checked and hidden. */
 function mergedTags(tags: ConfirmedDjTags): ConfirmedDjTags {
   const out: ConfirmedDjTags = {source:[],production:[],character:[]};

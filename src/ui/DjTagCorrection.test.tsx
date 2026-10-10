@@ -13,3 +13,11 @@ it('searches category aliases while retaining checked tags outside the search', 
   fireEvent.change(screen.getByRole('searchbox'),{target:{value:'uplifter'}});
   expect(screen.getByLabelText('riser')).toBeDefined();
 });
+it('finds a merged tag by the old name and its aliases', () => {
+  const node = {id:'clip', audio:{confirmedDjTags:{source:[],production:[],character:[]}}} as unknown as DocNode;
+  render(<DjTagCorrection node={node}/>);
+  for (const value of ['vocal harmony', 'harmony vocals']) {
+    fireEvent.change(screen.getByRole('searchbox'),{target:{value}});
+    expect(screen.getByLabelText('choir')).toBeDefined();
+  }
+});
