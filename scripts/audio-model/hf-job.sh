@@ -23,7 +23,11 @@
 # ROUND12=1 (round12/round12.json): adds the empty-tag train audio (private cmjatom/dge-private-train empty-tags/v1, prepared
 # by prepare-run9.py as etfs9/etls9, no renders), the extra look-alike groups, oversampling of the target tags (--rare-tags,
 # RARE_REPEAT times) and any approved merges (--merge); and stops before training if a training row is an FSD50K eval clip.
+# Round 13: R13_DATA=<private dataset>:<folder> adds the leak-filtered staged sets it names (r13-set.py: empty-tags, synth
+# presets, effect pairs), extra NSynth bright / dark train notes (r13-nsynth-notes.py) and drops the listed training ids
+# (train.py --drop); MERGE_ONLY=1 applies round 12's merges without its oversampling or look-alikes.
 set -euo pipefail
+if [ "${ROUND12:-0}" = 1 ] && [ "${MERGE_ONLY:-0}" = 1 ]; then echo "stopping: MERGE_ONLY=1 is round 12's merges without its oversampling; it cannot be combined with ROUND12=1"; exit 1; fi
 START=$(date +%s)
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q && apt-get install -yq --no-install-recommends ffmpeg git ca-certificates curl > /dev/null
@@ -211,6 +215,35 @@ if [ "${ROUND10:-0}" = 1 ]; then   # round 10 commercial training packs, private
   fi
   tail -n 3 round10.log; R10_PID=done; EXTRA+=(--extra round10=r10prep)
 fi
+R13_SETS=; TRAIN_DROP=
+if [ -n "${R13_DATA:-}" ]; then   # round 13 (round13 plan): train-only lists filtered for test leaks in the project container
+  # R13_DATA=<private dataset>:<folder> holds sets.json ({prefix: staged folder of the same dataset}), <prefix>-keep.csv per set
+  # (r13-set.py), and optionally nsynth-notes.txt (r13-nsynth-notes.py) and drop-train-ids.json (train.py --drop).
+  # Built one after another, after the other preps, so an L4 job does not run out of memory.
+  R13_REPO=${R13_DATA%%:*}
+  python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='r13in')" "$R13_DATA"
+  R13=r13in/${R13_DATA#*:}
+  python3 $S/round12/check-fsd50k-eval.py $R13/*-keep.csv || exit 1   # runs on every job, cache hit or not
+  for P in $(python3 -c "import json, sys; print(' '.join(json.load(open(sys.argv[1]))))" $R13/sets.json); do
+    SRC=$(python3 -c "import json, sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])" $R13/sets.json $P)
+    if ! from_cache r13$P ${P}prep r13-set.py --data "$R13_REPO:$SRC" --data "$R13_DATA/$P-keep.csv" --arg "prefix=$P" > r13$P.log 2>&1; then
+      python3 -c "import sys; from huggingface_hub import snapshot_download as d; d(sys.argv[1], repo_type='dataset', allow_patterns=[sys.argv[2] + '/*'], local_dir='r13dl', max_workers=16)" "$R13_REPO" "$SRC"
+      mkdir -p ${P}stage; for m in $(find r13dl/$SRC -name manifest.csv); do d=$(dirname $m); r=${d#r13dl/$SRC}; r=${r#/}; mv "$d" "${P}stage/$(echo ${r:-$(basename $d)} | tr / -)"; done
+      python3 $S/r13-set.py ${P}stage ${P}prep $P $R13/$P-keep.csv --workers 6 >> r13$P.log 2>&1 || { tail -n 30 r13$P.log; exit 1; }
+      rm -rf r13dl ${P}stage; to_cache r13$P ${P}prep r13$P.log
+    fi
+    tail -n 4 r13$P.log
+    for n in ${P}fs9 ${P}ls9; do [ -f ${P}prep/$n.json ] && { EXTRA+=(--extra $n=${P}prep); R13_SETS="$R13_SETS $n=${P}prep"; }; done
+  done
+  if [ -f $R13/nsynth-notes.txt ]; then
+    if ! from_cache nsx nsxprep r13-nsynth-notes.py --data "$R13_DATA/nsynth-notes.txt" > nsx.log 2>&1; then
+      python3 $S/r13-nsynth-notes.py $R13/nsynth-notes.txt nsxprep --workers 8 >> nsx.log 2>&1 || { tail -n 30 nsx.log; exit 1; }
+      to_cache nsx nsxprep nsx.log
+    fi
+    tail -n 2 nsx.log; EXTRA+=(--extra nsx=nsxprep); R13_SETS="$R13_SETS nsx=nsxprep"
+  fi
+  [ -f $R13/drop-train-ids.json ] && TRAIN_DROP=$PWD/$R13/drop-train-ids.json
+fi
 echo "all data ready after $(( ($(date +%s) - START) / 60 )) min"
 SRC_CACHE_PID=
 if [ -s cache-todo.txt ]; then python3 $S/prep-cache.py put cache-todo.txt > src-cache-upload.txt 2>&1 & SRC_CACHE_PID=$!; fi
@@ -240,6 +273,8 @@ echo "training budget ${HOURS} h"
 if [ -n "${SOFT_LABELS:-}" ]; then EXTRA+=(--soft /tmp/soft-labels.json); fi
 if [ -n "${ABSENT_FIX:-}" ]; then EXTRA+=(--absent-fix /tmp/absent-fix.json); fi
 if [ "${ROUND12:-0}" = 1 ]; then EXTRA+=(--merge $S/round12/round12.json --rare-tags "$RARE_TAGS"); fi
+if [ -n "$TRAIN_DROP" ]; then EXTRA+=(--drop "$TRAIN_DROP"); fi
+if [ "${MERGE_ONLY:-0}" = 1 ]; then EXTRA+=(--merge $S/round12/round12.json); fi   # round 13: round 12's merges without its oversampling
 python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --rare-repeat "${RARE_REPEAT:-1}" --repeat "${SOURCE_REPEAT:-}" --threads 8 --hours "$HOURS"
 # Which data trained this model, so it can be rebuilt without any one source (chris-drive rows keep source=chris-drive).
 python3 - "${EXTRA[@]}" <<'EOF'
@@ -300,6 +335,7 @@ CAL=(openmic=prep jamendo=prepj); EVAL=(prep/eval-round1 prep/eval-round2 holdou
 [ -n "$RN_PID" ] && CAL+=(fs9=r9prep ls9=r9prep) && EVAL+=(r9prep/eval-run9)
 [ -n "$R10_PID" ] && CAL+=(round10=r10prep)
 [ -n "${ET_PID:-}" ] && CAL+=(etfs9=etprep etls9=etprep)
+for x in $R13_SETS; do CAL+=($x); done
 if [ "${ALL_TAGS:-0}" = 1 ]; then CAL+=(fsd50k=fsdprep nsynth=nsprep freesound=fsprep); for x in $XS; do CAL+=($x=xprep); done; EVAL+=(fsdprep/eval-fsd50k nsprep/eval-nsynth-test nsprep/eval-nsynth-test-fx fsprep/eval-freesound); fi
 python3 $S/calibrate.py run "${CAL[@]}" | tee run/calibrate.txt
 python3 $S/coverage.py run "${CAL[@]}" 
