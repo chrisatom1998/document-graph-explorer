@@ -16,6 +16,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import train  # noqa: E402
 from labelmap import FREESOUND  # noqa: E402
+import fsd50k_extra  # noqa: E402
 
 run, *pairs = sys.argv[1:]
 preps = dict(p.split('=', 1) for p in pairs)
@@ -27,6 +28,7 @@ val = {}
 for name, ids in log['val'].items():
     if name not in preps: continue
     mel, js = FILES.get(name, (f'{name}-mel.npy', f'{name}.json')); items = {it['id']: it for it in json.load(open(os.path.join(preps[name], js)))['items']}
+    if name == 'fsd50k': fsd50k_extra.relabel(list(items.values()), 'dev')   # the labels train.py trained on
     src = train.load_source(name, os.path.join(preps[name], mel), [items[i] for i in ids], 1.0)
     val[name] = (src['y'], src['w'], np.load(os.path.join(run, f'val-{name}.npy')))
 

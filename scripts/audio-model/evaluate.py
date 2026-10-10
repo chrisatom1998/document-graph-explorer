@@ -12,6 +12,8 @@ by the uploader) only counts in the weak view. Thresholds were chosen on validat
 import json, os, sys
 import numpy as np
 import onnxruntime as ort
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import fsd50k_extra  # noqa: E402
 
 model, thresholds, out_path, *sets = sys.argv[1:]
 th = json.load(open(thresholds))
@@ -47,6 +49,7 @@ report = {}
 for base in sets:
     name = os.path.basename(base)
     meta = json.load(open(base + '.json')); items = meta['items']
+    if name == 'eval-fsd50k': print(f'{name}: {fsd50k_extra.relabel(items, "eval", strings=True)} labels added (fsd50k_extra.py)', flush=True)
     wav = np.load(base + '.npy', mmap_mode='r'); s = scores(Ragged(wav, meta['offsets']) if 'offsets' in meta else wav)
     named = sorted({c for it in items for c in it['labels']} & set(classes) & set(th))
     score_these = [c for c in MAP if c in named] if any(c in MAP for c in named) else named
