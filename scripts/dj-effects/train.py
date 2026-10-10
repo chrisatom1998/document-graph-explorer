@@ -24,6 +24,7 @@ import json, sys, glob, os, datetime
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GroupKFold
+from eligibility import known_duration, long_clip_metrics
 
 MANIFEST, EMB, OUT = sys.argv[1:4]; RENDERS = sys.argv[4] if len(sys.argv) > 4 else None
 os.makedirs(OUT, exist_ok=True)
@@ -73,7 +74,9 @@ SC = json.load(open('public/sound-model/short-clip.json'))
 assert SC['blocks'] == ['clapRepeat'], 'short-clip comparison assumes the CLAP-only block layout'
 XS = (X - np.asarray(SC['mean'])) / np.asarray(SC['std'])   # shortClipModel.ts vector(): unit CLAP, then standardised
 DUR = json.load(open(os.environ['DURATIONS'])) if os.environ.get('DURATIONS') else {}
-SHORT = np.array([DUR.get(i, 1e9) <= SC['maxSeconds'] for i in ids])
+if not DUR:
+    print('No DURATIONS supplied: research scores only; ship.py will abstain until runtime-eligible duration evidence is supplied.')
+SHORT = np.array([known_duration(DUR.get(i)) and DUR[i] <= SC['maxSeconds'] for i in ids])
 print(f'held-out clips of at most {SC["maxSeconds"]} s: {int((SHORT & TEST).sum())} (durations known for {len(DUR)})')
 
 heads, report = [], {}
@@ -96,9 +99,15 @@ for label in [L['label'] for L in spec['labels']]:
             continue
         p = sig(X[te] @ np.asarray(hd['weights']) + hd['bias'])
         e.setdefault('current', []).append({'file': hd['file'], 'maybe': bool(hd.get('maybe')), 'threshold': hd['threshold'], **prf(pos[te], p >= hd['threshold'])})
+        if DUR:
+            e['current'][-1]['heldOutLongClip'] = long_clip_metrics(pos[te], p >= hd['threshold'],
+                [DUR.get(ids[i]) for i in np.where(te)[0]], SC['maxSeconds'])
         if (tx != te).any():
             p = sig(X[tx] @ np.asarray(hd['weights']) + hd['bias'])
             e.setdefault('extended', {})['current'] = {'positives': int(pos[tx].sum()), 'negatives': int((~pos[tx]).sum()), **prf(pos[tx], p >= hd['threshold'])}
+            if DUR:
+                e['extended']['current']['heldOutLongClip'] = long_clip_metrics(pos[tx], p >= hd['threshold'],
+                    [DUR.get(ids[i]) for i in np.where(tx)[0]], SC['maxSeconds'])
     variants = {'real': real_tr}
     if e['trainRenders']: variants['real+renders'] = tr
     best = None
@@ -126,8 +135,18 @@ for label in [L['label'] for L in spec['labels']]:
     if e['testPositive'] < MIN_TEST:
         report[label] = {**e, 'verdict': f'fewer than {MIN_TEST} held-out positives; not tested'}; continue
     res = prf(pos[te], model.predict_proba(X[te])[:, 1] >= th)
+    # The exported coefficients are what the browser will actually score. Shipping
+    # excludes whole one-shots; their separate clearance remains oneshot.py's job.
+    exported_weights = np.asarray([round(float(w), 6) for w in model.coef_[0]])
+    exported_bias = round(float(model.intercept_[0]), 6)
+    if DUR:
+        e['heldOutLongClip'] = long_clip_metrics(pos[te], sig(X[te] @ exported_weights + exported_bias) >= th,
+            [DUR.get(ids[i]) for i in np.where(te)[0]], SC['maxSeconds'])
     if (tx != te).any():
         e.setdefault('extended', {})['new'] = {'positives': int(pos[tx].sum()), 'negatives': int((~pos[tx]).sum()), **prf(pos[tx], model.predict_proba(X[tx])[:, 1] >= th)}
+        if DUR:
+            e['extended']['new']['heldOutLongClip'] = long_clip_metrics(pos[tx], sig(X[tx] @ exported_weights + exported_bias) >= th,
+                [DUR.get(ids[i]) for i in np.where(tx)[0]], SC['maxSeconds'])
     if DUR:
         rows = te & SHORT
         e['heldOutOneShot'] = {'positives': int(pos[rows].sum()), 'negatives': int((~pos[rows]).sum()),
@@ -139,12 +158,15 @@ for label in [L['label'] for L in spec['labels']]:
                   'bias': round(float(model.intercept_[0]), 6), 'threshold': round(th, 4)})
     report[label] = e
 
-lines = [f"{'label':<16}{'train+':>7}{'test+':>6}{'test-':>6}{'thresh':>8}{'P':>7}{'R':>7}   {'verdict':<17}{'trained on':<14}current head on same held-out"]
+lines = ['Aggregate metrics below include all durations; shipping uses heldOutLongClip, matching the runtime one-shot exclusion.',
+         f"{'label':<16}{'train+':>7}{'test+':>6}{'test-':>6}{'thresh':>8}{'P':>7}{'R':>7}   {'verdict':<17}{'trained on':<14}current head on same held-out"]
 for label, e in report.items():
     cur = '; '.join(f"{c['file'].split('.')[0]}{' maybe' if c['maybe'] else ''}{' (<=2.25 s clips)' if c.get('subset') else ''} P{c['precision']:.2f} R{c['recall']:.2f}" for c in e.get('current', [])) or '-'
     if e.get('extended', {}).get('new'):
         x = e['extended']; cur += f"   | all held-out ({x['new']['positives']}+): new P{x['new']['precision']:.2f} R{x['new']['recall']:.2f}" + (f", current P{x['current']['precision']:.2f} R{x['current']['recall']:.2f}" if 'current' in x else '')
     if e.get('heldOutOneShot', {}).get('positives'): o = e['heldOutOneShot']; cur += f"   | new on <=2.25 s: P{o['precision']:.2f} R{o['recall']:.2f} ({o['positives']}+/{o['negatives']}-)"
+    if e.get('heldOutLongClip'):
+        o = e['heldOutLongClip']; cur += f"   | runtime >{SC['maxSeconds']} s: P{o['precision']:.2f} R{o['recall']:.2f} ({o['positives']}+/{o['negatives']}-; {o['unknownDurations']} unknown durations)"
     if 'precision' not in e: lines.append(f"{label:<16}{e['trainPositive']:>7}{e['testPositive']:>6}{e['testNegative']:>6}{'-':>8}{'-':>7}{'-':>7}   {e['verdict']:<17} {e.get('variant', '-'):<14}{cur}"); continue
     lines.append(f"{label:<16}{e['trainPositive']:>7}{e['testPositive']:>6}{e['testNegative']:>6}{e['threshold']:>8.3f}{e['precision']:>7.2f}{e['recall']:>7.2f}   {e['verdict']:<17} {e['variant']:<14}{cur}")
 text = '\n'.join(lines); print(text)

@@ -25,7 +25,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 89/90: five round-16 heads retrained without FSD50K eval clips (round16-clean-2026-10-10).
 // 91/92: tagger blend of runs 3, 5, 7 and 8 with eight more tags (old tagger scores no longer count).
 // 93/94: the tagger decides environmental sound, foley, turntable, finger snap and water ambience (held-out FSD50K 50/50).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 94 : 93;
+// 95/96: tag-heads-2026-10-09 heads re-tiered on runtime-eligible long clips (conga, gliding, tambourine
+// removed; viola back to maybe).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 96 : 95;
 export interface InstrumentEstimate {
   label: string;
   score: number;
