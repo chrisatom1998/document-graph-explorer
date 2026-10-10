@@ -1,0 +1,51 @@
+"""Decoded-audio de-duplication between the pilot's training rows and the locked holdout, and within training.
+
+Usage: python3 -I scripts/licensed-pilot/dedupe.py <holdout.json> <free-tag-set dir> <emb.jsonl,...> <out-dir> <manifest.csv>...
+Writes <out-dir>/<manifest name> (rows kept) and <out-dir>/dedupe.json (every dropped row and why).
+
+Three tests, each on decoded audio rather than file bytes, so mirrors, re-encodes and renamed copies are caught:
+1. identical 16 kHz mono PCM (sha256) to a holdout file or to an earlier training row;
+2. CLAP embedding cosine >= 0.98 to any holdout file (catches crops, gain changes and transcodes of the same sound);
+3. CLAP cosine >= 0.995 to a training row of a different fold group (the copy would leak across folds).
+A training row hit by 1 or 2 is dropped; a row hit by 3 joins the earlier row's fold group.
+"""
+import csv, hashlib, json, os, subprocess, sys
+import numpy as np
+
+HOLD, FTS, EMB, OUT, *MANIFESTS = sys.argv[1:]
+os.makedirs(OUT, exist_ok=True)
+emb = {}
+for f in EMB.split(','):
+    for line in open(f):
+        r = json.loads(line); emb.setdefault(r['id'], r['embedding'])
+unit = lambda v: np.asarray(v) / np.linalg.norm(v)
+hold = json.load(open(HOLD))['items']
+hpcm = {}
+for i in hold:
+    raw = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-i', os.path.join(FTS, i['path']), '-ac', '1', '-ar', '16000', '-f', 's16le', '-'], capture_output=True).stdout
+    hpcm[hashlib.sha256(raw).hexdigest()] = i['id']
+H = np.stack([unit(emb[i['id']]) for i in hold if i['id'] in emb]); hids = [i['id'] for i in hold if i['id'] in emb]
+dropped, regrouped, kept_pcm, kept = [], [], {}, []
+for m in MANIFESTS:
+    rows = list(csv.DictReader(open(m))); out = []
+    for r in rows:
+        why = None
+        if r['pcm16k_sha256'] in hpcm: why = f"decoded audio identical to holdout {hpcm[r['pcm16k_sha256']]}"
+        elif r['pcm16k_sha256'] in kept_pcm: why = f"decoded audio identical to training row {kept_pcm[r['pcm16k_sha256']]}"
+        elif r['id'] in emb:
+            v = unit(emb[r['id']]); sims = H @ v; j = int(sims.argmax())
+            if sims[j] >= 0.98: why = f'CLAP cosine {sims[j]:.3f} to holdout {hids[j]}'
+            else:
+                for k, (kid, kv, kg) in enumerate(kept):
+                    if kg != r['fold_group'] and float(kv @ v) >= 0.995:
+                        regrouped.append({'id': r['id'], 'from': r['fold_group'], 'to': kg, 'cosine': round(float(kv @ v), 4)}); r['fold_group'] = kg; break
+        if why: dropped.append({'id': r['id'], 'manifest': os.path.basename(m), 'reason': why}); continue
+        kept_pcm[r['pcm16k_sha256']] = r['id']
+        if r['id'] in emb: kept.append((r['id'], unit(emb[r['id']]), r['fold_group']))
+        out.append(r)
+    with open(os.path.join(OUT, os.path.basename(m)), 'w', newline='') as f:
+        w = csv.DictWriter(f, list(rows[0])); w.writeheader(); w.writerows(out)
+    print(f'{os.path.basename(m)}: kept {len(out)} of {len(rows)}')
+json.dump({'dropped': dropped, 'regrouped': regrouped, 'holdout_files_compared': len(hold), 'holdout_embedded': len(hids)},
+          open(os.path.join(OUT, 'dedupe.json'), 'w'), indent=1)
+print(f'dropped {len(dropped)}, regrouped {len(regrouped)}')
