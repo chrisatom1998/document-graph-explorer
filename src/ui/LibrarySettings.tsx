@@ -80,7 +80,7 @@ export default function LibrarySettings() {
     void import('../pipeline/coordinatorLazy')
       .then(async (m) => {
         await m.analyzeAudioCorpus(updating);
-        // A track that failed keeps its older results, so count what actually moved on.
+        // Older results can remain after an attempt; leaving this list does not prove a Full scan finished.
         const pending = new Set(m.outdatedAudioIds());
         return updating.filter((id) => pending.has(id)).length;
       })
@@ -88,8 +88,8 @@ export default function LibrarySettings() {
         (left) =>
           setNote(
             left === 0
-              ? `Updated ${count(updating.length, 'track')} with the current detectors.`
-              : `Updated ${count(updating.length - left, 'track')}; ${count(left, 'track')} could not be updated. Try again.`,
+              ? `Update requested for ${count(updating.length, 'track')}. Check track progress and warnings.`
+              : `Update requested for ${count(updating.length, 'track')}; ${count(left, 'track')} still ${left === 1 ? 'has' : 'have'} older results. Check track progress and warnings.`,
           ),
         (error: unknown) =>
           setNote(error instanceof Error && error.name === 'AbortError' ? 'Update cancelled.' : 'Update failed. Try again.'),
