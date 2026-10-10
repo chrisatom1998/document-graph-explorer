@@ -1,4 +1,4 @@
-import { canonicalDjLabel, mergedDjLabel, type DjGroup } from './djTags';
+import { canonicalDjLabel, mergedDjLabel, MERGED_DJ_LABELS, type DjGroup } from './djTags';
 import type { Dimension, SoundReview } from './recognition';
 import type { TaggerTag } from './tagger';
 import policy from './taggerPolicy.json';
@@ -19,6 +19,12 @@ const labelKey = (dimension: Dimension, label: string) => {
 // Only explicit cross-dimension equivalents share listener decisions. A tagger's broader
 // replacement families (e.g. bass / bass guitar) must not merge distinct sound reviews.
 const sharedIdentities = new Map<string, string>();
+// Merged labels must also be recognized as reviewable shared sounds by consumer policies,
+// even when no trained tagger declares an alsoDecides relationship for them.
+for (const { group, label } of Object.values(MERGED_DJ_LABELS)) {
+  const identity = labelKey(DIMENSION_OF[group], label);
+  sharedIdentities.set(identity, identity);
+}
 for (const tag of policy.tags as TaggerTag[]) {
   if (!tag.alsoDecides?.length) continue;
   const identity = labelKey(tag.dimension, tag.label);
