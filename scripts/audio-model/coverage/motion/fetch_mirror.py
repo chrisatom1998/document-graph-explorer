@@ -49,6 +49,7 @@ def save(i, f, row, role, b):
 
 def one(item):
     f, js = item
+    saved = set()   # ids this worker already wrote: a retry after a partial read must not write or count them again
     for t in range(4):
         try:
             pf = pq.ParquetFile(fs.open('datasets/benjamin-paine/freesound-laion-640k/data/' + f, block_size=8 << 20))
@@ -63,15 +64,17 @@ def one(item):
                 for j in gj:
                     off = j['row'] - starts[g]
                     assert ids[off] == int(j['id']), (f, j, ids[off])
-                    save(int(j['id']), f, j['row'], j.get('role', 'pick'), tb.slice(off, 1).to_pylist()[0]['audio']['bytes'])
+                    if int(j['id']) in saved: continue
+                    save(int(j['id']), f, j['row'], j.get('role', 'pick'), tb.slice(off, 1).to_pylist()[0]['audio']['bytes']); saved.add(int(j['id']))
                 n = 0
                 for k, x in enumerate(ids):
                     if n >= a.extra: break
+                    if x in saved and x in NEG: n += 1; continue   # negative written on an earlier try: still counts toward this group's extras
                     if x in NEG and x not in done:
                         u = NE['user'][str(x)]
                         if u in used_users: continue   # per worker; build_test.py keeps one negative per uploader overall
                         used_users.add(u)
-                        save(x, f, starts[g] + k, 'negative', tb.slice(k, 1).to_pylist()[0]['audio']['bytes']); n += 1
+                        save(x, f, starts[g] + k, 'negative', tb.slice(k, 1).to_pylist()[0]['audio']['bytes']); saved.add(x); n += 1
             print('ok', f, len(js), flush=True); return
         except Exception as e:
             err = e; time.sleep(5 * (t + 1))

@@ -61,9 +61,10 @@ INSTRUMENTS = {'clarinet', 'oboe', 'flute', 'bassoon', 'saxophone', 'cello', 'vi
 
 def hp_cutoff(s, y, p_min, min_pos=10):
     """Lowest score whose at-or-above set is >= p_min labelled positives (and holds >= min_pos of them); None if none."""
-    o = np.argsort(-s); tp = np.cumsum(y[o]); n = np.arange(1, len(o) + 1)
-    ok = np.where((tp / n >= p_min) & (tp >= min_pos))[0]
-    return float(s[o][ok.max()]) if len(ok) else None
+    o = np.argsort(-s); so = s[o]; tp = np.cumsum(y[o]); n = np.arange(1, len(o) + 1)
+    end = np.r_[so[1:] != so[:-1], True]   # only the last clip of each tied score: the cutoff admits the whole tie
+    ok = np.where(end & (tp / n >= p_min) & (tp >= min_pos))[0]
+    return float(so[ok.max()]) if len(ok) else None
 
 
 def main():

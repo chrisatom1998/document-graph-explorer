@@ -75,13 +75,13 @@ def load_source(name, mel_path, items, weak):
         for c, r in labels.items():
             j = col[c]; y[i, j] = float(r >= 0.5); w[i, j] = weak if c in weak_set else 1.0
         yv[i] = y[i]; wv[i] = w[i]   # validation scores the clip's own labels and weights, never the teacher's soft targets
-        for c, (t, wt) in absent_fix.edits(it['id'], labels, weak_set).items():   # --absent-fix: weak absences only, training targets only
-            j = col.get(c)
-            if j is not None: y[i, j] = t; w[i, j] = wt
         for l, p in SOFT.get(it['id'], {}).items():   # distillation: the teacher labels every listed tag, at full weight
             j = col.get(f'cat:{l}')
             if j is None: continue
             y[i, j] = SOFT_MIX * y[i, j] + (1 - SOFT_MIX) * p if w[i, j] >= 1 else p; w[i, j] = 1.0
+        for c, (t, wt) in absent_fix.edits(it['id'], labels, weak_set).items():   # --absent-fix: weak absences only, training targets only, after --soft so it wins
+            j = col.get(c)
+            if j is not None: y[i, j] = t; w[i, j] = wt
     rows = np.array([it.get('row', i) for i, it in enumerate(items)])
     return {'name': name, 'mel': np.load(mel_path, mmap_mode='r'), 'rows': rows, 'y': y, 'yv': yv, 'w': w, 'wv': wv,
             'val': np.array([bool(it['val']) if 'val' in it else is_val(it['artist']) for it in items]), 'ids': [it['id'] for it in items],

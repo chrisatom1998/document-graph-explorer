@@ -229,7 +229,7 @@ def main():
     a = ap.parse_args()
     import surgepy
     s = surgepy.createSurge(48000)
-    val = set()
+    val, allz = set(), set()
     if a.zenodo:
         d = json.load(open(a.zenodo)); val = {i['artist'].removeprefix('surge:') for i in d['items'] if i['val']}
         allz = {i['artist'].removeprefix('surge:') for i in d['items']}
@@ -245,7 +245,7 @@ def main():
                          'excluded': 'in the validation split of the Zenodo 4677097 Surge renders already in training', 'zenodo_key': zk}); continue
         try: row, f = label(rel, s)
         except Exception as e: row, f = {'preset': rel, 'excluded': f'load/probe failed: {e}'}, None
-        row['zenodo_key'] = zk if zk in (allz if a.zenodo else set()) else ''
+        row['zenodo_key'] = zk if zk in allz else ''
         rows.append(row)
         if f: facts[rel] = f
         if k % 200 == 0: print(f'  {k}/{len(rels)}', flush=True)

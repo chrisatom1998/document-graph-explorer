@@ -1,13 +1,14 @@
 """Coverage idea #1, step A: train-only Freesound mirror candidates per tag, by CED-base + round 11 teacher votes. No audio.
 
 python3 -I mine-mirror.py <ced run dir> <mirror teacher features dir> <teacher dir> <heldout config.json> \
-    <ced-tag-map.json> <ced-confirm-rules.json> <in-training ids.txt> <out dir> [--focus tags.txt]
+    <ced-tag-map.json> <ced-confirm-rules.json> <in-training ids.txt> <out dir> --hp <hp-cutoffs.json> [--focus tags.txt]
   <ced run dir>: runs/ced-freesound-38026076860-1 of cmjatom/dge-eval-runs (CED-base AudioSet probabilities of the first
     10 s of all 494,513 clips of benjamin-paine/freesound-laion-640k; part-*/<shard>.npz + labels.txt).
   <mirror teacher features dir>: round11/mirror of cmjatom/dge-audio-training (teacher-features.py MODE=mirror, ~95k clips).
   <teacher dir>: labelfix/oof-scores.py output (teacher.pt = the 5 fold models, thresholds.json, val.json), fit on train-side
     clips only. Mirror clips are never in that fit, so the fold average applies to them as is.
   <in-training ids.txt>: Freesound ids already in (or already planned for) training, one per line; dropped as not new.
+  --hp: labelfix/build-absent-fix.py hp-cutoffs.json (tag -> out-of-fold 0.9-precision teacher cutoff).
 
 Votes per (clip, tag):
   CED      best mapped class >= CED_MIN (0.5, ced-select.py's MIN_SCORE). ced-tag-map.json classes are specific enough to

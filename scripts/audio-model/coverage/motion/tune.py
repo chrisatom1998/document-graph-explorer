@@ -11,7 +11,8 @@ Labels:
   Iowa / VSCO rolls: rolling present.
   Freesound train picks: the picked tag present; the keyword-free negatives from the same row groups absent for all.
 Search: each rule's numbers on a small grid; keep the setting with the best min(P, R) on the pooled train clips,
-ties to the higher F1. Prints the chosen numbers; --apply writes them into motion_rules.py's T.
+ties to the higher F1. Prints the chosen numbers; --apply writes them to <work-dir>/tuned.json (pass that file to
+score.py; motion_rules.py's T keeps its defaults).
 """
 import csv, glob, itertools, json, os, sys
 import numpy as np
