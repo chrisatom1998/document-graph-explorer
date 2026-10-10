@@ -7,6 +7,7 @@ describe('stemRoleOf', () => {
     expect(['kick', 'top loop', 'conga', 'drums'].map(stemRoleOf)).toEqual(['drums', 'drums', 'drums', 'drums']);
     expect(['808 bass', 'reese bass', 'synth bass', 'bass guitar'].map(stemRoleOf)).toEqual(['bass', 'bass', 'bass', 'bass']);
     expect(['vocal chops', 'voice', 'beatbox'].map(stemRoleOf)).toEqual(['vocals', 'vocals', 'vocals']);
+    expect(['acid synth', 'vocal shush'].map(stemRoleOf)).toEqual(['bass', 'vocals']);
     expect(['synth pluck', 'piano', 'atmospheric pad', 'strings'].map(stemRoleOf)).toEqual(['melody', 'melody', 'melody', 'melody']);
   });
   it('leaves effects, textures and character words out of every stem', () => {
