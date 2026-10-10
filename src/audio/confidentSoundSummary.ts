@@ -1,5 +1,5 @@
 import { confirmedInstrumentList, sourceReviewAllows } from './instrumentEvidence';
-import { canonicalDjLabel } from './djTags';
+import { canonicalDjLabel, mergedDjLabel, type DjGroup } from './djTags';
 import { fusionPresentation } from './fusionPresentation';
 import type { MusicAnalysis } from './musicTypes';
 import { dimensionLabels, type Dimension, type Interval } from './recognition';
@@ -14,7 +14,7 @@ import { isRuleDescribedLabel } from './timbreDescriptions';
 
 /** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
  * musicLinks), so a display change also changes which instrument links a track can form, by design. */
-export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v6';
+export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v7';
 /** The shipping bar (Chris, 2026-10-10): a detector shows as a normal tag when its held-out precision AND recall on clips and
  * samples are both at least this; below it, a useful detector shows as a faded "maybe". Full songs are a no-regression check
  * only. scripts/head-scorecard.py, scripts/dj-effects/ship.py and the tagger's `tested` flags use the same bar. */
@@ -215,9 +215,29 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   if(voiceHeads.length&&Math.max(...voiceHeads)<FULL_MIX_VOICE_VETO&&result.get('source:voice')?.origin==='model estimate')result.delete('source:voice');
   const testedBest=(s:DisplaySound)=>Math.max(...s.scores!.filter(x=>TESTED_SCORES.has(x.model)).map(x=>x.score));
   const raised=(s:DisplaySound)=>fullMix&&s.dimension==='source'&&FULL_MIX_MIN_TESTED_SCORE[s.label]!==undefined&&testedBest(s)<FULL_MIX_MIN_TESTED_SCORE[s.label];
-  return [...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
+  return foldMerged([...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
     :s.coverageUnknown?[s]
     :s.scores?.some(x=>TESTED_SCORES.has(x.model))?raised(s)?[]:[tiered(s,m=>TESTED_SCORES.has(m))]
     :s.scores?.some(x=>MAYBE_SCORES.has(x.model))?[{...tiered(s,m=>MAYBE_SCORES.has(m)),maybe:true}]
-    :long&&!CALIBRATED_LABELS.has(s.label)&&!UNVERIFIED_BLOCKED.has(s.label)&&catalogClap.has(`${s.dimension}:${s.label}`)&&s.scores?.some(x=>x.model==='CLAP similarity'&&x.score>=UNVERIFIED_SOUND_FLOOR)?[{...s,tier:'possible' as const,uncalibrated:true}]:[]);
+    :long&&!CALIBRATED_LABELS.has(s.label)&&!UNVERIFIED_BLOCKED.has(s.label)&&catalogClap.has(`${s.dimension}:${s.label}`)&&s.scores?.some(x=>x.model==='CLAP similarity'&&x.score>=UNVERIFIED_SOUND_FLOOR)?[{...s,tier:'possible' as const,uncalibrated:true}]:[]),
+    // A merged-away estimate moving to another dimension obeys that dimension's listener choices, as estimate() does.
+    (dimension,label)=>allowed(dimension,label)&&(dimension==='source'?confirmed===undefined:audio.confirmedDjTags===undefined));
 }
+const GROUP_OF:Partial<Record<Dimension,DjGroup>>={source:'source',effect:'production',character:'character'};
+const DIMENSION_OF:Record<DjGroup,Dimension>={source:'source',production:'effect',character:'character'};
+const strength=(s:DisplaySound)=>[s.origin==='confirmed by you'?3:s.uncalibrated?0:s.maybe?1:2,s.tier==='possible'?0:1,Math.max(0,...(s.scores??[]).map(x=>x.score))];
+const stronger=(a:DisplaySound,b:DisplaySound)=>{const x=strength(a),y=strength(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]>y[i];return false;};
+/** Shows each merged-away label (MERGED_DJ_LABELS) under the name it merged into, keeping the stronger of the two
+ * entries. A tag the listener rejected under the kept name is not revived through the old one. */
+function foldMerged(sounds:DisplaySound[],canEstimate:(dimension:Dimension,label:string)=>boolean):DisplaySound[]{
+  const out=new Map<string,DisplaySound>();
+  for(const s of sounds){
+    const group=GROUP_OF[s.dimension],m=group?mergedDjLabel(group,s.label):undefined;
+    const item=m&&(m.group!==group||m.label!==s.label)?{...s,dimension:DIMENSION_OF[m.group],label:m.label}:s;
+    if(item!==s&&item.origin!=='confirmed by you'&&!canEstimate(item.dimension,item.label))continue;
+    const key=`${item.dimension}:${item.label}`,old=out.get(key);
+    if(!old||stronger(item,old))out.set(key,item);
+  }
+  return [...out.values()];
+}
+
