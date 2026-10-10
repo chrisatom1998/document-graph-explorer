@@ -23,6 +23,8 @@ PART=freesound, one of NPARTS uploader shards (sha256 of the uploader name), fro
     training sounds and uploaders, run 7's fsnew training sounds and uploaders, this list's own train uploaders, and the
     ESC-50 / UrbanSound8K / Nonspeech7k re-hosts.
   No uploader ends up on both sides for any tag (checked). Open-vocab round-19 test ids are NOT removed (not available).
+  Previews come slowly (about 1 a second per job), so a part uploads a checkpoint every CHECKPOINT_S seconds; a re-run
+  with DONE_DIRS=<earlier folders> skips what they hold, PART_SUFFIX names its folder and SUB=k/K stages one id shard.
 PART=labelled: ESC-50, Nonspeech7k, VIVAE, VocalSet, IRMAS (train set), Groove MIDI, Four-Way Tabla, Dagstuhl ChoirSet,
   VSCO 2 CE and the licensed-pilot CC0 packs (Karoryfer bass, Kenney, rubberduck), each mapped to the run 9 tags it labels
   (MAPS below) and split by its own performer / recording / source grouping (SPLITS below).
@@ -116,6 +118,7 @@ class Out:
         self.rows.append({**{c: '' for c in self.COLS}, 'reviewed': '0', **row, 'file': f'audio-{self.k - 1:03d}.tar/{ti.name}'})
     def close(self, summary):
         if self.shard: self.shard.close()
+        self.shard = None   # a later add() starts a new shard, so close() also serves as a checkpoint
         with open(os.path.join(self.dir, 'manifest.csv'), 'w', newline='') as f:
             w = csv.DictWriter(f, self.COLS + ['file']); w.writeheader(); w.writerows(self.rows)
         pos = Counter((t, r['split']) for r in self.rows for t in r['tags'].split('|') if t)
@@ -270,7 +273,18 @@ def stage_freesound(sha, nparts, partno):
     for t, sp, i, u, lic, s, rt in mine:
         d = sounds[i]; d['tags'].add(t); d.update(split=sp, user=u, route=rt); d['lic'] = d.get('lic') or lic
         d['score'] = max(d.get('score') or 0, s or 0)
-    print(f'part {partno}/{nparts}: {len(sounds)} sounds from {len({d["user"] for d in sounds.values()})} uploaders', flush=True)
+    # resume: sounds already staged by an earlier attempt (DONE_DIRS: folders under OUT) are skipped; SUB=k/K stages one id shard
+    name = f"freesound-{partno}{os.environ.get('PART_SUFFIX', '')}"
+    for prev in filter(None, os.environ.get('DONE_DIRS', '').split(',')):
+        try: m = hf_hub_download(os.environ['STAGE_REPO'], f"{os.environ['OUT']}/{prev}/manifest.csv", repo_type='dataset')
+        except Exception as e: print(f'no manifest in {prev}: {type(e).__name__}', flush=True); continue
+        done = {int(r['id'].split(':')[1]) for r in csv.DictReader(open(m))}
+        for i in done & set(sounds): del sounds[i]
+        print(f'{prev}: {len(done)} sounds already staged', flush=True)
+    if os.environ.get('SUB'):
+        k, kk = map(int, os.environ['SUB'].split('/'))
+        for i in [i for i in sounds if h8(f'run9-sub|{i}') % kk != k]: del sounds[i]
+    print(f'part {partno}/{nparts} -> {name}: {len(sounds)} sounds from {len({d["user"] for d in sounds.values()})} uploaders', flush=True)
     uids = {}
     def uid(item):
         u, s = item; page = fetch(f'https://freesound.org/people/{urllib.parse.quote(u)}/sounds/{s}/', timeout=60)
@@ -288,19 +302,23 @@ def stage_freesound(sha, nparts, partno):
         u = uids.get(sounds[i]['user'])
         b = u and fetch(f'https://cdn.freesound.org/previews/{i // 1000}/{i}_{u}-hq.mp3')
         return i, b if b and len(b) >= 4000 else None
-    out = Out(f'freesound-{partno}'); got = 0
+    out = Out(name); got = 0; last = time.time()
+    summary = {'part': partno, 'nparts': nparts, 'removed': dict(why), 'listedRows': len(listed), 'keptRowsAllParts': {f'{t}|{sp}': n for (t, sp), n in sorted(full.items())},
+               'sounds': len(sounds), 'note': 'unreviewed: keyword and CED-base labels, nobody has listened; open-vocab r19 ids not removed'}
     with ThreadPoolExecutor(8) as pool:
         for k, (i, b) in enumerate(pool.map(audio, sorted(sounds))):
-            if k % 5000 == 0: print(f'  previews {k}/{len(sounds)} {time.time() - t0:.0f} s', flush=True)
+            if k % 1000 == 0: print(f'  previews {k}/{len(sounds)} {time.time() - t0:.0f} s', flush=True)
+            if time.time() - last > float(os.environ.get('CHECKPOINT_S', '1200')) and out.rows:   # a timeout keeps what was staged
+                summary.update(staged=got, partial=True); upload(out.close(summary), f"{os.environ['OUT']}/{name}", f'Stage run 9 Freesound {name}: {got} sounds (checkpoint)')
+                last = time.time()
             if not b: continue
             d = sounds[i]; got += 1
             out.add({'id': f'freesound:{i}', 'source': 'freesound', 'group': f"freesound-user:{d['user']}", 'split': d['split'], 'tags': '|'.join(sorted(d['tags'])),
                      'licence': d['lic'] or 'unknown', 'score': d['score'] or '', 'url': f"https://freesound.org/people/{d['user']}/sounds/{i}/",
                      'route': d['route']}, b, 'mp3')
-    summary = {'part': partno, 'nparts': nparts, 'removed': dict(why), 'listedRows': len(listed), 'keptRowsAllParts': {f'{t}|{sp}': n for (t, sp), n in sorted(full.items())},
-               'sounds': len(sounds), 'staged': got, 'note': 'unreviewed: keyword and CED-base labels, nobody has listened; open-vocab r19 ids not removed'}
+    summary.update(staged=got, partial=False)
     folder = out.close(summary)
-    upload(folder, f"{os.environ['OUT']}/freesound-{partno}", f'Stage run 9 Freesound part {partno}: {got} sounds')
+    upload(folder, f"{os.environ['OUT']}/{name}", f'Stage run 9 Freesound {name}: {got} sounds')
 
 # ---------------------------------------------------------------- labelled sets
 ESC = {'dog': ['animal sound'], 'rooster': ['animal sound', 'bird ambience'], 'pig': ['animal sound'], 'cow': ['animal sound'], 'frog': ['animal sound'],
