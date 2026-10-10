@@ -1,0 +1,62 @@
+150/150 songs analysed, 0 with no tag shown
+families (source tags):
+  drums        P 0.99 R 0.99  (143+/3-)  pass
+  voice        P 0.87 R 1.00  (119+/19-)  pass
+  synthesizer  P 0.57 R 0.95  (63+/58-)
+  piano        P 0.62 R 0.84  (49+/57-)
+  guitar       P 0.94 R 0.91  (123+/8-)  pass
+  bass         P 1.00 R 0.61  (137+/5-)
+  cymbals      P   -   R   -    (0+/4-)
+  organ        P 0.53 R 0.36  (25+/71-)
+  violin       P 0.23 R 0.75  (8+/82-)
+  trumpet      P 0.24 R 1.00  (10+/79-)
+  saxophone    P 0.63 R 0.77  (13+/77-)
+  cello        P 0.23 R 0.71  (7+/80-)
+tags with positives:
+  drums              P 0.99 R 0.99  (143+/3-)  pass
+  bass guitar        P   -   R 0.00  (134+/5-)
+  guitar             P 0.94 R 0.88  (123+/8-)  pass
+  voice              P 0.87 R 1.00  (119+/19-)  pass
+  electric guitar    P 1.00 R 0.34  (110+/17-)
+  synthesizer        P 0.57 R 0.95  (63+/58-)
+  percussion         P   -   R 0.00  (55+/3-)
+  acoustic guitar    P 1.00 R 0.24  (41+/59-)
+  piano              P 0.56 R 0.82  (39+/57-)
+  hand percussion    P 1.00 R 0.03  (37+/62-)
+  organ              P 0.53 R 0.36  (25+/71-)
+  tambourine         P   -   R 0.00  (19+/66-)
+  clap               P   -   R 0.00  (18+/74-)
+  shaker             P 0.67 R 0.12  (17+/71-)
+  electric piano     P 0.46 R 0.36  (14+/77-)
+  saxophone          P 0.63 R 0.77  (13+/77-)
+  strings            P 1.00 R 0.31  (13+/78-)
+  conga              P   -   R 0.00  (11+/74-)
+  trombone           P 1.00 R 0.09  (11+/80-)
+  synth bass         P   -   R 0.00  (10+/58-)
+  trumpet            P 0.24 R 1.00  (10+/79-)
+  violin / fiddle    P 0.67 R 0.25  (8+/82-)
+  cello              P 0.23 R 0.71  (7+/80-)
+  double bass        P   -   R 0.00  (7+/81-)
+  flute              P 0.07 R 1.00  (5+/88-)
+  mallet instrument  P 1.00 R 0.20  (5+/74-)
+  viola              P   -   R 0.00  (5+/81-)
+  clarinet           P 0.07 R 0.75  (4+/86-)
+  cowbell            P   -   R 0.00  (4+/74-)
+  harp               P 0.00 R 0.00  (3+/84-)
+  gong               P 0.00 R 0.00  (2+/88-)
+  horn               P   -   R 0.00  (2+/86-)
+  marimba            P 1.00 R 0.50  (2+/76-)
+  tuba               P   -   R 0.00  (2+/86-)
+  vibraphone         P   -   R 0.00  (2+/76-)
+  whisper            P 0.17 R 1.00  (2+/19-)
+  atmospheric pad    P   -   R 0.00  (1+/58-)
+  bassoon            P 0.09 R 1.00  (1+/88-)
+  cajon              P   -   R 0.00  (1+/76-)
+  glockenspiel       P   -   R 0.00  (1+/74-)
+  harmonica          P 1.00 R 1.00  (1+/86-)  pass
+  oboe               P   -   R 0.00  (1+/88-)
+  steel drum         P   -   R 0.00  (1+/76-)
+  synth lead         P 1.00 R 1.00  (1+/58-)  pass
+  triangle           P 0.00 R 0.00  (1+/76-)
+  vocoder vocal      P   -   R 0.00  (1+/19-)
+false alarms on tags no song has: accordion 3/87, djembe 3/76, impact 2/65, reverse cymbal 3/65, reverse effect 18/65, sound effect 60/65, spoken phrase 1/19, synth arpeggio 2/58, texture 52/65, vinyl scratch 4/65, vocal chops 1/19, whistle 2/88
