@@ -50,7 +50,9 @@ Three bass guitar heads were trained in turn, and each was screened on the holdo
 | **A2 (shipped)** | low sounds that are not a bass guitar | **0.60 / 1.00** | 0.28 / 0.96 | 69 |
 | A3 | A2 plus drum loops | 0.60 / 1.00 | 0.29 / 0.96 | 66 |
 
-A2 was picked after seeing a first set of these screens, so its holdout numbers are somewhat optimistic. That first set
+A2 was picked after seeing a first set of these screens on the same 594-clip holdout, so every holdout number for
+it here, including the real-app check below, is a screened result rather than an independent final test, and somewhat
+optimistic. That first set
 had a fold-group bug: round-two rows were grouped as `freesound-user:<uploader>` and round-one negatives as
 `freesound:<uploader>`, so 17 uploaders counted as two groups and could sit on both sides of a fold. A2's threshold was
 then 0.7738 (screen 0.85 / 0.92). With one namespace the same weights get threshold 0.6537, and the table above is the
@@ -69,7 +71,8 @@ short, cleanly cut foley one-shots.
 stored mean and std, so `w' = w * std` and `b' = b + w . mean` give the same score (largest logit difference over the
 holdout's short clips: 9e-16). The candidate build (current main plus this head at threshold 0.6537) was run
 through `run_app.sh` on the 594 holdout clips of at most 2.25 s (75 min on 4 CPUs, all complete). Longer clips are
-unaffected by short-clip.json, so the baseline's results for them were reused.
+unaffected by short-clip.json, so the baseline's results for them were reused. Because A2 was chosen on this
+holdout, these numbers are screened, not independent; a fresh holdout is needed for a final figure.
 
 | Label | Route | Today (strict = shown) | With the new head |
 |---|---|---|---|
