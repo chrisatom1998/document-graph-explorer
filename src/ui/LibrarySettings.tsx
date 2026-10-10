@@ -78,7 +78,7 @@ export default function LibrarySettings() {
     setNote(null);
     const updating = outdated.length;
     void import('../pipeline/coordinatorLazy')
-      .then((m) => m.analyzeAudioCorpus())
+      .then((m) => m.analyzeAudioCorpus(outdated))
       .then(
         () => setNote(`Updated ${count(updating, 'track')} with the current detectors.`),
         (error: unknown) =>
