@@ -70,9 +70,6 @@ if [ -n "${FSNEW_DATA:-}" ]; then   # private staged Freesound sounds for tags w
 fi
 RN_PID=
 R10_PID=
-if [ "${ROUND10:-0}" = 1 ]; then   # round 10 commercial training packs, private bucket (prepare-round10.py; train list filtered for test overlap beforehand)
-  python3 $S/prepare-round10.py cmjatom/dge-commercial-train commercial-train r10prep > round10.log 2>&1 & R10_PID=$!
-fi
 if [ -n "${RUN9_DATA:-}" ]; then   # private staged run 9 audio (stage-run9.py): Freesound keyword / CED rows and labelled sets
   ( python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='r9stage', max_workers=16)" "$RUN9_DATA" \
     && if [ -n "${RUN9_AUDIT:-}" ]; then python3 -c "import sys, shutil; from huggingface_hub import hf_hub_download as d; r, f = sys.argv[1].split(':'); shutil.copy(d(r, f, repo_type='dataset'), 'run9-audited.csv')" "$RUN9_AUDIT"; fi \
@@ -140,7 +137,11 @@ if [ -n "$SM_PID" ]; then wait $SM_PID || { tail -n 30 slakhmore.log; exit 1; };
 if [ -n "$SAO_PID" ]; then wait $SAO_PID || { tail -n 30 sao.log; exit 1; }; tail -n 2 sao.log; EXTRA+=(--extra sao=saoprep); fi
 if [ -n "$FN_PID" ]; then wait $FN_PID || { tail -n 30 fsnew.log; exit 1; }; tail -n 3 fsnew.log; EXTRA+=(--extra fsnew=fnprep); fi
 if [ -n "$RN_PID" ]; then wait $RN_PID || { tail -n 30 run9.log; exit 1; }; tail -n 4 run9.log; EXTRA+=(--extra fs9=r9prep --extra ls9=r9prep); fi
-if [ -n "$R10_PID" ]; then wait $R10_PID || { tail -n 30 round10.log; exit 1; }; tail -n 3 round10.log; EXTRA+=(--extra round10=r10prep); fi
+if [ "${ROUND10:-0}" = 1 ]; then   # round 10 commercial training packs, private bucket (prepare-round10.py; train list filtered for test
+  # overlap beforehand). Runs after the other preps, not beside them: all of them at once ran an L4 job out of memory.
+  python3 $S/prepare-round10.py cmjatom/dge-commercial-train commercial-train r10prep > round10.log 2>&1 || { tail -n 30 round10.log; exit 1; }
+  tail -n 3 round10.log; R10_PID=done; EXTRA+=(--extra round10=r10prep)
+fi
 echo "all data ready after $(( ($(date +%s) - START) / 60 )) min"
 if [ -n "${SOUNDCLOUD_DATA:-}" ]; then   # "<dataset repo>:<folder>", uploaded by the workflow from its SoundCloud artifacts
   python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='scdl')" "$SOUNDCLOUD_DATA"

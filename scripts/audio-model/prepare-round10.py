@@ -46,7 +46,7 @@ def main():
     for k in range(0, len(rows), 1000):   # a chunk at a time, so the 37 GB of audio never sits on disk at once
         chunk = rows[k:k + 1000]
         download_bucket_files(args.bucket, [(f"{prefix}/{r['path']}", os.path.join(tmp, 'a', r['path'])) for r in chunk])
-        with ThreadPoolExecutor(8) as pool: xs = list(pool.map(load, chunk))
+        with ThreadPoolExecutor(4) as pool: xs = list(pool.map(load, chunk))
         for r, x in zip(chunk, xs):
             own = set(split(r['present_tags'])) & set(T)
             if x is None or not own: skipped += 1; continue
