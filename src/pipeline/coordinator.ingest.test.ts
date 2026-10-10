@@ -1467,7 +1467,7 @@ describe('remembered library', () => {
     expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.instrumentScan?.complete).toBe(true);
   });
 
-  it.each([85, 86])('explicitly refreshes a persisted pre-calibration analysis at revision %i', async revision => {
+  it.each([85, 86, 89, 90])('explicitly refreshes a persisted pre-calibration analysis at revision %i', async revision => {
     const node = await storedTrack('calibration.wav');
     const saved = { ...node, audio: { ...node.audio!,
       instrumentScan: { ...node.audio!.instrumentScan!, revision },

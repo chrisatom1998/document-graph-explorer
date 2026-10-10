@@ -32,9 +32,12 @@ Reproduce from extracted original shard directories at $ARTIFACTS (Python 3 + Nu
     --heads-sha256 53d7cb66c180ba2d445173d3e4b44751825d2912a666febc3e83936ccf828b20 \
     --labels scripts/dj-effects/labels-tags.json
 
-Runtime artifact regeneration:
-  Restored baseline heads/revision and learned.json digest before shipping; all unrelated model/manifest metadata preserved.
-  LABELS=labels-tags.json REVISION_TAG=tag-heads-2026-10-09+runtime-eligible python3 scripts/dj-effects/ship.py docs/evaluations/tag-heads-2026-10-09
-  8 heads selected from long-route evidence: kalimba full; falling, viola, marimba, djembe, whistle, bongo, tom maybe.
-  6 replacements and 2 additions; 113 total learned heads; no new catalog entries; no new oneShot clearance.
-  learned.json SHA256: 0200e2353b267251fba2d7c93a1b805f2b7f57061b11cf30f6066369c7640356
+Runtime artifact regeneration (merged with main's 50/50 bar, 2026-10-10):
+  Started from main's learned.json (promoted-50 + round16-clean-2026-10-10). The 11 heads that were this run's own
+  trained heads (falling, gliding, kalimba, viola, marimba, djembe, whistle, conga, bongo, tom, tambourine) were taken out,
+  restoring the pre-training head where one existed (baseline 2d2116d), then ship.py re-tiered them at FULL = 0.50:
+  LABELS=labels-tags.json REVISION_TAG=runtime-eligible python3 scripts/dj-effects/ship.py docs/evaluations/tag-heads-2026-10-09
+  8 heads selected from long-route evidence: kalimba, falling, djembe, whistle, bongo, tom full; viola, marimba maybe.
+  conga (0.41/0.59), gliding (0.45/0.42) and tambourine (0.17/0.08) fail held-out precision 0.45 on those clips and are removed.
+  Net change against main: conga, gliding, tambourine removed; viola full -> maybe. No weights or thresholds changed.
+  learned.json SHA256: da5a5fd921e33779be954fb7f5d6a059a97eef24e2fdfa2250741db91bcf616f

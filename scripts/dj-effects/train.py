@@ -176,3 +176,6 @@ json.dump({'kind': 'dj-effect-heads-report-v1', 'trainedAt': datetime.datetime.n
            'thresholdTarget': TARGET, 'labels': report}, open(f'{OUT}/report.json', 'w'), indent=1)
 json.dump({'kind': 'dj-effect-heads-v1', 'heads': heads}, open(f'{OUT}/heads.json', 'w'))
 print(f'wrote {OUT}/report.json and {len(heads)} heads')
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'audio-model'))
+import charts  # noqa: E402  one finished point on the live training chart; counts only, no held-out scores
+charts.summary('dj-effects', {}, {'heads trained': len(heads), 'labels tried': len(report), 'training clips': int((~TEST).sum())})

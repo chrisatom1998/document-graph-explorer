@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import {afterEach,beforeEach,expect,it} from 'vitest';
 import {cleanup,fireEvent,render,screen,within} from '@testing-library/react';
-import MainSoundAttributes, {likelyExtraSounds,setAttributesOpenSetting,setShowUnconfirmedSetting,soundAttributeRows} from './MainSoundAttributes';
+import MainSoundAttributes, {isLikely,likelyExtraSounds,setAttributesOpenSetting,setShowUnconfirmedSetting,soundAttributeRows} from './MainSoundAttributes';
 import MusicFeatures from './MusicFeatures';
 import type {MusicAnalysis} from '../audio/musicTypes';
 import type {DocNode} from '../model/types';
@@ -101,4 +101,10 @@ it('offers only probability-like, unreviewed scores of 0.5+ as likely extras',()
  const labels=likelyExtraSounds(a,{title:'neutral.wav'},new Set()).map(r=>r.label);
  expect(labels).toEqual(['oboe']); // CLAP similarity, reviewed labels and weak scores never count
  expect(likelyExtraSounds(a,{title:'neutral.wav'},new Set(['oboe']))).toEqual([]);
+});
+it('never offers labels hidden until they pass real clips as likely extras',()=>{
+ const a=audio();a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[
+  {group:'production',label:'reverse effect',score:.95,model:'Trained head'},{group:'character',label:'distorted',score:.95,model:'Trained head'},{group:'production',label:'riser',score:.9,model:'Trained head'}]};
+ expect(likelyExtraSounds(a,{title:'neutral.wav'},new Set()).map(r=>r.label)).toEqual(['riser']);
+ expect(soundAttributeRows(a,{title:'neutral.wav'}).filter(isLikely).map(r=>r.label)).toEqual(['riser']);
 });

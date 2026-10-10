@@ -3,7 +3,7 @@ import { sanitizeFusion, type FusionAnalysis } from './fusion';
 import { sanitizeFullMixAnalysis, type FullMixAnalysis } from './fullMixHeads';
 import { sanitizeTaggerAnalysis, type TaggerAnalysis } from './tagger';
 import { sourceLabels, sanitizeRecognition, sanitizeSoundReviews, type Recognition, type SoundReview } from './recognition';
-import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
+import { MERGED_DJ_LABELS, mergedDjLabel, sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
@@ -12,6 +12,7 @@ import { sanitizeVersionPrint } from './versionPrint';
 import { sanitizeTimbre, type TimbreSummary } from './timbre';
 import { sanitizeGenreScores, sanitizeStyles, type TrackStyle } from './genreEnergy';
 import { sanitizeNativeWindowEvidence, type NativeWindowEvidence } from './nativeWindowEvidence';
+const MOVED_INTO_SOURCE = new Set(Object.entries(MERGED_DJ_LABELS).filter(([key, to]) => to.group === 'source' && !key.startsWith('source:')).map(([, to]) => to.label));
 export const MUSIC_ANALYSIS_VERSION = 2;
 export const KEY_ANALYSIS_REVISION = 4;
 export const TEMPO_ANALYSIS_REVISION = 5;
@@ -20,8 +21,11 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 79/80: full-precision tagger scores; incomplete outputs remain unknown. 81/82: DJ effect heads retrained on the grown clip set.
 // 83/84: the runs 3 and 5 tagger blend (old tagger scores no longer count).
 // 85/86: sound heads for kalimba, djembe and nine maybe tags (tag-heads-2026-10-09).
-// 87/88: calibrate those heads on runtime-eligible long clips (tag-heads-2026-10-09+runtime-eligible).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 88 : 87;
+// 87/88: heads at held-out 50/50 ship as full tags (stored "maybe" head scores no longer count).
+// 89/90: five round-16 heads retrained without FSD50K eval clips (round16-clean-2026-10-10).
+// 91/92: tag-heads-2026-10-09 heads re-tiered on runtime-eligible long clips (conga, gliding, tambourine
+// removed; viola back to maybe).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 92 : 91;
 export interface InstrumentEstimate {
   label: string;
   score: number;
@@ -106,6 +110,12 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   if (Array.isArray(m.confirmedInstruments)) out.confirmedInstruments = [...new Set(m.confirmedInstruments.filter((label): label is string => typeof label === 'string' && sourceLabels.includes(label)))];
   const confirmedDjTags = sanitizeConfirmedDjTags(m.confirmedDjTags);
   if (confirmedDjTags) out.confirmedDjTags = confirmedDjTags;
+  if (out.confirmedInstruments) {
+    // Merged look-alike tags: an instrument merged into another group leaves the list, and a tag merged into source
+    // follows the DJ snapshot, which corrections always save alongside this list.
+    const kept = out.confirmedInstruments.map(label => mergedDjLabel('source', label)).filter(m => m.group === 'source').map(m => m.label);
+    out.confirmedInstruments = [...new Set([...kept, ...(confirmedDjTags?.source.filter(label => MOVED_INTO_SOURCE.has(label)) ?? [])])];
+  }
   const copilotProperties = sanitizeCopilotProperties(m.copilotProperties);
   if (copilotProperties) out.copilotProperties = copilotProperties;
   if (Array.isArray(m.embedding) && m.embedding.length === 512 && m.embedding.every(v => typeof v === 'number' && Number.isFinite(v)) && Math.hypot(...(m.embedding as number[])) > 1e-8) out.embedding = m.embedding as number[];

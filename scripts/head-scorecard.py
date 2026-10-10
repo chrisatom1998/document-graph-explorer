@@ -3,13 +3,13 @@
 A head is matched to its report rows by label AND threshold. That is not a unique fingerprint (reports keep no
 weights), so when several rows match with different scores the WEAKEST one is used and the head is marked
 `ambiguous`, listing every source: a promotion must hold under every report that could describe the head.
-Verdict under the user's 2026-10-05 bar: full tag needs precision AND recall >= 0.60; a maybe tag needs
-the lower of the two >= 0.45 (the band round 14 used); below that the head should not show at all.
+Verdict under the user's 2026-10-10 bar: a full tag needs held-out precision AND recall >= 0.50 (it was 0.60 from
+2026-10-05); a maybe tag needs the lower of the two >= 0.45 (the band round 14 used); below that the head should not show at all.
 Read-only: it never edits learned.json. Heads with no matching row are listed as unverified.
 Usage: head-scorecard.py [out.json]"""
 import json, glob, sys
 
-FULL, MAYBE = 0.60, 0.45
+FULL, MAYBE = 0.50, 0.45   # keep FULL equal to SOUND_TAG_BAR in src/audio/confidentSoundSummary.ts and ship.py
 heads = json.load(open('public/sound-model/learned.json'))['heads']
 rows = []   # (label, threshold, precision, recall, testPositive, source)
 for f in sorted(glob.glob('docs/evaluations/*/*.json')):

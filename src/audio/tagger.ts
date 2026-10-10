@@ -22,7 +22,8 @@ export interface TaggerTag {
   decides: string[];
   /** Equivalent display labels stored under another dimension by a native detector. */
   alsoDecides?: { dimension: Extract<Dimension, 'source' | 'character' | 'effect'>; label: string }[];
-  /** Held-out precision and recall both reached 0.70 on every complete-label set; otherwise shown as a "maybe" tag. */
+  /** Held-out precision and recall both reached the shipping bar (SOUND_TAG_BAR, 0.50 since 2026-10-10; 0.70 before) on every
+   * complete-label set; otherwise shown as a "maybe" tag. */
   tested: boolean;
   /** Recordings shorter than this keep the existing detectors for this tag (the held-out sets had no shorter audio). */
   minSeconds?: number;
@@ -54,7 +55,7 @@ export const TAGGER_WINDOW_SECONDS = TAGGER_WINDOW_SAMPLES / TAGGER_SAMPLE_RATE;
 /** The held-out full songs were scored on their middle 30 s (scripts/audio-model/prepare-holdout.py): three windows. */
 export const TAGGER_MAX_WINDOWS = TAGGER_POLICY.input.maxWindows;
 export const TAGGER_UNAVAILABLE = 'The trained tagger was unavailable; the other detectors decided every tag. Reanalyze to retry.';
-/** Display names of the tagger's scores. "maybe" marks a tag whose held-out precision or recall is below 0.70. */
+/** Display names of the tagger's scores. "maybe" marks a tag whose held-out precision or recall is below the shipping bar. */
 export const TAGGER_SCORE = 'Trained tagger score';
 export const TAGGER_MAYBE_SCORE = 'Trained tagger score (maybe)';
 

@@ -119,11 +119,14 @@ class ShippingTests(unittest.TestCase):
             evidence, why = eligible_metrics(report['labels'][row['label']], 2.25)
             self.assertIsNone(why)
             self.assertEqual((row['precision'], row['recall']), (evidence['precision'], evidence['recall']))
-            self.assertEqual(row['tier'], 'full' if min(evidence['precision'], evidence['recall']) >= .7 else 'maybe')
+            self.assertEqual(row['tier'], 'full' if min(evidence['precision'], evidence['recall']) >= .5 else 'maybe')
             self.assertGreaterEqual(evidence['precision'], .45)
             self.assertGreaterEqual(evidence['recall'], .30)
             actual = next(h for h in learned['heads'] if h['label'] == row['label'])
             self.assertFalse(actual.get('oneShot', False))
+            self.assertEqual(actual.get('maybe', False), row['tier'] == 'maybe')
+        for label in ('conga', 'gliding', 'tambourine'):
+            self.assertNotIn(label, [h['label'] for h in learned['heads']])
 
     def test_rejects_heads_only_passed_by_disabled_short_clips(self):
         for label, values in [('tambourine', (1, 5, 11)), ('conga', (13, 19, 9)), ('gliding', (42, 52, 58))]:
@@ -132,11 +135,11 @@ class ShippingTests(unittest.TestCase):
                 self.assertFalse(decision['shipped'])
                 self.assertNotIn(label, [h['label'] for h in model['heads']])
 
-    def test_djembe_aggregate_pass_cannot_promote_long_route_to_full(self):
-        decision, model = ship('djembe', entry(metric(16, 10, 7), precision=35 / 47, recall=35 / 44))
+    def test_aggregate_pass_cannot_promote_long_route_to_full(self):
+        decision, model = ship('djembe', entry(metric(16, 17, 7), precision=35 / 47, recall=35 / 44))
         self.assertTrue(decision['shipped'])
         self.assertEqual(decision['tier'], 'maybe')
-        self.assertFalse(decision['meets70'])
+        self.assertFalse(decision['meetsBar'])
         h = next(h for h in model['heads'] if h['label'] == 'djembe')
         self.assertTrue(h['maybe'])
         self.assertNotIn('oneShot', h)
@@ -174,7 +177,7 @@ class ShippingTests(unittest.TestCase):
             self.assertFalse(ship('djembe', row, [head('djembe', maybe=True)])[0]['shipped'])
 
     def test_normal_head_cannot_be_replaced_with_only_maybe_quality(self):
-        row = entry(metric(16, 10, 7))
+        row = entry(metric(16, 17, 7))
         row['current'] = [{'file': 'learned.json', 'maybe': False, 'heldOutLongClip': metric(10, 20, 13)}]
         self.assertFalse(ship('djembe', row, [head('djembe')])[0]['shipped'])
 

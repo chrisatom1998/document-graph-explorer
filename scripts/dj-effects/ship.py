@@ -1,11 +1,13 @@
 """Ships the DJ-effect heads from train.py into the app, following the project's display policy:
-  * runtime-eligible held-out precision AND recall >= 0.70 (the project target) -> normal head;
+  * runtime-eligible held-out precision AND recall >= FULL (0.50, Chris's bar of 2026-10-10; it was 0.70) -> normal head;
   * below that -> "maybe" head (still shown, faded), unless it is clearly not useful:
     held-out precision < 0.45 or recall < 0.30 -> left out;
 A label that already ships a head in learned.json gets the new one only if it beats the current head on the SAME
-runtime-eligible held-out clips (higher min(P, R), then higher F1); a normal head is only ever replaced by one that reaches 70/70.
+runtime-eligible held-out clips (higher min(P, R), then higher F1); a normal head is only ever replaced by one that reaches FULL.
 New heads are not cleared for whole one-shots, so heldOutLongClip (with known durations and at least 10 positives)
 is required. Aggregate results cannot promote a head that fails on the clips where the browser enables it.
+Heads already shipped as "maybe" are re-tiered from their recorded held-out scores with head-scorecard.py and
+promote-heads.py (same FULL bar), not by retraining.
 New labels (labels.json "new") get a catalog entry on their own axis (dj-effect), so they do not change which
 existing label wins the dj-transition axis; add-prompts.mjs then gives them CLAP text vectors (on Actions).
 Re-pins learned.json in manifest.json, bumps the learned.json revision and the catalog version, and rewrites
@@ -22,6 +24,7 @@ LEARNED, MANIFEST, CATALOG = 'public/sound-model/learned.json', 'public/sound-mo
 model = json.load(open(LEARNED)); catalog = json.load(open(CATALOG))
 MAX_SECONDS = json.load(open('public/sound-model/short-clip.json'))['maxSeconds']
 cats = {(c['group'], c['label']) for c in catalog['categories']}
+FULL, MAYBE_P, MAYBE_R = 0.50, 0.45, 0.30   # FULL equals SOUND_TAG_BAR in src/audio/confidentSoundSummary.ts
 key = lambda P, R: (min(P, R), 2 * P * R / (P + R) if P + R else 0.0)
 out, added_cats = [], []
 for label, e in report.items():
@@ -37,12 +40,12 @@ for label, e in report.items():
                evaluationSubset=metrics['subset'])
     if metrics['positives'] < 10:
         out.append({**row, 'shipped': False, 'why': 'fewer than 10 runtime-eligible held-out positives'}); continue
-    row['meets70'] = bool(min(P, R) >= 0.70)
-    if P < 0.45 or R < 0.30: out.append({**row, 'shipped': False, 'why': 'held-out precision < 0.45 or recall < 0.30'}); continue
-    full = min(P, R) >= 0.70
+    row['meets70'] = bool(min(P, R) >= 0.70); row['meetsBar'] = bool(min(P, R) >= FULL)
+    if P < MAYBE_P or R < MAYBE_R: out.append({**row, 'shipped': False, 'why': f'held-out precision < {MAYBE_P} or recall < {MAYBE_R}'}); continue
+    full = min(P, R) >= FULL
     current = [x for x in model['heads'] if x['label'] == label]
     if any(not x.get('maybe') for x in current) and not full:
-        out.append({**row, 'shipped': False, 'why': 'a normal head already ships and the new one is below 70/70'}); continue
+        out.append({**row, 'shipped': False, 'why': f'a normal head already ships and the new one is below {FULL:.0%}/{FULL:.0%}'}); continue
     if current:
         cur = next((c for c in e.get('current', []) if c['file'] == 'learned.json'), None)
         if not cur: out.append({**row, 'shipped': False, 'why': 'current head was not scored on the same clips'}); continue

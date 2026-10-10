@@ -8,6 +8,7 @@ import { canonicalDjLabel, soundLabelText } from '../audio/djTags';
 import { latestSoundReview, projectedCopilotProperties } from '../audio/soundReviewPolicy';
 import { fusionPresentation } from '../audio/fusionPresentation';
 import { isRuleDescribedLabel } from '../audio/timbreDescriptions';
+import { HIDDEN_UNTIL_TESTED } from '../audio/confidentSoundSummary';
 import type { Dimension } from '../audio/recognition';
 import './MainSoundAttributes.css';
 
@@ -16,7 +17,8 @@ type Attribute = { dimension: Dimension; label: string; evidence: Set<string>; r
   probabilityScore?: number };
 /** A model score at or above this moves an unreviewed label into the main list. Scores are model-scale, not probabilities. */
 export const LIKELY_SCORE = .5;
-export const isLikely = (row: Attribute) => !row.review && (row.score ?? 0) >= LIKELY_SCORE;
+/** Labels hidden until they pass real clips (HIDDEN_UNTIL_TESTED) are never promoted from a model score; they stay folded away. */
+export const isLikely = (row: Attribute) => !row.review && !HIDDEN_UNTIL_TESTED.has(row.label) && (row.score ?? 0) >= LIKELY_SCORE;
 const dimensionName: Record<Dimension,string> = {source:'Source',effect:'Effect / sound type',character:'Character',vocal:'Vocal form',role:'Musical role'};
 const score = (value: number | null | undefined) => typeof value === 'number' && Number.isFinite(value) ? value.toFixed(3) : 'unavailable';
 const canonical = (dimension: Dimension, label: string) => dimension === 'effect' ? canonicalDjLabel('production',label) ?? label : dimension === 'character' ? canonicalDjLabel('character',label) ?? label : label;
@@ -98,7 +100,7 @@ export function soundAttributeRows(audio: MusicAnalysis, node: Pick<DocNode,'tit
  */
 export function likelyExtraSounds(audio: MusicAnalysis, node: Pick<DocNode,'title'|'path'>, exclude: ReadonlySet<string>): Attribute[] {
   return soundAttributeRows(audio,node)
-    .filter(row => !row.review && (row.probabilityScore ?? 0) >= LIKELY_SCORE && !exclude.has(row.label))
+    .filter(row => !row.review && !HIDDEN_UNTIL_TESTED.has(row.label) && (row.probabilityScore ?? 0) >= LIKELY_SCORE && !exclude.has(row.label))
     .sort((a,b) => (b.probabilityScore ?? 0) - (a.probabilityScore ?? 0))
     .slice(0, 6);
 }

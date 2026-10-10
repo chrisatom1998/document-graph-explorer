@@ -128,3 +128,6 @@ json.dump({'kind': 'library-heads-report-v2', 'trainedAt': datetime.datetime.now
            'clips': len(ids), 'split': 'per-label held-out brands', 'target': TARGET, 'labels': report}, open(f'{OUT}/report.json', 'w'), indent=1)
 json.dump(heads, open(f'{OUT}/heads.json', 'w'))
 print(f'wrote {OUT}/report.json, {len(heads)} heads')
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'audio-model'))
+import charts  # noqa: E402  one finished point on the live training chart; counts only, no held-out scores
+charts.summary('library-heads', {}, {'heads trained': len(heads), 'labels tried': len(labels), 'clips': len(ids)})

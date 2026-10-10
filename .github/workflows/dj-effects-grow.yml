@@ -198,7 +198,10 @@ jobs:
           print(len(clips), 'clips with audio,', len(renders), 'renders')
           EOF
       - name: Train on the grown training split and score on held-out uploaders
-        run: PRIMARY_ROUND=1 DURATIONS=work/durations.json python3 scripts/dj-effects/train.py work/manifest.json work/emb "$DOCS" work/renders.json
+        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }  # live training chart; steps run without it when the secret is absent
+        run: |
+          pip install -q trackio==0.42.0 || echo "live charts off: trackio install failed"
+          PRIMARY_ROUND=1 DURATIONS=work/durations.json python3 scripts/dj-effects/train.py work/manifest.json work/emb "$DOCS" work/renders.json
       - name: Record the clip list with licences
         run: |
           python3 - <<'EOF'

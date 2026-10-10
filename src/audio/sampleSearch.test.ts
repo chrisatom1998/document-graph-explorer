@@ -107,3 +107,7 @@ describe('recording-level genre and energy', () => {
     expect(searchSamples([track('c', { energyScore: .99 })], { ...empty, terms: ['high energy'], confirmedOnly: true })).toEqual([]);
   });
 });
+it('finds a merged look-alike tag under its surviving name',()=>{
+  const n=clip('stab',{confirmedDjTags:{source:[],production:['synth stab'],character:[]}});
+  expect(searchSamples([n],{...empty,terms:['synth hit']})).toHaveLength(1);
+});

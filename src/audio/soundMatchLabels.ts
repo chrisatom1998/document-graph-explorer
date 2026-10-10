@@ -1,7 +1,7 @@
 import type { DocNode } from '../model/types';
-import type { DjGroup, ConfirmedDjTags } from './djTags';
+import { mergedDjLabel, type DjGroup, type ConfirmedDjTags } from './djTags';
 import type { SoundProfile } from './soundProfile';
-import { confidentSoundSummary } from './confidentSoundSummary';
+import { confidentSoundSummary, HIDDEN_UNTIL_TESTED } from './confidentSoundSummary';
 import { filenameSoundFallback } from './filenameSoundFallback';
 import { confirmedInstrumentList, sourceReviewAllows } from './instrumentEvidence';
 import { musicNameHints } from './nameHints';
@@ -24,13 +24,17 @@ export function otherModelGuessGroups({ profile, confirmedDjTags, reviewedLabels
   exclude: Iterable<string>; skipSource?: boolean;
 }): { group: DjGroup; values: string[] }[] {
   const shown = new Set([...exclude].map(displayedLabelKey));
-  return (['source', 'production', 'character'] as DjGroup[]).flatMap(group => {
+  const groups = ['source', 'production', 'character'] as DjGroup[];
+  const rawOf = (group: DjGroup) => group !== 'source' && reviewedLabels?.length
+    ? reviewedLabels.filter(t => t.group === group && t.source !== 'confirmed').map(t => t.label)
+    : profile?.djTags?.filter(t => t.group === group).map(t => t.label) ?? [];
+  // Merged look-alike tags show once, under the surviving name and group.
+  const merged = groups.flatMap(group => rawOf(group).map(label => mergedDjLabel(group, label)));
+  return groups.flatMap(group => {
     if (group === 'source' ? skipSource || confirmedDjTags : confirmedDjTags) return [];
-    const raw = group !== 'source' && reviewedLabels?.length
-      ? reviewedLabels.filter(t => t.group === group && t.source !== 'confirmed').map(t => t.label)
-      : profile?.djTags?.filter(t => t.group === group).map(t => t.label) ?? [];
+    const raw = merged.filter(m => m.group === group).map(m => m.label);
     // Rule-described character words (timbreDescriptions.ts) are never model guesses.
-    const values = [...new Set(raw)].filter(label => !shown.has(displayedLabelKey(label)) && !(group === 'character' && isRuleDescribedLabel(labelKey(label))));
+    const values = [...new Set(raw)].filter(label => !shown.has(displayedLabelKey(label)) && !(group === 'character' && isRuleDescribedLabel(labelKey(label))) && !HIDDEN_UNTIL_TESTED.has(label));
     return values.length ? [{ group, values }] : [];
   });
 }

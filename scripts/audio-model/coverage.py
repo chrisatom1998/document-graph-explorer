@@ -8,6 +8,7 @@ import json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import train  # noqa: E402
+import fsd50k_extra  # noqa: E402
 from labelmap import SAME  # noqa: E402
 FILES = {'openmic': ('train-mel.npy', 'train.json'), 'jamendo': ('jamendo-mel.npy', 'jamendo.json'), 'soundcloud': ('soundcloud-mel.npy', 'soundcloud.json'),
          'fsd50k': ('fsd50k-mel.npy', 'fsd50k.json'), 'nsynth': ('nsynth-mel.npy', 'nsynth.json'), 'freesound': ('freesound-mel.npy', 'freesound.json')}
@@ -23,6 +24,7 @@ def main():
     pos = np.zeros(len(train.CLASSES), int)
     for name, d in preps.items():
         mel, js = FILES.get(name, (f'{name}-mel.npy', f'{name}.json')); items = json.load(open(os.path.join(d, js)))['items']
+        if name == 'fsd50k': fsd50k_extra.relabel(items, 'dev')
         val = set(log['val'].get(name, []))
         src = train.load_source(name, os.path.join(d, mel), [it for it in items if it['id'] not in val], 1.0)
         pos += ((src['y'] == 1) & (src['w'] > 0)).sum(0)

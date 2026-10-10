@@ -1,6 +1,6 @@
 Exported-head rescore; original splits, overlap exclusions, and thresholds unchanged.
 Aggregate and one-shot scores use the exact six-decimal exported weights and bias.
-Aggregate 70/70 is descriptive; ship.py selects shipping tiers from heldOutLongClip.
+Aggregate scores are descriptive; ship.py selects shipping tiers (50/50 bar) from heldOutLongClip.
 Long-route scores use only explicit finite positive durations > 2.25 s.
 Held-out: 2533; short: 561; long: 1972; unknown durations: 0.
 Rounded versus recorded unrounded differences: 0.

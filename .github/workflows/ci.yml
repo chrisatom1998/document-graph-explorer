@@ -29,7 +29,9 @@ env:
     !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
 
 jobs:
-  build-and-test:
+  # Lint, type-check and every build. The unit tests run beside it in unit-tests; build-and-test below is the one
+  # check that is green only when both passed.
+  lint-and-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -82,9 +84,6 @@ jobs:
       - name: Type-check
         run: npm run typecheck
 
-      - name: Test
-        run: npm test
-
       - name: Build (production)
         run: npm run build
 
@@ -111,10 +110,91 @@ jobs:
           "
           test -f docker/downloads/Document\ Graph\ Explorer.exe || (echo "exe was not staged for Docker downloads" && exit 1)
 
+  # The unit tests took ~10 of build-and-test's 14 minutes in one job, and ~9 of those were one test: the graph
+  # accuracy check on 61 real Python PEPs (src/eval/graphAccuracy.test.ts), which embeds every document with the real
+  # model. It gets a machine of its own; the other ~350 test files take about 3 minutes in the job beside it.
+  unit-tests:
+    name: unit tests (${{ matrix.part }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - part: all but graph accuracy
+            args: --exclude src/eval/graphAccuracy.test.ts
+          - part: graph accuracy
+            args: src/eval/graphAccuracy.test.ts
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Same weights as lint-and-build; tests that read them see the same files. Restore only: lint-and-build saves.
+      - name: Restore audio model weights
+        id: music-models
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+
+      - name: Download audio model weights
+        if: steps.music-models.outputs.cache-hit != 'true'
+        run: npm run setup:music
+
+      - name: Test
+        run: npm test -- ${{ matrix.args }}
+
+  # Keeps the single `build-and-test` check, green only when lint, builds and both unit-test parts passed.
+  build-and-test:
+    if: always()
+    needs: [lint-and-build, unit-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require lint, builds and both unit-test parts to pass
+        run: test "${{ needs.lint-and-build.result }}" = success && test "${{ needs.unit-tests.result }}" = success
+
+  # Whether this change can affect the built app at all. Browser tests and the Docker image only exercise the build,
+  # so a PR that touches nothing but documentation, Python training code or other workflows gets the same result as
+  # its base and skips them. Every push to main runs everything.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.c.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - id: c
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          APP=true
+          if [ "$EVENT" = pull_request ]; then
+            # The PR's merge commit against its base branch tip.
+            git diff --name-only HEAD^1 HEAD > changed.txt
+            # Anything outside these paths can reach the build, so it runs the full suite.
+            grep -vE '^(docs/|[^/]+\.md$|.*\.(py|ipynb)$|\.github/workflows/)' changed.txt > app.txt || true
+            # This workflow itself, and the Python the app's dev server starts (the review server and its import), still count.
+            grep -xE '\.github/workflows/ci\.yml|scripts/(dj-review-server|dj_pack_import)\.py' changed.txt >> app.txt || true
+            [ -s app.txt ] || APP=false
+            echo "Files that can affect the app:"; cat app.txt
+          fi
+          echo "app=$APP" >> "$GITHUB_OUTPUT"; echo "app=$APP"
+
   # The browser suite takes ~37 min serially, so it runs as four parallel jobs
   # balanced by measured duration (groups are defined in playwright.config.ts).
   e2e-group:
     name: e2e (${{ matrix.group }})
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -179,13 +259,18 @@ jobs:
   # Keeps a single `e2e` check that is green only when every group passed.
   e2e:
     if: always()
-    needs: e2e-group
+    needs: [changes, e2e-group]
     runs-on: ubuntu-latest
     steps:
       - name: Require every e2e group to pass
-        run: test "${{ needs.e2e-group.result }}" = success
+        # Skipped only when the changes job ran and found nothing that reaches the app.
+        run: |
+          test "${{ needs.e2e-group.result }}" = success \
+            || { test "${{ needs.changes.result }}" = success && test "${{ needs.changes.outputs.app }}" = false; }
 
   docker:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
