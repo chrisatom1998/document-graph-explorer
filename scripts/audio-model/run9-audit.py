@@ -6,7 +6,7 @@
 Reads every <IN>/<part>/manifest.csv and its audio tars (made by stage-run9.py on branch
 claude/raise-tag-accuracy-6ifnkl-run9) and writes <OUT>/manifest-audited.csv with, for every item:
   url, creator, licence, licence_class (open: CC0 / CC BY; nc: CC BY-NC; other), encoded_sha256 (the staged file),
-  pcm16k_sha256 (decoded to 16 kHz mono 16-bit, so re-encodes of one recording match), seconds, split, group,
+  pcm_sha256 (decoded to 32 kHz mono 16-bit, so re-encodes of one recording match), seconds, split, group,
   tags, label_evidence (why each tag was given), keep, drop_reason.
 Identical decoded audio is one sound: when a copy is held out, every training copy is dropped; otherwise the first
 copy is kept, the others are dropped and their tags merge into it.
@@ -58,19 +58,16 @@ def lic_class(lic):
 
 
 def pcm_hash(data):
-    """sha256 of the decoded audio (16 kHz mono s16le), its length in seconds, and whether its 32 kHz decode (whole or
-    first 10 s) has an EXTRA_EXCL md5; (None, 0, False) if undecodable."""
-    def dec(sr):
-        return subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', 'pipe:0', '-ac', '1', '-ar', str(sr), '-f', 's16le', 'pipe:1'],
-                              input=data, capture_output=True, check=True).stdout
+    """sha256 of the decoded audio (32 kHz mono s16le), its length in seconds, and whether that decode (whole or first
+    10 s) has an EXTRA_EXCL md5; (None, 0, False) if undecodable. One decode per item keeps the job short."""
     try:
-        pcm = dec(16000)
-        x32 = dec(32000) if EXTRA['md5'] and pcm else b''
+        pcm = subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', 'pipe:0', '-ac', '1', '-ar', '32000', '-f', 's16le', 'pipe:1'],
+                             input=data, capture_output=True, check=True).stdout
     except subprocess.CalledProcessError:
         return None, 0.0, False
     if not pcm: return None, 0.0, False
-    hit = bool(x32) and (hashlib.md5(x32).hexdigest() in EXTRA['md5'] or hashlib.md5(x32[:640000]).hexdigest() in EXTRA['md5'])
-    return hashlib.sha256(pcm).hexdigest(), round(len(pcm) / 32000, 3), hit
+    hit = bool(EXTRA['md5']) and (hashlib.md5(pcm).hexdigest() in EXTRA['md5'] or hashlib.md5(pcm[:640000]).hexdigest() in EXTRA['md5'])
+    return hashlib.sha256(pcm).hexdigest(), round(len(pcm) / 64000, 3), hit
 
 
 def freesound_meta(ids):
@@ -101,13 +98,15 @@ def evidence(row, meta):
     return '; '.join(parts)
 
 
+LOCAL = 'stage'   # every staged part is downloaded here at once, early: the job's HF token can expire within the hour
+
+
 def read_part(folder):
-    """(rows, {file member path: bytes}) for one staged folder."""
-    man = hf_hub_download(REPO, f'{folder}/manifest.csv', repo_type='dataset')
-    rows = list(csv.DictReader(open(man)))
+    """(rows, {file member path: bytes}) for one staged folder, from LOCAL."""
+    rows = list(csv.DictReader(open(os.path.join(LOCAL, folder, 'manifest.csv'))))
     blobs = {}
     for tar in sorted({r['file'].split('/')[0] for r in rows if r.get('file')}):
-        with tarfile.open(hf_hub_download(REPO, f'{folder}/{tar}', repo_type='dataset')) as tf:
+        with tarfile.open(os.path.join(LOCAL, folder, tar)) as tf:
             for mem in tf.getmembers():
                 blobs[f'{tar}/{mem.name}'] = tf.extractfile(mem).read()
     return rows, blobs
@@ -181,26 +180,33 @@ def main():
     for p in parts:
         rows = list(csv.DictReader(open(hf_hub_download(REPO, f'{p}/manifest.csv', repo_type='dataset'))))
         staged += [dict(r, part=p) for r in rows]
-    nc_folder, nc_why = (stage_nc(st, sha, staged) if TARGETS else (None, {}))
+    if api.file_exists(REPO, f'{IN}/nc-supplement/manifest.csv', repo_type='dataset'):   # staged by an earlier attempt
+        nc_folder, nc_why = f'{IN}/nc-supplement', {'note': 'reused the NC supplement staged by an earlier run'}
+    else:
+        nc_folder, nc_why = (stage_nc(st, sha, staged) if TARGETS else (None, {}))
     if nc_folder: parts.append(nc_folder)
+    from huggingface_hub import snapshot_download
+    snapshot_download(REPO, repo_type='dataset', allow_patterns=[f'{p}/*' for p in parts], local_dir=LOCAL, max_workers=16)
+    ids = {int(r['id'].split(':')[1]) for p in parts for r in csv.DictReader(open(os.path.join(LOCAL, p, 'manifest.csv')))
+           if r['source'] == 'freesound'}
+    meta = freesound_meta(ids)
+    print('downloaded', parts, flush=True)
 
     items = []
     for p in parts:
         rows, blobs = read_part(p)
-        with ThreadPoolExecutor(os.cpu_count() or 4) as pool:
+        with ThreadPoolExecutor(2 * (os.cpu_count() or 4)) as pool:
             hashes = list(pool.map(lambda r: (hashlib.sha256(blobs[r['file']]).hexdigest(), *pcm_hash(blobs[r['file']])) if r.get('file') in blobs else (None, None, 0.0, False), rows))
         for r, (enc, pcm, secs, hit) in zip(rows, hashes):
-            items.append(dict(r, part=p, encoded_sha256=enc or '', pcm16k_sha256=pcm or '', seconds=secs, _extra_md5=hit))
+            items.append(dict(r, part=p, encoded_sha256=enc or '', pcm_sha256=pcm or '', seconds=secs, _extra_md5=hit))
         print(f'{p}: {len(rows)} items hashed', flush=True)
-    ids = {int(r['id'].split(':')[1]) for r in items if r['source'] == 'freesound'}
-    meta = freesound_meta(ids)
 
     # identical decoded audio = one sound
     by_pcm = defaultdict(list)
     for r in items:
         r['keep'], r['drop_reason'] = '1', ''
-        if not r['pcm16k_sha256']: r['keep'], r['drop_reason'] = '0', 'missing or undecodable audio'; continue
-        by_pcm[r['pcm16k_sha256']].append(r)
+        if not r['pcm_sha256']: r['keep'], r['drop_reason'] = '0', 'missing or undecodable audio'; continue
+        by_pcm[r['pcm_sha256']].append(r)
     # other held-out test sets (EXTRA_EXCL): id, uploader or decoded-audio match drops a training copy
     for r in items:
         if r['keep'] != '1' or r['split'] != 'train': continue
@@ -229,7 +235,7 @@ def main():
         if r['keep'] == '1' and r['split'] == 'train' and len(sides[r['group']]) > 1:
             r['keep'], r['drop_reason'] = '0', 'group also held out'
 
-    cols = ['id', 'url', 'creator', 'licence', 'licence_class', 'encoded_sha256', 'pcm16k_sha256', 'seconds', 'split', 'group', 'tags',
+    cols = ['id', 'url', 'creator', 'licence', 'licence_class', 'encoded_sha256', 'pcm_sha256', 'seconds', 'split', 'group', 'tags',
             'label_evidence', 'route', 'score', 'source', 'part', 'file', 'keep', 'drop_reason']
     tmp = tempfile.mkdtemp()
     with open(os.path.join(tmp, 'manifest-audited.csv'), 'w', newline='') as f:
