@@ -7,6 +7,7 @@
 export {
   ingestFiles,
   analyzeAudioCorpus,
+  outdatedAudioIds,
   setAudioInstruments,
   setAudioReview,
   setAudioDjTags,

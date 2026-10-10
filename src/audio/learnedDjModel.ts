@@ -23,7 +23,7 @@ export interface LearnedDjHead {
   weights: number[];
   bias: number;
   threshold: number;
-  /** Below the full-tag bar on held-out sources (DJ-effect heads: under 70/70; older heads: 45/45 but not 60/60, or 50-65%): shown as a maybe. */
+  /** Below the full-tag bar (held-out precision AND recall >= 0.50 since 2026-10-10) on held-out sources: shown as a maybe. */
   maybe?: boolean;
   /** Also tested on held-out whole clips of at most the one-shot length (scripts/dj-effects/oneshot.py), so it still
    *  scores those clips; other heads stay off them and only the one-shot heads (short-clip.json) apply. */

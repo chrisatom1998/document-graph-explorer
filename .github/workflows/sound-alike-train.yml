@@ -134,7 +134,9 @@ jobs:
           compression-level: 0
           retention-days: 30
       - name: Train (the defaults are what ships in src/audio/soundProjection.json)
+        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }  # live training chart; steps run without it when the secret is absent
         run: |
+          pip install -q trackio==0.42.0 || echo "live charts off: trackio install failed"
           python3 scripts/sound-alike/train.py sel/tracks.json emb --out out | tee out.log
           mv out.log out/
       - uses: actions/upload-artifact@v4

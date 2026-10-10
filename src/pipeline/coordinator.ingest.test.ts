@@ -33,6 +33,7 @@ import {
   removeDocuments,
   resetCorpus,
   analyzeAudioCorpus,
+  outdatedAudioIds,
   setAudioReview,
 } from './coordinator';
 import { rememberWorldOrigin } from '../scene/ingestBirth';
@@ -1150,11 +1151,72 @@ describe('WAV music ingestion', () => {
     expect(useGraphStore.getState().edges.find(e => e.kind === 'instrument')?.evidence[0]).toContain('Confirmed by you on both tracks');
     const nodes = useGraphStore.getState().nodes.filter(n => n.fileType === 'audio');
     useGraphStore.getState().patchNodes(new Map(nodes.map(n => [n.id, { audio: { ...n.audio!, keyRevision: 0 } }])));
-    await ingestFiles([wav('one.wav'), wav('two.wav')]);
+    persistence.getOriginal.mockResolvedValue({ blob: new Blob(['RIFF']), name: 'one.wav' });
+    const fresh = await music.analyzeMusic();
+    music.analyzeMusic.mockClear();
+    music.analyzeMusic.mockImplementation(async () => structuredClone(fresh));
+    await analyzeAudioCorpus();
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(2);
     expect(useGraphStore.getState().nodes.filter(n => n.fileType === 'audio').every(n => n.audio?.confirmedInstruments?.[0] === 'piano')).toBe(true);
     await setAudioInstruments(ids);
     expect(useGraphStore.getState().nodes.filter(n => n.fileType === 'audio').every(n => n.audio?.confirmedInstruments === undefined)).toBe(true);
     expect(useGraphStore.getState().edges.find(e => e.kind === 'instrument')?.evidence[0]).toContain('synthesizer');
+  });
+  it('analyzes only the new track when files are added to a library with older results', async () => {
+    await ingestFiles([wav('one.wav'), wav('two.wav')]);
+    const ids = documentIds();
+    // Every saved result predates the current detectors, as after a model update ships.
+    useGraphStore.getState().patchNodes(new Map(ids.map(id => {
+      const audio = useGraphStore.getState().nodes.find(n => n.id === id)!.audio!;
+      return [id, { audio: { ...audio, keyRevision: 0, classifierConfiguration: 'older release' } }];
+    })));
+    const before = new Map(ids.map(id => [id, useGraphStore.getState().nodes.find(n => n.id === id)!.audio]));
+    music.analyzeMusic.mockClear();
+    // Re-reading the whole folder with one new file in it.
+    await ingestFiles([wav('one.wav'), wav('two.wav'), wav('three.wav')]);
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
+    expect(music.analyzeMusic.mock.calls[0][1]).toBe('three.wav');
+    for (const id of ids) expect(useGraphStore.getState().nodes.find(n => n.id === id)!.audio).toEqual(before.get(id));
+    expect(outdatedAudioIds().sort()).toEqual([...ids].sort());
+    // Updating them is a separate, explicit step.
+    persistence.getOriginal.mockResolvedValue({ blob: new Blob(['RIFF']), name: 'one.wav' });
+    const fresh = await music.analyzeMusic();
+    music.analyzeMusic.mockClear();
+    music.analyzeMusic.mockImplementation(async () => structuredClone(fresh));
+    await analyzeAudioCorpus();
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(2);
+    expect(outdatedAudioIds()).toEqual([]);
+  });
+  it('updates the listed older tracks without restarting unrelated unfinished analysis', async () => {
+    await ingestFiles([wav('older.wav'), wav('unfinished.wav'), wav('current.wav')]);
+    const [older, unfinished, current] = useGraphStore.getState().nodes.filter(n => n.fileType === 'audio');
+    useGraphStore.getState().patchNodes(new Map([
+      [older.id, { audio: { ...older.audio!, keyRevision: 0 } }],
+      [unfinished.id, { audio: { ...unfinished.audio!, instrumentScan: { ...unfinished.audio!.instrumentScan!, complete: false } } }],
+    ]));
+    const before = useGraphStore.getState().nodes.find(n => n.id === unfinished.id)!.audio;
+    const updating = outdatedAudioIds();
+    expect(updating).toEqual([older.id]);
+    persistence.getOriginal.mockResolvedValue({ blob: new Blob(['RIFF']), name: 'older.wav' });
+    const fresh = await music.analyzeMusic();
+    music.analyzeMusic.mockClear();
+    music.analyzeMusic.mockImplementation(async () => structuredClone(fresh));
+    await analyzeAudioCorpus(updating);
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
+    expect(music.analyzeMusic.mock.calls[0][2].cacheKey).toBe(older.id);
+    expect(useGraphStore.getState().nodes.find(n => n.id === unfinished.id)!.audio).toEqual(before);
+    expect(useGraphStore.getState().nodes.find(n => n.id === current.id)!.audio).toEqual(current.audio);
+    expect(outdatedAudioIds()).toEqual([]);
+  });
+  it('finishes an unfinished track in the drop without touching unfinished tracks outside it', async () => {
+    await ingestFiles([wav('one.wav'), wav('two.wav')]);
+    const [one, two] = useGraphStore.getState().nodes.filter(n => n.fileType === 'audio');
+    useGraphStore.getState().patchNodes(new Map([one, two].map(n => [n.id, { audio: { ...n.audio!, instrumentScan: { ...n.audio!.instrumentScan!, complete: false } } }])));
+    music.analyzeMusic.mockClear();
+    await ingestFiles([wav('one.wav')]);
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
+    expect(useGraphStore.getState().nodes.find(n => n.id === one.id)!.audio?.instrumentScan?.complete).toBe(true);
+    expect(useGraphStore.getState().nodes.find(n => n.id === two.id)!.audio?.instrumentScan?.complete).toBe(false);
   });
   it('analyzes new WAVs and repairs missing analysis when the same files are dropped again', async () => {
     await ingestFiles([wav('one.wav'), wav('two.WAV')]);
