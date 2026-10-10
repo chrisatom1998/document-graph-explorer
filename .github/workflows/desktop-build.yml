@@ -1,0 +1,112 @@
+name: Desktop build (pinned main)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SOURCE_SHA: f00afb7301694076be9a3d3a3f20cd926030dc4d
+  ONNXRUNTIME_NODE_INSTALL: skip
+  CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+jobs:
+  desktop:
+    if: github.repository == 'chrisatom1998/document-graph-explorer'
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            platform: mac
+            arch: arm64
+            target: dmg
+          - os: macos-15-intel
+            platform: mac
+            arch: x64
+            target: dmg
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - name: Verify pinned source
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - name: Restore existing audio weights (read only)
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            public/music-model/**/*.onnx
+            public/sound-model/**/*.onnx
+            public/jamendo-model/*.onnx
+            public/tagger-model/*.onnx
+            !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Build and verify runtime assets
+        run: npm run build
+      - name: Package Electron app without publishing
+        run: >-
+          npx electron-builder --${{ matrix.platform }} ${{ matrix.target }}
+          --${{ matrix.arch }} --publish never
+          -c.extraMetadata.version=1.1.14-preview.f00afb7
+          -c.artifactName='Document-Graph-Explorer-f00afb7-${{ matrix.platform }}-${{ matrix.arch }}.${ext}'
+      - name: Smoke-test packaged Mac app
+        if: matrix.platform == 'mac'
+        run: |
+          APP="$(find release -maxdepth 2 -type d -name 'Document Graph Explorer.app' -print -quit)"
+          test -n "$APP"
+          EXPECTED_ARCH='${{ matrix.arch }}'
+          if [ "$EXPECTED_ARCH" = x64 ]; then EXPECTED_ARCH=x86_64; fi
+          file "$APP/Contents/MacOS/Document Graph Explorer" | grep "$EXPECTED_ARCH"
+          "$APP/Contents/MacOS/Document Graph Explorer" > /tmp/dge-desktop.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:47182/ > /tmp/dge-index.html; then
+              grep -q '<html' /tmp/dge-index.html
+              exit 0
+            fi
+            kill -0 "$PID" || { cat /tmp/dge-desktop.log; exit 1; }
+            sleep 2
+          done
+          cat /tmp/dge-desktop.log
+          exit 1
+      - name: Write provenance and checksums
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          const files = fs.readdirSync('release').filter(n => /\.(exe|dmg)$/.test(n));
+          if (files.length !== 1) throw new Error(`Expected one desktop package; got ${files}`);
+          // Two matrix jobs have equal caps, keeping their combined stored
+          // payload below 2.6 GB. Allow a margin for metadata/archive overhead.
+          const bytes = files.reduce((sum, name) => sum + fs.statSync(`release/${name}`).size, 0);
+          if (bytes > 1_300_000_000) throw new Error(`Package is ${bytes} bytes; exceeds authorized per-platform upload budget`);
+          fs.mkdirSync('desktop-artifacts');
+          for (const name of files) fs.copyFileSync(`release/${name}`, `desktop-artifacts/${name}`);
+          fs.writeFileSync('desktop-artifacts/SHA256SUMS.txt', files.map(name => `${crypto.createHash('sha256').update(fs.readFileSync(`release/${name}`)).digest('hex')}  ${name}\n`).join(''));
+          fs.writeFileSync('desktop-artifacts/BUILD-INFO.txt', `Source: ${process.env.SOURCE_SHA}\nVersion: 1.1.14-preview.f00afb7\nPlatform: ${{ matrix.platform }} ${{ matrix.arch }}\nSigning: no trusted publisher certificate or Apple notarization\nVerified: runtime assets and native packaged-app HTTP startup\n`);
+          NODE
+      - name: Upload desktop package
+        uses: actions/upload-artifact@v4
+        with:
+          name: DGE-f00afb7-${{ matrix.platform }}-${{ matrix.arch }}
+          path: desktop-artifacts/
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
