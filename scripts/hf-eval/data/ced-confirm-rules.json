@@ -1,0 +1,159 @@
+{
+ "note": "For keyword-matched Freesound candidates (datasets/no-source-tags/candidates-all-tags.csv) of the 28 \"usable after audio check\" tags: keep a train row when its best CED score over the tag's confirm classes is >= confirm_min; reject_only tags have no matching AudioSet class, so keep a row unless speech, animal or vehicle scores >= reject_max.",
+ "confirm": {
+  "distorted": [
+   517
+  ],
+  "saturated": [
+   517
+  ],
+  "impact": [
+   466,
+   460,
+   461,
+   436,
+   426,
+   468,
+   469
+  ],
+  "reverberant": [
+   511,
+   512
+  ],
+  "riser": [
+   459,
+   513,
+   520,
+   504,
+   158
+  ],
+  "downlifter": [
+   459,
+   513,
+   520,
+   504,
+   158
+  ],
+  "noise sweep": [
+   513,
+   520,
+   521,
+   459
+  ],
+  "whoosh": [
+   459
+  ],
+  "synth arpeggio": [
+   158,
+   239,
+   244,
+   245,
+   240,
+   241,
+   247
+  ],
+  "synth pluck": [
+   158,
+   239,
+   244,
+   245,
+   240,
+   241,
+   247
+  ],
+  "synth sequence": [
+   158,
+   239,
+   244,
+   245,
+   240,
+   241,
+   247
+  ],
+  "synth stab": [
+   158,
+   239,
+   244,
+   245,
+   240,
+   241,
+   247
+  ],
+  "fm synth": [
+   158,
+   239,
+   244,
+   245,
+   240,
+   241,
+   247
+  ],
+  "foghorn bass": [
+   158,
+   242,
+   243,
+   401
+  ],
+  "stutter effect": [
+   158,
+   239,
+   244,
+   245
+  ],
+  "chops": [
+   27,
+   32,
+   33,
+   35,
+   254
+  ],
+  "finger snap": [
+   62
+  ],
+  "percussion hit": [
+   161,
+   164,
+   165,
+   168,
+   163,
+   173,
+   171
+  ],
+  "static noise": [
+   515,
+   520,
+   521,
+   513
+  ],
+  "vocal hum": [
+   37
+  ],
+  "record stop": [
+   215
+  ],
+  "vocal shush": [
+   15,
+   84
+  ]
+ },
+ "reject_only": [
+  "filtered",
+  "falling",
+  "rising",
+  "staccato",
+  "sustained",
+  "syncopated"
+ ],
+ "reject_classes": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  72,
+  300
+ ],
+ "confirm_min": 0.3,
+ "reject_max": 0.5
+}
