@@ -34,6 +34,7 @@ on:
       run9_audit: { description: 'PRIVATE HF dataset <repo>:<path> of run9-audit.py manifest-audited.csv (keeps only audited items); empty = none', default: '' }
       charts: { description: 'live training charts (loss, validation mAP) in the private dge-training-charts Space', default: 'true' }
       chart_name: { description: 'name of this run on the live chart, e.g. round 9; empty = out_dir plus the start time', default: '' }
+      prep_only: { description: 'only prepare the data and fill the private prep cache, no training (use a CPU flavor such as cpu-xl)', default: 'false' }
   push:
     branches: ['claude/train-audio-model-*']
     paths: ['.github/workflows/audio-model-train.yml']
@@ -101,7 +102,7 @@ jobs:
           RAWSTEMS_FX=${{ inputs.rawstems_fx || '0' }} IOWA=${{ inputs.iowa == 'true' && '1' || '0' }}
           CHRIS_DATA=${{ inputs.chris_data || '' }} SOURCE_REPEAT=${{ inputs.source_repeat || '' }}
           VCSL=${{ contains(inputs.extra_sets, 'vcsl') && '1' || '0' }} SLAKH_MORE=${{ contains(inputs.extra_sets, 'slakh_more') && '1' || '0' }}
-          SAO=${{ contains(inputs.extra_sets, 'sao') && '1' || '0' }} FSNEW_DATA=${{ inputs.fsnew_data || '' }} RUN9_DATA=${{ inputs.run9_data || '' }} RUN9_AUDIT=${{ inputs.run9_audit || '' }} ROUND10=${{ contains(inputs.extra_sets, 'round10') && '1' || '0' }}
+          SAO=${{ contains(inputs.extra_sets, 'sao') && '1' || '0' }} FSNEW_DATA=${{ inputs.fsnew_data || '' }} RUN9_DATA=${{ inputs.run9_data || '' }} RUN9_AUDIT=${{ inputs.run9_audit || '' }} ROUND10=${{ contains(inputs.extra_sets, 'round10') && '1' || '0' }} PREP_ONLY=${{ inputs.prep_only == 'true' && '1' || '0' }}
           SOFT_LABELS=${{ contains(inputs.extra_sets, 'soft11') && 'cmjatom/dge-private-train:round11/soft-v1.json' || '' }}
       - name: Stop the Hugging Face job if this workflow is cancelled
         if: ${{ cancelled() }}
@@ -109,7 +110,7 @@ jobs:
         run: |
           if [ -f hf-job-id ]; then python3 -c "from huggingface_hub import cancel_job; cancel_job(job_id=open('hf-job-id').read())"; fi
       - name: Score the SoundCloud held-out fold
-        if: ${{ (inputs.soundcloud || 'true') == 'true' && hashFiles('hf-job-detached') == '' }}
+        if: ${{ (inputs.soundcloud || 'true') == 'true' && hashFiles('hf-job-detached') == '' && inputs.prep_only != 'true' }}
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
         run: |
           D="${{ github.event_name == 'push' && 'all-tags' || inputs.out_dir }}"; P=${D:+$D/}

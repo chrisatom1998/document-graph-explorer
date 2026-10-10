@@ -50,35 +50,65 @@ nproc; free -g | head -2; df -h $W | tail -1
 # Prepared data is cached in the private dataset <user>/dge-tagger-data under prep-cache/<key>, keyed by the prepare
 # scripts and label map, so a rerun with the same data skips the ~3 h prep. The upload runs alongside training.
 DIRS="prep prepj holdout"; [ "${ALL_TAGS:-0}" = 1 ] && DIRS="$DIRS fsdprep nsprep fsprep xprep"
-# The run 7 sources are built in every job (not cached), so their scripts stay out of the key.
+# The run 7+ sources are cached separately, one by one (below), so their scripts stay out of this key.
 KEY=$( (ls $S/prepare*.py | grep -v -e prepare-rawstems.py -e prepare-iowa.py -e prepare-chrisdrive.py -e prepare-vcsl.py -e prepare-slakh-more.py -e prepare-sao.py -e prepare-fsnew.py -e prepare-run9.py -e prepare-round10.py | xargs cat; cat $S/labelmap.py; echo "$DIRS") | sha256sum | cut -c1-12)
+# The run 7+ sources below are cached one by one under prep-cache/src/<name>/<key> of the same private dataset (prep-cache.py):
+# the key covers the source's prepare script, the local modules and files it uses, its output-changing arguments and a
+# content hash of its private input, so a source is only rebuilt when one of those changed. Built sources are uploaded once
+# every prep is done, alongside training. PREP_ONLY=1 stops after the uploads (a cheap job that fills the cache for the next run).
+export S
+from_cache() {   # <name> <dir> <prepare script> [prep-cache.py key options]: restore <dir> from the cache, or note its key and fail
+  local name=$1 dir=$2 key; shift 2
+  key=$(python3 $S/prep-cache.py key "$@") || { echo "$name: no prep cache key; preparing from scratch"; return 1; }
+  echo "$key" > "$name.cachekey"
+  python3 $S/prep-cache.py get "$name" "$key" "$dir" || return 1
+  echo "$name: prepared data from the private prep cache ($key)"; cat "$dir/prep.log" 2>/dev/null || true
+}
+to_cache() {   # <name> <dir> <log>: queue a freshly built <dir> (with its log) for upload
+  [ -f "$1.cachekey" ] || return 0
+  cp "$3" "$2/prep.log"; echo "$1 $(cat "$1.cachekey") $2" >> cache-todo.txt
+}
 # RAWSTEMS=1 adds Mixing Secrets full songs (prepare-rawstems.py, non-commercial licence), built alongside the rest.
 RS_PID=
-if [ "${RAWSTEMS:-0}" = 1 ]; then python3 $S/prepare-rawstems.py rsprep --workers 16 --fx "${RAWSTEMS_FX:-0}" > rawstems.log 2>&1 & RS_PID=$!; fi
+if [ "${RAWSTEMS:-0}" = 1 ]; then
+  ( from_cache rawstems rsprep prepare-rawstems.py --arg "fx=${RAWSTEMS_FX:-0}" \
+    || { python3 $S/prepare-rawstems.py rsprep --workers 16 --fx "${RAWSTEMS_FX:-0}" && to_cache rawstems rsprep rawstems.log; } ) > rawstems.log 2>&1 & RS_PID=$!
+fi
 IOWA_PID=
-if [ "${IOWA:-0}" = 1 ]; then python3 $S/prepare-iowa.py iowaprep --workers 16 > iowa.log 2>&1 & IOWA_PID=$!; fi
+if [ "${IOWA:-0}" = 1 ]; then
+  ( from_cache iowa iowaprep prepare-iowa.py || { python3 $S/prepare-iowa.py iowaprep --workers 16 && to_cache iowa iowaprep iowa.log; } ) > iowa.log 2>&1 & IOWA_PID=$!
+fi
 VCSL_PID=
-if [ "${VCSL:-0}" = 1 ]; then python3 $S/prepare-vcsl.py vcslprep --workers 16 > vcsl.log 2>&1 & VCSL_PID=$!; fi
+if [ "${VCSL:-0}" = 1 ]; then
+  ( from_cache vcsl vcslprep prepare-vcsl.py || { python3 $S/prepare-vcsl.py vcslprep --workers 16 && to_cache vcsl vcslprep vcsl.log; } ) > vcsl.log 2>&1 & VCSL_PID=$!
+fi
 SM_PID=
 SAO_PID=
-if [ "${SAO:-0}" = 1 ]; then python3 $S/prepare-sao.py saoprep > sao.log 2>&1 & SAO_PID=$!; fi
-if [ "${SLAKH_MORE:-0}" = 1 ]; then python3 $S/prepare-slakh-more.py smprep --workers 8 > slakhmore.log 2>&1 & SM_PID=$!; fi
+if [ "${SAO:-0}" = 1 ]; then
+  ( from_cache sao saoprep prepare-sao.py --data cmjatom/dge-effects-sao:sao || { python3 $S/prepare-sao.py saoprep && to_cache sao saoprep sao.log; } ) > sao.log 2>&1 & SAO_PID=$!
+fi
+if [ "${SLAKH_MORE:-0}" = 1 ]; then
+  ( from_cache slakhmore smprep prepare-slakh-more.py || { python3 $S/prepare-slakh-more.py smprep --workers 8 && to_cache slakhmore smprep slakhmore.log; } ) > slakhmore.log 2>&1 & SM_PID=$!
+fi
 CD_PID=
 if [ -n "${CHRIS_DATA:-}" ]; then   # private staged copy of Chris's train half: only counts are printed
-  ( python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='cdstage', max_workers=8)" "$CHRIS_DATA" \
-    && python3 $S/prepare-chrisdrive.py "cdstage/${CHRIS_DATA#*:}" cdprep && rm -rf cdstage ) > chrisdrive.log 2>&1 & CD_PID=$!
+  ( from_cache chrisdrive cdprep prepare-chrisdrive.py --data "$CHRIS_DATA" \
+    || { python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='cdstage', max_workers=8)" "$CHRIS_DATA" \
+    && python3 $S/prepare-chrisdrive.py "cdstage/${CHRIS_DATA#*:}" cdprep && rm -rf cdstage && to_cache chrisdrive cdprep chrisdrive.log; } ) > chrisdrive.log 2>&1 & CD_PID=$!
 fi
 FN_PID=
 if [ -n "${FSNEW_DATA:-}" ]; then   # private staged Freesound sounds for tags with little or no training audio (stage-freesound.py)
-  ( python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='fnstage', max_workers=16)" "$FSNEW_DATA" \
-    && python3 $S/prepare-fsnew.py "fnstage/${FSNEW_DATA#*:}" fnprep && rm -rf fnstage ) > fsnew.log 2>&1 & FN_PID=$!
+  ( from_cache fsnew fnprep prepare-fsnew.py --data "$FSNEW_DATA" \
+    || { python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='fnstage', max_workers=16)" "$FSNEW_DATA" \
+    && python3 $S/prepare-fsnew.py "fnstage/${FSNEW_DATA#*:}" fnprep && rm -rf fnstage && to_cache fsnew fnprep fsnew.log; } ) > fsnew.log 2>&1 & FN_PID=$!
 fi
 RN_PID=
 R10_PID=
 if [ -n "${RUN9_DATA:-}" ]; then   # private staged run 9 audio (stage-run9.py): Freesound keyword / CED rows and labelled sets
-  ( python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='r9stage', max_workers=16)" "$RUN9_DATA" \
+  ( from_cache run9 r9prep prepare-run9.py --data "$RUN9_DATA" ${RUN9_AUDIT:+--data "$RUN9_AUDIT"} \
+    || { python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='r9stage', max_workers=16)" "$RUN9_DATA" \
     && if [ -n "${RUN9_AUDIT:-}" ]; then python3 -c "import sys, shutil; from huggingface_hub import hf_hub_download as d; r, f = sys.argv[1].split(':'); shutil.copy(d(r, f, repo_type='dataset'), 'run9-audited.csv')" "$RUN9_AUDIT"; fi \
-    && python3 $S/prepare-run9.py "r9stage/${RUN9_DATA#*:}" r9prep --workers 6 ${RUN9_AUDIT:+--audit run9-audited.csv} && rm -rf r9stage ) > run9.log 2>&1 & RN_PID=$!
+    && python3 $S/prepare-run9.py "r9stage/${RUN9_DATA#*:}" r9prep --workers 6 ${RUN9_AUDIT:+--audit run9-audited.csv} && rm -rf r9stage && to_cache run9 r9prep run9.log; } ) > run9.log 2>&1 & RN_PID=$!
 fi
 CACHE_PID=
 if python3 - "$KEY" $DIRS <<'PY'
@@ -88,6 +118,7 @@ key, dirs = sys.argv[1], sys.argv[2:]
 try:
     api = HfApi(); repo = api.whoami()['name'] + '/dge-tagger-data'; base = f'prep-cache/{key}'
     if not api.file_exists(repo, f'{base}/DONE', repo_type='dataset'): sys.exit(1)
+    if os.environ.get('PREP_ONLY') == '1': print(f'prep only: {repo}/{base} is already cached'); sys.exit(0)
     snapshot_download(repo, repo_type='dataset', allow_patterns=[f'{base}/*'], local_dir='cache', max_workers=16)
     for d in dirs: shutil.move(f'cache/{base}/{d}', d)
     print(f'using cached prepared data {repo}/{base}')
@@ -144,10 +175,20 @@ if [ -n "$FN_PID" ]; then wait $FN_PID || { tail -n 30 fsnew.log; exit 1; }; tai
 if [ -n "$RN_PID" ]; then wait $RN_PID || { tail -n 30 run9.log; exit 1; }; tail -n 4 run9.log; EXTRA+=(--extra fs9=r9prep --extra ls9=r9prep); fi
 if [ "${ROUND10:-0}" = 1 ]; then   # round 10 commercial training packs, private bucket (prepare-round10.py; train list filtered for test
   # overlap beforehand). Runs after the other preps, not beside them: all of them at once ran an L4 job out of memory.
-  python3 $S/prepare-round10.py cmjatom/dge-commercial-train commercial-train r10prep > round10.log 2>&1 || { tail -n 30 round10.log; exit 1; }
+  if ! from_cache round10 r10prep prepare-round10.py --bucket-file cmjatom/dge-commercial-train:commercial-train/round10/train-list.csv > round10.log 2>&1; then
+    python3 $S/prepare-round10.py cmjatom/dge-commercial-train commercial-train r10prep >> round10.log 2>&1 || { tail -n 30 round10.log; exit 1; }
+    to_cache round10 r10prep round10.log
+  fi
   tail -n 3 round10.log; R10_PID=done; EXTRA+=(--extra round10=r10prep)
 fi
 echo "all data ready after $(( ($(date +%s) - START) / 60 )) min"
+SRC_CACHE_PID=
+if [ -s cache-todo.txt ]; then python3 $S/prep-cache.py put cache-todo.txt > src-cache-upload.txt 2>&1 & SRC_CACHE_PID=$!; fi
+if [ "${PREP_ONLY:-0}" = 1 ]; then   # fill the caches and stop: no training
+  [ -n "$SRC_CACHE_PID" ] && { wait $SRC_CACHE_PID; cat src-cache-upload.txt; }
+  [ -n "$CACHE_PID" ] && { wait $CACHE_PID; tail -n 2 cache-upload.txt; }
+  echo "prep only: caches filled after $(( ($(date +%s) - START) / 60 )) min"; exit 0
+fi
 if [ -n "${SOUNDCLOUD_DATA:-}" ]; then   # "<dataset repo>:<folder>", uploaded by the workflow from its SoundCloud artifacts
   python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='scdl')" "$SOUNDCLOUD_DATA"
   mv "scdl/${SOUNDCLOUD_DATA#*:}" scprep && EXTRA+=(--soundcloud scprep)
@@ -236,3 +277,4 @@ api.upload_folder(repo_id=repo, folder_path='run', path_in_repo=os.environ.get('
 print('uploaded to https://huggingface.co/' + repo)
 EOF
 if [ -n "$CACHE_PID" ]; then wait $CACHE_PID || echo "prep cache upload failed (training results are unaffected)"; tail -n 2 cache-upload.txt; fi
+if [ -n "$SRC_CACHE_PID" ]; then wait $SRC_CACHE_PID || true; cat src-cache-upload.txt; fi
