@@ -34,5 +34,5 @@ Prepared data is cached in the private dataset `<user>/dge-tagger-data`: the bas
 each extra source (raw stems, Iowa, chris-drive, VCSL, more Slakh, SAO, fsnew, run 9, round 10) under
 `prep-cache/src/<name>/<key>` (`prep-cache.py`). A source's key covers its prepare script, the local modules and files it
 uses, its output-changing arguments and a content hash of its private input, so a job rebuilds only the sources whose
-inputs changed. `prep_only: true` (on a CPU flavor) fills the caches without training. Offline check:
+inputs changed. `prep_only` in `extra_sets` (on a CPU flavor) fills the caches without training. Offline check:
 `python3 scripts/audio-model/test_prep_cache.py`.
