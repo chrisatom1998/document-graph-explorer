@@ -27,6 +27,7 @@ Writes one .npz per tar / parquet shard to OUT (a mounted private bucket): id, s
 (float16), plus username/license for the mirror. Finished outputs are skipped, so a re-run resumes.
 Env: OUT, MODE, REPO, DIRS, PART/PARTS (every PARTS-th input from PART), COUNT (max inputs per part, dry run),
 MAX_ROWS (per mirror shard), STOP_AFTER_MIN, BATCH, WORKERS.
+ALLOW (MODE=mirror, optional, default off): a CSV with columns file,freesound_id; only those shards and clips are run.
 """
 import csv
 import io
@@ -116,6 +117,7 @@ def main():
     out = os.environ["OUT"]
     os.makedirs(out, exist_ok=True)
     mode = os.environ.get("MODE", "tars")
+    allow = None
     part, parts = int(os.environ.get("PART", "0")), int(os.environ.get("PARTS", "1"))
     count = int(os.environ.get("COUNT", "0") or 0)
     max_rows = int(os.environ.get("MAX_ROWS", "0") or 0)
@@ -153,6 +155,12 @@ def main():
         repo = MIRROR
         files = sorted(f for f in HfApi().list_repo_files(repo, repo_type="dataset") if f.endswith(".parquet"))
         files = [f for f in files if "/test-" in f] + [f for f in files if "/train-" in f]
+        if os.environ.get("ALLOW"):  # opt-in allowlist: shard file -> Freesound ids to run
+            allow = {}
+            for r in csv.DictReader(open(os.environ["ALLOW"], newline="")):
+                allow.setdefault(r["file"], set()).add(int(r["freesound_id"]))
+            files = [f for f in files if f in allow]
+            print(f"allowlist: {sum(map(len, allow.values()))} clips in {len(files)} shards", flush=True)
     files = files[part::parts]
     if count:
         files = files[:count]
@@ -235,7 +243,7 @@ def main():
                 tab = pf.read_row_group(rg, columns=["audio", "username", "freesound_id", "license"])
                 a, u, i_, lc = (tab.column(c).to_pylist() for c in ("audio", "username", "freesound_id", "license"))
                 for k in range(tab.num_rows):
-                    if lc[k] != SAMPLING_PLUS and a[k]:
+                    if lc[k] != SAMPLING_PLUS and a[k] and (allow is None or int(i_[k]) in allow[f]):
                         rows.append((str(i_[k]), a[k]["bytes"], {"username": u[k], "license": lc[k]}))
                 if max_rows and len(rows) >= max_rows:
                     rows = rows[:max_rows]
