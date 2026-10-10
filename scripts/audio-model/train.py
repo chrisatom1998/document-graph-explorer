@@ -1,7 +1,7 @@
 """Fine-tune an AudioSet-pretrained EfficientAT MobileNet as DGE's own instrument tagger.
 
 Usage: python3 scripts/audio-model/train.py <run-dir> --openmic <prep-dir> [--jamendo <prep-dir>] [--soundcloud <prep-dir>]
-       [--model mn10_as] [--epochs 8] [--lr 1e-4] [--weak 0.2] [--rare-repeat 1] [--resume]
+       [--model mn10_as] [--epochs 8] [--lr 1e-4] [--weak 0.2] [--rare-repeat 1] [--resume] [--absent-fix <json>]
 
 Inputs are the log-mel windows written by prepare.py (OpenMIC-2018 train, benchmark artists removed) and
 prepare-jamendo.py (MTG-Jamendo split-0 train/validation, round 3 held-out artists removed) and prepare-soundcloud.py
@@ -39,6 +39,7 @@ OPENMIC = list(CLASSES)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from labelmap import CAT, FREESOUND, FSLD_ROLES, SAME  # noqa: E402
 import fsd50k_extra  # noqa: E402
+import absent_fix  # noqa: E402
 import charts  # noqa: E402
 # Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth, the effect renders and Freesound, plus the music
 # sources' labels below wherever one names the same sound.
@@ -74,6 +75,9 @@ def load_source(name, mel_path, items, weak):
         for c, r in labels.items():
             j = col[c]; y[i, j] = float(r >= 0.5); w[i, j] = weak if c in weak_set else 1.0
         yv[i] = y[i]; wv[i] = w[i]   # validation scores the clip's own labels and weights, never the teacher's soft targets
+        for c, (t, wt) in absent_fix.edits(it['id'], labels, weak_set).items():   # --absent-fix: weak absences only, training targets only
+            j = col.get(c)
+            if j is not None: y[i, j] = t; w[i, j] = wt
         for l, p in SOFT.get(it['id'], {}).items():   # distillation: the teacher labels every listed tag, at full weight
             j = col.get(f'cat:{l}')
             if j is None: continue
@@ -111,9 +115,13 @@ def main():
     ap.add_argument('--repeat', default='', help='name=k,...: times each training window of that source is seen per epoch (e.g. iowa=2,chrisdrive=4)')
     ap.add_argument('--merge', help="round 12: JSON whose 'merge' maps a merged-away tag to the tag it is shown as (round12/round12.json)")
     ap.add_argument('--soft', help="round 11 teacher soft labels (round11/build-soft.py JSON: {'items': {id: {tag: p}}})")
+    ap.add_argument('--absent-fix', help="coverage #2: JSON {'drop': {id: [tag]}, 'add': {id: [tag]}} (coverage/labelfix/build-absent-fix.py); "
+                    'drop sets a likely-present weak absence to weight 0, add makes it a full-weight positive. Default off')
     args = ap.parse_args()
     if args.merge:
         MERGE.update(json.load(open(args.merge)).get('merge', {})); print(f'merged tags: {MERGE or "none"}', flush=True)
+    if args.absent_fix:
+        nd, na = absent_fix.load(args.absent_fix); print(f'absent fix: weak absences dropped on {nd} items, positives added on {na} items', flush=True)
     if args.soft:
         SOFT.update(json.load(open(args.soft))['items']); print(f'teacher soft labels for {len(SOFT)} items', flush=True)
     dev = torch.device(args.device)
