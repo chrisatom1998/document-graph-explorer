@@ -6,7 +6,7 @@ with the PR's base branch (main), not with the fixed 0.60 bar, so a tag that is 
 
 **What runs when**
 - Every PR into main that touches the app (`src/`, `public/`, `package*.json`, `vite.config.*`, `index.html`) or the
-  gate itself: the fast slice, 150 of the 500 Jamendo tracks plus all 318 MTG key tracks (about 25 minutes once the
+  gate itself: the fast slice, 150 of the 500 Jamendo tracks plus all 318 MTG key tracks (about 15 minutes once the
   audio is cached). Other PRs pass at once.
 - Pushes to main, one at a time: the full set (500 + 318). When several merges land while one is analysed, only the
   newest waits and the ones in between are skipped. The graph exports are cached per commit and become the baseline
