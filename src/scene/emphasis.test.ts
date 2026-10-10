@@ -312,6 +312,17 @@ describe('computeEmphasis', () => {
   });
 });
 
+describe('loop or one-shot filter', () => {
+  const clip = (id: string, path: string, durationSeconds: number): DocNode =>
+    mkNode({ id, path, fileType: 'audio', audio: { version: 2, durationSeconds, analyzedSeconds: durationSeconds, instruments: [], notes: [] } as MusicAnalysis });
+  const nodes = [clip('l', 'Drum Loops/a.wav', 8), clip('o', 'Kits/kick.wav', 0.5), clip('u', 'Kits/pad.wav', 9), mkNode({ id: 'doc' })];
+  it('keeps only clips of the picked shape', () => {
+    expect(nodesMatchingFilter(nodes, [], { ...NO_FILTER, clipShape: 'loop' })).toEqual(new Set(['l']));
+    expect(nodesMatchingFilter(nodes, [], { ...NO_FILTER, clipShape: 'one-shot' })).toEqual(new Set(['o']));
+    expect(isFilterActive({ ...NO_FILTER, clipShape: null })).toBe(false);
+  });
+});
+
 describe('sounds filter', () => {
   const clip = (id: string, confirmedInstruments: string[]): DocNode =>
     mkNode({
