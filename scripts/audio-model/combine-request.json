@@ -3,7 +3,8 @@
     "all-tags",
     "all-tags-run5",
     "all-tags-run7",
-    "all-tags-run8"
+    "all-tags-run8",
+    "all-tags-run9"
   ],
   "only": {
     "all-tags-run7": [
@@ -15,13 +16,17 @@
       "synthesizer"
     ],
     "all-tags-run8": [
-      "cat:fm synth",
       "cat:glockenspiel",
       "cat:whistle"
+    ],
+    "all-tags-run9": [
+      "cat:bell",
+      "cat:water ambience",
+      "cat:fm synth"
     ]
   },
   "pin": {
-    "all-tags-run8": [
+    "all-tags-run9": [
       "cat:fm synth"
     ]
   },
@@ -29,6 +34,6 @@
   "public_repo": "dge-all-tags-tagger-nc",
   "license": "cc-by-nc-sa-4.0",
   "flavor": "cpu-xl",
-  "timeout": "4h",
-  "attempt": 6
+  "timeout": "5h",
+  "attempt": 7
 }
