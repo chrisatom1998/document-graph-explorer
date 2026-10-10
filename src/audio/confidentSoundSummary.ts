@@ -14,7 +14,11 @@ import { isRuleDescribedLabel } from './timbreDescriptions';
 
 /** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
  * musicLinks), so a display change also changes which instrument links a track can form, by design. */
-export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v5';
+export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v6';
+/** The shipping bar (Chris, 2026-10-10): a detector shows as a normal tag when its held-out precision AND recall on clips and
+ * samples are both at least this; below it, a useful detector shows as a faded "maybe". Full songs are a no-regression check
+ * only. scripts/head-scorecard.py, scripts/dj-effects/ship.py and the tagger's `tested` flags use the same bar. */
+export const SOUND_TAG_BAR = .5;
 /** A detector score at or above this shows as "likely" (and is the only floor for short clips). */
 export const LIKELY_SOUND_CUTOFF = .5;
 /** Longer recordings also show "possible" tags from this raw score up to the likely cutoff. Scores are not calibrated probabilities. */
@@ -42,7 +46,7 @@ const profileNames:Record<string,string>={'AudioSet AST':'AST score','MTG-Jamend
 /** Only these scores come from detectors that passed held-out testing; other models still show under Model scores. */
 export const TESTED_SCORES=new Set(['Trained head score','Baseline fallback score']);
 const MAYBE_SCORES=new Set(['Trained head score (maybe)',TAGGER_MAYBE_SCORE]);
-/** The trained tagger (src/audio/tagger.ts) passed held-out testing on the tags it decides; below 0.70 it shows as "maybe". */
+/** The trained tagger (src/audio/tagger.ts) passed held-out testing on the tags it decides; below SOUND_TAG_BAR it shows as "maybe". */
 TESTED_SCORES.add(TAGGER_SCORE);
 /** Jamendo (music-trained) window scores that passed a held-out full-mix check: thresholds were picked on half the
  * frozen OpenMIC test selection and checked on the other half (scripts/calibrate-full-mix-jamendo.py). Only recordings of at
