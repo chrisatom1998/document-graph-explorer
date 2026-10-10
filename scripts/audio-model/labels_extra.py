@@ -8,9 +8,11 @@ weak absences only).
 EXTRA_CAT = ['bongo', 'tuned percussion', 'banjo', 'mandolin', 'pitched vocal', 'shaker loop', 'synth hit', 'vocal shush']
 # Run 9: below-bar tags that had no output yet (only run 9's staged sets and renders label them; prepare-run9.py).
 EXTRA_CAT += ['reversed vocal', 'vocal pad', 'vocal phrase', 'rubbery bass', 'vocal harmony']
+# Run 9, after the 2026-10-10 licence change: AudioSet's 'Steel guitar, slide guitar' clips give steel guitar data.
+EXTRA_CAT += ['steel guitar']
 
 # Run 9: the below-bar tags of reports/training-data-all-tags-2026-10-10.md that the tagger trains (every one except the
-# nine rule-based timbre tags and steel guitar, which has no allowed audio). An item marked weakAll='run9' (prepare-run9.py)
+# nine rule-based timbre tags; steel guitar joined once AudioSet was allowed). An item marked weakAll='run9' (prepare-run9.py)
 # counts every one of these it does not list as a weak absence, which keeps run 9's json small.
 RUN9_TAGS = [
     '808 bass', 'acid bass', 'acid synth', 'air horn', 'animal sound', 'atmospheric pad', 'banjo', 'bass growl',
@@ -32,6 +34,6 @@ RUN9_TAGS = [
     'vibraphone', 'vinyl crackle', 'viola', 'vocal breath', 'vocal chops', 'vocal gasp', 'vocal harmony', 'vocal hum',
     'vocal pad', 'vocal phrase', 'vocal scream', 'vocal shout', 'vocal shush', 'vocal vowel', 'vocal-like synth', 'vocoder vocal',
     'voice', 'water ambience', 'waterphone', 'whistle', 'whoosh', 'wind ambience', 'wobble bass', 'woodblock',
-    'xylophone',
+    'xylophone', 'steel guitar',
 ]
 

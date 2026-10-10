@@ -4,7 +4,7 @@ Usage: python3 scripts/audio-model/prepare-run9.py <staged-dir> <out-dir> [--wor
   <staged-dir> holds one folder per staged part (freesound-0..k, labelled), each with manifest.csv and audio-NNN.tar.
   -> fs9-mel.npy + fs9.json          Freesound train rows (keyword, CED-confirmed and CED-mapped; all unreviewed)
   -> ls9-mel.npy + ls9.json          labelled-set train windows (ESC-50, Nonspeech7k, VIVAE, VocalSet, IRMAS, Groove MIDI,
-                                     tabla, ChoirSet, VSCO 2 CE, licensed-pilot CC0 packs) plus renders of train clips
+                                     tabla, ChoirSet, VSCO 2 CE, licensed-pilot CC0 packs, AudioSet) plus renders of train clips
   -> eval-run9.npy + eval-run9.json  held-out rows and renders of held-out clips: test only, never trained, tuned or calibrated on
   -> run9-ids.json                   every id used, by output, for the data manifest
 
@@ -185,7 +185,8 @@ def main():
                 if r['split'] == 'train': add_train('ls9', rid, r['group'], own, y, 'render')
                 else: add_held(rid, r['group'], own, y, 'render')
     for w, name in ((W['fs9'], 'freesound.org previews (CC0 / CC BY / CC BY-NC), run 9 keyword and CED-base checked rows; unreviewed; credit Freesound and its uploaders'),
-                    (W['ls9'], 'run 9 labelled sets (ESC-50, Nonspeech7k, VIVAE, VocalSet, IRMAS, Groove MIDI, Four-Way Tabla, ChoirSet, VSCO 2 CE, licensed-pilot CC0) and code renders; unreviewed')):
+                    (W['ls9'], 'run 9 labelled sets (ESC-50, Nonspeech7k, VIVAE, VocalSet, IRMAS, Groove MIDI, Four-Way Tabla, ChoirSet, VSCO 2 CE, licensed-pilot CC0; '
+                               'AudioSet train segments: YouTube audio, uploader rights, labels CC BY 4.0, allowed by the 2026-10-10 licence change) and code renders; unreviewed')):
         w.close(name)
     ev.close()
     src = np.memmap(ev_path, dtype=np.int16, mode='r', shape=(len(ev_items), N))

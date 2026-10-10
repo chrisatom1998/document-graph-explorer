@@ -26,6 +26,9 @@ PART=freesound, one of NPARTS uploader shards (sha256 of the uploader name), fro
 PART=labelled: ESC-50, Nonspeech7k, VIVAE, VocalSet, IRMAS (train set), Groove MIDI, Four-Way Tabla, Dagstuhl ChoirSet,
   VSCO 2 CE and the licensed-pilot CC0 packs (Karoryfer bass, Kenney, rubberduck), each mapped to the run 9 tags it labels
   (MAPS below) and split by its own performer / recording / source grouping (SPLITS below).
+PART=audioset: AudioSet clips for the below-bar tags it labels (AS_MAP / AS_TARGET below; added after the 2026-10-10 licence
+  change): train from the train segments, held-out from the eval segments; JUDGE_YT (comma list) = YouTube ids found in the
+  judge sets' metadata, never staged.
 """
 import csv, glob, hashlib, io, json, os, re, shutil, subprocess, sys, tarfile, tempfile, time, urllib.parse, urllib.request, zipfile
 from collections import Counter, defaultdict
@@ -331,7 +334,7 @@ LIMIT = int(os.environ.get('LIMIT', '0'))   # test runs: at most LIMIT items per
 def zip_from(url, cache=None):
     if cache and not LIMIT:
         if not os.path.exists(cache):
-            subprocess.run(['curl', '-fsSL', '--retry', '8', '-o', cache, url], check=True)
+            subprocess.run(['curl', '-fsSL', '--retry', '8', '--retry-all-errors', '-C', '-', '-o', cache, url], check=True)
         return zipfile.ZipFile(cache)
     return zipfile.ZipFile(HttpFile(url))
 
@@ -462,9 +465,9 @@ def stage_labelled(sha):
                 base = os.path.basename(n); m = re.fullmatch(pat + r'\.(ogg|wav|mp3)', base)
                 if not m: continue
                 add('pilot-' + url.split('/')[-1].split('.')[0], re.sub(r'_?\d+$', '', base.rsplit('.', 1)[0]), 'train', tags, 'CC0', url, lambda n=n: z.read(n), ident=base.rsplit('.', 1)[0])
-    skip = set(os.environ.get('SKIP', '').split(','))
+    skip = set(os.environ.get('SKIP', '').split(',')); only = {x for x in os.environ.get('ONLY', '').split(',') if x}   # ONLY: a retry of failed sources
     for name, fn in {'esc50': src_esc50, 'nonspeech7k': src_nonspeech7k, 'vivae': src_vivae, 'vocalset': src_vocalset, 'irmas': src_irmas, 'gmd': src_gmd, 'tabla': src_tabla, 'choirset': src_choirset, 'vsco2': src_vsco2, 'pilot': src_pilot}.items():
-        if name in skip: why[f'{name}: skipped'] += 1; continue
+        if name in skip or (only and name not in only): why[f'{name}: skipped'] += 1; continue
         t0 = time.time()
         try: fn()
         except Exception as e:   # one unreachable source must not sink the others; the summary names it
@@ -476,9 +479,123 @@ def stage_labelled(sha):
     summary = {'removed': dict(why), 'windows': {f'{s}|{sp}': n for (s, sp), n in sorted(stats.items())},
                'note': 'unreviewed: labels come from each set\'s own metadata, nobody has listened'}
     folder = out.close(summary)
-    upload(folder, f"{os.environ['OUT']}/labelled", f'Stage run 9 labelled sets: {len(out.rows)} windows')
+    upload(folder, f"{os.environ['OUT']}/{os.environ.get('LABELLED_NAME', 'labelled')}", f'Stage run 9 labelled sets: {len(out.rows)} windows')
+
+# ---------------------------------------------------------------- AudioSet
+# Added after Chris's 2026-10-10 licence change (any licence may train; weights stay private, CC BY-NC-SA). Audio is YouTube
+# content (rights with the uploaders); Google's labels are CC BY 4.0. Train clips come from the balanced + unbalanced train
+# segments (Opus 24 kbps mirror), held-out clips from the eval segments (48 kHz FLAC mirror): AudioSet splits by video, so
+# no clip is on both sides. Groups are videos (YouTube channels are not published, so a channel can be on both sides).
+AS_TRAIN_REPO, AS_EVAL_REPO = 'danjacobellis/audioset_opus_24kbps', 'agkphysics/AudioSet'
+AS_CSV = 'http://storage.googleapis.com/us_audioset/youtube_corpus/v1/csv/'
+AS_LIC = 'YouTube audio (uploader rights; no licence), AudioSet labels CC BY 4.0'
+# DGE tag -> AudioSet class indices (class_labels_indices.csv). Every mapped tag a clip carries is a positive; only clear matches.
+AS_MAP = {
+    'steel guitar': [144], 'bell': [178, 200, 201, 205, 207], 'breath': [41, 45], 'vocal breath': [41, 45], 'vocal gasp': [44],
+    'vocal shout': [8, 9, 11, 12], 'vocal scream': [14], 'whisper': [15], 'vocal hum': [37], 'vocal laugh': [16, 18, 19, 20, 21],
+    'vocal chant': [30, 31], 'beatbox': [218], 'choir': [28], 'whistle': [40, 402],
+    'hi-hat': [172], 'cymbal': [171], 'snare': [165], 'kick': [168], 'rimshot': [166], 'tabla': [170], 'woodblock': [173],
+    'tambourine': [174], 'shaker': [175, 176], 'gong': [177], 'cowbell': [92], 'glockenspiel': [181], 'vibraphone': [182],
+    'steel drum': [183], 'tuned percussion': [179, 180, 181, 182, 183], 'mallet instrument': [179, 180, 181, 182],
+    'percussion': [161], 'drums': [162], 'horn': [186], 'trumpet': [187], 'trombone': [188], 'violin / fiddle': [191],
+    'cello': [193], 'double bass': [194], 'flute': [196], 'saxophone': [197], 'clarinet': [198], 'harp': [199],
+    'harmonica': [208], 'accordion': [209], 'singing bowl': [214], 'turntable': [215], 'vinyl scratch': [215],
+    'sitar': [148], 'banjo': [147], 'mandolin': [149], 'bass guitar': [142], 'electric guitar': [141], 'acoustic guitar': [143],
+    'guitar': [140, 141, 143, 144], 'piano': [153], 'electric piano': [154], 'organ': [155, 156, 157], 'synthesizer': [158],
+    'strings': [190], 'air horn': [318], 'siren': [323, 324, 325, 396, 397], 'clap': [63], 'finger snap': [62],
+    'animal sound': [72, 73, 74, 81, 86, 108, 111, 126, 132], 'bird ambience': [111, 112, 113], 'wind ambience': [283, 284],
+    'rain ambience': [286, 289, 290, 291], 'water ambience': [288, 292, 293, 294, 295], 'machine ambience': [404, 409, 411, 412, 413],
+    'crowd ambience': [69, 70], 'environmental sound': [514], 'static noise': [515, 520, 521], 'noise': [513, 520, 521],
+    'whoosh': [459], 'foley hit': [460, 461, 466, 467, 468], 'reverberant': [511], 'echoing': [512], 'distorted': [517],
+    'chorused': [464], 'sound effect': [504],
+}
+# below-bar tags AudioSet labels: train cap (smaller where run 9's Freesound selection already fills the tag), held-out cap 150
+AS_FULL = {'animal sound', 'bird ambience', 'wind ambience', 'rain ambience', 'water ambience', 'machine ambience', 'environmental sound',
+           'static noise', 'noise', 'whoosh', 'hi-hat', 'cymbal', 'snare', 'kick', 'bell', 'breath', 'vocal scream', 'vocal shout',
+           'whistle', 'clap', 'finger snap', 'percussion', 'tuned percussion', 'synthesizer', 'voice'}
+AS_TARGET = {t: (150 if t in AS_FULL else 500) for t in [
+    'steel guitar', 'bell', 'breath', 'vocal breath', 'vocal gasp', 'vocal shout', 'vocal scream', 'vocal hum', 'choir', 'whistle',
+    'hi-hat', 'cymbal', 'snare', 'kick', 'rimshot', 'tabla', 'woodblock', 'tambourine', 'shaker', 'gong', 'glockenspiel',
+    'vibraphone', 'steel drum', 'tuned percussion', 'percussion', 'horn', 'trumpet', 'trombone', 'cello', 'double bass', 'flute',
+    'clarinet', 'turntable', 'sitar', 'banjo', 'mandolin', 'bass guitar', 'electric piano', 'synthesizer', 'air horn', 'clap',
+    'finger snap', 'animal sound', 'bird ambience', 'wind ambience', 'rain ambience', 'water ambience', 'machine ambience',
+    'environmental sound', 'static noise', 'noise', 'whoosh', 'foley hit', 'reverberant', 'echoing', 'distorted', 'chorused',
+    'sound effect']}
+AS_HELD = 150
+
+def stage_audioset():
+    import pyarrow.parquet as pq
+    from huggingface_hub import hf_hub_download, HfApi
+    api = HfApi()
+    idx = {}; seg = {}
+    for r in csv.DictReader(io.StringIO(fetch(AS_CSV + 'class_labels_indices.csv').decode())): idx[r['mid']] = int(r['index'])
+    for name, split in (('eval_segments', 'heldout'), ('balanced_train_segments', 'train'), ('unbalanced_train_segments', 'train')):
+        for row in csv.reader(io.StringIO(fetch(AS_CSV + name + '.csv', timeout=600).decode()), skipinitialspace=True):
+            if not row or row[0].startswith('#'): continue
+            seg[row[0]] = (split, float(row[1]), frozenset(idx[m] for m in row[3].split(',') if m in idx))
+    judge = {y for y in os.environ.get('JUDGE_YT', '').split(',') if y}
+    why = Counter()
+    tags_of = lambda cl: sorted(t for t, c in AS_MAP.items() if cl & set(c))
+    rank = defaultdict(list)   # (tag, split) -> ytids, fewest labels first (cleaner clips), then a stable hash
+    for y, (split, _, cl) in seg.items():
+        tg = [t for t in tags_of(cl) if t in AS_TARGET]
+        if not tg: continue
+        if y in judge: why['judge-set YouTube id'] += 1; continue
+        for t in tg: rank[t, split].append(y)
+    for k in rank: rank[k].sort(key=lambda y: (len(seg[y][2]), h8('run9-audioset|' + y)))
+    cap = lambda t, split: AS_TARGET[t] if split == 'train' else AS_HELD
+    want = {sp: {y for (t, s), ys in rank.items() if s == sp for y in ys[:int(cap(t, sp) * 1.5) + 20]} for sp in ('train', 'heldout')}
+    print(f"audioset: {len(seg)} segments; wanted train {len(want['train'])}, held-out {len(want['heldout'])}", flush=True)
+    got = {'train': {}, 'heldout': {}}; tmp = tempfile.mkdtemp()
+    def scan(repo, files, split, read):
+        def one(f):
+            p = hf_hub_download(repo, f, repo_type='dataset', local_dir=os.path.join(tmp, 'dl'))
+            try:
+                pf = pq.ParquetFile(p); n = 0
+                for rg in range(pf.num_row_groups):
+                    for y, data in read(pf.read_row_group(rg)):
+                        if y in want[split] and y not in got[split]:
+                            q = os.path.join(tmp, split + '-' + y); open(q, 'wb').write(data); got[split][y] = q; n += 1
+                return n
+            finally: os.remove(p)
+        with ThreadPoolExecutor(4) as ex:
+            for k, n in enumerate(ex.map(one, files)):
+                if k % 10 == 0: print(f'  {repo} {k + 1}/{len(files)}: {len(got[split])} clips', flush=True)
+    def read_train(t):
+        for path, a in zip(t.column('path').to_pylist(), t.column('opus').to_pylist()):
+            b = os.path.basename(path)
+            if '/eval' in path or not b.startswith('Y'): continue
+            yield b[1:12], a['bytes']
+    def read_eval(t):
+        for y, a in zip(t.column('video_id').to_pylist(), t.column('audio').to_pylist()): yield y, a['bytes']
+    lim = int(os.environ.get('AS_FILES', '0')) or None   # test runs: only the first AS_FILES parquet files of each mirror
+    files = sorted(f for f in api.list_repo_files(AS_TRAIN_REPO, repo_type='dataset') if f.endswith('.parquet'))[:lim]
+    scan(AS_TRAIN_REPO, files, 'train', read_train)
+    files = sorted(f for f in api.list_repo_files(AS_EVAL_REPO, repo_type='dataset') if f.startswith('data/eval/') and f.endswith('.parquet'))[:lim]
+    scan(AS_EVAL_REPO, files, 'heldout', read_eval)
+    out = Out('audioset'); chosen = {}
+    for (t, sp), ys in sorted(rank.items()):
+        have = [y for y in ys if y in got[sp]][:cap(t, sp)]
+        why[f'{t} {sp}: not in the mirror'] += min(cap(t, sp), len(ys)) - len(have)
+        for y in have: chosen[y] = sp
+    for y, sp in sorted(chosen.items()):
+        data = open(got[sp][y], 'rb').read()
+        if sp == 'heldout': data, ext = to_flac(data), 'flac'
+        else: ext = 'opus'
+        if not data: why['silent or undecodable'] += 1; continue
+        _, start, cl = seg[y]
+        out.add({'id': f'audioset:{y}', 'source': 'audioset', 'group': f'audioset:{y}', 'split': sp, 'tags': '|'.join(tags_of(cl)),
+                 'licence': AS_LIC, 'route': 'audioset-label', 'url': f'https://youtu.be/{y}?t={int(start)}'}, data, ext)
+    shutil.rmtree(tmp, ignore_errors=True)
+    summary = {'removed': dict(why), 'pool': {f'{t}|{sp}': len(ys) for (t, sp), ys in sorted(rank.items())},
+               'sources': {'train': AS_TRAIN_REPO + ' (Opus 24 kbps)', 'heldout': AS_EVAL_REPO + ' eval (FLAC)', 'labels': AS_CSV, 'licence': AS_LIC},
+               'note': 'unreviewed: AudioSet clip-level labels (10 s, weak, some classes noisy); groups are videos, channels unknown'}
+    folder = out.close(summary)
+    upload(folder, f"{os.environ['OUT']}/audioset", f'Stage run 9 AudioSet clips: {len(out.rows)}')
 
 if __name__ == '__main__':
     sha = os.environ['REPO_SHA']
-    if os.environ.get('PART', 'freesound') == 'freesound': stage_freesound(sha, int(os.environ.get('NPARTS', '1')), int(os.environ.get('PARTNO', '0')))
+    part = os.environ.get('PART', 'freesound')
+    if part == 'freesound': stage_freesound(sha, int(os.environ.get('NPARTS', '1')), int(os.environ.get('PARTNO', '0')))
+    elif part == 'audioset': stage_audioset()
     else: stage_labelled(sha)
