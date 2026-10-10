@@ -20,6 +20,9 @@
 # CED-base checked rows, labelled sets, code renders; unreviewed) and scores its held-out split (eval-run9).
 # RUN9_AUDIT=<private dataset>:<path of manifest-audited.csv> (run9-audit.py) keeps only the audited items.
 # ROUND10=1 adds the round 10 commercial training packs from the private bucket cmjatom/dge-commercial-train (prepare-round10.py).
+# ROUND12=1 (round12/round12.json): adds the empty-tag train audio (private cmjatom/dge-private-train empty-tags/v1, prepared
+# by prepare-run9.py as etfs9/etls9, no renders), the extra look-alike groups, oversampling of the target tags (--rare-tags,
+# RARE_REPEAT times) and any approved merges (--merge); and stops before training if a training row is an FSD50K eval clip.
 set -euo pipefail
 START=$(date +%s)
 export DEBIAN_FRONTEND=noninteractive
@@ -78,7 +81,7 @@ R10_PID=
 if [ -n "${RUN9_DATA:-}" ]; then   # private staged run 9 audio (stage-run9.py): Freesound keyword / CED rows and labelled sets
   ( python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='r9stage', max_workers=16)" "$RUN9_DATA" \
     && if [ -n "${RUN9_AUDIT:-}" ]; then python3 -c "import sys, shutil; from huggingface_hub import hf_hub_download as d; r, f = sys.argv[1].split(':'); shutil.copy(d(r, f, repo_type='dataset'), 'run9-audited.csv')" "$RUN9_AUDIT"; fi \
-    && python3 $S/prepare-run9.py "r9stage/${RUN9_DATA#*:}" r9prep --workers 6 ${RUN9_AUDIT:+--audit run9-audited.csv} && rm -rf r9stage ) > run9.log 2>&1 & RN_PID=$!
+    && python3 $S/prepare-run9.py "r9stage/${RUN9_DATA#*:}" r9prep --workers 6 ${RUN9_AUDIT:+--audit run9-audited.csv} $( [ "${ROUND12:-0}" = 1 ] && echo --lookalikes $S/round12/round12.json ) && rm -rf r9stage ) > run9.log 2>&1 & RN_PID=$!
 fi
 CACHE_PID=
 if python3 - "$KEY" $DIRS <<'PY'
@@ -142,6 +145,14 @@ if [ -n "$SM_PID" ]; then wait $SM_PID || { tail -n 30 slakhmore.log; exit 1; };
 if [ -n "$SAO_PID" ]; then wait $SAO_PID || { tail -n 30 sao.log; exit 1; }; tail -n 2 sao.log; EXTRA+=(--extra sao=saoprep); fi
 if [ -n "$FN_PID" ]; then wait $FN_PID || { tail -n 30 fsnew.log; exit 1; }; tail -n 3 fsnew.log; EXTRA+=(--extra fsnew=fnprep); fi
 if [ -n "$RN_PID" ]; then wait $RN_PID || { tail -n 30 run9.log; exit 1; }; tail -n 4 run9.log; EXTRA+=(--extra fs9=r9prep --extra ls9=r9prep); fi
+if [ "${ROUND12:-0}" = 1 ]; then   # round 12: empty-tag train audio, staged train-only (test filtering ran in the project container)
+  python3 -c "from huggingface_hub import snapshot_download as d; d('cmjatom/dge-private-train', repo_type='dataset', allow_patterns=['empty-tags/v1/*'], local_dir='etdl', max_workers=16)"
+  mkdir -p etstage; for m in $(find etdl/empty-tags/v1 -name manifest.csv); do d=$(dirname $m); mv "$d" "etstage/$(echo ${d#etdl/empty-tags/v1/} | tr / -)"; done
+  python3 $S/round12/check-fsd50k-eval.py etstage ${RUN9_AUDIT:+run9-audited.csv} || exit 1
+  python3 $S/prepare-run9.py etstage etprep --workers 6 --prefix et --no-renders --lookalikes $S/round12/round12.json > emptytags.log 2>&1 || { tail -n 30 emptytags.log; exit 1; }
+  tail -n 3 emptytags.log; rm -rf etdl etstage; ET_PID=done; EXTRA+=(--extra etfs9=etprep --extra etls9=etprep)
+  RARE_TAGS=$(python3 -c "import json, sys; print(','.join(json.load(open(sys.argv[1]))['oversample']))" $S/round12/round12.json)
+fi
 if [ "${ROUND10:-0}" = 1 ]; then   # round 10 commercial training packs, private bucket (prepare-round10.py; train list filtered for test
   # overlap beforehand). Runs after the other preps, not beside them: all of them at once ran an L4 job out of memory.
   python3 $S/prepare-round10.py cmjatom/dge-commercial-train commercial-train r10prep > round10.log 2>&1 || { tail -n 30 round10.log; exit 1; }
@@ -165,6 +176,7 @@ fi
 HOURS=$(python3 -c "import sys; t, j, e = map(float, sys.argv[1:]); left = j - e / 3600 - 0.75; print(round(max(0.5, min(t, left) if t else left), 2))" "${TRAIN_HOURS:-0}" "${JOB_HOURS:-7}" "$(( $(date +%s) - START ))")
 echo "training budget ${HOURS} h"
 if [ -n "${SOFT_LABELS:-}" ]; then EXTRA+=(--soft /tmp/soft-labels.json); fi
+if [ "${ROUND12:-0}" = 1 ]; then EXTRA+=(--merge $S/round12/round12.json --rare-tags "$RARE_TAGS"); fi
 python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --rare-repeat "${RARE_REPEAT:-1}" --repeat "${SOURCE_REPEAT:-}" --threads 8 --hours "$HOURS"
 # Which data trained this model, so it can be rebuilt without any one source (chris-drive rows keep source=chris-drive).
 python3 - "${EXTRA[@]}" <<'EOF'
@@ -221,6 +233,7 @@ CAL=(openmic=prep jamendo=prepj); EVAL=(prep/eval-round1 prep/eval-round2 holdou
 [ -n "$FN_PID" ] && CAL+=(fsnew=fnprep) && EVAL+=(fnprep/eval-fsnew)
 [ -n "$RN_PID" ] && CAL+=(fs9=r9prep ls9=r9prep) && EVAL+=(r9prep/eval-run9)
 [ -n "$R10_PID" ] && CAL+=(round10=r10prep)
+[ -n "${ET_PID:-}" ] && CAL+=(etfs9=etprep etls9=etprep)
 if [ "${ALL_TAGS:-0}" = 1 ]; then CAL+=(fsd50k=fsdprep nsynth=nsprep freesound=fsprep); for x in $XS; do CAL+=($x=xprep); done; EVAL+=(fsdprep/eval-fsd50k nsprep/eval-nsynth-test nsprep/eval-nsynth-test-fx fsprep/eval-freesound); fi
 python3 $S/calibrate.py run "${CAL[@]}" | tee run/calibrate.txt
 python3 $S/coverage.py run "${CAL[@]}" 
