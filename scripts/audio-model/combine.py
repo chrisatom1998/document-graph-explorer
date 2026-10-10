@@ -87,7 +87,7 @@ def main():
     runs = []
     for d in args.runs:
         log = json.load(open(os.path.join(d, 'log.json')))
-        assert log['classes'][:len(CLASSES)] == CLASSES, f'{d} has a different class list'
+        n = min(len(CLASSES), len(log['classes'])); assert log['classes'][:n] == CLASSES[:n], f'{d} has a different class list'   # an older run has fewer outputs than the current list
         runs.append({'name': os.path.basename(os.path.normpath(d)), 'dir': d, 'model': log['args']['model'], 'classes': log['classes'],
                      'eval': json.load(open(os.path.join(d, 'eval.json'))), 'th': json.load(open(os.path.join(d, 'thresholds.json')))})
     assert all(o.partition('=')[2].strip(', ') for o in args.only), f'--only needs RUN=output,output: {args.only}'
