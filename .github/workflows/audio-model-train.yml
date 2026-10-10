@@ -24,6 +24,7 @@ on:
       timeout: { description: 'HF job time limit', default: '7h' }
       job_hours: { description: 'the time limit above in hours (training fits inside it)', default: '7' }
       train_hours: { description: 'training time budget inside the job; epochs are cut to fit', default: '4.25' }
+      charts: { description: 'live training charts (loss, validation mAP) in the private dge-training-charts Space', default: 'true' }
   push:
     branches: ['claude/train-audio-model-*']
     paths: ['.github/workflows/audio-model-train.yml']
@@ -87,7 +88,7 @@ jobs:
           OUT_DIR=${{ github.event_name == 'push' && 'all-tags' || inputs.out_dir }} JOB_NAME=dge-tagger-${{ github.event_name == 'push' && 'all-tags' || inputs.out_dir || 'main' }}
           TRAIN_HOURS=${{ inputs.train_hours || '4.25' }} RARE_REPEAT=${{ inputs.rare_repeat || '1' }} RAWSTEMS=${{ inputs.rawstems == 'true' && '1' || '0' }} JOB_HOURS=${{ inputs.job_hours || '7' }}
           LR=${{ inputs.lr || '1e-4' }} BATCH=${{ inputs.batch || '64' }} WEAK=${{ inputs.weak || '0.2' }}
-          SOUNDCLOUD_DATA=${SOUNDCLOUD_DATA:-}
+          SOUNDCLOUD_DATA=${SOUNDCLOUD_DATA:-} TRACKIO_SPACE=${{ (inputs.charts || 'true') == 'true' && '1' || '' }}
       - name: Stop the Hugging Face job if this workflow is cancelled
         if: ${{ cancelled() }}
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
