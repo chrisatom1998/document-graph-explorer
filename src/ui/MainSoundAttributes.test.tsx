@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import {afterEach,beforeEach,expect,it} from 'vitest';
 import {cleanup,fireEvent,render,screen,within} from '@testing-library/react';
-import MainSoundAttributes, {likelyExtraSounds,setAttributesOpenSetting,setShowUnconfirmedSetting,soundAttributeRows} from './MainSoundAttributes';
+import MainSoundAttributes, {isLikely,likelyExtraSounds,setAttributesOpenSetting,setShowUnconfirmedSetting,soundAttributeRows} from './MainSoundAttributes';
 import MusicFeatures from './MusicFeatures';
 import type {MusicAnalysis} from '../audio/musicTypes';
 import type {DocNode} from '../model/types';
@@ -101,4 +101,31 @@ it('offers only probability-like, unreviewed scores of 0.5+ as likely extras',()
  const labels=likelyExtraSounds(a,{title:'neutral.wav'},new Set()).map(r=>r.label);
  expect(labels).toEqual(['oboe']); // CLAP similarity, reviewed labels and weak scores never count
  expect(likelyExtraSounds(a,{title:'neutral.wav'},new Set(['oboe']))).toEqual([]);
+});
+it('never offers labels hidden until they pass real clips as likely extras',()=>{
+ const a=audio();a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[
+  {group:'production',label:'reverse effect',score:.95,model:'Trained head'},{group:'character',label:'distorted',score:.95,model:'Trained head'},{group:'production',label:'riser',score:.9,model:'Trained head'}]};
+ expect(likelyExtraSounds(a,{title:'neutral.wav'},new Set()).map(r=>r.label)).toEqual(['riser']);
+ expect(soundAttributeRows(a,{title:'neutral.wav'}).filter(isLikely).map(r=>r.label)).toEqual(['riser']);
+});
+
+it('projects downlifter attribute evidence and likely extras to one falling character row',()=>{
+ const a=audio();a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'production',label:'downlifter',score:.9,model:'Trained head'},{group:'character',label:'falling',score:.8,model:'Trained head'}]};
+ const before=structuredClone(a),node={title:'neutral.wav'};
+ expect(soundAttributeRows(a,node)).toHaveLength(1);
+ expect(soundAttributeRows(a,node)[0]).toMatchObject({dimension:'character',label:'falling',probabilityScore:.9});
+ expect(likelyExtraSounds(a,node,new Set()).map(r=>r.label)).toEqual(['falling']);
+ expect(likelyExtraSounds(a,node,new Set(['falling']))).toEqual([]);
+ expect(a).toEqual(before);
+});
+it.each(['confirmed','rejected','uncertain'] as const)('preserves the latest %s review across downlifter and falling attribute evidence',decision=>{
+ const a=audio();a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'production',label:'downlifter',score:.9,model:'Trained head'}]};
+ a.soundReviews=[{dimension:'effect',labelId:'downlifter',decision:'confirmed',scope:'track',at:'now',evidenceRunId:'qa'},{dimension:'character',labelId:'falling',decision,scope:'track',at:'now',evidenceRunId:'qa'}];
+ const rows=soundAttributeRows(a,{title:'neutral.wav'});expect(rows).toHaveLength(1);
+ expect(rows[0]).toMatchObject({dimension:'character',label:'falling',review:`${decision==='uncertain'?'unsure':decision} by you`});
+ expect(likelyExtraSounds(a,{title:'neutral.wav'},new Set())).toEqual([]);
+});
+it('recognizes a legacy saved downlifter correction after projecting attribute rows',()=>{
+ const a=audio();a.confirmedDjTags={source:[],production:['downlifter'],character:[]};
+ expect(soundAttributeRows(a,{title:'neutral.wav'})).toEqual([expect.objectContaining({dimension:'character',label:'falling',review:'confirmed by you'})]);
 });

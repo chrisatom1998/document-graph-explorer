@@ -19,10 +19,23 @@ _started = False   # a run was opened and still needs finish()
 _mirror = {'points': [], 'sent': 0.0, 'busy': False}
 
 
-def start(run_name, config):
+def _auto_space():
+    """Scripts run by hand (not through hf-launch.py) chart to <account>/dge-training-charts when an HF token is present."""
+    if os.environ.get('TRACKIO_SPACE') is not None or not (os.environ.get('HF_TOKEN') or os.environ.get('HUGGING_FACE_HUB_TOKEN')): return None
+    try:
+        from huggingface_hub import whoami
+        return f"{whoami()['name']}/dge-training-charts"
+    except Exception as e:  # noqa: BLE001
+        print(f'live charts off: {e}', flush=True); return None
+
+
+def start(run_name, config, auto=False):
+    """auto=True: also chart when TRACKIO_SPACE is unset but an HF token exists (set TRACKIO_SPACE= empty to opt out)."""
     global _on, _started
-    space = os.environ.get('TRACKIO_SPACE')
+    space = os.environ.get('TRACKIO_SPACE') or (_auto_space() if auto else None)
     if not space: return
+    if auto and not os.environ.get('TRACKIO_RUN'): os.environ['TRACKIO_RUN'] = f"{run_name}{time.strftime('-%m%d-%H%M-')}{os.urandom(2).hex()}"
+    os.environ.setdefault('TRACKIO_SPACE', space)
     try:
         import trackio
         bucket = os.environ.get('TRACKIO_BUCKET') or space + '-bucket'   # resolved once: Trackio and the JSON mirror share it
@@ -103,3 +116,11 @@ def finish():
         print(f'live charts finish failed: {e}', flush=True)
     _started = False
 
+
+
+def summary(run_name, config, metrics):
+    """One-shot jobs with no epochs (logistic-regression heads and the like): show the run as a single finished point.
+    Training-side numbers only, same rule as above."""
+    start(run_name, config, auto=True)
+    log({'epoch': 1, **{k: float(v) for k, v in metrics.items()}}, step=1)
+    finish()

@@ -56,7 +56,8 @@ FRAMES = 1000
 def is_val(artist): return int(hashlib.sha256(f'dge-audio-model|{artist}'.encode()).hexdigest()[:8], 16) % 10 == 0
 
 SOFT = {}   # round 11 (--soft): item id -> {app tag: teacher probability, shifted so the teacher's threshold sits at 0.5}
-SOFT_MIX = 0.5   # where the item has a strong label of its own, the target is this share of it plus the rest from the teacher
+SOFT_MIX = 0.5
+MERGE = {}   # round 12 (--merge): merged-away tag -> the tag it is shown as; a clip with the child present counts the parent present   # where the item has a strong label of its own, the target is this share of it plus the rest from the teacher
 
 def load_source(name, mel_path, items, weak):
     y = np.zeros((len(items), len(CLASSES)), np.float32); w = np.zeros_like(y); col = {c: j for j, c in enumerate(CLASSES)}
@@ -66,6 +67,8 @@ def load_source(name, mel_path, items, weak):
         if it.get('weakAll') == 'run9':   # run 9 (prepare-run9.py): every run 9 tag the item does not list is a weak absence
             for l in RUN9_TAGS:
                 if f'cat:{l}' not in labels: labels[f'cat:{l}'] = 0.0; weak_set.add(f'cat:{l}')
+        for c, p in MERGE.items():
+            if labels.get(f'cat:{c}', 0) >= 0.5: labels[f'cat:{p}'] = 1.0; weak_set.discard(f'cat:{p}')
         for c, l in ALIAS.items():   # the same sound under the app's name, unless the source labels that name itself
             if c in labels and f'cat:{l}' not in labels: labels[f'cat:{l}'] = labels[c]; weak_set |= {f'cat:{l}'} if c in weak_set else set()
         for c, r in labels.items():
@@ -105,8 +108,11 @@ def main():
     ap.add_argument('--hours', type=float, default=0, help='training time budget: after epoch 1, cut the epoch count (and its cosine schedule) to fit')
     ap.add_argument('--init', help='start from this model.pt (an earlier run); classifier rows are matched by class name')
     ap.add_argument('--repeat', default='', help='name=k,...: times each training window of that source is seen per epoch (e.g. iowa=2,chrisdrive=4)')
+    ap.add_argument('--merge', help="round 12: JSON whose 'merge' maps a merged-away tag to the tag it is shown as (round12/round12.json)")
     ap.add_argument('--soft', help="round 11 teacher soft labels (round11/build-soft.py JSON: {'items': {id: {tag: p}}})")
     args = ap.parse_args()
+    if args.merge:
+        MERGE.update(json.load(open(args.merge)).get('merge', {})); print(f'merged tags: {MERGE or "none"}', flush=True)
     if args.soft:
         SOFT.update(json.load(open(args.soft))['items']); print(f'teacher soft labels for {len(SOFT)} items', flush=True)
     dev = torch.device(args.device)

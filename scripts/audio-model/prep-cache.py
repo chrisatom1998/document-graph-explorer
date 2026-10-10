@@ -8,7 +8,7 @@ dataset folder's tree hash, a dataset file's hash, a bucket file's content hash)
 rebuilt and re-cached; the others still come from the cache.
 
 Usage (hf-job.sh):
-  prep-cache.py key <script> [--data <repo>:<folder or file>]... [--bucket-file <bucket>:<path>]... [--arg <text>]...
+  prep-cache.py key <script> [--data <repo>:<folder or file>]... [--bucket-file <bucket>:<path>]... [--file <local file>]... [--arg <text>]...
   prep-cache.py get <name> <key> <dir>        exit 0 and fill <dir> on a hit, exit 1 on a miss
   prep-cache.py put <todo file>               upload every "<name> <key> <dir>" line of <todo file> (after the preps)
 
@@ -54,6 +54,8 @@ def key(argv):
         elif kind == '--bucket-file':   # "<bucket>:<path>": content hash of one file in a bucket
             bucket, path = val.split(':', 1)
             fp = get_bucket_file_metadata(bucket, path).xet_file_data.file_hash
+        elif kind == '--file':   # a local file the script reads that the scan cannot see (e.g. a round's settings)
+            fp = hashlib.sha256(open(val, 'rb').read()).hexdigest(); h.update(os.path.basename(val).encode())
         elif kind == '--arg': fp = ''
         else: raise SystemExit(f'unknown option {kind}')
         h.update(f'{fp}\0'.encode())

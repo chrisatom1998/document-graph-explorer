@@ -1,6 +1,9 @@
 """Run 9's staged audio (stage-run9.py) as tagger training windows, a held-out test, and code-built renders.
 
 Usage: python3 scripts/audio-model/prepare-run9.py <staged-dir> <out-dir> [--workers 6] [--limit N]
+         [--prefix et] [--lookalikes round12/round12.json] [--no-renders]
+  Round 12: --prefix names the outputs <prefix>fs9 / <prefix>ls9 / eval-<prefix>run9 so a second staged set (the empty-tag
+  audio) can be prepared beside run 9's; --lookalikes adds that JSON's 'lookalikes' groups; --no-renders skips the code renders.
   <staged-dir> holds one folder per staged part (freesound-0..k, labelled), each with manifest.csv and audio-NNN.tar.
   -> fs9-mel.npy + fs9.json          Freesound train rows (keyword, CED-confirmed and CED-mapped; all unreviewed)
   -> ls9-mel.npy + ls9.json          labelled-set train windows (ESC-50, Nonspeech7k, VIVAE, VocalSet, IRMAS, Groove MIDI,
@@ -138,6 +141,11 @@ LOOKALIKES = [
 ]
 
 
+def add_lookalikes(path):
+    for g in json.load(open(path)).get('lookalikes', []):
+        if g not in LOOKALIKES: LOOKALIKES.append(g)
+
+
 def lookalike_absent(own):
     out = set()
     for g in LOOKALIKES:
@@ -148,8 +156,11 @@ def lookalike_absent(own):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('staged'); ap.add_argument('out'); ap.add_argument('--workers', type=int, default=6); ap.add_argument('--limit', type=int, default=0)
+    ap.add_argument('--prefix', default=''); ap.add_argument('--lookalikes', default=''); ap.add_argument('--no-renders', action='store_true')
     ap.add_argument('--audit', default='', help="run9-audit.py's manifest-audited.csv: keep only its keep=1 items, with its merged tags")
     args = ap.parse_args(); os.makedirs(args.out, exist_ok=True)
+    if args.lookalikes: add_lookalikes(args.lookalikes)
+    P = args.prefix; FS, LS, EV = f'{P}fs9', f'{P}ls9', f'eval-{P}run9'
     rows = []
     for part in sorted(os.listdir(args.staged)):
         m = os.path.join(args.staged, part, 'manifest.csv')
@@ -177,7 +188,7 @@ def main():
     # renders: pick source clips per render tag, deterministic, capped
     plan = defaultdict(list)
     for tag, (srcs, *_ ) in RENDERS.items():
-        if tag not in known: continue
+        if tag not in known or args.no_renders: continue
         for side, pool, cap in (('train', train, RENDER_TRAIN), ('heldout', keep, RENDER_HELD)):
             cands = [r for r in pool if srcs is None or set(r['own']) & srcs]
             cands.sort(key=lambda r: h('run9-render', tag, r['id']))
@@ -186,19 +197,19 @@ def main():
 
     spec = importlib.util.spec_from_file_location('prepare_extra', os.path.join(HERE, 'prepare-extra.py'))
     pe = importlib.util.module_from_spec(spec); spec.loader.exec_module(pe)
-    W = {'fs9': pe.Writer(args.out, 'fs9', 1000), 'ls9': pe.Writer(args.out, 'ls9', 1000)}
-    ev_path = os.path.join(args.out, 'eval-run9.raw'); ev = open(ev_path, 'wb'); ev_items = []
+    W = {'fs9': pe.Writer(args.out, FS, 1000), 'ls9': pe.Writer(args.out, LS, 1000)}
+    ev_path = os.path.join(args.out, f'{EV}.raw'); ev = open(ev_path, 'wb'); ev_items = []
     ids = defaultdict(list); rcount = Counter()
     def add_train(name, it_id, group, own, x, source):
         lab = {f'cat:{l}': 1.0 for l in own}; lab.update({f'cat:{l}': 0.0 for l in extra_weak if l not in own})
         sure = lookalike_absent(own) if source == 'freesound' else set()
         W[name].add({'id': it_id, 'artist': group, 'val': h('dge-run9-val', group) % 5 == 0, 'labels': {**lab, **{f'cat:{l}': 0.0 for l in sure}},
                      'weakAll': 'run9', 'weakAbsent': [f'cat:{l}' for l in extra_weak if l not in own and l not in sure], 'source': source}, x)
-        ids[name].append(it_id)
+        ids[{'fs9': FS, 'ls9': LS}[name]].append(it_id)
     def add_held(it_id, group, own, x, source):
         ev.write((np.clip(x, -1, 1) * 32767).astype(np.int16).tobytes())
         ev_items.append({'id': it_id, 'artist': group, 'source': source, 'labels': {f'cat:{l}': 'present' if l in own else 'absent' for l in T},
-                         'weak': [f'cat:{l}' for l in T if l not in own]}); ids['eval-run9'].append(it_id)
+                         'weak': [f'cat:{l}' for l in T if l not in own]}); ids[EV].append(it_id)
     jobs = [(args.staged, r, plan.get(r['id'], [])) for r in train + keep]
     with Pool(args.workers, initializer=init_worker) as pool:
         for k, (r, x, rendered) in enumerate(pool.imap(work, jobs, chunksize=8)):
@@ -217,15 +228,17 @@ def main():
                     (W['ls9'], 'run 9 labelled sets (ESC-50, Nonspeech7k, VIVAE, VocalSet, IRMAS, Groove MIDI, Four-Way Tabla, ChoirSet, VSCO 2 CE, licensed-pilot CC0) and code renders; unreviewed')):
         w.close(name)
     ev.close()
+    json.dump({k: sorted(v) for k, v in ids.items()}, open(os.path.join(args.out, f'{P}run9-ids.json'), 'w'))
+    if not ev_items:   # a train-only staged set (round 12's empty-tag audio) has no held-out rows
+        os.remove(ev_path); print(f'{EV}: no held-out rows', flush=True); return
     src = np.memmap(ev_path, dtype=np.int16, mode='r', shape=(len(ev_items), N))
-    dst = np.lib.format.open_memmap(os.path.join(args.out, 'eval-run9.npy'), mode='w+', dtype=np.int16, shape=src.shape)
+    dst = np.lib.format.open_memmap(os.path.join(args.out, f'{EV}.npy'), mode='w+', dtype=np.int16, shape=src.shape)
     for k in range(0, len(ev_items), 1024): dst[k:k + 1024] = src[k:k + 1024]
     dst.flush(); del dst, src; os.remove(ev_path)
     json.dump({'source': 'run 9 held-out rows (Freesound reserved uploaders, labelled-set held-out performers / recordings / folds) and renders of them; test only',
-               'items': ev_items}, open(os.path.join(args.out, 'eval-run9.json'), 'w'))
-    json.dump({k: sorted(v) for k, v in ids.items()}, open(os.path.join(args.out, 'run9-ids.json'), 'w'))
+               'items': ev_items}, open(os.path.join(args.out, f'{EV}.json'), 'w'))
     pos = Counter(t for it in ev_items for c, v in it['labels'].items() if v == 'present' for t in [c[4:]])
-    print(f'eval-run9: {len(ev_items)} held-out clips from {len({i["artist"] for i in ev_items})} groups; positives ' + ', '.join(f'{t} {n}' for t, n in sorted(pos.items())), flush=True)
+    print(f'{EV}: {len(ev_items)} held-out clips from {len({i["artist"] for i in ev_items})} groups; positives ' + ', '.join(f'{t} {n}' for t, n in sorted(pos.items())), flush=True)
     print('renders (train/heldout): ' + ', '.join(f'{t} {rcount[t, "train"]}/{rcount[t, "heldout"]}' for t in sorted({t for t, _ in rcount})), flush=True)
 
 if __name__ == '__main__':

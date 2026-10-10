@@ -69,3 +69,8 @@ it('preserves unrelated filename source and character hints after an effect-alia
     {dimension:'character',label:'bright',origin:'From filename'},
   ]);
 });
+it('names merged look-alike tags by their surviving label and group',()=>{
+  expect(labels('big_downlifter.wav')).toEqual([{dimension:'character',label:'falling',origin:'From filename'}]);
+  expect(labels('synth_stab_01.wav').filter(x=>x.dimension!=='source')).toEqual([{dimension:'effect',label:'synth hit',origin:'From filename'}]);
+  expect(soundMatchLabels({title:'downlifter.wav',audio:audio()}).map(t=>t.label)).toEqual(['falling']);
+});

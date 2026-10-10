@@ -2,8 +2,9 @@ name: Accuracy gate
 
 # Blocks a PR whose held-out sound tag, tempo or key numbers drop below its base branch's (beyond noise), once
 # "Accuracy gate / held-out / verdict" is a required check. PRs run a fixed fast slice (150 of the 500 Jamendo tracks,
-# all 318 MTG key tracks); every push to main runs the full set and caches its results as the baseline for later
-# PRs. The "full-accuracy-check" label runs the full set on a PR (accuracy-gate-full.yml).
+# all 318 MTG key tracks); main runs the full set, one merge at a time (merges that land while a run is going are
+# skipped except the newest), and caches its results as the baseline for later PRs. The "full-accuracy-check" label
+# runs the full set on a PR (accuracy-gate-full.yml).
 # Details: docs/evaluations/accuracy-gate.md.
 on:
   pull_request:
@@ -15,7 +16,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: accuracy-gate-${{ github.event.pull_request.number || github.sha }}
+  # A PR's newer push cancels its older run. Pushes to main share one queue: the run in flight finishes (its numbers
+  # become a baseline), and of the merges that land meanwhile only the newest waits; GitHub drops the older pending
+  # ones. Main's full run is report-only and takes over an hour, so analysing every merge left several 14-job runs
+  # queued at once, and PRs (whose required verdict needs runners from the same pool) waited behind them.
+  group: accuracy-gate-${{ github.event.pull_request.number || 'main' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

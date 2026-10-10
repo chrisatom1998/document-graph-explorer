@@ -28,7 +28,7 @@ on:
       iowa: { description: 'add University of Iowa MIS notes (free-tag-set judge notes excluded)', default: 'false' }
       chris_data: { description: 'PRIVATE HF dataset <repo>:<folder> with Chris''s staged train-half sounds (non-commercial weights); empty = none', default: '' }
       source_repeat: { description: 'oversample sources per epoch, e.g. iowa=2,chrisdrive=4,chrisfx=2', default: '' }
-      extra_sets: { description: 'space-separated sets: vcsl slakh_more sao round10 soft11 prep_only (VCSL CC0, more Slakh tracks, private Stable Audio Open clips, round 10 commercial packs, round 11 teacher soft labels; prep_only only fills the private prep cache, no training: use a CPU flavor such as cpu-xl)', default: '' }
+      extra_sets: { description: 'space-separated sets: vcsl slakh_more sao round10 soft11 round12 prep_only (VCSL CC0, more Slakh tracks, private Stable Audio Open clips, round 10 commercial packs, round 11 teacher soft labels, round 12 empty-tag audio + target oversampling + look-alikes; prep_only only fills the private prep cache, no training: use a CPU flavor such as cpu-xl)', default: '' }
       fsnew_data: { description: 'PRIVATE HF dataset <repo>:<folder> with staged Freesound sounds for tags with little or no audio (stage-freesound.py); empty = none', default: '' }
       run9_data: { description: 'PRIVATE HF dataset <repo>:<folder> with run 9 staged audio (stage-run9.py); empty = none', default: '' }
       run9_audit: { description: 'PRIVATE HF dataset <repo>:<path> of run9-audit.py manifest-audited.csv (keeps only audited items); empty = none', default: '' }
@@ -103,6 +103,7 @@ jobs:
           VCSL=${{ contains(inputs.extra_sets, 'vcsl') && '1' || '0' }} SLAKH_MORE=${{ contains(inputs.extra_sets, 'slakh_more') && '1' || '0' }}
           SAO=${{ contains(inputs.extra_sets, 'sao') && '1' || '0' }} FSNEW_DATA=${{ inputs.fsnew_data || '' }} RUN9_DATA=${{ inputs.run9_data || '' }} RUN9_AUDIT=${{ inputs.run9_audit || '' }} ROUND10=${{ contains(inputs.extra_sets, 'round10') && '1' || '0' }} PREP_ONLY=${{ contains(inputs.extra_sets, 'prep_only') && '1' || '0' }}
           SOFT_LABELS=${{ contains(inputs.extra_sets, 'soft11') && 'cmjatom/dge-private-train:round11/soft-v1.json' || '' }}
+          ROUND12=${{ contains(inputs.extra_sets, 'round12') && '1' || '0' }}
       - name: Stop the Hugging Face job if this workflow is cancelled
         if: ${{ cancelled() }}
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }

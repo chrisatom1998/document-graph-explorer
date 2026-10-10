@@ -119,5 +119,39 @@ class ChartsFinishTests(unittest.TestCase):
         self.assertEqual(self.finished, [True])
 
 
+class ChartsSummaryTests(unittest.TestCase):
+    def load(self, env, whoami=None):
+        spec = importlib.util.spec_from_file_location('charts_summary_subject', Path(__file__).with_name('charts.py'))
+        charts = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(charts)
+        calls = {'init': [], 'log': [], 'finish': 0}
+        trackio = types.SimpleNamespace(init=lambda **kw: calls['init'].append(kw), log=lambda v, step=None: calls['log'].append((v, step)),
+                                        finish=lambda: calls.__setitem__('finish', calls['finish'] + 1))
+        hub = types.SimpleNamespace(whoami=lambda: {'name': whoami or 'nobody'}, HfApi=lambda: types.SimpleNamespace(batch_bucket_files=lambda *a, **k: None))
+        patches = [patch.dict(sys.modules, {'trackio': trackio, 'huggingface_hub': hub}), patch.dict(os.environ, env, clear=True)]
+        for p in patches:
+            p.start(); self.addCleanup(p.stop)
+        return charts, calls
+
+    def test_summary_is_off_without_space_or_token(self):
+        charts, calls = self.load({})
+        charts.summary('dj-effects', {}, {'heads trained': 3})
+        self.assertEqual((calls['init'], calls['log'], calls['finish']), ([], [], 0))
+
+    def test_summary_charts_one_finished_point_with_a_token(self):
+        charts, calls = self.load({'HF_TOKEN': 'x'}, whoami='someone')
+        with patch.object(charts, '_upload'):
+            charts.summary('dj-effects', {}, {'heads trained': 3})
+        self.assertEqual(calls['init'][0]['space_id'], 'someone/dge-training-charts')
+        self.assertTrue(calls['init'][0]['name'].startswith('dj-effects-'))
+        self.assertEqual(calls['log'], [({'epoch': 1.0, 'heads trained': 3.0}, 1)])
+        self.assertEqual(calls['finish'], 1)
+
+    def test_empty_space_opts_out(self):
+        charts, calls = self.load({'HF_TOKEN': 'x', 'TRACKIO_SPACE': ''})
+        charts.summary('dj-effects', {}, {'heads trained': 3})
+        self.assertEqual(calls['init'], [])
+
+
 if __name__ == '__main__':
     unittest.main()

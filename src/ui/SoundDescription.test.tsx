@@ -60,3 +60,14 @@ it('never shows a model estimate of the rule words as a tag, link label or filte
   const confirmed = audio({ soundProfile: modelWarm, soundReviews: [{ dimension: 'character', labelId: 'warm', decision: 'confirmed', scope: 'track', at: 'now', evidenceRunId: 'r' }] });
   expect(confidentSoundSummary(confirmed).find(s => s.label === 'warm')?.origin).toBe('confirmed by you');
 });
+
+it('renders no hidden-until-tested label in the Sounds row, including its likely group', () => {
+  const hidden = audio({ soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false, djTags: [
+    { group: 'production', label: 'reverse effect', score: .95, model: 'Trained head' },
+    { group: 'character', label: 'distorted', score: .95, model: 'Trained head' },
+    { group: 'production', label: 'riser', score: .9, model: 'Trained head' }] } });
+  render(<ConfidentSoundSummary audio={hidden} node={{ title: 'clip.wav' }} />);
+  expect(screen.queryByText('reverse effect')).toBeNull();
+  expect(screen.queryByText('distorted')).toBeNull();
+  expect(screen.getAllByText('riser').length).toBeGreaterThan(0);
+});

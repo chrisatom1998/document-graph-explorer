@@ -1,7 +1,7 @@
 import type { DocNode } from '../model/types';
 import { mergedDjLabel, type DjGroup, type ConfirmedDjTags } from './djTags';
 import type { SoundProfile } from './soundProfile';
-import { confidentSoundSummary } from './confidentSoundSummary';
+import { confidentSoundSummary, HIDDEN_UNTIL_TESTED } from './confidentSoundSummary';
 import { filenameSoundFallback } from './filenameSoundFallback';
 import { confirmedInstrumentList, sourceReviewAllows } from './instrumentEvidence';
 import { musicNameHints } from './nameHints';
@@ -11,7 +11,7 @@ import { isRuleDescribedLabel } from './timbreDescriptions';
 
 export const labelKey = (label: string) => label.replaceAll('_', ' ').toLowerCase();
 const displayedLabelKey = (label: string) => sharedSoundReviewIdentity('source', labelKey(label))
-  ?? sharedSoundReviewIdentity('effect', labelKey(label)) ?? labelKey(label);
+  ?? sharedSoundReviewIdentity('effect', labelKey(label)) ?? sharedSoundReviewIdentity('character', labelKey(label)) ?? labelKey(label);
 export type MatchOrigin = 'confirmed' | 'sounds' | 'maybe' | 'filename' | 'guess' | 'unverified';
 export interface MatchLabel { group: DjGroup; label: string; origin: MatchOrigin; weight: number }
 /** How strongly each origin counts toward a link. None of these are probabilities. */
@@ -34,7 +34,7 @@ export function otherModelGuessGroups({ profile, confirmedDjTags, reviewedLabels
     if (group === 'source' ? skipSource || confirmedDjTags : confirmedDjTags) return [];
     const raw = merged.filter(m => m.group === group).map(m => m.label);
     // Rule-described character words (timbreDescriptions.ts) are never model guesses.
-    const values = [...new Set(raw)].filter(label => !shown.has(displayedLabelKey(label)) && !(group === 'character' && isRuleDescribedLabel(labelKey(label))));
+    const values = [...new Set(raw)].filter(label => !shown.has(displayedLabelKey(label)) && !(group === 'character' && isRuleDescribedLabel(labelKey(label))) && !HIDDEN_UNTIL_TESTED.has(label));
     return values.length ? [{ group, values }] : [];
   });
 }

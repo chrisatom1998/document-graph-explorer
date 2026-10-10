@@ -109,12 +109,14 @@ jobs:
           EVENT: ${{ github.event_name }}
         run: |
           # Jamendo tracks are 30 s (three analysis windows), about 30 s each to analyse; MTG key excerpts are 10 s.
+          # About 15 Jamendo tracks or 40 MTG key excerpts per job (8-15 min each, plus ~1.5 min setup). A PR whose base
+          # numbers are cached runs 18 jobs, one round on the account's 40 runners; analysing the base too doubles that.
           node -e '
             const { MODE, HEAD_SHA, BASE, BASE_CACHED, EVENT } = process.env;
             const sides = [["head", HEAD_SHA]];
             // On a PR without cached base numbers, analyse the base too. A push to main is report-only, so it never does.
             if (EVENT === "pull_request" && BASE && BASE_CACHED !== "true") sides.push(["base", BASE]);
-            const sets = [["jamendo", MODE === "full" ? 10 : 5], ["mtgkey", 4]];
+            const sets = [["jamendo", MODE === "full" ? 20 : 10], ["mtgkey", 8]];
             const jobs = sides.flatMap(([side, sha]) => sets.flatMap(([set, of]) => Array.from({ length: of }, (_, shard) => ({ side, sha, set, shard, of }))));
             require("fs").appendFileSync(process.env.GITHUB_OUTPUT, `matrix=${JSON.stringify(jobs)}\nbase_cached=${BASE_CACHED}\n`);
             console.log(jobs.length, "analysis jobs:", JSON.stringify(jobs.map(j => `${j.side}/${j.set}/${j.shard}`)));'
@@ -227,7 +229,10 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      max-parallel: 6   # leave most of the account's runners to everything else
+      # A PR slice with cached base numbers (18 jobs) runs all at once, one round; with the base analysed too (36) it
+      # takes two. Main's full set (28 jobs, report only) and labelled full runs take 14 at a time, leaving the rest
+      # of the account's 40 runners to PRs and CI.
+      max-parallel: ${{ inputs.mode == 'fast' && 18 || 14 }}
       matrix:
         include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     name: analyse (${{ matrix.side }} ${{ matrix.set }} ${{ matrix.shard }})
