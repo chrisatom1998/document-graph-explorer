@@ -35,6 +35,12 @@ def ceiling(rows):
     return max((min(p or 0, r or 0), t) for t in cuts for p, r, _, _ in [pr(rows, t)])
 
 missing = [i['id'] for i in items if i['id'] not in emb]
+unexpected_missing = [i['id'] for i in items if i['id'] not in emb
+                      and not (isinstance(i.get('seconds'), (int, float))
+                               and not isinstance(i['seconds'], bool)
+                               and math.isfinite(i['seconds']) and 0 < i['seconds'] < 0.1)]
+if unexpected_missing:
+    sys.exit(f'{len(unexpected_missing)} holdout embeddings missing outside the documented under-0.1 s exception; rerun embedding before scoring')
 report = {'missing_embeddings': len(missing), 'missing_ids': missing, 'heads': {}}
 for name, heads in sets.items():
     for label in labels:

@@ -9,7 +9,7 @@ Three tests, each on decoded audio rather than file bytes, so mirrors, re-encode
 3. CLAP cosine >= 0.995 to a training row of a different fold group (the copy would leak across folds).
 A training row hit by 1 or 2 is dropped; a row hit by 3 merges its fold group with every group it near-copies. A training row with no
 embedding is dropped too (it cannot get tests 2-3, nor be trained on). Holdout files too short to embed (under 0.1 s)
-still get test 1 and are listed in dedupe.json.
+still get test 1 and are listed in dedupe.json. Any other missing holdout embedding aborts the run.
 """
 import csv, hashlib, json, os, subprocess, sys
 import numpy as np
@@ -17,13 +17,23 @@ import numpy as np
 HOLD, FTS, EMB, OUT, *MANIFESTS = sys.argv[1:]
 if hashlib.sha256(open(HOLD, 'rb').read()).hexdigest() != open(os.path.join(os.path.dirname(HOLD), 'holdout.lock')).read().split()[0]:
     sys.exit(f'{HOLD} does not match holdout.lock')
-os.makedirs(OUT, exist_ok=True)
 emb = {}
 for f in EMB.split(','):
     for line in open(f):
         r = json.loads(line); emb.setdefault(r['id'], r['embedding'])
 unit = lambda v: np.asarray(v) / np.linalg.norm(v)
 hold = json.load(open(HOLD))['items']
+missing_holdout = []
+for i in hold:
+    if i['id'] in emb: continue
+    seconds = i.get('seconds')
+    if (not isinstance(seconds, (int, float)) or isinstance(seconds, bool)
+            or not np.isfinite(seconds) or not 0 < seconds < 0.1):
+        missing_holdout.append(i['id'])
+if missing_holdout:
+    sys.exit('missing CLAP embeddings for holdout items without verified 0 < seconds < 0.1 duration: '
+             + ', '.join(missing_holdout))
+os.makedirs(OUT, exist_ok=True)
 hpcm = {}
 for i in hold:
     raw = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-i', os.path.join(FTS, i['path']), '-ac', '1', '-ar', '16000', '-f', 's16le', '-'], capture_output=True).stdout

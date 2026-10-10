@@ -36,8 +36,10 @@ def sha256(path):
 
 def decode(path, rate):
     # An undecodable file comes back empty and is rejected as "silent or undecodable" below.
-    raw = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-i', path, '-ac', '1', '-ar', str(rate), '-f', 's16le', '-'],
-                         capture_output=True).stdout
+    decoded = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-i', path, '-ac', '1', '-ar', str(rate), '-f', 's16le', '-'],
+                             capture_output=True)
+    # Failed decodes can contain partial PCM; never accept that truncated audio.
+    raw = decoded.stdout if decoded.returncode == 0 else b''
     return raw, np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768
 
 def frames(x, n=1024, hop=256):
@@ -150,16 +152,16 @@ for it in items:
     if pcm in seen_pcm: reasons.append(f'decoded audio identical to {seen_pcm[pcm]}')
     lab, status = dict(it['labels']), 'auto-checked (not listened)'
     notes = []
-    if lab.get('bass guitar') == 1:
+    if len(x) and lab.get('bass guitar') == 1:
         f0 = f0_autocorr(x, 16000); exp = it['auto']['expect_hz']
         cents = None if f0 is None else min(abs(1200 * math.log2(f0 / (exp * k))) for k in (0.5, 1, 2))
         c.update(f0_hz=None if f0 is None else round(f0, 1), expect_hz=round(exp, 1))
         if cents is None or cents > 100: lab['bass guitar'] = ''; status = 'name check failed: pitch does not match the note name'
         else: notes.append(f'pitch within {cents:.0f} cents of {exp:.0f} Hz (or its octave)')
-    if lab.get('laser') == 1:
+    if len(x) and lab.get('laser') == 1:
         if c['sweep_oct'] < 0.5 or c['active_s'] > 3: lab['laser'] = ''; status = 'name check failed: no pitch sweep of half an octave within 3 s'
         else: notes.append(f"pitch sweep {c['sweep_oct']} octaves in {c['active_s']} s")
-    if lab.get('foley hit') == 1:
+    if len(x) and lab.get('foley hit') == 1:
         if c['attack_s'] > 0.06 or c['drop_300ms_db'] < 6 or c['active_s'] > 4: lab['foley hit'] = ''; status = 'name check failed: not a sharp hit that decays'
         else: notes.append(f"attack {c['attack_s'] * 1000:.0f} ms, {c['drop_300ms_db']} dB down 300 ms after the peak")
     src = SOURCES[it['family']]
@@ -201,7 +203,7 @@ def pkg_rows():
                'reject_reason': 'already represented in DGE training recipes (not new data)'}
 pkg_rejected = list(pkg_rows())
 
-fields = list(accepted[0].keys())
+fields = list((accepted or rejected)[0]) if accepted or rejected else []
 with open(os.path.join(OUT, 'accepted.csv'), 'w', newline='') as f:
     w = csv.DictWriter(f, fields); w.writeheader(); w.writerows(accepted)
 rfields = ['family', 'archive_member', 'original_url', 'creator', 'license', 'labels_claimed', 'reject_reason']
