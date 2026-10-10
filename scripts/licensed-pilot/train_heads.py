@@ -6,7 +6,8 @@ Writes <out-dir>/heads.json ({kind, heads:[{group,label,weights[512],bias,thresh
 
 Same recipe as scripts/dj-effects/train.py: logistic regression on the unit-normalised 512-number CLAP embedding the
 app computes (scripts/embed-clap.mjs), class-balanced. Only explicit positives (1) and explicit negatives (0) train a
-label; unknown rows sit out. Threshold: the one maximising min(precision, recall) over 5-fold out-of-fold scores with
+label; unknown rows sit out. Threshold: the one maximising min(precision, recall) over up-to-5-fold out-of-fold scores (fewer folds when a label has fewer positive groups;
+laser has 3) with
 whole fold groups held out (a bass pitch with all its dynamics and round robins, a Kenney sound stem with its
 variations, a Freesound uploader), never below 0.5. Out-of-fold scores are reported for <=2.25 s and longer clips
 separately; they only pick the threshold. The locked holdout (score_app.py) judges the result.

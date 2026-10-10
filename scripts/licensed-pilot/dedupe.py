@@ -7,7 +7,7 @@ Three tests, each on decoded audio rather than file bytes, so mirrors, re-encode
 1. identical 16 kHz mono PCM (sha256) to a holdout file or to an earlier training row;
 2. CLAP embedding cosine >= 0.98 to any holdout file (catches crops, gain changes and transcodes of the same sound);
 3. CLAP cosine >= 0.995 to a training row of a different fold group (the copy would leak across folds).
-A training row hit by 1 or 2 is dropped; a row hit by 3 joins the earlier row's fold group. A training row with no
+A training row hit by 1 or 2 is dropped; a row hit by 3 merges its fold group with every group it near-copies. A training row with no
 embedding is dropped too (it cannot get tests 2-3, nor be trained on). Holdout files too short to embed (under 0.1 s)
 still get test 1 and are listed in dedupe.json.
 """
@@ -29,7 +29,11 @@ for i in hold:
     raw = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-i', os.path.join(FTS, i['path']), '-ac', '1', '-ar', '16000', '-f', 's16le', '-'], capture_output=True).stdout
     hpcm[hashlib.sha256(raw).hexdigest()] = i['id']
 H = np.stack([unit(emb[i['id']]) for i in hold if i['id'] in emb]); hids = [i['id'] for i in hold if i['id'] in emb]
-dropped, regrouped, kept_pcm, kept = [], [], {}, []
+dropped, regrouped, kept_pcm, kept, outputs = [], [], {}, [], []
+parent = {}  # union-find over fold groups: every group a near-copy touches becomes one group
+def root(g):
+    while parent.get(g, g) != g: g = parent[g]
+    return g
 for m in MANIFESTS:
     rows = list(csv.DictReader(open(m))); out = []
     for r in rows:
@@ -41,13 +45,18 @@ for m in MANIFESTS:
             v = unit(emb[r['id']]); sims = H @ v; j = int(sims.argmax())
             if sims[j] >= 0.98: why = f'CLAP cosine {sims[j]:.3f} to holdout {hids[j]}'
             else:
-                for k, (kid, kv, kg) in enumerate(kept):
-                    if kg != r['fold_group'] and float(kv @ v) >= 0.995:
-                        regrouped.append({'id': r['id'], 'from': r['fold_group'], 'to': kg, 'cosine': round(float(kv @ v), 4)}); r['fold_group'] = kg; break
+                for kid, kv, kg in kept:
+                    a, b = root(r['fold_group']), root(kg)
+                    if a != b and float(kv @ v) >= 0.995:
+                        regrouped.append({'id': r['id'], 'near': kid, 'merged': [a, b], 'cosine': round(float(kv @ v), 4)}); parent[a] = b
         if why: dropped.append({'id': r['id'], 'manifest': os.path.basename(m), 'reason': why}); continue
         kept_pcm[r['pcm16k_sha256']] = r['id']
         kept.append((r['id'], unit(emb[r['id']]), r['fold_group']))
         out.append(r)
+    outputs.append((m, rows, out))
+# Groups are written only after every manifest is seen, so a merge reaches rows kept earlier too.
+for m, rows, out in outputs:
+    for r in out: r['fold_group'] = root(r['fold_group'])
     with open(os.path.join(OUT, os.path.basename(m)), 'w', newline='') as f:
         w = csv.DictWriter(f, list(rows[0])); w.writeheader(); w.writerows(out)
     print(f'{os.path.basename(m)}: kept {len(out)} of {len(rows)}')

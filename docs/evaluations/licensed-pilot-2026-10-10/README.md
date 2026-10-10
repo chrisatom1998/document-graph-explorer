@@ -4,8 +4,9 @@ Pilot from Chris's `DGE-training-sound-discovery.zip` and `DGE-98-label-training
 new audio raise DGE sound-tag accuracy? Three labels had enough licensed, new, source-disjoint audio for a pilot:
 **bass guitar**, **foley hit** and **laser**.
 
-**Result: nothing ships.** None of the three pilot detectors reaches 50% precision and 50% recall on the locked
-holdout, and the current app's laser detector is better than the pilot's. No model, threshold, calibration list or
+**Result: nothing ships.** Bass guitar and foley hit miss 50% precision and 50% recall on the locked holdout on both
+clip-length routes. Pilot laser clears 50/50 only on the 2.25 s route (1 of 2 positives) and misses it on longer clips,
+and the current app's laser detector beats it on both routes, so it fails the "beats the current app" rule. No model, threshold, calibration list or
 analysis revision changes in this PR. It adds the reproducible pipeline and this report.
 
 ## Data
@@ -71,7 +72,7 @@ baseline) laser shows as a normal tag, so its "shown" numbers are now what users
 ## Pilot detectors
 
 The pilot detectors are CLAP logistic heads, the same form as `learned.json`. Each threshold maximises the smaller of
-precision and recall out of fold (5-fold, grouped by recording, preset or pack).
+precision and recall out of fold (up to 5 folds, 3 for laser's 3 positive groups, grouped by recording, preset or pack).
 
 Out-of-fold scores on the training data look excellent:
 
@@ -98,7 +99,7 @@ are too short for that embedding script and count as never firing; the ceiling s
 
 The screen reproduces the real app's numbers for the current laser detector exactly (shown P/R above), so it agrees
 with the full app on this holdout. For bass guitar and foley hit, even the best threshold picked on the holdout itself
-stays far under 50/50 (bass guitar 0.21, foley hit 0.30 at best). No detector the training data could produce would ship, so the full-app run of the candidate
+stays far under 50/50 (bass guitar 0.21, foley hit 0.30 at best). No bass guitar or foley hit detector the training data could produce would ship, so the full-app run of the candidate
 build was stopped part-way. The pilot laser is worse than the current one on both routes.
 
 **Against the bars:**
