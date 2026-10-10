@@ -1,12 +1,23 @@
 {
   "runs": [
     "all-tags",
-    "all-tags-run5"
+    "all-tags-run5",
+    "all-tags-run7"
   ],
+  "only": {
+    "all-tags-run7": [
+      "cat:animal sound",
+      "cat:percussion",
+      "cat:rain ambience",
+      "cat:tambourine",
+      "cat:vocal scream",
+      "synthesizer"
+    ]
+  },
   "keep": "drums",
   "public_repo": "dge-all-tags-tagger-nc",
   "license": "cc-by-nc-sa-4.0",
   "flavor": "cpu-upgrade",
   "timeout": "2h",
-  "attempt": 2
+  "attempt": 3
 }
