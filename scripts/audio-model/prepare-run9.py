@@ -124,6 +124,28 @@ def init_worker():
     spec = importlib.util.spec_from_file_location('prepare_extra', os.path.join(HERE, 'prepare-extra.py'))
     work.pe = importlib.util.module_from_spec(spec); spec.loader.exec_module(work.pe)
 
+# Look-alike negatives (Chris 2026-10-10: shipped heads over-fire on sibling sounds, e.g. clarinet on oboe/flute, marimba on
+# vibraphone): a Freesound train clip whose own tags name exactly one member of a group is an outright (full-weight) absence
+# for the group's other members instead of a weak one. Parent/child pairs (hi-hat / closed hi-hat) are never in one group.
+LOOKALIKES = [
+    ['clarinet', 'oboe', 'flute', 'bassoon', 'saxophone'],
+    ['marimba', 'vibraphone', 'xylophone', 'glockenspiel'],
+    ['mandolin', 'banjo', 'acoustic guitar', 'sitar', 'harp'],
+    ['viola', 'cello', 'double bass'],
+    ['trumpet', 'trombone', 'tuba', 'horn'],
+    ['tabla', 'bongo', 'conga', 'cajon'],
+    ['closed hi-hat', 'open hi-hat', 'shaker', 'tambourine'],
+]
+
+
+def lookalike_absent(own):
+    out = set()
+    for g in LOOKALIKES:
+        hit = set(own) & set(g)
+        if len(hit) == 1: out |= set(g) - set(own)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('staged'); ap.add_argument('out'); ap.add_argument('--workers', type=int, default=6); ap.add_argument('--limit', type=int, default=0)
     ap.add_argument('--audit', default='', help="run9-audit.py's manifest-audited.csv: keep only its keep=1 items, with its merged tags")
@@ -169,8 +191,9 @@ def main():
     ids = defaultdict(list); rcount = Counter()
     def add_train(name, it_id, group, own, x, source):
         lab = {f'cat:{l}': 1.0 for l in own}; lab.update({f'cat:{l}': 0.0 for l in extra_weak if l not in own})
-        W[name].add({'id': it_id, 'artist': group, 'val': h('dge-run9-val', group) % 5 == 0, 'labels': lab, 'weakAll': 'run9',
-                     'weakAbsent': [f'cat:{l}' for l in extra_weak if l not in own], 'source': source}, x)
+        sure = lookalike_absent(own) if source == 'freesound' else set()
+        W[name].add({'id': it_id, 'artist': group, 'val': h('dge-run9-val', group) % 5 == 0, 'labels': {**lab, **{f'cat:{l}': 0.0 for l in sure}},
+                     'weakAll': 'run9', 'weakAbsent': [f'cat:{l}' for l in extra_weak if l not in own and l not in sure], 'source': source}, x)
         ids[name].append(it_id)
     def add_held(it_id, group, own, x, source):
         ev.write((np.clip(x, -1, 1) * 32767).astype(np.int16).tobytes())
