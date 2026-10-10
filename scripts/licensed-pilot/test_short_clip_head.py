@@ -16,6 +16,8 @@ class ShortClipHeadTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         (self.root / 'public/sound-model').mkdir(parents=True)
+        (self.root / 'src/audio').mkdir(parents=True)
+        (self.root / 'public/sound-model/learned.json').write_text(json.dumps({'heads': [{'label': 'kick'}]}))
         rng = random.Random(7)
         self.mean = [rng.uniform(-.1, .1) for _ in range(512)]
         self.std = [rng.uniform(.01, .2) for _ in range(512)]
@@ -50,6 +52,15 @@ class ShortClipHeadTests(unittest.TestCase):
             self.assertAlmostEqual(pilot, shipped, places=9)
         manifest = json.loads((self.root / 'public/sound-model/manifest.json').read_text())
         self.assertEqual(manifest['sha256']['short-clip.json'], hashlib.sha256(body.encode()).hexdigest())
+
+    def test_a_new_label_joins_the_detector_list(self):
+        self.head['label'] = 'cowbell'
+        (self.root / 'heads.json').write_text(json.dumps({'heads': [self.head]}))
+        result = subprocess.run([sys.executable, '-I', str(SCRIPTS / 'apply_short_clip_head.py'), 'heads.json', 'cowbell', 'tag'],
+                                cwd=self.root, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        labels = json.loads((self.root / 'src/audio/calibratedLabels.json').read_text())
+        self.assertEqual(labels, ['bass guitar', 'cowbell', 'kick', 'piano'])
 
     def test_refuses_non_finite_weights_and_leaves_files_alone(self):
         before = (self.root / 'public/sound-model/short-clip.json').read_text()

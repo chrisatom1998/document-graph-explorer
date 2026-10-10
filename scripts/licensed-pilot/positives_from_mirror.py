@@ -2,12 +2,18 @@
 
 Usage:
   python3 -I scripts/licensed-pilot/positives_from_mirror.py select <ced run dir> <exclusion-manifest.json> \
-      <run 7 candidates.csv> <run 9 keyword.csv> <out-dir>
+      <run 7 candidates.csv> <run 9 keyword.csv> <out-dir> [<kind> [<plan.csv to skip>]]
   python3 -I scripts/licensed-pilot/positives_from_mirror.py fetch <out-dir> [<workers>]
 
 <ced run dir>: runs/ced-freesound-38026076860-1 of the private HF dataset cmjatom/dge-eval-runs (CED-base AudioSet
 probabilities of the first 10 s of every mirror clip, one npz per mirror shard, plus labels.txt and candidates.csv).
-select needs no network: it picks clips by CED score, applies every exclusion and writes <out-dir>/plan.csv.
+select needs no network: it picks clips by CED score, applies every exclusion and writes <out-dir>/plan.csv. Each clip
+gets the first kind it qualifies for, in the order bass guitar, foley hit, hard negative, drum negative. With <kind>
+the plan keeps only that kind, minus any id already in <plan.csv to skip>. Round two ran select three times: once
+with no kind (out-dir pos), then "hard negative" skipping pos/plan.csv, then "drum negative". With this script the
+first plan's bass guitar and foley hit rows and the other two plans reproduce exactly. The first run predates the final
+low-sound class list and hard-negative cap: its 15 hard negatives (13 kept, in the project manifest) and its
+select-summary counts do not reproduce.
 fetch reads only the parquet row groups that hold planned clips, over HTTP range requests (no shard is stored), keeps
 the first 10 s as mono 48 kHz wav, checks the uploader's own text, and writes <out-dir>/positives.csv.
 
@@ -31,7 +37,7 @@ from concurrent.futures import ThreadPoolExecutor
 MIRROR = 'https://huggingface.co/datasets/benjamin-paine/freesound-laion-640k/resolve/main/data/'
 IMPACT = ['Thump, thud', 'Slam', 'Knock', 'Bang', 'Whack, thwack', 'Smash, crash', 'Breaking', 'Clatter', 'Hammer', 'Chop', 'Wood']
 LIC = {0: 'CC0-1.0', 1: 'CC-BY-4.0', 2: 'CC-BY-3.0'}
-CAP = {'bass guitar': 10, 'foley hit': 4, 'hard negative': 4, 'drum negative': 3}
+CAP = {'bass guitar': 10, 'foley hit': 4, 'hard negative': 3, 'drum negative': 3}
 LIMIT = {'bass guitar': 700, 'foley hit': 600, 'hard negative': 600, 'drum negative': 400}
 # Drum loops and kits with no bass: music a bass guitar head must not fire on.
 DRUM_CLASSES = ['Drum kit', 'Drum machine', 'Drum', 'Snare drum', 'Hi-hat']
@@ -50,7 +56,7 @@ def dynamic_reserved(u):
     return (h8('synth-fresh-up|freesound-user:' + u) % 5 == 0 or h8('dj-effects|' + u) % 4 == 0
             or h8('dge-audio-model-freesound-test|' + u) % 10 == 0)
 
-def select(ced, excl, run7, run9, out):
+def select(ced, excl, run7, run9, out, only=None, skip=None):
     import numpy as np
     sets = json.load(open(excl))['sets']
     # Held-out and reserved ids and uploaders are test material and never train. The manifest's "prior" sets
@@ -96,6 +102,9 @@ def select(ced, excl, run7, run9, out):
             if len(kept) >= LIMIT[kind]: why[f'{kind}: over the {LIMIT[kind]}-clip limit'] += 1; continue
             per[r['uploader']] += 1; kept.append(r)
         plan += kept
+    if only:
+        done = {r['freesound_id'] for r in csv.DictReader(open(skip))} if skip else set()
+        plan = [r for r in plan if r['kind'] == only and r['freesound_id'] not in done]
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, 'plan.csv'), 'w', newline='') as f:
         w = csv.DictWriter(f, list(plan[0])); w.writeheader(); w.writerows(plan)
@@ -144,17 +153,22 @@ def fetch_shard(out, shard, wanted):
     for g, (a, b) in enumerate(bounds):
         here = [w for w in wanted if w['freesound_id'] in where and a <= where[w['freesound_id']] < b]
         if not here: continue
-        t = pf.read_row_group(g, columns=['audio', 'title', 'description', 'tags', 'freesound_id', 'username'])
+        t = pf.read_row_group(g, columns=['audio', 'title', 'description', 'tags', 'freesound_id', 'username', 'license'])
         for w in here:
             i = where[w['freesound_id']] - a; fid = str(t.column('freesound_id')[i].as_py())
             if fid != w['freesound_id']: results.append((w, None, f'row order mismatch ({fid})')); continue
+            # The plan's uploader and licence come from the CED run; keep the row only if the parquet row agrees.
+            if str(t.column('username')[i].as_py()).casefold() != w['uploader'].casefold(): results.append((w, None, 'uploader mismatch')); continue
+            if LIC.get(t.column('license')[i].as_py()) != w['license']: results.append((w, None, 'licence mismatch')); continue
             text = ' '.join([t.column('title')[i].as_py() or '', ' '.join(t.column('tags')[i].as_py() or [])]).lower()
             audio = t.column('audio')[i].as_py()['bytes']
             wav = os.path.join(out, 'audio', f'fs{fid}.wav')
             p = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-y', '-i', 'pipe:0', '-t', '10', '-ac', '1', '-ar', '48000', wav],
                                input=audio, capture_output=True)
             if p.returncode or not os.path.exists(wav): results.append((w, None, 'undecodable')); continue
-            pcm = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-i', wav, '-ac', '1', '-ar', '16000', '-f', 's16le', '-'], capture_output=True).stdout
+            p = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-i', wav, '-ac', '1', '-ar', '16000', '-f', 's16le', '-'], capture_output=True)
+            if p.returncode or not p.stdout: os.remove(wav); results.append((w, None, 'undecodable')); continue
+            pcm = p.stdout
             results.append((w, {'text': text, 'title': (t.column('title')[i].as_py() or '')[:120], 'encoded_sha256': hashlib.sha256(audio).hexdigest(),
                                 'pcm16k_sha256': hashlib.sha256(pcm).hexdigest(), 'duration_s': round(len(pcm) / 32000, 3), 'wav': wav}, None))
     return results
@@ -195,7 +209,7 @@ def fetch(out, workers):
                              'mirror': MIRROR.rsplit('/resolve', 1)[0], 'license': w['license'] + ' (per mirror metadata)', 'title': got['title'],
                              'duration_s': got['duration_s'], 'encoded_sha256': got['encoded_sha256'], 'pcm16k_sha256': got['pcm16k_sha256'],
                              'bass guitar': lab['bass guitar'], 'foley hit': lab['foley hit'], 'laser': '', 'label_evidence': ev,
-                             'review_status': 'auto-checked (not listened)', 'fold_group': f'freesound-user:{user}', 'split': 'train',
+                             'review_status': 'auto-checked (not listened)', 'fold_group': f'freesound:{user}', 'split': 'train',
                              'transformations': 'first 10 s, mono 48 kHz', 'path': got['wav']})
             if n % 50 == 0: print(f'{n + 1}/{len(by_shard)} shards, {len(rows)} kept', flush=True)
     with open(os.path.join(out, 'positives.csv'), 'w', newline='') as f:
@@ -209,6 +223,6 @@ def fetch(out, workers):
     json.dump(summary, open(os.path.join(out, 'fetch-summary.json'), 'w'), indent=1); print(json.dumps(summary, indent=1))
 
 if __name__ == '__main__':
-    if sys.argv[1] == 'select': select(*sys.argv[2:7])
+    if sys.argv[1] == 'select': select(*sys.argv[2:9])
     elif sys.argv[1] == 'fetch': fetch(sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 6)
     else: sys.exit(__doc__)

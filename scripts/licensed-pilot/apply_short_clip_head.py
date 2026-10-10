@@ -6,7 +6,8 @@ A pilot head scores the unit CLAP embedding u: logit = b + w.u. short-clip.json 
 clapRepeat block is the app's normal CLAP fingerprint of a short clip) after standardising it with the file's mean and
 std: logit = b' + w'.((u - mean) / std). So w' = w * std and b' = b + w.mean give exactly the same score and threshold.
 The label's existing short-clip head is replaced (the evaluation records the holdout evidence); learned.json is not
-touched, so longer clips keep today's analysis. Re-pins short-clip.json in manifest.json and appends the revision tag.
+touched, so longer clips keep today's analysis. Re-pins short-clip.json in manifest.json, appends the revision tag and
+rewrites src/audio/calibratedLabels.json as apply_heads.py does.
 INSTRUMENT_ANALYSIS_REVISION in src/audio/musicTypes.ts is bumped by hand in the same commit.
 """
 import hashlib, json, math, sys
@@ -30,4 +31,7 @@ open(SHORT, 'w').write(body)
 manifest = json.load(open(MANIFEST))
 manifest['sha256']['short-clip.json'] = hashlib.sha256(body.encode()).hexdigest()
 open(MANIFEST, 'w').write(json.dumps(manifest, indent=2) + '\n')
+# Same detector list as apply_heads.py: every label with a learned or short-clip head.
+labels = sorted({x['label'] for f in ('public/sound-model/learned.json', SHORT) for x in json.load(open(f))['heads']})
+open('src/audio/calibratedLabels.json', 'w').write(json.dumps(labels, indent=0) + '\n')
 print(f"{LABEL}: {'replaced' if old else 'added'} short-clip head, threshold {head['threshold']}")
