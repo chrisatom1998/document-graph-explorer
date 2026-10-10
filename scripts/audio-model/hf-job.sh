@@ -14,7 +14,7 @@ apt-get update -q && apt-get install -yq --no-install-recommends ffmpeg git ca-c
 pip install -q scikit-learn scipy pyarrow onnx onnxruntime huggingface_hub
 # TRACKIO_SPACE=<user>/<space> turns on live training charts in that private Space (charts.py): training loss and
 # validation mAP only, never held-out per-clip results. Unset by default.
-[ -n "${TRACKIO_SPACE:-}" ] && pip install -q trackio==0.42.0
+if [ -n "${TRACKIO_SPACE:-}" ]; then pip install -q trackio==0.42.0 || echo "live charts off: trackio install failed"; fi
 W=/work; mkdir -p $W && cd $W
 git clone -q https://github.com/chrisatom1998/document-graph-explorer.git dge && git -C dge checkout -q "$REPO_SHA"
 git clone -q https://github.com/fschmid56/EfficientAT.git && git -C EfficientAT checkout -q a425fdce92572e602a1d5634799bd9f1f2efa806
