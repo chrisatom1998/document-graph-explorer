@@ -323,6 +323,17 @@ describe('loop or one-shot filter', () => {
   });
 });
 
+describe('part filter', () => {
+  const clip = (id: string, confirmedInstruments: string[]): DocNode =>
+    mkNode({ id, fileType: 'audio', audio: { version: 2, durationSeconds: 8, analyzedSeconds: 8, instruments: [], notes: [], confirmedInstruments } as MusicAnalysis });
+  const nodes = [clip('v', ['voice']), clip('m', ['piano', 'drums']), clip('d', ['drums']), mkNode({ id: 'doc' })];
+  it('keeps clips whose sounds cover the picked stem', () => {
+    expect(nodesMatchingFilter(nodes, [], { ...NO_FILTER, stem: 'drums' })).toEqual(new Set(['m', 'd']));
+    expect(nodesMatchingFilter(nodes, [], { ...NO_FILTER, stem: 'vocals' })).toEqual(new Set(['v']));
+    expect(isFilterActive({ ...NO_FILTER, stem: null })).toBe(false);
+  });
+});
+
 describe('sounds filter', () => {
   const clip = (id: string, confirmedInstruments: string[]): DocNode =>
     mkNode({

@@ -7,6 +7,7 @@
  */
 
 import { clipShape } from '../audio/clipShape';
+import { nodeStemRoles } from '../audio/stemRole';
 import type { DocNode, Edge } from '../model/types';
 import { matchesKeyName, resolveTempoKey } from '../audio/resolvedTempoKey';
 import { matchesStyleFilter } from '../audio/styleTags';
@@ -38,14 +39,15 @@ export function isFilterActive(filter: GraphFilter): boolean {
     filter.musicKey !== null ||
     filter.style !== null ||
     (filter.sounds !== null && filter.sounds.length > 0) ||
-    !!filter.clipShape
+    !!filter.clipShape ||
+    !!filter.stem
   );
 }
 
 /** Match the same name-first tempo/key values shown in the track panel. */
 function audioOk(node: DocNode, filter: GraphFilter): boolean {
   const sounds = filter.sounds?.length ? filter.sounds : null;
-  if (filter.bpmRange === null && filter.musicKey === null && filter.style === null && sounds === null && !filter.clipShape) return true;
+  if (filter.bpmRange === null && filter.musicKey === null && filter.style === null && sounds === null && !filter.clipShape && !filter.stem) return true;
   if (node.fileType !== 'audio') return false;
   const audio = node.audio;
   if (filter.bpmRange !== null || filter.musicKey !== null) {
@@ -63,6 +65,7 @@ function audioOk(node: DocNode, filter: GraphFilter): boolean {
     if (!sounds.some((s) => tags.includes(s))) return false;
   }
   if (filter.clipShape && clipShape(node) !== filter.clipShape) return false;
+  if (filter.stem && !nodeStemRoles(node).includes(filter.stem)) return false;
   return true;
 }
 
