@@ -15,15 +15,15 @@ Training (cloud only, train side only):
   The exclude list itself never leaves the container.
 Each head: logistic regression on the L2-normalised 512-d CLAP embedding (class_weight=balanced, as on the Mac). The
 threshold is frozen on out-of-fold scores (5 folds by uploader/source group), precision first (Chris, Oct 11): the
-lowest cutoff whose precision is at least MIN_PRECISION (default 0.5), so recall is whatever that gives; if none reaches
+lowest cutoff whose precision is at least MIN_PRECISION (default 0.6), so recall is whatever that gives; if none reaches
 it, argmax min(P, R). Never below 0.5 (the app ignores lower thresholds).
-Each result reports whether it passes 50/50, 60/30 and 50/30 on FSD50K eval while the ship line is being decided.
+Each result reports whether it passes the 60/30 ship line and the 50/50, 60/60 and 70/70 counts on FSD50K eval.
 
 Judge: FSD50K eval (public; clip score = max over its whole 10 s windows, as the app-rescore bird check scored it).
 Both the shipped head ("old", biased: it trained on these clips) and the clean head are scored.
 Writes heads.json (learned.json head format) and report.json to cmjatom/dge-eval-runs under OUT_DIR. Only aggregate
 counts go to the training charts.
-Env: ALLOW, OUT_DIR, LEARNED (URL of the shipped learned.json), TAGS (comma list, default every mapped shipped tag).
+Env: ALLOW (repo path or local file), OUT_DIR, LOCAL_OUT (write here instead of uploading), LEARNED (URL of the shipped learned.json), TAGS (comma list, default every mapped shipped tag).
 """
 import csv, io, json, os, sys, time, urllib.request
 import numpy as np
@@ -50,8 +50,8 @@ MAP = {  # FSD50K class -> app label; same as scripts/fsd50k-manifest.py
 FSD, PRIV, EVAL_RUNS = 'Fhrozen/FSD50k', 'cmjatom/dge-private-train', 'cmjatom/dge-eval-runs'
 R11 = 'hf://buckets/cmjatom/dge-audio-training/round11/run9'
 OUT = os.environ.get('OUT_DIR', 'runs/clean-heads-' + time.strftime('%Y-%m-%d'))
-MIN_PRECISION = float(os.environ.get('MIN_PRECISION', 0.5))
-BARS = {'50/50': (0.5, 0.5), '60/30': (0.6, 0.3), '50/30': (0.5, 0.3)}
+MIN_PRECISION = float(os.environ.get('MIN_PRECISION', 0.6))   # ship line 60/30 (Chris, 1:16 am PDT Oct 11)
+BARS = {'60/30': (0.6, 0.3), '50/50': (0.5, 0.5), '60/60': (0.6, 0.6), '70/70': (0.7, 0.7)}
 fs, api = HfFileSystem(), HfApi()
 
 
@@ -75,7 +75,8 @@ def fsd_npz(split):
 
 def main():
     t0 = time.time()
-    allow = set(open(hf_hub_download(PRIV, os.environ['ALLOW'], repo_type='dataset')).read().split())
+    src = os.environ['ALLOW']
+    allow = set(open(src if os.path.exists(src) else hf_hub_download(PRIV, src, repo_type='dataset')).read().split())
     shipped = json.loads(urllib.request.urlopen(os.environ['LEARNED']).read())
     old = {h['label']: h for h in shipped['heads']}
     tags = [t for t in (os.environ.get('TAGS') or ','.join(sorted(set(MAP.values()) & set(old)))).split(',') if t]
@@ -166,6 +167,9 @@ def main():
     doc = {'kind': 'clean-heads-v1', 'builtAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'trainRows': len(LAB),
            'fsd50kDevRows': len(LAB) - n9, 'round9Rows': n9, 'evalClips': len(uniq), 'evalWindows': len(eids), 'results': report}
     for name, body in (('report.json', doc), ('heads.json', {'encoder': shipped['encoder'], 'heads': heads})):
+        if os.environ.get('LOCAL_OUT'):   # container run: keep results in a local folder, upload nothing
+            os.makedirs(os.environ['LOCAL_OUT'], exist_ok=True)
+            json.dump(body, open(os.path.join(os.environ['LOCAL_OUT'], name), 'w'), indent=1); continue
         api.upload_file(path_or_fileobj=json.dumps(body, indent=1).encode(), path_in_repo=f'{OUT}/{name}', repo_id=EVAL_RUNS, repo_type='dataset')
     print('done', round(time.time() - t0), 's', flush=True)
 
