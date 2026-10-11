@@ -51,7 +51,13 @@ import { isRuleDescribedLabel } from '../src/audio/timbreDescriptions';
 
 // ---------- arguments ----------
 const argv = process.argv.slice(2);
-const opt = (name: string, fallback?: string) => { const i = argv.indexOf(`--${name}`); return i >= 0 && !argv[i + 1]?.startsWith('--') ? argv[i + 1] : fallback; };
+const opt = (name: string, fallback?: string) => {
+  const i = argv.indexOf(`--${name}`); if (i < 0) return fallback;
+  const value = argv[i + 1];
+  if (value === undefined || value.startsWith('--')) { console.error(`--${name} needs a value`); process.exit(2); }
+  return value;
+};
+const num = (name: string, fallback: string) => { const v = Number(opt(name, fallback)); if (!Number.isFinite(v) || v < 0) { console.error(`--${name} must be a number, got "${opt(name, fallback)}"`); process.exit(2); } return v; };
 const flag = (name: string) => argv.includes(`--${name}`);
 const tags = (opt('tag') ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const watch = (opt('watch') ?? '').split(',').map(s => s.trim()).filter(Boolean);
@@ -59,11 +65,13 @@ const clipsDir = opt('clips'), setPath = opt('set');
 const cacheDir = opt('cache', '.cache/eval-tag')!;
 const audioDir = opt('audio-dir'), audioExt = opt('audio-ext', '.wav')!;
 const outPath = opt('out');
-const limit = Number(opt('limit', '0'));
+const limit = num('limit', '0');
 const [shardIndex, shardCount] = (opt('shard', '0/1')!).split('/').map(Number);
-const threads = Number(opt('threads', '0'));
+if (!Number.isInteger(shardIndex) || !Number.isInteger(shardCount) || shardCount < 1 || shardIndex < 0 || shardIndex >= shardCount) { console.error('--shard must be i/n with 0 <= i < n'); process.exit(2); }
+if (!['cpu', 'wasm'].includes(opt('clap-backend', 'cpu')!)) { console.error('--clap-backend must be cpu or wasm'); process.exit(2); }
+const threads = num('threads', '0');
 /** Fixed-length .npy rows: the clip's real length in seconds (e.g. 4 for NSynth notes); without it trailing digital silence is trimmed. */
-const rowSeconds = Number(opt('row-seconds', '0'));
+const rowSeconds = num('row-seconds', '0');
 /** 'cpu' (onnxruntime-node, fast) or 'wasm' (onnxruntime-web, the runtime the browser uses). Same q8 weights either way; on three
  * clips the two agreed to a cosine of 0.9996 or better, so 'cpu' is the default and 'wasm' is the slow, exact check. */
 const clapBackend = opt('clap-backend', 'cpu') as 'cpu' | 'wasm';
@@ -87,7 +95,9 @@ const taggerClasses = taggerMeta.classes;
 const modelIdentity = { clap: soundManifest.sha256['onnx/audio_model_quantized.onnx'], tagger: taggerMeta.sha256['model.onnx'] };
 if (modelIdentity.tagger !== TAGGER_POLICY.modelSha256) throw new Error('public/tagger-model/model.json does not match taggerPolicy.json');
 
-interface ResolvedTag { input: string; group: DjGroup; label: string; dimension: 'source' | 'effect' | 'character'; displayKey: string; setKeys: string[] }
+interface ResolvedTag { input: string; group: DjGroup; label: string; dimension: 'source' | 'effect' | 'character'; displayKey: string; setKeys: string[];
+  /** The stored identities whose detectors show under this name: the merged destination first, then every name folded into it. */
+  names: { group: DjGroup; label: string }[] }
 /** "kick" -> the catalog label, its display dimension and the key it shows under after merges. */
 function resolveTag(input: string): ResolvedTag {
   const raw = input.includes(':') ? input.split(':') : [undefined, input];
@@ -97,7 +107,8 @@ function resolveTag(input: string): ResolvedTag {
   if (hit.group === 'character' && isRuleDescribedLabel(hit.label)) throw new Error(`"${hit.label}" comes from DSP rules (timbreDescriptions.ts), not from a model; this evaluator cannot measure it`);
   const m = MERGED_DJ_LABELS[`${hit.group}:${hit.label}`] ?? { group: hit.group as DjGroup, label: hit.label };
   const dimension = m.group === 'source' ? 'source' : m.group === 'production' ? 'effect' : 'character';
-  return { input, group: hit.group as DjGroup, label: hit.label, dimension, displayKey: `${dimension}:${m.label}`, setKeys: [`cat:${hit.label}`, hit.label, `${hit.group}:${hit.label}`] };
+  const names = [m, ...Object.entries(MERGED_DJ_LABELS).filter(([, to]) => to.group === m.group && to.label === m.label).map(([from]) => ({ group: from.split(':')[0] as DjGroup, label: from.slice(from.indexOf(':') + 1) }))];
+  return { input, group: m.group, label: m.label, dimension, displayKey: `${dimension}:${m.label}`, setKeys: [`cat:${hit.label}`, hit.label, `${hit.group}:${hit.label}`], names };
 }
 const targets = tags.map(resolveTag), watched = watch.map(resolveTag);
 
@@ -321,11 +332,16 @@ function decide(rec: CachedClip, o: Overrides): Map<string, Shown> {
 interface Counts { positives: number; negatives: number; tp: number; fp: number; fn: number; tpMaybe: number; fpMaybe: number }
 const blank = (): Counts => ({ positives: 0, negatives: 0, tp: 0, fp: 0, fn: 0, tpMaybe: 0, fpMaybe: 0 });
 const metrics = (c: Counts) => ({ ...c, precision: c.tp + c.fp ? +(c.tp / (c.tp + c.fp)).toFixed(3) : null, recall: c.positives ? +(c.tp / c.positives).toFixed(3) : null,
-  falseAlarmRate: c.negatives ? +(c.fp / c.negatives).toFixed(4) : null, passes6030: c.tp + c.fp > 0 && c.positives > 0 && c.tp / (c.tp + c.fp) >= .6 && c.tp / c.positives >= .3 });
+  falseAlarmRate: c.negatives ? +(c.fp / c.negatives).toFixed(4) : null, passes6030: unscoredClips.length === 0 && c.tp + c.fp > 0 && c.positives > 0 && c.tp / (c.tp + c.fp) >= .6 && c.tp / c.positives >= .3 });
+let unscoredClips: Clip[] = [];
 function evaluate(records: CachedClip[], o: Overrides, keys: string[]) {
   type Part = 'pick' | 'check' | 'all' | 'oneShots' | 'longer';
   const table: Record<string, Record<Part, Counts>> = Object.fromEntries(keys.map(k => [k, { pick: blank(), check: blank(), all: blank(), oneShots: blank(), longer: blank() }]));
   const decisions: Record<string, string[]> = {};
+  for (const clip of unscoredClips) for (const key of keys) {
+    const truth = clip.labels[key]; if (truth === undefined) continue;
+    for (const part of [half(clip.group), 'all'] as const) { const c = table[key][part]; if (truth) { c.positives++; c.fn++; } else c.negatives++; }
+  }
   for (const rec of records) {
     const shown = decide(rec, o), h = half(rec.group), bucket: Part = rec.duration <= SHORT_CLIP_MAX_SECONDS ? 'oneShots' : 'longer';
     decisions[rec.id] = [...shown.keys()];
@@ -355,12 +371,20 @@ function decidePhase() {
   const cached = readCache();
   // The cache holds model outputs only as far as the decision is concerned: labels and groups come from the current set.
   const records = clips.map(c => { const r = cached.get(c.id); return r ? { ...r, labels: c.labels, group: c.group } : undefined; }).filter((r): r is CachedClip => !!r);
-  console.log(`deciding on ${records.length} scored clips (${clips.length - records.length} not scored yet)`);
+  // A clip that was never scored (not run yet, or FFmpeg/model failure) still counts: as a miss when it is labelled present.
+  // A run with unscored clips is marked incomplete and cannot be read as a pass.
+  const unscored = clips.filter(c => !cached.has(c.id));
+  console.log(`deciding on ${records.length} scored clips (${unscored.length} not scored: counted as misses, run marked incomplete)`);
   const keys = [...new Set([...targets, ...watched].map(t => t.displayKey))];
+  unscoredClips = unscored;
   const clapAudio = [...new Set(records.map(r => r.clapAudio ?? 'resampled-32k'))];
   console.log(`CLAP audio: ${clapAudio.join(' and ')}${clapAudio.includes('resampled-32k') ? ' (upsampled from 32 kHz: content above 16 kHz is missing, an approximation of the app)' : ' (decoded at 48 kHz from the files, as the app does)'}`);
   const report: Record<string, unknown> = { set: set.name, clips: records.length, models: modelIdentity, clapBackend, clapAudio, taggerRevision: TAGGER_POLICY.revision, learnedRevision: learned!.revision, shortClipRevision: shortClip!.revision,
-    halves: 'groups (uploader / artist / file prefix) hashed into pick and check', current: {}, candidates: {} };
+    halves: 'groups (uploader / artist / file prefix) hashed into pick and check', unscoredClips: unscored.length, complete: unscored.length === 0, current: {}, candidates: {} };
+  // Tested Jamendo scores (FULL_MIX_JAMENDO) can also show piano, synthesizer and drums on recordings of 10 s or more; this
+  // evaluator does not run Jamendo, so for those three the "today" recall on such clips is a lower bound.
+  const jamendoTags = [...targets, ...watched].filter(t => ['piano', 'synthesizer', 'drums'].includes(t.label) && records.some(r => r.duration >= 10));
+  if (jamendoTags.length) { console.log(`note: ${jamendoTags.map(t => t.label).join(', ')} can also show through tested Jamendo scores on recordings of 10 s or more, which this evaluator does not run; "today" recall for them is a lower bound.`); report.jamendoLowerBound = jamendoTags.map(t => t.label); }
   const current = evaluate(records, {}, keys);
   (report.current as Record<string, unknown>) = current.table;
   console.log('\n== today (the app as shipped) ==');
@@ -377,18 +401,19 @@ function decidePhase() {
       if (chosen.precisionFirst) console.log(`  -> precision-first pick ${chosen.precisionFirst.cutoff}: check half P ${fmt(chosen.precisionFirst.check.precision)} R ${fmt(chosen.precisionFirst.check.recall)} ${chosen.precisionFirst.check.passes6030 ? 'PASSES 60/30' : 'fails 60/30'}`);
       else console.log('  -> no cutoff reaches 0.65 precision on the pick half');
     };
+    // Candidates come from every stored identity that shows under this name: the merged destination first (downlifter ->
+    // character:falling, vinyl scratch -> production:vinyl scratch + source:turntable), so a shipped entry for a merged name is
+    // moved rather than doubled by a synthetic one.
+    const existing = t.names.flatMap(n => TAGGER_POLICY.tags.filter(p => (p.dimension === DIMENSION_OF[n.group] && p.decides.includes(n.label)) || p.alsoDecides?.some(a => a.dimension === DIMENSION_OF[n.group] && a.label === n.label)));
     const output = taggerClasses.includes(`cat:${t.label}`) ? `cat:${t.label}` : taggerClasses.includes(t.label) ? t.label : undefined;
-    const existing = TAGGER_POLICY.tags.find(p => p.decides.includes(t.label));
-    if (existing) run('tagger', c => ({ taggerThreshold: { [existing.output]: c } }), TAGGER_GRID, `move the shipped ${existing.output} cutoff (today ${existing.threshold})`);
+    if (existing.length) for (const p of existing) run(existing.length > 1 ? `tagger:${p.output}` : 'tagger', c => ({ taggerThreshold: { [p.output]: c } }), TAGGER_GRID, `move the shipped ${p.output} cutoff (today ${p.threshold})${p.label !== t.label ? `; shows as ${t.label}` : ''}`);
     else if (output) run('tagger', c => ({ taggerAdd: [{ output, label: t.label, dimension: t.dimension, threshold: c, decides: [t.label], tested: true, long: { rule: 'detectors', afterSeconds: 30 } }] }), TAGGER_GRID, `let the tagger's ${output} output decide ${t.label} (clips up to 30 s), like finger snap`);
-    const headKey = `${t.group}:${t.label}`;
-    const head = learned!.heads?.find(h => `${h.group}:${h.label}` === headKey);
-    if (head) run('clap-head', c => ({ headThreshold: { [headKey]: c } }), HEAD_GRID, `move the learned.json head cutoff (today ${head.threshold}${head.maybe ? ', maybe' : ''})`);
-    const short = shortClip!.heads.find(h => `${h.group}:${h.label}` === headKey);
-    if (short) run('one-shot-head', c => ({ shortThreshold: { [headKey]: c } }), HEAD_GRID, `move the short-clip.json head cutoff (today ${short.threshold}); only clips of at most ${SHORT_CLIP_MAX_SECONDS} s change`);
-    for (const [from, to] of Object.entries(MERGED_DJ_LABELS)) if (`${to.group}:${to.label}` === headKey) {
-      const mh = learned!.heads?.find(h => `${h.group}:${h.label}` === from); if (mh) run(`clap-head:${from}`, c => ({ headThreshold: { [from]: c } }), HEAD_GRID, `move the merged ${from} head cutoff (today ${mh.threshold}${mh.maybe ? ', maybe' : ''}); shows as ${t.label}`);
-      const ms = shortClip!.heads.find(h => `${h.group}:${h.label}` === from); if (ms) run(`one-shot-head:${from}`, c => ({ shortThreshold: { [from]: c } }), HEAD_GRID, `move the merged ${from} one-shot head cutoff (today ${ms.threshold}); shows as ${t.label}`);
+    for (const [i, n] of t.names.entries()) {
+      const k = `${n.group}:${n.label}`, suffix = i === 0 ? '' : `:${k}`, shown = i === 0 ? '' : `; shows as ${t.label}`;
+      const head = learned!.heads?.find(h => `${h.group}:${h.label}` === k);
+      if (head) run(`clap-head${suffix}`, c => ({ headThreshold: { [k]: c } }), HEAD_GRID, `move the learned.json ${i === 0 ? '' : 'merged '}${n.label} head cutoff (today ${head.threshold}${head.maybe ? ', maybe' : ''})${shown}`);
+      const short = shortClip!.heads.find(h => `${h.group}:${h.label}` === k);
+      if (short) run(`one-shot-head${suffix}`, c => ({ shortThreshold: { [k]: c } }), HEAD_GRID, `move the short-clip.json ${i === 0 ? '' : 'merged '}${n.label} head cutoff (today ${short.threshold}); only clips of at most ${SHORT_CLIP_MAX_SECONDS} s change${shown}`);
     }
     if (!Object.keys(out).length) console.log(`\n== ${t.input}: no tagger output, head or one-shot head exists; nothing to sweep ==`);
   }
@@ -396,6 +421,7 @@ function decidePhase() {
   report.durations = { min: durations[0], median: durations[Math.floor(durations.length / 2)], max: durations.at(-1), oneShots: durations.filter(d => d <= SHORT_CLIP_MAX_SECONDS).length };
   if (outPath) { mkdirSync(dirname(resolve(outPath)), { recursive: true }); writeFileSync(outPath, JSON.stringify(report, null, 1)); console.log(`\nreport: ${outPath}`); }
 }
+const DIMENSION_OF: Record<DjGroup, 'source' | 'effect' | 'character'> = { source: 'source', production: 'effect', character: 'character' };
 const fmt = (v: number | null | undefined) => v === null || v === undefined ? '  —  ' : v.toFixed(3);
 
 if (!flag('decide-only')) await scorePhase();
