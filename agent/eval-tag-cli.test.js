@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
-const cli = (...args) => spawnSync(process.execPath, [resolve('node_modules/vite-node/vite-node.mjs'), 'scripts/eval-tag.ts', ...args], { encoding: 'utf8', timeout: 20000 });
+const cli = (...args) => spawnSync(process.execPath, [resolve('node_modules/vite-node/dist/cli.mjs'), 'scripts/eval-tag.ts', ...args], { encoding: 'utf8', timeout: 20000 });
 describe('evaluator rejects invalid requests before inference', () => {
   it.each([
     [['--row-seconds', '--tag', 'kick'], '--row-seconds needs a value'],
