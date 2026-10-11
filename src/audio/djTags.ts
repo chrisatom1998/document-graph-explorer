@@ -21,6 +21,8 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'source:noise': { group: 'production', label: 'static noise' },
   'production:synth stab': { group: 'production', label: 'synth hit' },
   'production:downlifter': { group: 'character', label: 'falling' },
+  // A foley hit is a one-shot foley sound; the tested foley tagger decides both (Chris, 2026-10-11).
+  'production:foley hit': { group: 'source', label: 'foley' },
   'source:turntable': { group: 'production', label: 'vinyl scratch' },
   'production:vocal harmony': { group: 'production', label: 'choir' },
   'production:acid bass': { group: 'production', label: 'acid synth' },
@@ -32,6 +34,32 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'production:synth sequence': { group: 'production', label: 'synth arpeggio' },
   'production:reverse impact': { group: 'production', label: 'reverse effect' },
   'character:saturated': { group: 'character', label: 'distorted' },
+  // Tag keep list Chris picked on 2026-10-11 ("Skip 2 passers", reports/tag-keep-list-2026-10-11): sample libraries
+  // (Splice, Loopmasters, NKS) file each of these under the broader tag, and most score near 0 or were never tested alone.
+  'source:viola': { group: 'source', label: 'strings' },
+  'source:trombone': { group: 'source', label: 'horn' },
+  'source:tuba': { group: 'source', label: 'horn' },
+  'source:hand percussion': { group: 'source', label: 'percussion' },
+  'source:djembe': { group: 'source', label: 'percussion' },
+  'source:cajon': { group: 'source', label: 'percussion' },
+  'source:triangle': { group: 'source', label: 'percussion' },
+  'source:xylophone': { group: 'source', label: 'mallet instrument' },
+  'source:tuned percussion': { group: 'source', label: 'mallet instrument' },
+  'production:vocal vowel': { group: 'production', label: 'vocal hum' },
+  'production:vocal gasp': { group: 'source', label: 'breath' },
+  'production:reversed vocal': { group: 'production', label: 'reverse effect' },
+  'production:vocal pad': { group: 'production', label: 'choir' },
+  'production:bell synth': { group: 'source', label: 'bell' },
+  'production:organ synth': { group: 'source', label: 'organ' },
+  'production:bass pluck': { group: 'production', label: 'synth bass' },
+  'production:rubbery bass': { group: 'production', label: 'synth bass' },
+  'production:bass hit': { group: 'production', label: 'synth bass' },
+  'production:woodblock': { group: 'production', label: 'clave' },
+  'production:hi-hat loop': { group: 'production', label: 'top loop' },
+  'production:shaker loop': { group: 'production', label: 'percussion loop' },
+  'production:texture': { group: 'production', label: 'ambient drone' },
+  'character:echoing': { group: 'character', label: 'reverberant' },
+  'character:rising': { group: 'production', label: 'riser' },
 };
 export const mergedDjLabel = (group: DjGroup, label: string): { group: DjGroup; label: string } => MERGED_DJ_LABELS[`${group}:${label}`] ?? { group, label };
 /** Labels people can pick: the catalog minus the merged names. */
@@ -39,19 +67,24 @@ const pickable = (group: DjGroup) => DJ_LABELS[group].filter(label => !MERGED_DJ
 export const DJ_PICKER_LABELS: Record<DjGroup, readonly string[]> = { source: pickable('source'), production: pickable('production'), character: pickable('character') };
 /** Tags DJs and mixers rarely browse by (orchestral and folk detail, feel words and vague catch-alls; Chris,
  * 2026-10-10, reports/dj-tag-review-2026-10-10). They still run, show on clips and can be found by searching the
- * picker; they just aren't listed until searched for. On 2026-10-11 Chris brought back the eleven a DJ does reach for
- * (sound effect, percussion hit, foley hit, staccato, syncopated, rising, plucked, pulsing, wobbling, flanged, chorused). */
+ * picker; they just aren't listed until searched for. On 2026-10-11 Chris brought back eleven of them, then the tag keep
+ * list (reports/tag-keep-list-2026-10-11) hid syncopated, chorused and flanged again and merged rising and foley hit
+ * away, leaving sound effect, percussion hit, staccato, plucked, pulsing and wobbling listed. */
 export const DJ_HIDDEN_LABELS: ReadonlySet<string> = new Set([
-  ...['bassoon', 'oboe', 'clarinet', 'tuba', 'trombone', 'cello', 'double bass', 'banjo', 'mandolin', 'sitar', 'jaw harp',
-    'singing bowl', 'waterphone', 'kalimba', 'environmental sound'].map(l => `source:${l}`),
-  ...['sustained', 'rhythmic', 'rolling', 'gliding', 'percussive', 'swelling'].map(l => `character:${l}`),
+  ...['bassoon', 'oboe', 'clarinet', 'cello', 'double bass', 'banjo', 'mandolin', 'sitar', 'jaw harp',
+    'singing bowl', 'waterphone', 'kalimba', 'environmental sound',
+    // Tag keep list (Chris, 2026-10-11): rare in DJ sample libraries and untested or unlearnable here.
+    'ukulele', 'steel guitar', 'steel drum', 'tabla'].map(l => `source:${l}`),
+  ...['brass synth', 'string synth', 'fm synth', 'wind ambience'].map(l => `production:${l}`),
+  ...['sustained', 'rhythmic', 'rolling', 'gliding', 'percussive', 'swelling', 'syncopated', 'chorused', 'flanged'].map(l => `character:${l}`),
 ]);
 export interface DjTag { group: DjGroup; label: string; score: number; model?: 'AudioSet AST' | 'MTG-Jamendo' | 'Music CLAP' | 'Reviewed examples' | 'Trained head' | 'Trained head (maybe)'; segments?: { start: number; end: number }[]; windowEvidence?: NativeWindowEvidence }
 export const DJ_TYPE_SOURCE: Record<string, string> = Object.fromEntries(
   DJ_CATALOG.filter(c => c.group === 'production' && c.source).map(c => [c.label, c.source!]),
 );
 /** On-screen name for a label. The stored label stays the same so trained heads and saved corrections keep working. */
-const DISPLAY_NAMES: Record<string, string> = { plucked: 'one shot' };
+// downlifter, wet and brass are the words sample libraries use for these (tag keep list, 2026-10-11).
+const DISPLAY_NAMES: Record<string, string> = { plucked: 'one shot', falling: 'downlifter', reverberant: 'wet', horn: 'brass' };
 export function soundLabelText(label: string): string { return DISPLAY_NAMES[label] ?? label.replaceAll('_', ' '); }
 export function canonicalDjLabel(group: DjGroup, raw: unknown): string | undefined {
   if (typeof raw !== 'string') return;

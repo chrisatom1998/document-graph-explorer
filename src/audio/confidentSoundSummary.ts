@@ -1,5 +1,5 @@
 import { confirmedInstrumentList, sourceReviewAllows } from './instrumentEvidence';
-import { canonicalDjLabel, mergedDjLabel, type DjGroup } from './djTags';
+import { canonicalDjLabel, MERGED_DJ_LABELS, mergedDjLabel, type DjGroup } from './djTags';
 import { fusionPresentation } from './fusionPresentation';
 import type { MusicAnalysis } from './musicTypes';
 import { dimensionLabels, type Dimension, type Interval } from './recognition';
@@ -14,7 +14,7 @@ import { isRuleDescribedLabel } from './timbreDescriptions';
 
 /** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
  * musicLinks), so a display change also changes which instrument links a track can form, by design. */
-export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v12';
+export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v13';
 /** The shipping bar (Chris, 2026-10-10): a detector shows as a normal tag when its held-out precision AND recall on clips and
  * samples are both at least this; below it, a useful detector shows as a faded "maybe". Full songs are a no-regression check
  * only. scripts/head-scorecard.py, scripts/dj-effects/ship.py and the tagger's `tested` flags use the same bar. */
@@ -184,8 +184,10 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   const tagKeys=(tag:TaggerTag)=>[...tag.decides.map(label=>({dimension:tag.dimension,label})),...(tag.alsoDecides??[])]
     .flatMap(({dimension,label})=>{
       const name=canonical(dimension,label),group=GROUP_OF[dimension],merged=group?mergedDjLabel(group,name):undefined;
-      // Replacement applies to the stored identity and its surviving display identity before the final fold.
-      return [`${dimension}:${name}`,...(merged?[`${DIMENSION_OF[merged.group]}:${merged.label}`]:[])];
+      // Replacement applies to the stored identity, its surviving display identity and the names merged into it,
+      // so an untested old name (foley hit) cannot revive a sound the tagger decided against before the final fold.
+      const survivor=merged?`${DIMENSION_OF[merged.group]}:${merged.label}`:undefined;
+      return [`${dimension}:${name}`,...(survivor?[survivor,...(mergedInto().get(survivor)??[])]:[])];
     });
   let detectors:Set<string>|undefined;
   const detectorsShow=(tag:TaggerTag)=>{
@@ -234,6 +236,17 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
 }
 const GROUP_OF:Partial<Record<Dimension,DjGroup>>={source:'source',effect:'production',character:'character'};
 const DIMENSION_OF:Record<DjGroup,Dimension>={source:'source',production:'effect',character:'character'};
+let mergedIntoCache:Map<string,string[]>|undefined;
+/** Surviving display identity -> the old identities MERGED_DJ_LABELS folds into it. */
+function mergedInto():Map<string,string[]>{
+  if(mergedIntoCache)return mergedIntoCache;
+  mergedIntoCache=new Map();
+  for(const[from,to]of Object.entries(MERGED_DJ_LABELS)){
+    const[group,label]=from.split(':') as [DjGroup,string],key=`${DIMENSION_OF[to.group]}:${to.label}`;
+    mergedIntoCache.set(key,[...(mergedIntoCache.get(key)??[]),`${DIMENSION_OF[group]}:${label}`]);
+  }
+  return mergedIntoCache;
+}
 const strength=(s:DisplaySound)=>[s.origin==='confirmed by you'?3:s.uncalibrated?0:s.maybe?1:2,s.tier==='possible'?0:1,Math.max(0,...(s.scores??[]).map(x=>x.score))];
 const stronger=(a:DisplaySound,b:DisplaySound)=>{const x=strength(a),y=strength(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]>y[i];return false;};
 /** Shows each merged-away label (MERGED_DJ_LABELS) under the name it merged into, keeping the stronger of the two

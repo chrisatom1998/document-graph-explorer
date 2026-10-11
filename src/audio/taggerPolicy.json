@@ -1,7 +1,7 @@
 {
  "version": 1,
- "revision": "all-tags-blend-2026-10-10-r2",
- "modelSha256": "9a1d45948f70a30b30172ae95b8c1a354e0455a8e26e871d84d8301125f27ec3",
+ "revision": "all-tags-blend-2026-10-11-r1",
+ "modelSha256": "3a1af0173416dad714e9cab281cea662d5badafe4f68f866f8464c8ca1a56d46",
  "input": {
   "name": "samples32k",
   "output": "scores",
@@ -125,7 +125,6 @@
    "threshold": 0.6704,
    "decides": [
     "bass",
-    "bass guitar",
     "double bass"
    ],
    "tested": false,
@@ -152,7 +151,7 @@
    "output": "cat:percussion",
    "label": "percussion",
    "dimension": "source",
-   "threshold": 0.457,
+   "threshold": 0.249,
    "decides": [
     "percussion"
    ],
@@ -178,7 +177,7 @@
    "output": "cat:glockenspiel",
    "label": "glockenspiel",
    "dimension": "source",
-   "threshold": 0.0462,
+   "threshold": 0.3828,
    "decides": [
     "glockenspiel"
    ],
@@ -224,7 +223,7 @@
    "output": "cat:wobbling",
    "label": "wobbling",
    "dimension": "character",
-   "threshold": 0.6548,
+   "threshold": 0.5222,
    "decides": [
     "wobbling"
    ],
@@ -234,7 +233,7 @@
    "output": "cat:falling",
    "label": "falling",
    "dimension": "character",
-   "threshold": 0.8024,
+   "threshold": 0.5795,
    "decides": [
     "falling"
    ],
@@ -304,7 +303,7 @@
    "output": "cat:rain ambience",
    "label": "rain ambience",
    "dimension": "effect",
-   "threshold": 0.6128,
+   "threshold": 0.4504,
    "decides": [
     "rain ambience"
    ],
@@ -442,6 +441,47 @@
    "threshold": 0.0104,
    "decides": [
     "fm synth"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:bass guitar",
+   "label": "bass guitar",
+   "dimension": "source",
+   "threshold": 0.5765,
+   "decides": [
+    "bass guitar"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:machine ambience",
+   "label": "machine ambience",
+   "dimension": "effect",
+   "threshold": 0.2647,
+   "decides": [
+    "machine ambience"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:pitched vocal",
+   "label": "pitched vocal",
+   "dimension": "effect",
+   "threshold": 0.4082,
+   "decides": [
+    "pitched vocal"
    ],
    "tested": true,
    "long": {

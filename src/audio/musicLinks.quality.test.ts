@@ -93,8 +93,8 @@ describe('audio relationship quality', () => {
   });
   it('retains uncalibrated catalog similarity as a separate provenance', () => {
     const a = node('a', { soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false,
-      djTags: [{ group: 'production', label: 'reversed vocal', score: .9, model: 'Music CLAP' }] } });
-    expect(soundMatchLabels(a).find(m => m.label === 'reversed vocal')?.origin).toBe('unverified');
+      djTags: [{ group: 'production', label: 'record stop', score: .9, model: 'Music CLAP' }] } });
+    expect(soundMatchLabels(a).find(m => m.label === 'record stop')?.origin).toBe('unverified');
   });
   it('keeps discriminating shared properties ahead of ubiquitous metadata', () => {
     const tags = (production: string[] = []) => ({ source: [], production, character: ['metallic'] });
