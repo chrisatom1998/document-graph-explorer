@@ -47,6 +47,7 @@ import { sanitizeShortClipModel, shortClipScores, SHORT_CLIP_MAX_SECONDS, type S
 import { instrumentWindowStarts } from '../src/audio/instrumentEvidence';
 import { TAGGER_POLICY, TAGGER_SAMPLE_RATE, TAGGER_WINDOW_SAMPLES, TaggerEvidence, taggerWindow, taggerWindowStarts, type TaggerTag } from '../src/audio/tagger';
 import type { MusicAnalysis } from '../src/audio/musicTypes';
+import { inputCacheIdentity } from './eval-tag-input';
 import { isRuleDescribedLabel } from '../src/audio/timbreDescriptions';
 
 // ---------- arguments ----------
@@ -193,7 +194,24 @@ console.log(`${set.name}: ${clips.length} labelled clips (${unlabelled} without 
 interface CachedWindow { start: number; end: number; embedding: number[] | null }
 interface CachedClip { id: string; group: string; duration: number; labels: Record<string, 0 | 1>; clap: CachedWindow[]; tagger: { start: number; end: number; scores: number[] }[]; clapAudio?: 'file' | 'resampled-32k' }
 mkdirSync(cacheDir, { recursive: true });
-const cachePrefix = `${set.name}.${modelIdentity.clap.slice(0, 8)}${clapBackend === 'wasm' ? '-wasm' : ''}-${modelIdentity.tagger.slice(0, 8)}.`;
+// Content identity includes the selected audio and row interpretation, but not labels: current annotations are overlaid below.
+const inputPaths: string[] = [];
+let interpretation: unknown = { rowSeconds };
+if (setPath) {
+  const meta = JSON.parse(readFileSync(setPath, 'utf8'));
+  if (audioDir) {
+    for (const item of meta.items) { const file = join(audioDir, item.id.slice(item.id.indexOf(':') + 1) + audioExt); if (existsSync(file)) inputPaths.push(file); }
+  } else inputPaths.push(opt('npy') ?? setPath.replace(/\.json$/, '.npy'));
+  interpretation = { rowSeconds, fromFiles: !!audioDir, ids: meta.items.map((item: { id: string }) => item.id), offsets: meta.offsets };
+} else {
+  // All files, including currently unlabelled ones, keep target/watch changes reusable.
+  const walk = (dir: string) => { for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    const path = join(dir, entry.name); if (entry.isDirectory()) walk(path); else if (entry.isFile() && AUDIO.test(entry.name)) inputPaths.push(path);
+  } };
+  walk(clipsDir!);
+}
+const inputIdentity = inputCacheIdentity(inputPaths, interpretation);
+const cachePrefix = `${set.name}.${inputIdentity}.${modelIdentity.clap.slice(0, 8)}${clapBackend === 'wasm' ? '-wasm' : ''}-${modelIdentity.tagger.slice(0, 8)}.`;
 const cacheFile = (i: number, n: number) => join(cacheDir, `${cachePrefix}shard-${i}-of-${n}.jsonl`);
 function readCache(): Map<string, CachedClip> {
   const out = new Map<string, CachedClip>();
@@ -379,7 +397,7 @@ function decidePhase() {
   unscoredClips = unscored;
   const clapAudio = [...new Set(records.map(r => r.clapAudio ?? 'resampled-32k'))];
   console.log(`CLAP audio: ${clapAudio.join(' and ')}${clapAudio.includes('resampled-32k') ? ' (upsampled from 32 kHz: content above 16 kHz is missing, an approximation of the app)' : ' (decoded at 48 kHz from the files, as the app does)'}`);
-  const report: Record<string, unknown> = { set: set.name, clips: records.length, models: modelIdentity, clapBackend, clapAudio, taggerRevision: TAGGER_POLICY.revision, learnedRevision: learned!.revision, shortClipRevision: shortClip!.revision,
+  const report: Record<string, unknown> = { set: set.name, clips: records.length, models: modelIdentity, inputIdentity, clapBackend, clapAudio, taggerRevision: TAGGER_POLICY.revision, learnedRevision: learned!.revision, shortClipRevision: shortClip!.revision,
     halves: 'groups (uploader / artist / file prefix) hashed into pick and check', unscoredClips: unscored.length, complete: unscored.length === 0, current: {}, candidates: {} };
   // Tested Jamendo scores (FULL_MIX_JAMENDO) can also show piano, synthesizer and drums on recordings of 10 s or more; this
   // evaluator does not run Jamendo, so for those three the "today" recall on such clips is a lower bound.
