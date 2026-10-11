@@ -38,7 +38,8 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 113/114: crash cymbal, vocal laugh, whisper and whoosh back to their pre-#232 learned heads (failed on the app path).
 // 115/116: the tagger gains the recall network: it decides guitar, violin, finger snap, siren, flute, marimba and vibraphone
 // on recall-run outputs (fresh test sets 60/30).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 116 : 115;
+// 117/118: the tagger decides crash cymbal and whisper (fresh test sets 60/30; their learned heads failed on the app path).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 118 : 117;
 export interface InstrumentEstimate {
   label: string;
   score: number;
