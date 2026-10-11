@@ -29,7 +29,8 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // removed; viola back to maybe).
 // 97/98: short-clip bass guitar head retrained on real recorded basses (licensed-pilot round two).
 // 99/100: tagger blend adds run 9 (bell, fm synth, water ambience).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 100 : 99;
+// 101/102: percussion cutoff lowered (cutoff-pass-2026-10-11).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 102 : 101;
 export interface InstrumentEstimate {
   label: string;
   score: number;
