@@ -21,8 +21,8 @@ def main():
     root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
     catalog = json.load(open(os.path.join(root, 'src/audio/djCatalog.json')))['categories']
     th = json.load(open(os.path.join(run, 'thresholds.json'))); log = json.load(open(os.path.join(run, 'log.json')))
-    if log['args'].get('merge'): train.MERGE.update(json.load(open(log['args']['merge'])).get('merge', {}))   # as train.py trained
-    if log['args'].get('drop'): train.DROP.update(json.load(open(log['args']['drop'])))   # left out of training, so not counted
+    if log.get('args', {}).get('merge'): train.MERGE.update(json.load(open(log['args']['merge'])).get('merge', {}))   # as train.py trained
+    if log.get('args', {}).get('drop'): train.DROP.update(json.load(open(log['args']['drop'])))   # left out of training, so not counted
     pos = np.zeros(len(train.CLASSES), int)
     for name, d in preps.items():
         mel, js = FILES.get(name, (f'{name}-mel.npy', f'{name}.json')); items = json.load(open(os.path.join(d, js)))['items']
