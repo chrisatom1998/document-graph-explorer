@@ -20,6 +20,7 @@
  *   npx vite-node scripts/eval-tag.ts --tag "synth bass" --set eval-nsynth-test.json --score-only --shard 0/2
  *   npx vite-node scripts/eval-tag.ts --tag kick --set eval-fsd50k.json --decide-only --watch drums,cymbal
  * Options: --cache <dir> (per-clip model outputs, reused by later runs), --limit N, --shard i/n, --threads N,
+ *          --clap-backend cpu|wasm (wasm = the browser's own runtime, slower; cached separately),
  *          --score-only / --decide-only, --watch a,b (extra tags measured under every candidate), --parity (check the
  *          tagger against src/audio/taggerParity.fixture.json first), --grid-tagger / --grid-head "0.1,0.2,...".
  * Requires: npm run setup:music (model weights) and ffmpeg on PATH (resampling, decoding).
@@ -50,6 +51,9 @@ const outPath = opt('out');
 const limit = Number(opt('limit', '0'));
 const [shardIndex, shardCount] = (opt('shard', '0/1')!).split('/').map(Number);
 const threads = Number(opt('threads', '0'));
+/** 'cpu' (onnxruntime-node, fast) or 'wasm' (onnxruntime-web, the runtime the browser uses). Same q8 weights either way; on three
+ * clips the two agreed to a cosine of 0.9996 or better, so 'cpu' is the default and 'wasm' is the slow, exact check. */
+const clapBackend = opt('clap-backend', 'cpu') as 'cpu' | 'wasm';
 if (!tags.length || (!clipsDir && !setPath)) { console.error('Pass --tag <label[,label]> and --clips <dir> or --set <items.json>. See the header of this file.'); process.exit(2); }
 const ROOT = resolve(dirname(new URL(import.meta.url).pathname), '..');
 const PUBLIC = join(ROOT, 'public');
@@ -144,18 +148,20 @@ function loadClips(dir: string): { name: string; clips: Clip[] } {
 }
 const set = setPath ? loadSet(setPath) : loadClips(clipsDir!);
 let clips = set.clips.filter(c => Object.keys(c.labels).length);
+const unlabelled = set.clips.length - clips.length;
 if (limit) clips = clips.slice(0, limit);
 const shardClips = clips.filter((_, i) => i % shardCount === shardIndex);
-console.log(`${set.name}: ${clips.length} labelled clips (${set.clips.length - clips.length} without a label for ${tags.join(', ')})` + (shardCount > 1 ? `; shard ${shardIndex}/${shardCount}: ${shardClips.length}` : ''));
+console.log(`${set.name}: ${clips.length} labelled clips (${unlabelled} without a label for ${tags.join(', ')})` + (shardCount > 1 ? `; shard ${shardIndex}/${shardCount}: ${shardClips.length}` : ''));
 
 // ---------- phase 1: model outputs per clip, cached ----------
 interface CachedWindow { start: number; end: number; embedding: number[] | null }
 interface CachedClip { id: string; group: string; duration: number; labels: Record<string, 0 | 1>; clap: CachedWindow[]; tagger: { start: number; end: number; scores: number[] }[] }
 mkdirSync(cacheDir, { recursive: true });
-const cacheFile = (i: number, n: number) => join(cacheDir, `${set.name}.${modelIdentity.clap.slice(0, 8)}-${modelIdentity.tagger.slice(0, 8)}.shard-${i}-of-${n}.jsonl`);
+const cachePrefix = `${set.name}.${modelIdentity.clap.slice(0, 8)}${clapBackend === 'wasm' ? '-wasm' : ''}-${modelIdentity.tagger.slice(0, 8)}.`;
+const cacheFile = (i: number, n: number) => join(cacheDir, `${cachePrefix}shard-${i}-of-${n}.jsonl`);
 function readCache(): Map<string, CachedClip> {
   const out = new Map<string, CachedClip>();
-  for (const f of readdirSync(cacheDir).filter(f => f.startsWith(`${set.name}.${modelIdentity.clap.slice(0, 8)}-${modelIdentity.tagger.slice(0, 8)}.`) && f.endsWith('.jsonl')))
+  for (const f of readdirSync(cacheDir).filter(f => f.startsWith(cachePrefix) && f.endsWith('.jsonl')))
     for (const line of readFileSync(join(cacheDir, f), 'utf8').split('\n')) if (line) { const rec = JSON.parse(line) as CachedClip; out.set(rec.id, rec); }
   return out;
 }
@@ -175,8 +181,17 @@ async function loadModels() {
   const processor = await tf.AutoProcessor.from_pretrained('sound-model', { local_files_only: true });
   const ort = await import('onnxruntime-node');
   const tagger = await ort.InferenceSession.create(join(PUBLIC, 'tagger-model/model.onnx'), { executionProviders: ['cpu'], ...(threads ? { intraOpNumThreads: threads, interOpNumThreads: 1 } : {}) });
+  const ortWeb = clapBackend === 'wasm' ? await import('onnxruntime-web') : undefined;
+  if (ortWeb) ortWeb.env.wasm.numThreads = 1;
+  const clapWasm = ortWeb ? await ortWeb.InferenceSession.create(new Uint8Array(readFileSync(join(PUBLIC, 'sound-model/onnx/audio_model_quantized.onnx'))), { executionProviders: ['wasm'] }) : undefined;
   const embed = async (samples48: Float32Array): Promise<number[]> => {
-    const inputs = await processor(samples48); const output = await clap(inputs);
+    const inputs = await processor(samples48);
+    if (ortWeb && clapWasm) {
+      const features = inputs.input_features as { data: Float32Array; dims: number[] };
+      const output = await clapWasm.run({ input_features: new ortWeb.Tensor('float32', features.data, features.dims) });
+      return Array.from(output.audio_embeds.data as Float32Array, (v: number) => Math.round(v * 1e6) / 1e6);
+    }
+    const output = await clap(inputs);
     try { return Array.from(output.audio_embeds.data as Float32Array, (v: number) => Math.round(v * 1e6) / 1e6); } finally { await output.audio_embeds.dispose?.(); }
   };
   const tag = async (samples32: Float32Array): Promise<number[]> => {
@@ -186,7 +201,7 @@ async function loadModels() {
     if (scores.length !== taggerClasses.length) throw new Error('Tagger returned an unexpected number of scores.');
     return scores;
   };
-  return { embed, tag, dispose: async () => { await clap.dispose(); await tagger.release(); } };
+  return { embed, tag, dispose: async () => { await clap.dispose(); await tagger.release(); await clapWasm?.release(); } };
 }
 async function parityCheck(tag: (s: Float32Array) => Promise<number[]>) {
   const fixture = JSON.parse(readFileSync(join(ROOT, 'src/audio/taggerParity.fixture.json'), 'utf8')) as { model: string; cases: { seconds: number; scores: Record<string, number> }[] };
@@ -281,22 +296,23 @@ const blank = (): Counts => ({ positives: 0, negatives: 0, tp: 0, fp: 0, fn: 0, 
 const metrics = (c: Counts) => ({ ...c, precision: c.tp + c.fp ? +(c.tp / (c.tp + c.fp)).toFixed(3) : null, recall: c.positives ? +(c.tp / c.positives).toFixed(3) : null,
   falseAlarmRate: c.negatives ? +(c.fp / c.negatives).toFixed(4) : null, passes6030: c.tp + c.fp > 0 && c.positives > 0 && c.tp / (c.tp + c.fp) >= .6 && c.tp / c.positives >= .3 });
 function evaluate(records: CachedClip[], o: Overrides, keys: string[]) {
-  const table: Record<string, Record<'pick' | 'check' | 'all', Counts>> = Object.fromEntries(keys.map(k => [k, { pick: blank(), check: blank(), all: blank() }]));
+  type Part = 'pick' | 'check' | 'all' | 'oneShots' | 'longer';
+  const table: Record<string, Record<Part, Counts>> = Object.fromEntries(keys.map(k => [k, { pick: blank(), check: blank(), all: blank(), oneShots: blank(), longer: blank() }]));
   const decisions: Record<string, string[]> = {};
   for (const rec of records) {
-    const shown = decide(rec, o), h = half(rec.group);
+    const shown = decide(rec, o), h = half(rec.group), bucket: Part = rec.duration <= SHORT_CLIP_MAX_SECONDS ? 'oneShots' : 'longer';
     decisions[rec.id] = [...shown.keys()];
     for (const key of keys) {
       const truth = rec.labels[key]; if (truth === undefined) continue;
       const s = shown.get(key);
-      for (const part of [h, 'all'] as const) {
+      for (const part of [h, 'all', bucket] as const) {
         const c = table[key][part];
         if (truth) { c.positives++; if (s) { c.tp++; if (s.maybe) c.tpMaybe++; } else c.fn++; }
         else { c.negatives++; if (s) { c.fp++; if (s.maybe) c.fpMaybe++; } }
       }
     }
   }
-  return { table: Object.fromEntries(keys.map(k => [k, { pick: metrics(table[k].pick), check: metrics(table[k].check), all: metrics(table[k].all) }])), decisions };
+  return { table: Object.fromEntries(keys.map(k => [k, { pick: metrics(table[k].pick), check: metrics(table[k].check), all: metrics(table[k].all), oneShots: metrics(table[k].oneShots), longer: metrics(table[k].longer) }])), decisions };
 }
 const parseGrid = (s: string | undefined, fallback: number[]) => s ? s.split(',').map(Number) : fallback;
 const TAGGER_GRID = parseGrid(opt('grid-tagger'), [0.005, 0.01, 0.02, 0.03, 0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.97, 0.99]);
@@ -318,12 +334,12 @@ function decidePhase() {
   const current = evaluate(records, {}, keys);
   (report.current as Record<string, unknown>) = current.table;
   console.log('\n== today (the app as shipped) ==');
-  for (const k of keys) { const m = current.table[k]; console.log(`${k.padEnd(28)} all P ${fmt(m.all.precision)} R ${fmt(m.all.recall)} FA ${fmt(m.all.falseAlarmRate)}  (tp ${m.all.tp} fp ${m.all.fp} fn ${m.all.fn}; pos ${m.all.positives} neg ${m.all.negatives})  pick P ${fmt(m.pick.precision)} R ${fmt(m.pick.recall)}  check P ${fmt(m.check.precision)} R ${fmt(m.check.recall)}  ${m.all.passes6030 ? 'PASSES 60/30' : 'fails 60/30'}`); }
+  for (const k of keys) { const m = current.table[k]; console.log(`${k.padEnd(28)} all P ${fmt(m.all.precision)} R ${fmt(m.all.recall)} FA ${fmt(m.all.falseAlarmRate)}  (tp ${m.all.tp} fp ${m.all.fp} fn ${m.all.fn}; pos ${m.all.positives} neg ${m.all.negatives})  pick P ${fmt(m.pick.precision)} R ${fmt(m.pick.recall)}  check P ${fmt(m.check.precision)} R ${fmt(m.check.recall)}  one-shots R ${fmt(m.oneShots.recall)} (${m.oneShots.positives}) longer R ${fmt(m.longer.recall)} (${m.longer.positives})  ${m.all.passes6030 ? 'PASSES 60/30' : 'fails 60/30'}`); }
   const candidates = report.candidates as Record<string, unknown>;
   for (const t of targets) {
     const key = t.displayKey, out: Record<string, unknown> = {}; candidates[t.input] = out;
     const run = (name: string, make: (cutoff: number) => Overrides, grid: number[], note: string) => {
-      const points = grid.map(cutoff => { const r = evaluate(records, make(cutoff), keys); return { cutoff, pick: r.table[key].pick, check: r.table[key].check, all: r.table[key].all, others: Object.fromEntries(keys.filter(k => k !== key).map(k => [k, r.table[k].all])) }; });
+      const points = grid.map(cutoff => { const r = evaluate(records, make(cutoff), keys); return { cutoff, pick: r.table[key].pick, check: r.table[key].check, all: r.table[key].all, oneShots: r.table[key].oneShots, longer: r.table[key].longer, others: Object.fromEntries(keys.filter(k => k !== key).map(k => [k, r.table[k].all])) }; });
       const chosen = pickCutoff(points);
       out[name] = { note, points, chosen: { precisionFirst: chosen.precisionFirst?.cutoff ?? null, balanced: chosen.balanced?.cutoff ?? null } };
       console.log(`\n== ${t.input}: ${name} (${note}) ==`);
