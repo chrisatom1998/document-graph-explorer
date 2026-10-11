@@ -67,8 +67,9 @@ const pickable = (group: DjGroup) => DJ_LABELS[group].filter(label => !MERGED_DJ
 export const DJ_PICKER_LABELS: Record<DjGroup, readonly string[]> = { source: pickable('source'), production: pickable('production'), character: pickable('character') };
 /** Tags DJs and mixers rarely browse by (orchestral and folk detail, feel words and vague catch-alls; Chris,
  * 2026-10-10, reports/dj-tag-review-2026-10-10). They still run, show on clips and can be found by searching the
- * picker; they just aren't listed until searched for. On 2026-10-11 Chris brought back the eleven a DJ does reach for
- * (sound effect, percussion hit, foley hit, staccato, syncopated, rising, plucked, pulsing, wobbling, flanged, chorused). */
+ * picker; they just aren't listed until searched for. On 2026-10-11 Chris brought back eleven of them, then the tag keep
+ * list (reports/tag-keep-list-2026-10-11) hid syncopated, chorused and flanged again and merged rising and foley hit
+ * away, leaving sound effect, percussion hit, staccato, plucked, pulsing and wobbling listed. */
 export const DJ_HIDDEN_LABELS: ReadonlySet<string> = new Set([
   ...['bassoon', 'oboe', 'clarinet', 'cello', 'double bass', 'banjo', 'mandolin', 'sitar', 'jaw harp',
     'singing bowl', 'waterphone', 'kalimba', 'environmental sound',
