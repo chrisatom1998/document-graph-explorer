@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { otherModelGuessGroups, soundMatchLabels } from './soundMatchLabels';
 import { confirmedInstrumentList } from './instrumentEvidence';
 import { sanitizeMusicAnalysis } from './musicTypes';
-import { confidentSoundSummary } from './confidentSoundSummary';
+import { confidentSoundSummary, HIDDEN_UNTIL_TESTED } from './confidentSoundSummary';
 import { MERGED_DJ_LABELS, type DjGroup } from './djTags';
 
 describe('merged label consumer regressions', () => {
@@ -10,7 +10,9 @@ describe('merged label consumer regressions', () => {
     const [group, label] = key.split(':') as [DjGroup, string];
     it(`projects ${key} guesses under their surviving group and label`, () => {
       const profile = { djTags: [{ group, label, score: .3 }] };
-      expect(otherModelGuessGroups({ profile, exclude: [] })).toEqual([{ group: merged.group, values: [merged.label] }]);
+      // A survivor still hidden until it passes real clips (distorted, reverse effect) hides the merged guess too.
+      const shown = HIDDEN_UNTIL_TESTED.has(merged.label) ? [] : [{ group: merged.group, values: [merged.label] }];
+      expect(otherModelGuessGroups({ profile, exclude: [] })).toEqual(shown);
       expect(otherModelGuessGroups({ profile, exclude: [merged.label] })).toEqual([]);
       expect(otherModelGuessGroups({ profile: { djTags: [{ ...profile.djTags[0], ...merged }] }, exclude: [label] })).toEqual([]);
     });

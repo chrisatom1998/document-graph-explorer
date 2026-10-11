@@ -13,7 +13,7 @@ it('uses explicit glass hit semantics with provenance and no invented score',()=
 });
 it('reuses instrument names and catalog aliases, with token boundaries',()=>{
   expect(labels('piano_bright.wav').map(x=>x.label)).toEqual(['piano','bright']);
-  expect(labels('reverse_impact.wav').map(x=>x.label)).toEqual(['reverse impact']);
+  expect(labels('reverse_impact.wav').map(x=>x.label)).toEqual(['reverse effect']);
   expect(labels('whitespace_glasshouse_123.wav')).toEqual([]);
 });
 it('ignores folders and numeric IDs, without deriving tempo or key',()=>{
