@@ -44,7 +44,8 @@
     "cat:fm synth": 0.018872,
     "cat:bass guitar": 0.000592,
     "cat:machine ambience": 0.018218,
-    "cat:pitched vocal": 0.00188
+    "cat:pitched vocal": 0.00188,
+    "cat:hi-hat": 0.000388
    }
   },
   {
@@ -89,7 +90,8 @@
     "cat:fm synth": 0.017205,
     "cat:bass guitar": 0.001449,
     "cat:machine ambience": 0.013919,
-    "cat:pitched vocal": 0.008377
+    "cat:pitched vocal": 0.008377,
+    "cat:hi-hat": 0.000246
    }
   },
   {
@@ -135,7 +137,8 @@
     "cat:fm synth": 0.017205,
     "cat:bass guitar": 0.001449,
     "cat:machine ambience": 0.024291,
-    "cat:pitched vocal": 0.008377
+    "cat:pitched vocal": 0.008377,
+    "cat:hi-hat": 0.000414
    }
   },
   {
@@ -182,7 +185,8 @@
     "cat:fm synth": 0.01556,
     "cat:bass guitar": 0.009431,
     "cat:machine ambience": 0.022556,
-    "cat:pitched vocal": 0.006442
+    "cat:pitched vocal": 0.006442,
+    "cat:hi-hat": 0.001516
    }
   }
  ]

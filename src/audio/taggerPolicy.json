@@ -487,6 +487,20 @@
    "long": {
     "rule": "detectors"
    }
+  },
+  {
+   "output": "cat:hi-hat",
+   "label": "hi-hat",
+   "dimension": "effect",
+   "threshold": 0.3663,
+   "decides": [
+    "hi-hat"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
   }
  ]
 }
