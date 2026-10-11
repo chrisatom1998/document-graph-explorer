@@ -1,7 +1,7 @@
 {
  "version": 1,
- "revision": "all-tags-blend-2026-10-11-r1",
- "modelSha256": "3a1af0173416dad714e9cab281cea662d5badafe4f68f866f8464c8ca1a56d46",
+ "revision": "all-tags-recall-2026-10-11-r1",
+ "modelSha256": "97e522a5386d196161b4ddf0ff8567e156eaae332db65aac6695c7889d815343",
  "input": {
   "name": "samples32k",
   "output": "scores",
@@ -41,17 +41,17 @@
    }
   },
   {
-   "output": "guitar",
+   "output": "cat:guitar",
    "label": "guitar",
    "dimension": "source",
-   "threshold": 0.7281,
+   "threshold": 0.8531,
    "decides": [
     "guitar"
    ],
    "tested": true,
-   "minSeconds": 10,
    "long": {
-    "rule": "detectors"
+    "rule": "detectors",
+    "afterSeconds": 30
    }
   },
   {
@@ -76,18 +76,18 @@
    }
   },
   {
-   "output": "violin",
+   "output": "cat:violin / fiddle",
    "label": "violin",
    "dimension": "source",
-   "threshold": 0.6256,
+   "threshold": 0.6363,
    "decides": [
     "violin",
     "violin / fiddle"
    ],
    "tested": true,
-   "minSeconds": 10,
    "long": {
-    "rule": "detectors"
+    "rule": "detectors",
+    "afterSeconds": 30
    }
   },
   {
@@ -397,7 +397,7 @@
    "output": "cat:finger snap",
    "label": "finger snap",
    "dimension": "effect",
-   "threshold": 0.0331,
+   "threshold": 0.1752,
    "decides": [
     "finger snap"
    ],
@@ -495,6 +495,62 @@
    "threshold": 0.3663,
    "decides": [
     "hi-hat"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:siren",
+   "label": "siren",
+   "dimension": "effect",
+   "threshold": 0.2452,
+   "decides": [
+    "siren"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:flute",
+   "label": "flute",
+   "dimension": "source",
+   "threshold": 0.7538,
+   "decides": [
+    "flute"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:marimba",
+   "label": "marimba",
+   "dimension": "source",
+   "threshold": 0.8359,
+   "decides": [
+    "marimba"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:vibraphone",
+   "label": "vibraphone",
+   "dimension": "source",
+   "threshold": 0.7489,
+   "decides": [
+    "vibraphone"
    ],
    "tested": true,
    "long": {

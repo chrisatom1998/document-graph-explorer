@@ -33,7 +33,12 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // ambience and wobbling move to run 10).
 // 105/106: the tagger decides hi-hat (fresh test sets 60/30; the CLAP head failed precision there).
 // 107/108: 12 learned heads retrained without FSD50K eval clips (clean-retrain-2026-10-11).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 108 : 107;
+// 109/110: neighbour heads (few-shot example matching) for vinyl crackle and vocal shout (knn-heads-2026-10-11).
+// 111/112: both neighbour heads removed again (vinyl crackle went over the 1% false-alarm cap on FSD50K).
+// 113/114: crash cymbal, vocal laugh, whisper and whoosh back to their pre-#232 learned heads (failed on the app path).
+// 115/116: the tagger gains the recall network: it decides guitar, violin, finger snap, siren, flute, marimba and vibraphone
+// on recall-run outputs (fresh test sets 60/30).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 116 : 115;
 export interface InstrumentEstimate {
   label: string;
   score: number;
