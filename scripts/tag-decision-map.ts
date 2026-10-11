@@ -120,7 +120,7 @@ for (const [from, to] of Object.entries(MERGED_DJ_LABELS)) out.push(`| \`${from}
 out.push(`
 ## How to measure a tag the way the app decides it
 
-\`scripts/eval-tag.ts\` runs this exact chain (CLAP windows, heads, one-shot heads, prompt selection, tagger windows, then \`confidentSoundSummary\`) on labelled clips and reports precision, recall and false-alarm rate at the current cutoffs plus a cutoff sweep for each candidate brain. See the header of that script for usage.
+\`scripts/eval-tag.ts\` runs this chain (CLAP windows, heads, one-shot heads, prompt selection, tagger windows, then \`confidentSoundSummary\`) on labelled clips and reports precision, recall and false-alarm rate at the current cutoffs plus a cutoff sweep for each candidate brain. It does not run AST, Jamendo or the long-recording event windows, so the full-mix Jamendo path for piano, synthesizer and drums is not measured (the report flags those tags). See the header of that script for usage and for why the rest does not move a head's or the tagger's decision.
 `);
 const text = out.join('\n') + '\n';
 if (process.argv.includes('--check')) {
