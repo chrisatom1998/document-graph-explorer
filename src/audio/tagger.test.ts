@@ -114,15 +114,14 @@ describe('trained tagger display', () => {
       { group: 'production', label: 'riser', score: .9, model: 'Trained head' }]);
     expect(confidentSoundSummary(a).map(s => `${s.dimension}:${s.label}`).sort()).toEqual(['character:bright', 'character:percussive', 'effect:riser']);
   });
-  it('decides hi-hat and crash cymbal over their CLAP heads, including the merged closed hi-hat', () => {
+  it('decides hi-hat over its CLAP head, including the merged closed hi-hat', () => {
     const effects = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'effect').map(s => s.label).sort();
     const heads = [{ group: 'production' as const, label: 'hi-hat', score: .9, model: 'Trained head' as const },
-      { group: 'production' as const, label: 'closed hi-hat', score: .9, model: 'Trained head' as const },
-      { group: 'production' as const, label: 'crash cymbal', score: .9, model: 'Trained head' as const }];
-    expect(effects(track(4, { 'cat:hi-hat': .01, 'cat:crash cymbal': .01 }, heads))).toEqual([]);
-    const shown = confidentSoundSummary(track(4, { 'cat:hi-hat': threshold('cat:hi-hat'), 'cat:crash cymbal': .99 }, heads));
-    expect(shown.filter(s => s.dimension === 'effect').map(s => s.label).sort()).toEqual(['crash cymbal', 'hi-hat']);
-    for (const label of ['crash cymbal', 'hi-hat']) expect(shown.find(s => s.label === label)!.scores).toMatchObject([{ model: TAGGER_SCORE }]);
+      { group: 'production' as const, label: 'closed hi-hat', score: .9, model: 'Trained head' as const }];
+    expect(effects(track(4, { 'cat:hi-hat': .01 }, heads))).toEqual([]);
+    const shown = confidentSoundSummary(track(4, { 'cat:hi-hat': threshold('cat:hi-hat') }, heads));
+    expect(shown.filter(s => s.dimension === 'effect').map(s => s.label)).toEqual(['hi-hat']);
+    expect(shown.find(s => s.label === 'hi-hat')!.scores).toMatchObject([{ model: TAGGER_SCORE }]);
   });
   it('never overrides what the listener confirmed or rejected', () => {
     const a = track(30, { drums: .01, piano: .99 });
@@ -173,8 +172,7 @@ describe('trained tagger long-recording rules', () => {
       'cat:finger snap': { rule: 'detectors', afterSeconds: 30 }, 'cat:water ambience': { rule: 'detectors', afterSeconds: 30 },
       'cat:bell': { rule: 'detectors' }, 'cat:fm synth': { rule: 'detectors' },
       'cat:bass guitar': { rule: 'detectors', afterSeconds: 30 }, 'cat:machine ambience': { rule: 'detectors', afterSeconds: 30 },
-      'cat:pitched vocal': { rule: 'detectors' }, 'cat:hi-hat': { rule: 'detectors', afterSeconds: 30 },
-      'cat:crash cymbal': { rule: 'detectors', afterSeconds: 30 } });
+      'cat:pitched vocal': { rule: 'detectors' }, 'cat:hi-hat': { rule: 'detectors', afterSeconds: 30 } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
   it('needs the higher full-song drums threshold on long recordings only', () => {

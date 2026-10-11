@@ -501,20 +501,6 @@
     "rule": "detectors",
     "afterSeconds": 30
    }
-  },
-  {
-   "output": "cat:crash cymbal",
-   "label": "crash cymbal",
-   "dimension": "effect",
-   "threshold": 0.1631,
-   "decides": [
-    "crash cymbal"
-   ],
-   "tested": true,
-   "long": {
-    "rule": "detectors",
-    "afterSeconds": 30
-   }
   }
  ]
 }
