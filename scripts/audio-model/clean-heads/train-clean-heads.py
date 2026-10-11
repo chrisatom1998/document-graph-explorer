@@ -154,12 +154,14 @@ def main():
         m = LogisticRegression(C=1.0, class_weight='balanced', max_iter=600, tol=1e-3).fit(X, y)
         w, b = m.coef_[0], float(m.intercept_[0])
         row['clean'] = {**pr(judge(w, b, best[1])), 'threshold': best[1], 'outOfFoldMinPR': round(best[0], 3)}
-        for side in ('old', 'clean'):
+        # "Keep best of both" (Chris, 1:56 am PDT Oct 11): also the balanced cutoff, so the PR can pick per tag on held-out clips.
+        row['cleanBalanced'] = {**pr(judge(w, b, balanced[1])), 'threshold': balanced[1], 'outOfFoldMinPR': round(balanced[0], 3)}
+        for side in ('old', 'clean', 'cleanBalanced'):
             r = row.get(side)
             if r: r['passes'] = {k: bool(r['precision'] >= p_ and r['recall'] >= r_) for k, (p_, r_) in BARS.items()}
         report.append(row)
         heads.append({'group': old.get(tag, {}).get('group', 'source'), 'label': tag, 'weights': [round(float(v), 6) for v in w],
-                      'bias': round(b, 6), 'threshold': round(best[1], 4)})
+                      'bias': round(b, 6), 'threshold': round(best[1], 4), 'thresholdBalanced': round(balanced[1], 4)})
         charts.log({'heads_done': n + 1, 'clean_pass_50': sum(1 for r in report if r.get('clean') and min(r['clean']['precision'], r['clean']['recall']) >= 0.5)}, step=n)
         print(f"{tag:<18} old {row.get('old', {}).get('precision', '-')}/{row.get('old', {}).get('recall', '-')}  "
               f"clean {row['clean']['precision']}/{row['clean']['recall']}  (+{row['evalPositive']} eval, {row['trainPositive']} train)", flush=True)
