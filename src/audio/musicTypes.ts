@@ -31,7 +31,7 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 99/100: tagger blend adds run 9 (bell, fm synth, water ambience).
 // 101/102: tagger blend adds runs 10 and 11 (bass guitar, machine ambience, pitched vocal; falling, glockenspiel, rain
 // ambience and wobbling move to run 10).
-// 103/104: 13 learned heads retrained without FSD50K eval clips (clean-retrain-2026-10-11).
+// 103/104: 12 learned heads retrained without FSD50K eval clips (clean-retrain-2026-10-11).
 export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 104 : 103;
 export interface InstrumentEstimate {
   label: string;
