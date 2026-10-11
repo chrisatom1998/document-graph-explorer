@@ -275,3 +275,17 @@ describe('merged turntable and vinyl scratch tagger coverage', () => {
     expect(confidentSoundSummary(a)).toEqual([{dimension:'effect',label:'vinyl scratch',origin:'confirmed by you'}]);
   });
 });
+
+describe('a merged-away label folding into a tagger-decided tag', () => {
+  it('cannot revive foley after the tagger rejects it', () => {
+    const a = native(audio(10, [{start:0,end:10}], 1), 'foley hit');
+    a.tagger!.scores['cat:foley'] = 0;
+    expect(shown(a)).not.toContain('source:foley');
+  });
+  it('shows foley once, from the tagger, when the tagger agrees', () => {
+    const a = native(audio(10, [{start:0,end:10}], 1), 'foley hit');
+    a.tagger!.scores['cat:foley'] = 1;
+    expect(shown(a).filter(s => s === 'source:foley')).toHaveLength(1);
+    expect(shown(a)).not.toContain('effect:foley hit');
+  });
+});
