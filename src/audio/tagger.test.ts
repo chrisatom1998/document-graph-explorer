@@ -123,6 +123,16 @@ describe('trained tagger display', () => {
     expect(shown.filter(s => s.dimension === 'effect').map(s => s.label)).toEqual(['hi-hat']);
     expect(shown.find(s => s.label === 'hi-hat')!.scores).toMatchObject([{ model: TAGGER_SCORE }]);
   });
+  it('decides crash cymbal over its CLAP head on recordings it heard', () => {
+    const effects = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'effect').map(s => s.label);
+    const heads = [{ group: 'production' as const, label: 'crash cymbal', score: .999, model: 'Trained head' as const }];
+    expect(effects(track(4, { 'cat:crash cymbal': .01 }, heads))).toEqual([]);
+    const shown = confidentSoundSummary(track(4, { 'cat:crash cymbal': threshold('cat:crash cymbal') }, heads));
+    expect(shown.filter(s => s.dimension === 'effect').map(s => s.label)).toEqual(['crash cymbal']);
+    expect(shown.find(s => s.label === 'crash cymbal')!.scores).toMatchObject([{ model: TAGGER_SCORE }]);
+    // Past 30 s the tagger has no full-song evidence; the head decides again.
+    expect(effects(track(40, { 'cat:crash cymbal': .01 }, heads))).toEqual(['crash cymbal']);
+  });
   it('never overrides what the listener confirmed or rejected', () => {
     const a = track(30, { drums: .01, piano: .99 });
     a.confirmedInstruments = ['drums'];
@@ -172,7 +182,8 @@ describe('trained tagger long-recording rules', () => {
       'cat:finger snap': { rule: 'detectors', afterSeconds: 30 }, 'cat:water ambience': { rule: 'detectors', afterSeconds: 30 },
       'cat:bell': { rule: 'detectors' }, 'cat:fm synth': { rule: 'detectors' },
       'cat:bass guitar': { rule: 'detectors', afterSeconds: 30 }, 'cat:machine ambience': { rule: 'detectors', afterSeconds: 30 },
-      'cat:pitched vocal': { rule: 'detectors' }, 'cat:hi-hat': { rule: 'detectors', afterSeconds: 30 } });
+      'cat:pitched vocal': { rule: 'detectors' }, 'cat:hi-hat': { rule: 'detectors', afterSeconds: 30 },
+      'cat:crash cymbal': { rule: 'detectors', afterSeconds: 30 } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
   it('needs the higher full-song drums threshold on long recordings only', () => {
