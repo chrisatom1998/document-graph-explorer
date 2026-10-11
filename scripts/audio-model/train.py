@@ -126,8 +126,8 @@ def main():
         MERGE.update(json.load(open(args.merge)).get('merge', {})); print(f'merged tags: {MERGE or "none"}', flush=True)
     if args.absent_fix:
         nd, na = absent_fix.load(args.absent_fix); print(f'absent fix: weak absences dropped on {nd} items, positives added on {na} items, sure absences on {len(absent_fix.FIX["absent"])} items', flush=True)
-        F = absent_fix.FIX
-        if F['wrong'] or F['unsure'] or F['rules']: print(f'label cleanup: wrong positives on {len(F["wrong"])} items, unsure on {len(F["unsure"])} items, {len(F["rules"])} id rules', flush=True)
+        fx = absent_fix.FIX
+        if fx['wrong'] or fx['unsure'] or fx['rules']: print(f'label cleanup: wrong positives on {len(fx["wrong"])} items, unsure on {len(fx["unsure"])} items, {len(fx["rules"])} id rules', flush=True)
     if args.drop:
         DROP.update(json.load(open(args.drop))); print(f'leaving out {len(DROP)} training ids', flush=True)
     if args.soft:
