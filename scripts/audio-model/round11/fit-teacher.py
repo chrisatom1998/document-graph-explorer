@@ -17,13 +17,38 @@ import charts  # noqa: E402  live training charts (aggregates only)
 
 
 def feats(z, kind="all"):
-    """kind: all = CED-base embedding + CLAP + CED AudioSet logits; ced = CED-base only."""
-    p = np.clip(z["ced_probs"].astype(np.float32), 1e-4, 1 - 1e-4)
-    parts = [z["ced_emb"].astype(np.float32), np.log(p / (1 - p)) / 4]
-    if kind == "all":
-        c = z["clap"].astype(np.float32)
-        parts.append(c / (np.linalg.norm(c, axis=1, keepdims=True) + 1e-8) * 10)
+    """kind: all = CED-base embedding + CLAP + CED AudioSet logits; ced = CED-base only; or blocks joined by '+' from
+    ced, das (Dasheng-0.6B) and mert (MERT-v1-330M), e.g. ced+das (big-teacher/features.py)."""
+    p = np.clip(z["ced_probs"].astype(np.float32), 1e-4, 1 - 1e-4) if "ced_probs" in z else None
+    if kind in ("all", "ced"):
+        parts = [z["ced_emb"].astype(np.float32), np.log(p / (1 - p)) / 4]
+        if kind == "all":
+            c = z["clap"].astype(np.float32)
+            parts.append(c / (np.linalg.norm(c, axis=1, keepdims=True) + 1e-8) * 10)
+        return np.concatenate(parts, 1)
+    parts = []
+    for b in kind.split("+"):
+        if b == "ced":
+            parts += [z["ced_emb"].astype(np.float32), np.log(p / (1 - p)) / 4]
+        else:
+            parts.append(z[b].astype(np.float32))
     return np.concatenate(parts, 1)
+
+
+def drop_ids(path):
+    """Training ids named in the private test-leak exclude list (never uploaded): Freesound ids as freesound:<n>."""
+    d = json.load(open(path))
+    out = set()
+    for sec in ("round13_must_drop", "round13_should_drop_same_uploader"):
+        for v in d.get(sec, {}).values():
+            for x in v:
+                x = str(x)
+                if x.isdigit():
+                    x = "freesound:" + x
+                elif x.startswith("fs:"):
+                    x = "freesound:" + x[3:]
+                out.add(x)
+    return out
 
 
 class Head(nn.Module):
@@ -43,7 +68,11 @@ def load(path):
     for st in ck["states"]:
         m = Head(ck["dim"], len(ck["vocab"])); m.load_state_dict(st); m.eval(); ms.append(m)
 
+    mu, sd = (None, None) if ck.get("mu") is None else (ck["mu"].numpy(), ck["sd"].numpy())
+
     def f(x):
+        if mu is not None:
+            x = ((x - mu) / sd).astype(np.float32)
         with torch.no_grad():
             x = torch.from_numpy(x)
             return np.mean([torch.sigmoid(m(x)).numpy() for m in ms], 0)
@@ -66,7 +95,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("feat"); ap.add_argument("out"); ap.add_argument("--keep")
     ap.add_argument("--epochs", type=int, default=40); ap.add_argument("--min-pos", type=int, default=15); ap.add_argument("--folds", type=int, default=5)
-    ap.add_argument("--feats", default="all", choices=["all", "ced"])
+    ap.add_argument("--feats", default="all", help="all, ced, or '+'-joined blocks of ced, das, mert")
+    ap.add_argument("--extra", action="append", default=[], help="another features dir for the same clips (joined by id)")
+    ap.add_argument("--exclude", help="private test-leak exclude-lists.json: drop the training ids it names")
+    ap.add_argument("--zscore", action="store_true", help="standardise each feature on the training clips (stored in teacher.pt)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     man = {}
@@ -79,16 +111,38 @@ def main():
     keep = None
     if a.keep:
         keep = {r["id"] for r in csv.DictReader(open(a.keep)) if r.get("keep", "1") in ("1", "true", "keep")}
+    drop = drop_ids(a.exclude) if a.exclude else set()
     X, tags, groups = [], [], []
+    ndrop = 0
     for f in sorted(glob.glob(os.path.join(a.feat, "*.npz"))):
-        z = np.load(f)
+        z = dict(np.load(f))
+        for e in a.extra:  # same file name in the other dir; keep the clips both describe
+            ep = os.path.join(e, os.path.basename(f))
+            if not os.path.exists(ep):
+                z = None; break
+            ez = np.load(ep); ix = {str(c): i for i, c in enumerate(ez["id"])}
+            sel = [i for i, c in enumerate(z["id"]) if str(c) in ix]
+            z = {k: v[sel] for k, v in z.items()}
+            for k in ez.files:
+                if k not in z:
+                    z[k] = ez[k][[ix[str(c)] for c in z["id"]]]
+        if z is None or not len(z["id"]):
+            continue
         F = feats(z, a.feats)
         for i, cid in enumerate(z["id"]):
             r = man.get(str(cid))
             if r is None or (keep is not None and r["id"] not in keep):
                 continue
+            if r["id"] in drop:
+                ndrop += 1
+                continue
             X.append(F[i]); tags.append([t for t in r["tags"].split("|") if t]); groups.append(r["group"])
     X = np.stack(X)
+    mu = sd = None
+    if a.zscore:
+        mu, sd = X.mean(0), X.std(0) + 1e-4
+        X = ((X - mu) / sd).astype(np.float32)
+    print(f"{ndrop} clips dropped by the exclude list", flush=True)
     vocab = sorted({t for ts in tags for t in ts})
     cnt = {t: 0 for t in vocab}
     for ts in tags:
@@ -106,7 +160,7 @@ def main():
 
     Xt, Yt = torch.from_numpy(X), torch.from_numpy(Y)
     charts.start(os.environ.get('TRACKIO_RUN') or 'round11-teacher-' + os.path.basename(a.out.rstrip('/')),
-                 {'clips': len(X), 'tags': len(vocab), 'folds': a.folds, 'epochs': a.epochs, 'model': 'CED-base+CLAP MLP teacher'})
+                 {'clips': len(X), 'tags': len(vocab), 'folds': a.folds, 'epochs': a.epochs, 'model': f'{a.feats} MLP teacher'})
     S = np.zeros_like(Y)  # out-of-fold scores: thresholds are frozen on these, never on held-out clips
     states = []
     for k in range(a.folds):
@@ -144,7 +198,8 @@ def main():
                 'oof_tags_60': sum(v >= .6 for v in vals), 'oof_tags_70': sum(v >= .7 for v in vals)}, step=a.folds * a.epochs)
     charts.finish()
     # the teacher is the average of the fold models; each was fit without one fold of groups
-    torch.save({"states": states, "vocab": vocab, "dim": X.shape[1], "kind": a.feats}, os.path.join(a.out, "teacher.pt"))
+    torch.save({"states": states, "vocab": vocab, "dim": X.shape[1], "kind": a.feats,
+                "mu": None if mu is None else torch.from_numpy(mu), "sd": None if sd is None else torch.from_numpy(sd)}, os.path.join(a.out, "teacher.pt"))
     json.dump(thr, open(os.path.join(a.out, "thresholds.json"), "w"), indent=1)
     json.dump(rep, open(os.path.join(a.out, "val.json"), "w"), indent=1)
     print(f"{len(thr)} tags with a frozen threshold", flush=True)
