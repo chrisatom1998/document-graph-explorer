@@ -130,8 +130,12 @@ describe('trained tagger display', () => {
     const shown = confidentSoundSummary(track(4, { 'cat:crash cymbal': threshold('cat:crash cymbal') }, heads));
     expect(shown.filter(s => s.dimension === 'effect').map(s => s.label)).toEqual(['crash cymbal']);
     expect(shown.find(s => s.label === 'crash cymbal')!.scores).toMatchObject([{ model: TAGGER_SCORE }]);
-    // Past 30 s the tagger has no full-song evidence; the head decides again.
-    expect(effects(track(40, { 'cat:crash cymbal': .01 }, heads))).toEqual(['crash cymbal']);
+    // A real recording over 10 s has several windows. Up to 30 s the tagger still decides; past 30 s it has no
+    // full-song evidence and hands the tag back to the head (`long: detectors, afterSeconds: 30`).
+    const windows = (seconds: number): MusicAnalysis => ({ ...track(seconds, {}, heads),
+      tagger: { revision: TAGGER_REVISION, windows: 3, scores: { 'cat:crash cymbal': .01 }, windowScores: { 'cat:crash cymbal': [.01, .01, .01] } } });
+    expect(effects(windows(30))).toEqual([]);
+    expect(effects(windows(40))).toEqual(['crash cymbal']);
   });
   it('never overrides what the listener confirmed or rejected', () => {
     const a = track(30, { drums: .01, piano: .99 });
