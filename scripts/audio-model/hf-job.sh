@@ -273,6 +273,8 @@ echo "training budget ${HOURS} h"
 if [ -n "${SOFT_LABELS:-}" ]; then EXTRA+=(--soft /tmp/soft-labels.json); fi
 if [ -n "${ABSENT_FIX:-}" ]; then EXTRA+=(--absent-fix /tmp/absent-fix.json); fi
 if [ "${ROUND12:-0}" = 1 ]; then EXTRA+=(--merge $S/round12/round12.json --rare-tags "$RARE_TAGS"); fi
+# DJ_RARE=<tag>,<tag>,... (without ROUND12): oversample windows with these app tags present RARE_REPEAT times, beside train.py's defaults.
+if [ "${ROUND12:-0}" != 1 ] && [ -n "${DJ_RARE:-}" ]; then EXTRA+=(--rare-tags "bass,organ,cello,trumpet,violin,saxophone,$DJ_RARE"); fi
 if [ -n "$TRAIN_DROP" ]; then EXTRA+=(--drop "$TRAIN_DROP"); fi
 # Recall push: RECALL_TAGS=<tag>,... oversamples those tags' present windows RARE_REPEAT times (with train.py's default rare
 # classes) and weighs their present labels POS_WEIGHT times in the loss, so tags that miss real sounds fire more often.
