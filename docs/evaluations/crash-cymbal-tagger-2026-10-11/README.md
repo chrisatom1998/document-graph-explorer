@@ -5,7 +5,7 @@ The app showed **crash cymbal** from the clean CLAP head (`learned.json`, cutoff
 ## How it was measured
 
 - Clips: the 4,884 clips of the FSD50K **eval** split (`cmjatom/dge-tagger-data`, `fsdprep/eval-fsd50k.json`), decoded from the original 44.1 kHz files; 20 are labelled crash cymbal, 4,864 are not. Neither the tagger nor the clean heads were trained on eval clips.
-- Code path: the same chain the app runs (CLAP 10 s windows and heads, one-shot heads, prompt selection, tagger windows, then `confidentSoundSummary`), replayed by `scripts/eval-tag.ts` (PR #235) with the app's model files.
+- Code path: the same chain the app runs (CLAP 10 s windows and heads, one-shot heads, prompt selection, tagger windows, then `confidentSoundSummary`), replayed by `scripts/eval-tag.ts` with the app's model files. That script lands with PR #235 (branch `claude/tag-decision-map`); until that merges, run it from that branch.
 - Halves: clips are split by uploader into a **pick** half (13 crash clips) and a **check** half (7). The cutoff is chosen on the pick half and judged on the check half.
 - Precision / recall are over the whole eval split unless a half is named. FA = false alarms as a share of the 4,864 non-crash clips.
 
@@ -43,4 +43,13 @@ Past 30 s the tagger has no full-song evidence, so the entry hands crash cymbal 
 - 20 positive clips is a small set: 7 on the check half. The pass is measured, the margin is thin.
 - #234 measured the clean head at 0.96 / 0.68 on a different free-tag set, with CLAP embeddings computed outside the app. On the app's own path the same head at 0.994 finds almost nothing here, so the cutoff looks fitted to embeddings that differ slightly from the app's.
 
-Reports: `fsd50k-main2.json`, `crash-before.json`, `crash-after.json` from `scripts/eval-tag.ts` (not committed; regenerate with the command in that script's header).
+## Reproducing
+
+The JSON reports are not committed (they embed clip ids and scores for a private test set). To regenerate, with `HF_TOKEN` set and `eval-fsd50k.json` plus the original FSD50K eval wavs from `cmjatom/dge-tagger-data` (`fsdprep/`) downloaded:
+
+```
+npx vite-node scripts/eval-tag.ts --tag "crash cymbal" --watch cymbal,drums,percussion,hi-hat,snare,kick \
+  --set <dir>/eval-fsd50k.json --audio-dir <dir>/fsd50k-wav --cache <cache-dir> --out crash-after.json
+```
+
+Add `--policy <main's taggerPolicy.json>` for the "before" row. The first run scores every clip (CLAP and tagger, about an hour on 2 CPU cores); later runs replay from the cache.
