@@ -44,6 +44,10 @@
     ]
   },
   "pin": {
+    "all-tags": [
+      "cat:foley",
+      "cat:turntable"
+    ],
     "all-tags-run9": [
       "cat:fm synth"
     ],
@@ -67,5 +71,5 @@
   "license": "cc-by-nc-sa-4.0",
   "flavor": "cpu-xl",
   "timeout": "3h",
-  "attempt": 13
+  "attempt": 14
 }
