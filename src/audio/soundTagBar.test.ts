@@ -141,4 +141,10 @@ describe('the 50/50 shipping bar', () => {
     const a: MusicAnalysis = { version: 2, durationSeconds: 10, analyzedSeconds: 10, instruments: [], notes: [], tagger: { revision: TAGGER_REVISION, windows: 1, scores: { trumpet: .9 } } };
     expect(confidentSoundSummary(a).find(s => s.label === 'trumpet')).toBeUndefined();
   });
+
+  it('hides a tagger downlifter (falling) score under the 0.8101 cutoff and keeps one above it', () => {
+    const at = (falling: number): MusicAnalysis => ({ version: 2, durationSeconds: 10, analyzedSeconds: 10, instruments: [], notes: [], tagger: { revision: TAGGER_REVISION, windows: 1, scores: { 'cat:falling': falling } } });
+    expect(confidentSoundSummary(at(.7)).find(s => s.label === 'falling')).toBeUndefined();
+    expect(confidentSoundSummary(at(.9)).find(s => s.label === 'falling')).toBeDefined();
+  });
 });
