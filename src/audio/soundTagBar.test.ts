@@ -136,4 +136,9 @@ describe('the 50/50 shipping bar', () => {
     expect(trumpet).toMatchObject({ origin: 'model estimate', tier: 'likely', scores: [{ model: 'Trained tagger score' }] });
     expect(trumpet?.maybe).toBeUndefined();
   });
+
+  it('hides a trumpet score just under the 0.9486 cutoff on a full recording', () => {
+    const a: MusicAnalysis = { version: 2, durationSeconds: 10, analyzedSeconds: 10, instruments: [], notes: [], tagger: { revision: TAGGER_REVISION, windows: 1, scores: { trumpet: .9 } } };
+    expect(confidentSoundSummary(a).find(s => s.label === 'trumpet')).toBeUndefined();
+  });
 });
