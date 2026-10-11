@@ -409,7 +409,7 @@
   "cat:flute": "all-tags-recall1",
   "cat:fm synth": "all-tags-run9",
   "cat:foghorn bass": "all-tags",
-  "cat:foley": "all-tags-run10",
+  "cat:foley": "all-tags",
   "cat:foley hit": "all-tags",
   "cat:glassy": "all-tags",
   "cat:gliding": "all-tags",
@@ -504,7 +504,7 @@
   "cat:trombone": "all-tags",
   "cat:trumpet": "all-tags",
   "cat:tuba": "all-tags",
-  "cat:turntable": "all-tags-run5",
+  "cat:turntable": "all-tags",
   "cat:vibraphone": "all-tags-recall1",
   "cat:vinyl crackle": "all-tags",
   "cat:vinyl scratch": "all-tags",
@@ -555,7 +555,7 @@
   "cat:vocal harmony": "all-tags-run9"
  },
  "sha256": {
-  "model.onnx": "45ae8151d6e3ae80203514ab93ecb45462b4a2b94dee1285462134b98827b06b"
+  "model.onnx": "97e522a5386d196161b4ddf0ff8567e156eaae332db65aac6695c7889d815343"
  },
  "bytes": 505027133,
  "maxAbsErrorVsPyTorch": 1.9669532775878906e-06

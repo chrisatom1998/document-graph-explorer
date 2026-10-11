@@ -1,7 +1,7 @@
 {
  "version": 1,
  "revision": "all-tags-recall-2026-10-11-r1",
- "modelSha256": "45ae8151d6e3ae80203514ab93ecb45462b4a2b94dee1285462134b98827b06b",
+ "modelSha256": "97e522a5386d196161b4ddf0ff8567e156eaae332db65aac6695c7889d815343",
  "input": {
   "name": "samples32k",
   "output": "scores",
