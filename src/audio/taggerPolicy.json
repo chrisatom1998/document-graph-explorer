@@ -297,7 +297,7 @@
    "decides": [
     "bird ambience"
    ],
-   "tested": true
+   "tested": false
   },
   {
    "output": "cat:rain ambience",
