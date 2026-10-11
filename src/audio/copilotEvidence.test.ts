@@ -150,13 +150,21 @@ describe('effect labels merged into sources', () => {
       expect(copilotEvidence(n, 0)!.estimates).toEqual([]);
     }
   });
-  it('respects an explicit empty correction snapshot', () => {
+  it.each(['foley', 'foley hit'])('respects an explicit empty correction snapshot for %s', label => {
     const n = foley();
-    n.audio!.instruments = [{ label: 'foley', score: .8, status: 'likely' }];
+    n.audio!.instruments = [{ label, score: .8, status: 'likely' }];
     n.audio!.soundProfile!.djTags!.push({ group: 'source', label: 'foley', score: .8, model: 'Trained head' });
     n.audio!.confirmedDjTags = { source: [], production: [], character: [] };
     expect(copilotEvidence(n, 0)!.estimates).toEqual([]);
     expect(copilotEvidence(n, 0)!.confirmedTags).toEqual([]);
+  });
+  it('normalizes and deduplicates a persisted instrument alias with source evidence', () => {
+    const n = foley();
+    n.audio!.soundProfile!.djTags = [{ group: 'source', label: 'foley', score: .8, model: 'Trained head' }];
+    n.audio!.instruments = [{ label: 'foley hit', score: .95, status: 'likely' }, { label: 'foley', score: .9, status: 'likely' }];
+    expect(copilotEvidence(n, 0)!.estimates).toEqual([{ label: 'foley', score: .8 }]);
+    n.audio!.soundReviews = [{ dimension: 'source', labelId: 'foley', decision: 'rejected', scope: 'track', at: '2026-10-11T00:00:00Z', evidenceRunId: 'old' }];
+    expect(copilotEvidence(n, 0)!.estimates).toEqual([]);
   });
   it('routes effect-side confirmation to the surviving source', () => {
     const n = foley();

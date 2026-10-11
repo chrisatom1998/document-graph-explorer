@@ -50,13 +50,21 @@ export function copilotEvidence(node: DocNode, index: number): CopilotSample | n
     if (sourceSuppressed(tag.label)) continue;
     if (outranksDjTag(tag,sources.get(tag.label))) sources.set(tag.label,tag);
   }
+  const otherInstruments = a.instruments.filter(raw => {
+    const merged = mergedDjLabel('production',raw.label);
+    const label = merged.group === 'source' ? merged.label : raw.label;
+    if (!movedSources.has(label)) return true;
+    const tag: DjTag = { group: 'source', label, score: raw.score };
+    if (!sourceSuppressed(label) && outranksDjTag(tag,sources.get(label))) sources.set(label,tag);
+    return false;
+  });
   return {
     ref: `Sample ${index + 1}`, durationSeconds: a.durationSeconds, analyzedSeconds: a.analyzedSeconds,
     preview: a.stage === 'preview', tempo: a.tempo ? { bpm: a.tempo.bpm, confidence: a.tempo.confidence } : null,
     key: a.key ? { name: keyName(a.key), strength: a.key.strength } : null,
     confirmedTags: a.confirmedDjTags === undefined && !confirmed.length ? null : [...new Set([...(instruments??[]),...confirmed])],
     confirmedInstruments: instruments ?? null,
-    estimates: [...sources.values(), ...a.instruments.filter(t=>!sourceSuppressed(t.label)), ...projected.filter((t): t is typeof t & {score:number}=>t.group!=='source'&&t.source==='estimated'&&t.score!==undefined)].filter(t => labels.has(t.label)).slice(0, 30).map(t => ({ label: t.label, score: t.score })),
+    estimates: [...sources.values(), ...otherInstruments, ...projected.filter((t): t is typeof t & {score:number}=>t.group!=='source'&&t.source==='estimated'&&t.score!==undefined)].filter(t => labels.has(t.label)).slice(0, 30).map(t => ({ label: t.label, score: t.score })),
     filenameHints: { bpm: hints.tempo?.value ?? null, key: hints.key?.displayName ?? null },
   };
 }
