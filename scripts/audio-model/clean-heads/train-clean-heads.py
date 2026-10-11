@@ -156,7 +156,7 @@ def main():
         row['clean'] = {**pr(judge(w, b, best[1])), 'threshold': best[1], 'outOfFoldMinPR': round(best[0], 3)}
         for side in ('old', 'clean'):
             r = row.get(side)
-            if r: r['passes'] = {k: r['precision'] >= p_ and r['recall'] >= r_ for k, (p_, r_) in BARS.items()}
+            if r: r['passes'] = {k: bool(r['precision'] >= p_ and r['recall'] >= r_) for k, (p_, r_) in BARS.items()}
         report.append(row)
         heads.append({'group': old.get(tag, {}).get('group', 'source'), 'label': tag, 'weights': [round(float(v), 6) for v in w],
                       'bias': round(b, 6), 'threshold': round(best[1], 4)})
@@ -169,8 +169,8 @@ def main():
     for name, body in (('report.json', doc), ('heads.json', {'encoder': shipped['encoder'], 'heads': heads})):
         if os.environ.get('LOCAL_OUT'):   # container run: keep results in a local folder, upload nothing
             os.makedirs(os.environ['LOCAL_OUT'], exist_ok=True)
-            json.dump(body, open(os.path.join(os.environ['LOCAL_OUT'], name), 'w'), indent=1); continue
-        api.upload_file(path_or_fileobj=json.dumps(body, indent=1).encode(), path_in_repo=f'{OUT}/{name}', repo_id=EVAL_RUNS, repo_type='dataset')
+            json.dump(body, open(os.path.join(os.environ['LOCAL_OUT'], name), 'w'), indent=1, default=lambda o: o.item()); continue
+        api.upload_file(path_or_fileobj=json.dumps(body, indent=1, default=lambda o: o.item()).encode(), path_in_repo=f'{OUT}/{name}', repo_id=EVAL_RUNS, repo_type='dataset')
     print('done', round(time.time() - t0), 's', flush=True)
 
 
