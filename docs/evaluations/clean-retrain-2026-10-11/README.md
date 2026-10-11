@@ -2,7 +2,8 @@
 
 The 28 CLAP detectors in `public/sound-model/learned.json` for FSD50K-mapped sounds were trained on Chris's Mac by
 `scripts/train-with-extras.py`, which read FSD50K **eval** (a judge set) and refit each head on train+test. This change
-refits them in the cloud from training clips only and swaps in the 12 that pass a fair test on clips they never saw.
+refits them in the cloud from training clips only. PR #232 swapped in the 12 that passed a fair test on clips they never saw;
+8 remain after crash cymbal, vocal laugh, whisper and whoosh were reverted because they failed on the app's own fingerprints.
 
 **All numbers are new scores on the rebuilt test sets and are not comparable with the old scoreboard.**
 
@@ -25,8 +26,15 @@ How:
 - Heads that fail keep their old weights and are marked **unverified** (they still carry the FSD50K eval leak).
 - Old FSD50K eval numbers are inflated: those heads trained on those clips.
 
-Swapped: crash cymbal, crowd ambience, finger snap, harmonica, harp, snare, tabla, trumpet, vinyl scratch, vocal
-laugh, whisper, whoosh. Finger snap and trumpet are decided by the tagger on long recordings (`taggerPolicy.json`),
+**Update after merge: 4 heads reverted.** These judges used CLAP fingerprints from the Python fp32 model. The app
+computes them with the q8 transformers.js model (`scripts/embed-clap.mjs`), and the two differ (cosine median 0.93 on
+380 clips). On the app's real path (`reports/scoreboard/app-clap.json` at 2b12ceb), crash cymbal (FSD50K 0.18/0.10),
+vocal laugh (0.58/0.71), whisper (0.32/0.83) and whoosh (0.56/0.88) failed, so they went back to their old weights.
+Crash cymbal's 0.994 cutoff caught 58 of 84 sample positives on Python fingerprints but 7 on the app's. Future CLAP
+heads must be judged, and their cutoffs picked, on the app's own fingerprints.
+
+Swapped and kept: crowd ambience, finger snap, harmonica, harp, snare, tabla, trumpet, vinyl scratch (crowd ambience,
+harmonica, harp and snare pass 60/30 on the app path). Reverted: crash cymbal, vocal laugh, whisper, whoosh. Finger snap and trumpet are decided by the tagger on long recordings (`taggerPolicy.json`),
 so their swap mostly removes leaked weights.
 
 No regression on the app path (scoreboard `latest.json`, main c870cfe): snare, trumpet and vinyl scratch pass 60/30

@@ -40,8 +40,8 @@ const PROMOTED: [label: string, threshold: number, precision: number, recall: nu
  * with 5+ positives, with the cutoff chosen on one half of the clips and judged on the other, both ways. Some of these
  * sounds have no free-tag-set positives, so FSD50K eval is their only scored set. Scores, set counts and a weight
  * checksum are in docs/evaluations/clean-retrain-2026-10-11/report.json. */
-const CLEAN_RETRAINED = ['crash cymbal', 'crowd ambience', 'finger snap', 'harmonica', 'harp', 'snare', 'tabla', 'trumpet',
-  'vinyl scratch', 'vocal laugh', 'whisper', 'whoosh'];
+// Crash cymbal, vocal laugh, whisper and whoosh were swapped too, then reverted: they failed on the app's own (q8) fingerprints.
+const CLEAN_RETRAINED = ['crowd ambience', 'finger snap', 'harmonica', 'harp', 'snare', 'tabla', 'trumpet', 'vinyl scratch'];
 type CleanSet = { p: number; r: number; positives: number; negatives: number; fp: number };
 type CleanHead = { label: string; threshold: number; coefficientDigest: string; fairPass60_30: boolean; countedSets: string[]; sets: Record<string, CleanSet> };
 const cleanHeads = (): CleanHead[] =>
