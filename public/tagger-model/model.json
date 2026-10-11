@@ -276,7 +276,7 @@
   "name": "scores",
   "activation": "sigmoid"
  },
- "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
+ "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
  "runs": [
   "all-tags",
   "all-tags-run5",
@@ -284,7 +284,8 @@
   "all-tags-run8",
   "all-tags-run9",
   "all-tags-run11",
-  "all-tags-run10"
+  "all-tags-run10",
+  "all-tags-recall1"
  ],
  "outputRun": {
   "accordion": "all-tags",
@@ -355,7 +356,7 @@
   "cat:air horn": "all-tags",
   "cat:airy": "all-tags",
   "cat:animal sound": "all-tags-run7",
-  "cat:atmospheric pad": "all-tags",
+  "cat:atmospheric pad": "all-tags-recall1",
   "cat:bass growl": "all-tags",
   "cat:bass guitar": "all-tags-run11",
   "cat:bass hit": "all-tags",
@@ -394,7 +395,7 @@
   "cat:downlifter": "all-tags",
   "cat:drum fill": "all-tags",
   "cat:drum loop": "all-tags",
-  "cat:drums": "all-tags",
+  "cat:drums": "all-tags-recall1",
   "cat:dry": "all-tags",
   "cat:echoing": "all-tags",
   "cat:electric guitar": "all-tags",
@@ -403,12 +404,12 @@
   "cat:falling": "all-tags-run10",
   "cat:filter sweep": "all-tags",
   "cat:filtered": "all-tags",
-  "cat:finger snap": "all-tags",
+  "cat:finger snap": "all-tags-recall1",
   "cat:flanged": "all-tags",
-  "cat:flute": "all-tags",
+  "cat:flute": "all-tags-recall1",
   "cat:fm synth": "all-tags-run9",
   "cat:foghorn bass": "all-tags",
-  "cat:foley": "all-tags",
+  "cat:foley": "all-tags-run10",
   "cat:foley hit": "all-tags",
   "cat:glassy": "all-tags",
   "cat:gliding": "all-tags",
@@ -416,7 +417,7 @@
   "cat:glockenspiel": "all-tags-run10",
   "cat:gong": "all-tags",
   "cat:gritty": "all-tags",
-  "cat:guitar": "all-tags",
+  "cat:guitar": "all-tags-recall1",
   "cat:hand percussion": "all-tags",
   "cat:harmonica": "all-tags",
   "cat:harp": "all-tags",
@@ -431,7 +432,7 @@
   "cat:laser": "all-tags",
   "cat:machine ambience": "all-tags-run11",
   "cat:mallet instrument": "all-tags",
-  "cat:marimba": "all-tags",
+  "cat:marimba": "all-tags-recall1",
   "cat:metallic": "all-tags",
   "cat:nasal": "all-tags",
   "cat:noise": "all-tags",
@@ -465,7 +466,7 @@
   "cat:saxophone": "all-tags",
   "cat:shaker": "all-tags",
   "cat:singing bowl": "all-tags",
-  "cat:siren": "all-tags",
+  "cat:siren": "all-tags-recall1",
   "cat:sitar": "all-tags",
   "cat:smooth": "all-tags",
   "cat:snare": "all-tags",
@@ -503,12 +504,12 @@
   "cat:trombone": "all-tags",
   "cat:trumpet": "all-tags",
   "cat:tuba": "all-tags",
-  "cat:turntable": "all-tags",
-  "cat:vibraphone": "all-tags",
+  "cat:turntable": "all-tags-run5",
+  "cat:vibraphone": "all-tags-recall1",
   "cat:vinyl crackle": "all-tags",
   "cat:vinyl scratch": "all-tags",
   "cat:viola": "all-tags",
-  "cat:violin / fiddle": "all-tags",
+  "cat:violin / fiddle": "all-tags-recall1",
   "cat:vocal breath": "all-tags",
   "cat:vocal chant": "all-tags",
   "cat:vocal chops": "all-tags",
@@ -554,8 +555,8 @@
   "cat:vocal harmony": "all-tags-run9"
  },
  "sha256": {
-  "model.onnx": "3a1af0173416dad714e9cab281cea662d5badafe4f68f866f8464c8ca1a56d46"
+  "model.onnx": "45ae8151d6e3ae80203514ab93ecb45462b4a2b94dee1285462134b98827b06b"
  },
- "bytes": 436078009,
+ "bytes": 505027133,
  "maxAbsErrorVsPyTorch": 1.9669532775878906e-06
 }
