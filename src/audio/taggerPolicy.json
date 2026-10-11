@@ -233,7 +233,7 @@
    "output": "cat:falling",
    "label": "falling",
    "dimension": "character",
-   "threshold": 0.5795,
+   "threshold": 0.8101,
    "decides": [
     "falling"
    ],
