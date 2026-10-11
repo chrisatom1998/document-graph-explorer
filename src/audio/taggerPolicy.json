@@ -152,7 +152,7 @@
    "output": "cat:percussion",
    "label": "percussion",
    "dimension": "source",
-   "threshold": 0.457,
+   "threshold": 0.249,
    "decides": [
     "percussion"
    ],
