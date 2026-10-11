@@ -24,6 +24,14 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'source:turntable': { group: 'production', label: 'vinyl scratch' },
   'production:vocal harmony': { group: 'production', label: 'choir' },
   'production:acid bass': { group: 'production', label: 'acid synth' },
+  // Seven more look-alikes Chris picked on 2026-10-11 ("Obvious 7", reports/dj-tag-review-2026-10-10/held-merges-for-chris.md).
+  'production:closed hi-hat': { group: 'production', label: 'hi-hat' },
+  'production:noise sweep': { group: 'production', label: 'filter sweep' },
+  'production:stutter effect': { group: 'production', label: 'glitch effect' },
+  'production:synth drone': { group: 'production', label: 'ambient drone' },
+  'production:synth sequence': { group: 'production', label: 'synth arpeggio' },
+  'production:reverse impact': { group: 'production', label: 'reverse effect' },
+  'character:saturated': { group: 'character', label: 'distorted' },
 };
 export const mergedDjLabel = (group: DjGroup, label: string): { group: DjGroup; label: string } => MERGED_DJ_LABELS[`${group}:${label}`] ?? { group, label };
 /** Labels people can pick: the catalog minus the merged names. */
