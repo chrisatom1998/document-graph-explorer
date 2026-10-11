@@ -144,6 +144,7 @@ describe('effect labels merged into sources', () => {
   it.each(['rejected', 'uncertain'] as const)('does not revive a %s source through its effect alias', decision => {
     for (const [dimension, labelId] of [['source','foley'], ['effect','foley hit']] as const) {
       const n = foley();
+      n.audio!.instruments = [{ label: 'foley', score: .8, status: 'likely' }];
       n.audio!.soundProfile!.djTags!.push({ group: 'source', label: 'foley', score: .8, model: 'Trained head' });
       n.audio!.soundReviews = [{ dimension, labelId, decision, scope: 'track', at: '2026-10-11T00:00:00Z', evidenceRunId: 'old' }];
       expect(copilotEvidence(n, 0)!.estimates).toEqual([]);
@@ -151,6 +152,7 @@ describe('effect labels merged into sources', () => {
   });
   it('respects an explicit empty correction snapshot', () => {
     const n = foley();
+    n.audio!.instruments = [{ label: 'foley', score: .8, status: 'likely' }];
     n.audio!.soundProfile!.djTags!.push({ group: 'source', label: 'foley', score: .8, model: 'Trained head' });
     n.audio!.confirmedDjTags = { source: [], production: [], character: [] };
     expect(copilotEvidence(n, 0)!.estimates).toEqual([]);

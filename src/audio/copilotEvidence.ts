@@ -40,12 +40,14 @@ export function copilotEvidence(node: DocNode, index: number): CopilotSample | n
   // Cross-dimension merges keep their stored identity in the review projection. Route them into the source
   // evidence here, retaining detector provenance when both cached names exist.
   const movedSources = new Set(Object.values(MERGED_DJ_LABELS).filter(t=>t.group==='source').map(t=>t.label));
+  const sourceSuppressed = (label: string) => movedSources.has(label)
+    && (instruments !== undefined || Boolean(latestSoundReview(a.soundReviews,'source',label)));
   const sources = new Map<string,DjTag>();
   for (const raw of a.soundProfile?.djTags ?? []) {
     const tag = { ...raw, ...mergedDjLabel(raw.group, raw.label) };
     if (tag.group !== 'source') continue;
     if (raw.group !== 'source' && !nonSource.some(t=>t.group===raw.group&&t.label===raw.label&&t.source==='estimated')) continue;
-    if (movedSources.has(tag.label) && (instruments !== undefined || latestSoundReview(a.soundReviews,'source',tag.label))) continue;
+    if (sourceSuppressed(tag.label)) continue;
     if (outranksDjTag(tag,sources.get(tag.label))) sources.set(tag.label,tag);
   }
   return {
@@ -54,7 +56,7 @@ export function copilotEvidence(node: DocNode, index: number): CopilotSample | n
     key: a.key ? { name: keyName(a.key), strength: a.key.strength } : null,
     confirmedTags: a.confirmedDjTags === undefined && !confirmed.length ? null : [...new Set([...(instruments??[]),...confirmed])],
     confirmedInstruments: instruments ?? null,
-    estimates: [...sources.values(), ...a.instruments, ...projected.filter((t): t is typeof t & {score:number}=>t.group!=='source'&&t.source==='estimated'&&t.score!==undefined)].filter(t => labels.has(t.label)).slice(0, 30).map(t => ({ label: t.label, score: t.score })),
+    estimates: [...sources.values(), ...a.instruments.filter(t=>!sourceSuppressed(t.label)), ...projected.filter((t): t is typeof t & {score:number}=>t.group!=='source'&&t.source==='estimated'&&t.score!==undefined)].filter(t => labels.has(t.label)).slice(0, 30).map(t => ({ label: t.label, score: t.score })),
     filenameHints: { bpm: hints.tempo?.value ?? null, key: hints.key?.displayName ?? null },
   };
 }
