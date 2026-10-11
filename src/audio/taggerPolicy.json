@@ -585,6 +585,20 @@
     "rule": "detectors",
     "afterSeconds": 30
    }
+  },
+  {
+   "output": "cat:voice",
+   "label": "voice",
+   "dimension": "source",
+   "threshold": 0.5717,
+   "decides": [
+    "voice"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
   }
  ]
 }
