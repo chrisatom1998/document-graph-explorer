@@ -7,14 +7,21 @@
  * A tag counts as "shown" when that display lists it, normal or faded "maybe".
  *
  * Not run: AST and Jamendo (the sound profile is built with those two marked incomplete). They never change a trained
- * head's or the tagger's decision; they only steer raw-CLAP source guesses, which the display shows as faded "possible"
- * at best. The one-shot event windows of long recordings (vinyl scratch only) are also skipped.
+ * head's or the tagger's decision: applyDjClassification and mergeDjTags filter raw-prompt tags by the AST source, but
+ * both end with applyReviewedDecisions, which puts every fired head back. They only steer raw-CLAP guesses, which the
+ * display shows as faded "possible" at best. The one-shot event windows of long recordings (vinyl scratch only) are also
+ * skipped, and the nine DSP-rule words (warm, airy, metallic, ...) are refused as targets because no model decides them.
+ *
+ * Audio: file-backed clips (--clips, or --set with --audio-dir) are decoded by FFmpeg straight to 48 kHz for CLAP and
+ * 32 kHz for the tagger, as the app does. A .npy set holds 32 kHz audio only, so its CLAP windows are upsampled from
+ * 32 kHz: anything above 16 kHz is missing, which can move hi-hat or cymbal fingerprints. The report says which it was.
  *
  * Labelled clips, either form:
  *   --clips <dir>            <dir>/yes/*.wav and <dir>/no/*.wav for one tag (--tag), or <dir>/<tag>/yes|no for several.
  *                            Group (for the pick/check halves) = text before the first "_" or "-" in the file name.
  *   --set <items.json>       A prepared set: {items:[{id, artist, labels:{"cat:kick":"present"|"absent"|1|0}}], offsets?}
- *                            with a flat or 2-D int16 32 kHz .npy next to it (the project's prep-cache format).
+ *                            with a flat or 2-D int16 32 kHz .npy next to it (the project's prep-cache format), or with
+ *                            --audio-dir <dir> holding the original files as <dir>/<id after the colon>.wav (--audio-ext).
  * Usage:
  *   npx vite-node scripts/eval-tag.ts --tag kick,clap --clips path/to/clips --cache .cache/eval --out report.json
  *   npx vite-node scripts/eval-tag.ts --tag "synth bass" --set eval-nsynth-test.json --score-only --shard 0/2
@@ -40,6 +47,7 @@ import { sanitizeShortClipModel, shortClipScores, SHORT_CLIP_MAX_SECONDS, type S
 import { instrumentWindowStarts } from '../src/audio/instrumentEvidence';
 import { TAGGER_POLICY, TAGGER_SAMPLE_RATE, TAGGER_WINDOW_SAMPLES, TaggerEvidence, taggerWindow, taggerWindowStarts, type TaggerTag } from '../src/audio/tagger';
 import type { MusicAnalysis } from '../src/audio/musicTypes';
+import { isRuleDescribedLabel } from '../src/audio/timbreDescriptions';
 
 // ---------- arguments ----------
 const argv = process.argv.slice(2);
@@ -49,6 +57,7 @@ const tags = (opt('tag') ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const watch = (opt('watch') ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const clipsDir = opt('clips'), setPath = opt('set');
 const cacheDir = opt('cache', '.cache/eval-tag')!;
+const audioDir = opt('audio-dir'), audioExt = opt('audio-ext', '.wav')!;
 const outPath = opt('out');
 const limit = Number(opt('limit', '0'));
 const [shardIndex, shardCount] = (opt('shard', '0/1')!).split('/').map(Number);
@@ -72,6 +81,7 @@ const shortRaw = JSON.parse(readFileSync(opt('short-clip') ?? join(PUBLIC, 'soun
 if (opt('policy')) { const alt = JSON.parse(readFileSync(opt('policy')!, 'utf8')) as typeof TAGGER_POLICY; if (alt.modelSha256 !== TAGGER_POLICY.modelSha256) throw new Error('--policy is for another tagger model'); TAGGER_POLICY.tags.length = 0; TAGGER_POLICY.tags.push(...alt.tags); }
 const learned = sanitizeLearnedDjModel(learnedRaw), shortClip = sanitizeShortClipModel(shortRaw);
 if (!learned || !shortClip) throw new Error('learned.json or short-clip.json did not pass the app\'s own sanitizer');
+if (shortClip.blocks.some(b => b !== 'clapRepeat')) throw new Error(`short-clip model uses blocks ${shortClip.blocks.join(', ')}; this evaluator only computes clapRepeat (the shipped model's one block)`);
 const taggerMeta = JSON.parse(readFileSync(join(PUBLIC, 'tagger-model/model.json'), 'utf8')) as { classes: string[]; sha256: Record<string, string> };
 const taggerClasses = taggerMeta.classes;
 const modelIdentity = { clap: soundManifest.sha256['onnx/audio_model_quantized.onnx'], tagger: taggerMeta.sha256['model.onnx'] };
@@ -84,6 +94,7 @@ function resolveTag(input: string): ResolvedTag {
   const label = raw[1]!.trim().toLowerCase();
   const hit = DJ_CATALOG.find(c => c.label === label && (!raw[0] || c.group === raw[0])) ?? DJ_CATALOG.find(c => c.aliases.includes(label));
   if (!hit) throw new Error(`Unknown tag "${input}"; use a label from src/audio/djCatalog.json`);
+  if (hit.group === 'character' && isRuleDescribedLabel(hit.label)) throw new Error(`"${hit.label}" comes from DSP rules (timbreDescriptions.ts), not from a model; this evaluator cannot measure it`);
   const m = MERGED_DJ_LABELS[`${hit.group}:${hit.label}`] ?? { group: hit.group as DjGroup, label: hit.label };
   const dimension = m.group === 'source' ? 'source' : m.group === 'production' ? 'effect' : 'character';
   return { input, group: hit.group as DjGroup, label: hit.label, dimension, displayKey: `${dimension}:${m.label}`, setKeys: [`cat:${hit.label}`, hit.label, `${hit.group}:${hit.label}`] };
@@ -91,7 +102,9 @@ function resolveTag(input: string): ResolvedTag {
 const targets = tags.map(resolveTag), watched = watch.map(resolveTag);
 
 // ---------- clips ----------
-interface Clip { id: string; group: string; labels: Record<string, 0 | 1>; read32: () => Float32Array; duration: number }
+/** `read(rate)` decodes the clip at that rate; a file-backed clip decodes straight from the file (as the app does), a .npy clip
+ * resamples its 32 kHz samples. */
+interface Clip { id: string; group: string; labels: Record<string, 0 | 1>; read: (rate: number) => Float32Array; fromFile: boolean }
 const fnv = (s: string) => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
 const half = (group: string) => fnv(group) % 2 === 0 ? 'pick' : 'check';
 function parseNpy(path: string): { offset: number; shape: number[]; dtype: string } {
@@ -133,10 +146,12 @@ function loadSet(path: string): { name: string; clips: Clip[] } {
       }
       return s;
     };
-    const duration = meta.offsets ? count / TAGGER_SAMPLE_RATE : -1;
-    return { id: item.id, group: item.artist || item.id, labels, read32, duration };
+    const file = audioDir ? join(audioDir, item.id.slice(item.id.indexOf(':') + 1) + audioExt) : undefined;
+    const read = file ? (rate: number) => decode(file, rate) : (rate: number) => rate === TAGGER_SAMPLE_RATE ? read32() : resample(read32(), rate);
+    return { id: item.id, group: item.artist || item.id, labels, read, fromFile: !!file };
   });
-  return { name: basename(path, '.json'), clips };
+  if (audioDir) { const missing = clips.filter(c => !existsSync(join(audioDir, c.id.slice(c.id.indexOf(':') + 1) + audioExt))).length; if (missing) console.log(`${missing} of ${clips.length} clips have no file under ${audioDir}; they are skipped`); }
+  return { name: basename(path, '.json') + (audioDir ? '-files' : ''), clips: audioDir ? clips.filter(c => existsSync(join(audioDir, c.id.slice(c.id.indexOf(':') + 1) + audioExt))) : clips };
 }
 const AUDIO = /\.(wav|mp3|ogg|flac|aiff?|m4a|opus|webm)$/i;
 function decode(path: string, rate: number): Float32Array {
@@ -150,7 +165,7 @@ function loadClips(dir: string): { name: string; clips: Clip[] } {
     const sub = join(folder, answer); if (!existsSync(sub)) continue;
     for (const file of readdirSync(sub).filter(f => AUDIO.test(f)).sort()) {
       const path = join(sub, file), id = path.slice(dir.length + 1);
-      const clip = byId.get(id) ?? { id, group: basename(file).split(/[_-]/)[0], labels: {}, read32: () => decode(path, TAGGER_SAMPLE_RATE), duration: -1 };
+      const clip = byId.get(id) ?? { id, group: basename(file).split(/[_-]/)[0], labels: {}, read: (rate: number) => decode(path, rate), fromFile: true };
       clip.labels[t.displayKey] = answer === 'yes' ? 1 : 0; byId.set(id, clip);
     }
   }
@@ -165,7 +180,7 @@ console.log(`${set.name}: ${clips.length} labelled clips (${unlabelled} without 
 
 // ---------- phase 1: model outputs per clip, cached ----------
 interface CachedWindow { start: number; end: number; embedding: number[] | null }
-interface CachedClip { id: string; group: string; duration: number; labels: Record<string, 0 | 1>; clap: CachedWindow[]; tagger: { start: number; end: number; scores: number[] }[] }
+interface CachedClip { id: string; group: string; duration: number; labels: Record<string, 0 | 1>; clap: CachedWindow[]; tagger: { start: number; end: number; scores: number[] }[]; clapAudio?: 'file' | 'resampled-32k' }
 mkdirSync(cacheDir, { recursive: true });
 const cachePrefix = `${set.name}.${modelIdentity.clap.slice(0, 8)}${clapBackend === 'wasm' ? '-wasm' : ''}-${modelIdentity.tagger.slice(0, 8)}.`;
 const cacheFile = (i: number, n: number) => join(cacheDir, `${cachePrefix}shard-${i}-of-${n}.jsonl`);
@@ -240,11 +255,13 @@ async function scorePhase() {
   const file = cacheFile(shardIndex, shardCount), started = Date.now(); let done = 0;
   for (const clip of todo) {
     try {
-      const pcm = clip.read32(); const duration = pcm.length / TAGGER_SAMPLE_RATE;
-      const rec: CachedClip = { id: clip.id, group: clip.group, duration, labels: clip.labels, clap: [], tagger: [] };
+      const pcm = clip.read(TAGGER_SAMPLE_RATE); const duration = pcm.length / TAGGER_SAMPLE_RATE;
+      const rec: CachedClip = { id: clip.id, group: clip.group, duration, labels: clip.labels, clap: [], tagger: [], clapAudio: clip.fromFile ? 'file' : 'resampled-32k' };
+      // The app decodes each CLAP window at 48 kHz from the source file; a .npy clip can only offer its 32 kHz samples.
+      const pcm48 = clip.read(48000);
       for (const start of instrumentWindowStarts(duration)) {
-        const end = Math.min(duration, start + 10), slice = pcm.subarray(Math.round(start * TAGGER_SAMPLE_RATE), Math.round(end * TAGGER_SAMPLE_RATE));
-        const samples48 = resample(slice, 48000);
+        const end = Math.min(duration, start + 10);
+        const samples48 = pcm48.subarray(Math.round(start * 48000), Math.min(pcm48.length, Math.round(end * 48000)));
         rec.clap.push({ start, end, embedding: audible(samples48) ? await models.embed(samples48) : null });
       }
       for (const start of taggerWindowStarts(duration)) {
@@ -336,10 +353,13 @@ function pickCutoff(points: { cutoff: number; pick: ReturnType<typeof metrics>; 
 }
 function decidePhase() {
   const cached = readCache();
-  const records = clips.map(c => cached.get(c.id)).filter((r): r is CachedClip => !!r);
+  // The cache holds model outputs only as far as the decision is concerned: labels and groups come from the current set.
+  const records = clips.map(c => { const r = cached.get(c.id); return r ? { ...r, labels: c.labels, group: c.group } : undefined; }).filter((r): r is CachedClip => !!r);
   console.log(`deciding on ${records.length} scored clips (${clips.length - records.length} not scored yet)`);
   const keys = [...new Set([...targets, ...watched].map(t => t.displayKey))];
-  const report: Record<string, unknown> = { set: set.name, clips: records.length, models: modelIdentity, taggerRevision: TAGGER_POLICY.revision, learnedRevision: learned!.revision, shortClipRevision: shortClip!.revision,
+  const clapAudio = [...new Set(records.map(r => r.clapAudio ?? 'resampled-32k'))];
+  console.log(`CLAP audio: ${clapAudio.join(' and ')}${clapAudio.includes('resampled-32k') ? ' (upsampled from 32 kHz: content above 16 kHz is missing, an approximation of the app)' : ' (decoded at 48 kHz from the files, as the app does)'}`);
+  const report: Record<string, unknown> = { set: set.name, clips: records.length, models: modelIdentity, clapBackend, clapAudio, taggerRevision: TAGGER_POLICY.revision, learnedRevision: learned!.revision, shortClipRevision: shortClip!.revision,
     halves: 'groups (uploader / artist / file prefix) hashed into pick and check', current: {}, candidates: {} };
   const current = evaluate(records, {}, keys);
   (report.current as Record<string, unknown>) = current.table;
