@@ -29,7 +29,7 @@
    "label": "crash cymbal",
    "threshold": 0.994,
    "cutoff": "precision-first",
-   "weightsChecksum": 928.735,
+   "coefficientDigest": "434a13b99e1b42633245828f3243da42a20f83f048b6307217c587b2d9330b75",
    "countedSets": [
     "free-tag-set-test",
     "fsd50k-eval"
@@ -56,7 +56,7 @@
    "label": "crowd ambience",
    "threshold": 0.985,
    "cutoff": "precision-first",
-   "weightsChecksum": -8708.001,
+   "coefficientDigest": "5c2704aa80af816c1fd3c2643c945335a0bb2c87228e5d32fc65a837918eb339",
    "countedSets": [
     "free-tag-set-test",
     "fsd50k-eval"
@@ -83,7 +83,7 @@
    "label": "finger snap",
    "threshold": 0.958,
    "cutoff": "precision-first",
-   "weightsChecksum": -2607.338,
+   "coefficientDigest": "1e2fa430b65477fb8e379a1fed26e27cc2b7994529d6b70c2fa900a8526d2225",
    "countedSets": [
     "free-tag-set-test",
     "fsd50k-eval"
@@ -110,7 +110,7 @@
    "label": "harmonica",
    "threshold": 0.752,
    "cutoff": "precision-first",
-   "weightsChecksum": 6847.609,
+   "coefficientDigest": "f688b68b9b244ac7deb61cefcd35ee2e49173d290b83d9c860cc993a7ee3554d",
    "countedSets": [
     "fsd50k-eval"
    ],
@@ -129,7 +129,7 @@
    "label": "harp",
    "threshold": 0.846,
    "cutoff": "precision-first",
-   "weightsChecksum": 541.218,
+   "coefficientDigest": "7ef661d32f61093764fddd62348f290c679004cb8798003ae36c636a16d8535a",
    "countedSets": [
     "fsd50k-eval"
    ],
@@ -148,7 +148,7 @@
    "label": "snare",
    "threshold": 0.856,
    "cutoff": "precision-first",
-   "weightsChecksum": -1083.627,
+   "coefficientDigest": "04ff081aa99497485e8b3817efa1506930cad6225bb63698af34674de4f02b0c",
    "countedSets": [
     "free-tag-set-test",
     "fsd50k-eval"
@@ -189,7 +189,7 @@
    "label": "tabla",
    "threshold": 0.732,
    "cutoff": "precision-first",
-   "weightsChecksum": 5920.939,
+   "coefficientDigest": "031c20eadc684037bee3dc3610a211578ec720c98b58083d5fee808b878eb1b8",
    "countedSets": [
     "fsd50k-eval"
    ],
@@ -208,7 +208,7 @@
    "label": "trumpet",
    "threshold": 0.957,
    "cutoff": "precision-first",
-   "weightsChecksum": 8258.777,
+   "coefficientDigest": "fe198965e07cc5ec56ce164dda8c6e08ec972773ba71371bf98a6e2f56026eb9",
    "countedSets": [
     "free-tag-set-test",
     "fsd50k-eval"
@@ -235,7 +235,7 @@
    "label": "vinyl scratch",
    "threshold": 0.595,
    "cutoff": "precision-first",
-   "weightsChecksum": -355.914,
+   "coefficientDigest": "6ccaa49f16b5ddd2c2a574ee62abad04992b9321f7f6c84f9ca96a3381b29aa1",
    "countedSets": [
     "fsd50k-eval"
    ],
@@ -254,7 +254,7 @@
    "label": "vocal laugh",
    "threshold": 0.674,
    "cutoff": "precision-first",
-   "weightsChecksum": -2640.314,
+   "coefficientDigest": "d9c720f2f912d25a8d9000a77530166f67768a6f8c88e21f1cad49485fb3e185",
    "countedSets": [
     "free-tag-set-test",
     "fsd50k-eval"
@@ -281,7 +281,7 @@
    "label": "whisper",
    "threshold": 0.787,
    "cutoff": "precision-first",
-   "weightsChecksum": 1701.537,
+   "coefficientDigest": "463c65dcbc4c39db978d74b90a3cce45634581f5a85519a1e7651cbc466842f9",
    "countedSets": [
     "fsd50k-eval"
    ],
@@ -300,7 +300,7 @@
    "label": "whoosh",
    "threshold": 0.71,
    "cutoff": "precision-first",
-   "weightsChecksum": -8675.186,
+   "coefficientDigest": "481ce863f10f8b13c3da09d9ddac470a19a97c69d7ed635c14572840f5ab2a12",
    "countedSets": [
     "fsd50k-eval"
    ],
@@ -2351,5 +2351,6 @@
    "oldThreshold": 0.941,
    "appPathToday": null
   }
- ]
+ ],
+ "coefficientDigestFormat": "sha256 of the big-endian float64 bias then weights, taken from the heads fair-judge.py evaluated"
 }

@@ -74,5 +74,5 @@ unverified until cloud training data covers sample packs and single notes.
 Bird ambience: the clean head passes the fair test (FSD50K 0.92/0.34, FTS 1.00/0.51), but the tagger the app uses
 today passes with more room on the same sets (FSD50K 0.785/0.42, FTS 1.00/0.68), so the tagger stays.
 
-`report.json` holds every set's counts, both halves of the fair test, and a weight checksum per swapped head that
-`src/audio/soundTagBar.test.ts` checks against `learned.json`.
+`report.json` holds every set's counts, both halves of the fair test, and a SHA-256 digest of each swapped head's bias
+and weights as `fair-judge.py` evaluated them. `src/audio/soundTagBar.test.ts` recomputes it from `learned.json`.

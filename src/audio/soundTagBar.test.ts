@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { confidentSoundSummary, SOUND_TAG_BAR } from './confidentSoundSummary';
@@ -42,7 +43,7 @@ const PROMOTED: [label: string, threshold: number, precision: number, recall: nu
 const CLEAN_RETRAINED = ['crash cymbal', 'crowd ambience', 'finger snap', 'harmonica', 'harp', 'snare', 'tabla', 'trumpet',
   'vinyl scratch', 'vocal laugh', 'whisper', 'whoosh'];
 type CleanSet = { p: number; r: number; positives: number; negatives: number; fp: number };
-type CleanHead = { label: string; threshold: number; weightsChecksum: number; fairPass60_30: boolean; countedSets: string[]; sets: Record<string, CleanSet> };
+type CleanHead = { label: string; threshold: number; coefficientDigest: string; fairPass60_30: boolean; countedSets: string[]; sets: Record<string, CleanSet> };
 const cleanHeads = (): CleanHead[] =>
   (JSON.parse(readFileSync('docs/evaluations/clean-retrain-2026-10-11/report.json', 'utf8')) as { heads: CleanHead[] }).heads;
 const RUNTIME_ELIGIBLE: [label: string, threshold: number, precision: number, recall: number][] = [
@@ -56,7 +57,7 @@ const RUNTIME_DROPPED = ['conga', 'gliding', 'tambourine'];
  * confirm the shipped head; glassy is a timbre rule word. They keep their current tier. */
 const STILL_MAYBE = ['bright', 'dark', 'glassy', 'percussive', 'pulsing', 'swelling', 'wobbling', 'noise sweep', 'filter sweep'];
 
-interface Head { label: string; threshold: number; weights: number[]; maybe?: boolean; oneShot?: boolean }
+interface Head { label: string; threshold: number; weights: number[]; bias: number; maybe?: boolean; oneShot?: boolean }
 const learned = (JSON.parse(readFileSync('public/sound-model/learned.json', 'utf8')) as { heads: Head[] }).heads;
 const head = (label: string) => learned.find(h => h.label === label)!;
 type Row = { label?: string; name?: string; threshold?: number | null; precision?: number | null; recall?: number | null };
@@ -88,7 +89,9 @@ describe('the 50/50 shipping bar', () => {
     const c = cleanHeads().find(r => r.label === label)!;
     expect(h.maybe).toBeUndefined();
     expect(h.threshold).toBeCloseTo(c.threshold, 4);
-    expect(h.weights.reduce((sum, w, i) => sum + (i + 1) * w, 0)).toBeCloseTo(c.weightsChecksum, 2);
+    const coefficients = new DataView(new ArrayBuffer(8 * (h.weights.length + 1)));
+    [h.bias, ...h.weights].forEach((v, i) => coefficients.setFloat64(8 * i, v));
+    expect(createHash('sha256').update(new Uint8Array(coefficients.buffer)).digest('hex')).toBe(c.coefficientDigest);
     expect(c.fairPass60_30).toBe(true);
     expect(c.countedSets.length).toBeGreaterThan(0);
     for (const set of c.countedSets) {
