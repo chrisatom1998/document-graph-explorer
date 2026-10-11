@@ -91,7 +91,7 @@ out.push(`The app has three detectors plus one fallback, and a display rule that
 3. **One-shot heads** (\`short-clip.json\`). Only for whole clips of at most ${SHORT_CLIP_MAX_SECONDS} s. On those clips the regular CLAP heads are switched off unless marked \`oneShot\` (vinyl scratch, impact, laser), and these ${shortClip.heads.length} heads decide instead.
 4. **Raw CLAP prompts** (\`prompts.json\`, picked by \`selectDjTags\`): cosine similarity to text prompts, compared within an axis (top prompt must beat its cutoff and lead the runner-up by a margin). The display shows such a tag only as a faded "possible" on clips longer than ${SHORT_CLIP_MAX_SECONDS} s when the similarity is at least 0.5, and never for a label that already has a tested detector (\`calibratedLabels.json\`) or that was measured as almost always wrong (\`unverifiedBlocked.json\`).
 
-Merged names (\`MERGED_DJ_LABELS\`) are folded at display time: a detector for \`closed hi-hat\` shows as **hi-hat**, \`bass hit\` / \`bass pluck\` / \`rubbery bass\` show as **synth bass**, \`turntable\` shows as **vinyl scratch**, and so on. The table lists those under the surviving name. Picker-hidden tags (\`DJ_HIDDEN_LABELS\`) still run and show on clips; they are just not listed until searched for. ${HIDDEN_UNTIL_TESTED.size} labels (${[...HIDDEN_UNTIL_TESTED].map(l => `\`${l}\``).join(', ')}) are hidden from every model until a detector passes real clips. Nine "feel" words (warm, airy, metallic, ...) come from DSP rules, never from a model.
+Merged names (\`MERGED_DJ_LABELS\`) are folded at display time: a detector for \`closed hi-hat\` shows as **hi-hat**, \`bass hit\` / \`bass pluck\` / \`rubbery bass\` show as **synth bass**, \`turntable\` shows as **vinyl scratch**, and so on. The table lists those under the surviving name. Picker-hidden tags (\`DJ_HIDDEN_LABELS\`) still run and show on clips; they are just not listed until searched for. ${HIDDEN_UNTIL_TESTED.size} labels (${[...HIDDEN_UNTIL_TESTED].map(l => `\`${l}\``).join(', ')}) are still scored by the tagger and the CLAP heads, but \`confidentSoundSummary\` drops them from the display (\`HIDDEN_UNTIL_TESTED\`) until a detector passes real clips. Nine "feel" words (warm, airy, metallic, ...) come from DSP rules, never from a model.
 
 Display floors: a tested score shows at 0.4 or more on recordings longer than ${SHORT_CLIP_MAX_SECONDS} s and 0.5 or more on one-shots; every head cutoff is at least 0.5, so in practice "head fired" means "tag shown". Tagger scores are rescaled so the cutoff reads as 0.5.
 `);
@@ -123,7 +123,8 @@ out.push(`
 `);
 const text = out.join('\n') + '\n';
 if (process.argv.includes('--check')) {
-  const current = readFileSync(OUT, 'utf8').replace(/\(main at `[^`]*`\)/, '(main at `x`)');
-  if (current !== text.replace(/\(main at `[^`]*`\)/, '(main at `x`)')) { console.error(`${OUT} is out of date; run npx vite-node scripts/tag-decision-map.ts`); process.exit(1); }
+  // Compare line endings and the commit token loosely: a Windows checkout may have CRLF, and the sha changes per merge.
+  const normalize = (s: string) => s.replace(/\r\n/g, '\n').replace(/\(main at `[^`]*`\)/, '(main at `x`)');
+  if (normalize(readFileSync(OUT, 'utf8')) !== normalize(text)) { console.error(`${OUT} is out of date; run npx vite-node scripts/tag-decision-map.ts`); process.exit(1); }
   console.log('docs/tag-decision-map.md is up to date');
 } else { writeFileSync(OUT, text); console.log(`wrote ${OUT}: ${rows.length} pickable tags`); }
