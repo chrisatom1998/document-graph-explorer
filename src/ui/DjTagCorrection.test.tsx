@@ -30,8 +30,16 @@ it('lists rarely used tags only when searched for, or when already picked', () =
   expect(screen.getByLabelText('kick')).toBeDefined();
   expect(screen.queryByLabelText('oboe')).toBeNull();
   expect(screen.queryByLabelText('rolling')).toBeNull();
-  expect(screen.getByLabelText('syncopated')).toBeDefined();
+  expect(screen.getByLabelText('staccato')).toBeDefined();
+  expect(screen.queryByLabelText('syncopated')).toBeNull();
   expect(screen.getByLabelText('cello')).toHaveProperty('checked',true);
   fireEvent.change(screen.getByRole('searchbox'),{target:{value:'oboe'}});
   expect(screen.getByLabelText('oboe')).toBeDefined();
+});
+it('finds a tag by the name it shows on screen', () => {
+  render(<DjTagCorrection node={{id:'clip', audio:{}} as unknown as DocNode}/>);
+  for (const shown of ['brass', 'wet', 'downlifter']) {
+    fireEvent.change(screen.getByRole('searchbox'),{target:{value:shown}});
+    expect(screen.getByLabelText(shown)).toBeDefined();
+  }
 });
