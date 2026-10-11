@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { otherModelGuessGroups, soundMatchLabels } from './soundMatchLabels';
 import { confirmedInstrumentList } from './instrumentEvidence';
-import { sanitizeMusicAnalysis } from './musicTypes';
+import { sanitizeMusicAnalysis, type MusicAnalysis } from './musicTypes';
 import { confidentSoundSummary, HIDDEN_UNTIL_TESTED } from './confidentSoundSummary';
 import { MERGED_DJ_LABELS, type DjGroup } from './djTags';
 
@@ -32,7 +32,28 @@ describe('merged label consumer regressions', () => {
           djTags: [{ group, label, score: .9, model: 'Trained head' }] },
       } });
       expect(labels.some(t => t.label === label)).toBe(false);
-      expect(labels.filter(t => t.label === merged.label)).toHaveLength(1);
+      expect(labels.filter(t => t.label === merged.label)).toHaveLength(HIDDEN_UNTIL_TESTED.has(merged.label) ? 0 : 1);
+    });
+  }
+  for (const [group, label, survivor] of [
+    ['production', 'reverse impact', 'reverse effect'],
+    ['character', 'saturated', 'distorted'],
+  ] as const) {
+    it(`hides scored ${label} estimates after merging, while keeping listener confirmations`, () => {
+      const audio: MusicAnalysis = { version: 2, durationSeconds: 4, analyzedSeconds: 4, instruments: [], notes: [],
+        soundProfile: { version: 1 as const, character: [], roles: [], models: [], disagreement: false,
+          djTags: [{ group, label, score: .9, model: 'Trained head' }] },
+      };
+      expect(confidentSoundSummary(audio)).toEqual([]);
+      const dimension = group === 'production' ? 'effect' as const : 'character' as const;
+      for (const labelId of [label, survivor]) {
+        const confirmed = { ...audio, soundReviews: [{ dimension, labelId, decision: 'confirmed' as const,
+          scope: 'track' as const, at: 'now', evidenceRunId: 'old' }] };
+        expect(confidentSoundSummary(confirmed)).toEqual([{ dimension, label: survivor, origin: 'confirmed by you' }]);
+        expect(soundMatchLabels({ title: 'recording.wav', audio: confirmed })).toEqual([
+          { group, label: survivor, origin: 'confirmed', weight: .85 },
+        ]);
+      }
     });
   }
   it('honors destination source suppression when an effect merges into a source', () => {

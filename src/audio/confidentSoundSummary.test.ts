@@ -1,5 +1,5 @@
 import { RULE_DESCRIBED_LABELS } from './timbreDescriptions';
-import {mergedDjLabel} from './djTags';
+import {MERGED_DJ_LABELS,mergedDjLabel} from './djTags';
 import {expect,it} from 'vitest';
 import {confidentSoundSummary,HIDDEN_UNTIL_TESTED,LIKELY_SOUND_CUTOFF,TRACK_SOUND_FLOOR} from './confidentSoundSummary';
 import {createRecognition,recordEvidence} from './recognition';
@@ -62,7 +62,7 @@ it('can display every catalog label once a trained head reports it',async()=>{
  }).map(c=>c.label);
  // The nine rule-described character words are never shown from a model (timbreDescriptions.ts); every other label can be,
  // merged-away labels under the name they merged into, and labels hidden until they pass real clips.
- expect(missing.sort()).toEqual([...RULE_DESCRIBED_LABELS,...HIDDEN_UNTIL_TESTED].sort());
+ expect(missing.sort()).toEqual([...RULE_DESCRIBED_LABELS,...HIDDEN_UNTIL_TESTED,...Object.entries(MERGED_DJ_LABELS).filter(([,m])=>HIDDEN_UNTIL_TESTED.has(m.label)).map(([key])=>key.split(':')[1])].sort());
 });
 it('shows merged look-alike tags once, under the kept name, and keeps the stronger entry',()=>{
  const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[
