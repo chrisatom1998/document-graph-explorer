@@ -1,5 +1,12 @@
 # Neighbour heads: few-shot example matching for thin tags (Oct 11 2026)
 
+> **Withdrawn (revision 111/112).** Both heads were taken back out of `learned.json` after the scoreboard rescored the
+> app at 6cbd8f0 on every clip. Vinyl crackle's head fired on 82 of 7,998 FSD50K clips without the tag (1.03%), just
+> over the 1% false-alarm cap. The app's CLAP prompt already passed vinyl crackle, so the head turned a pass into a fail.
+> Vocal shout gained recall on FSD50K (0.40 to 0.62) but lost precision (0.563 to 0.527) and still failed. Two misses
+> in this evaluation caused it: "today in the app" left out the CLAP prompt path, and the false-alarm cap was checked on
+> the judge half only. The `neighbours` code stays in the app, unused, for a later try.
+
 **Shipped:** two neighbour heads, for **vinyl crackle** and **vocal shout**, in `public/sound-model/learned.json`
 (`neighbours`). A clip gets the tag when its CLAP fingerprint (the app already computes it) sits closer to that tag's
 labelled training examples than to a shared bank of unrelated training sounds. No model was trained. Instrument
