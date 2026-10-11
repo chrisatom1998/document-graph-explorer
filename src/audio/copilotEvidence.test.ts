@@ -120,3 +120,48 @@ it('sends a cached acid bass estimate as acid synth, keeping the stronger alias 
         { group: 'production', label: 'acid synth', score: .6, model: 'Trained head' }] } } };
   expect(copilotEvidence(n, 0)!.estimates).toEqual([{ label: 'acid synth', score: .7 }]);
 });
+
+describe('effect labels merged into sources', () => {
+  const foley = (): DocNode => ({ ...node, audio: {
+    version: 2, durationSeconds: 10, analyzedSeconds: 5, instruments: [], notes: [],
+    soundProfile: { version: 1, models: [], character: [], roles: [], disagreement: false,
+      djTags: [{ group: 'production', label: 'foley hit', score: .95, model: 'Music CLAP' }] },
+  } });
+  it('projects cached effect estimates to the surviving source without mutating them', () => {
+    const n = foley(), before = structuredClone(n.audio);
+    const sample = copilotEvidence(n, 0)!;
+    expect(sample.estimates).toEqual([{ label: 'foley', score: .95 }]);
+    expect(parseCopilotSamples([sample])[0]).toEqual(sample);
+    expect(n.audio).toEqual(before);
+  });
+  it('deduplicates a source and its merged effect', () => {
+    const n = foley();
+    n.audio!.soundProfile!.djTags!.push({ group: 'source', label: 'foley', score: .8, model: 'Trained head' });
+    expect(copilotEvidence(n, 0)!.estimates).toEqual([{ label: 'foley', score: .8 }]);
+    n.audio!.soundProfile!.djTags!.reverse();
+    expect(copilotEvidence(n, 0)!.estimates).toEqual([{ label: 'foley', score: .8 }]);
+  });
+  it.each(['rejected', 'uncertain'] as const)('does not revive a %s source through its effect alias', decision => {
+    for (const [dimension, labelId] of [['source','foley'], ['effect','foley hit']] as const) {
+      const n = foley();
+      n.audio!.soundProfile!.djTags!.push({ group: 'source', label: 'foley', score: .8, model: 'Trained head' });
+      n.audio!.soundReviews = [{ dimension, labelId, decision, scope: 'track', at: '2026-10-11T00:00:00Z', evidenceRunId: 'old' }];
+      expect(copilotEvidence(n, 0)!.estimates).toEqual([]);
+    }
+  });
+  it('respects an explicit empty correction snapshot', () => {
+    const n = foley();
+    n.audio!.soundProfile!.djTags!.push({ group: 'source', label: 'foley', score: .8, model: 'Trained head' });
+    n.audio!.confirmedDjTags = { source: [], production: [], character: [] };
+    expect(copilotEvidence(n, 0)!.estimates).toEqual([]);
+    expect(copilotEvidence(n, 0)!.confirmedTags).toEqual([]);
+  });
+  it('routes effect-side confirmation to the surviving source', () => {
+    const n = foley();
+    n.audio!.soundReviews = [{ dimension: 'effect', labelId: 'foley hit', decision: 'confirmed', scope: 'track', at: '2026-10-11T00:00:00Z', evidenceRunId: 'old' }];
+    const sample = copilotEvidence(n, 0)!;
+    expect(sample.confirmedTags).toEqual(['foley']);
+    expect(sample.confirmedInstruments).toEqual(['foley']);
+    expect(sample.estimates).toEqual([]);
+  });
+});
