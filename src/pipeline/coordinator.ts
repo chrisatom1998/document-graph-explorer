@@ -106,6 +106,7 @@ import {
 import { useChatStore } from '../store/chatStore';
 import { cancelChat } from '../chat/chatCancellation';
 import { useSettingsStore } from '../store/settingsStore';
+import { dashengAnalysisActive } from '../store/dashengAddonSetting';
 import { useUiStore } from '../store/uiStore';
 import { getPool, type WorkerPool } from '../workers/pool';
 import { stripBoilerplate } from './boilerplate';
@@ -1991,7 +1992,7 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
             return { blob, name: saved.name };
           })());
           const blob = original.blob;
-          return analyzeMusic(blob, original.name, {cacheContext,signal:jobSignal,mode:analysisMode,onProgress,onPreview,cacheKey:node.id,force:forceIds.includes(node.id),partialUpdates:'cancelled',onPartial: partial => {
+          return analyzeMusic(blob, original.name, {cacheContext,signal:jobSignal,mode:analysisMode,dasheng:dashengAnalysisActive(),onProgress,onPreview,cacheKey:node.id,force:forceIds.includes(node.id),partialUpdates:'cancelled',onPartial: partial => {
             if (partial.recognition?.status !== 'cancelled') return;
             const publishCancelledPartial = () => {
               if (!ownsAudioAnalysis(node.id, analysisOwner, analysisEpoch)) return false;

@@ -8,6 +8,8 @@ import { addVersionPrint, analyzeDecodedMusic, previewDecodedMusic, type Analysi
 import { VERSION_PRINT_MIN_SECONDS, VERSION_PRINT_SAMPLE_RATE } from './versionPrint';
 import type { MusicAnalysis } from './musicTypes';
 import { TAGGER_UNAVAILABLE } from './tagger';
+import { DASHENG_REVISION, DASHENG_UNAVAILABLE } from './dashengAddon';
+import { dashengPass } from './dashengPass';
 import { ResultCache } from './recognition';
 import { rememberAudioAnalysisUsed, setSpeculativePreloadStop } from './speculativePreload';
 const cache = new ResultCache(128);
@@ -32,6 +34,7 @@ const modelQueue = new MusicTaskQueue(1);
 const familyQueues = new Map<string, MusicTaskQueue>();
 const concurrentModels = () => workerCapacity() >= 4 && typeof navigator !== 'undefined' && navigator.hardwareConcurrency >= 8;
 // The trained tagger shares the Jamendo worker: both are small single-thread onnxruntime sessions.
+// The desktop Dasheng add-on (dashengAddon.ts) gets its own 'dasheng' family: its 651 MB session stays out of the others.
 const familyOf = (kind: unknown) => kind === 'rhythm' || kind === 'tonal' ? 'essentia' : kind === 'tagger' ? 'jamendo' : String(kind);
 function queueFor(family: string): MusicTaskQueue {
   if (!concurrentModels()) return modelQueue;
@@ -161,18 +164,37 @@ function runRequest<T>(message: Record<string, unknown>, transfer: Transferable[
     const fail = (error: Error) => { cleanup(); discard(current); reject(error); };
     inFlight.set(current, fail);
     const abort = () => fail(new DOMException('Music analysis cancelled.', 'AbortError'));
-    const timer = setTimeout(() => fail(new Error('An audio section took too long to analyze. Try again on this device.')), 180_000);
+    const stuck = () => fail(new Error('An audio section took too long to analyze. Try again on this device.'));
+    let timer = setTimeout(stuck, 180_000);
     options.signal?.addEventListener('abort', abort, { once: true });
     current.onerror = e => fail(new Error(e.message || 'Music analysis worker failed.'));
     current.onmessage = ({ data }: MessageEvent<{ id: number; progress?: string; result?: T; error?: string; runtime?: {backend:string;configuredInferenceThreads:number;effectiveInferenceThreads?:number;inferenceExecuted:boolean} }>) => {
       if (data.id !== id) return;
-      if (data.progress) options.onProgress?.(data.progress);
+      // Progress (such as a one-time model download) shows the worker is still working: restart the stall timer.
+      if (data.progress) { clearTimeout(timer); timer = setTimeout(stuck, 180_000); options.onProgress?.(data.progress); }
       else if (data.result) { if (data.runtime) { try { options.onRuntime?.({ kind: String(message.kind), ...data.runtime }); } catch { /* Observations cannot change classification. */ } } cleanup(); resolve(data.result); }
       else fail(new Error(data.error || 'Music analysis failed.'));
     };
     try { current.postMessage({ ...message, id, ...threadHint() }, transfer); }
     catch (error) { fail(error instanceof Error ? error : new Error('Music analysis worker failed.')); }
   });
+}
+
+const fingerprintFor = (key: string) => musicWorkerFingerprint(key);
+/** Scores the tagger's windows with the desktop Dasheng add-on (dashengPass.ts). A failure leaves its tags to the other
+ * detectors with a note; the saved analysis is still written and the next run with the add-on on retries it. */
+async function addDasheng(result: MusicAnalysis, decoder: { read: (start: number, seconds: number, sampleRate: number) => Promise<Float32Array> }, options: Options, fingerprint?: string): Promise<void> {
+  result.notes = result.notes.filter(note => note !== DASHENG_UNAVAILABLE);
+  try {
+    const dasheng = await dashengPass(result.durationSeconds, (start, seconds, rate) => decoder.read(start, seconds, rate),
+      samples => request<Record<string, number>>({ kind: 'dasheng', samples }, [samples.buffer], options, 'analysis', fingerprint),
+      { signal: options.signal, onProgress: options.onProgress });
+    if (dasheng) result.dasheng = dasheng; else delete result.dasheng;
+  } catch (error) {
+    if (options.signal?.aborted) throw error;
+    delete result.dasheng;
+    result.notes.push(DASHENG_UNAVAILABLE);
+  }
 }
 
 /** Preview the folder while capable hosts pipeline deeper checks through retained family workers. */
@@ -190,6 +212,9 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
     const key=await musicCacheKey(blob, mode, context);
     if(key&&!options.force&&!injectedFusion&&!experimentalPaSST){const cached=await readMusicCache(key, blob.type);if(cached){options.signal?.throwIfAborted();options.onProgress?.('Reusing saved audio analysis');parkWorker();
       // Analyses saved before version prints existed get one now: decoding only, no models.
+      // A listener who turned the desktop Dasheng add-on on gets its scores on saved analyses too: decoding and that model only.
+      if(options.dasheng&&cached.tagger&&cached.dasheng?.revision!==DASHENG_REVISION)try{const decoder=await openMusicDecoder(blob, name, options.signal);try{await addDasheng(cached,decoder,options,fingerprintFor(key));}finally{decoder.close();}
+        if(cached.dasheng)await writeMusicCache(key,cached,blob.type);}catch(error){if(options.signal?.aborted)throw error;}
       if(!cached.versionPrint&&cached.durationSeconds>=VERSION_PRINT_MIN_SECONDS)try{const decoder=await openMusicDecoder(blob, name, options.signal);try{await addVersionPrint(cached,(start,seconds)=>decoder.read(start,seconds,VERSION_PRINT_SAMPLE_RATE),options.signal);}finally{decoder.close();}
         if(cached.versionPrint)await writeMusicCache(key,cached,blob.type);}catch(error){if(options.signal?.aborted)throw error;}// optional: the saved analysis stands without a print
       return { cached };}}
@@ -233,6 +258,7 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
           result.notes.push(prepared.usedFallback() ? 'Experimental source model unavailable; installed detector retained.' : 'Experimental PaSST source diagnostics; calibration only, no validation receipt.');
           result.classifierConfiguration = JSON.stringify({ experiment: 'passt-openmic-pretrained-v7', identity: fusion!.identity, persistentCache: false });
         }
+        if (options.dasheng && result.tagger) await addDasheng(result, decoder, options, first.fingerprint);
         if (fusionFailed) result.notes.push('The trained source classifier is unavailable; native analysis is retained.');
         else if (!injectedFusion && (!prepared || prepared.usedFallback()) && !result.fusion?.counts.failed) result.classifierConfiguration = fusionConfiguration();
         // The key names the runtime; after a single-thread fallback, save under the key the next lookup will use.

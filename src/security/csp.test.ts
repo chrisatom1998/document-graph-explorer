@@ -5,7 +5,7 @@ describe('buildCsp', () => {
   it('normal build allows exactly the opt-in AI connect-src hosts', () => {
     const csp = buildCsp({ airgap: false });
     expect(csp).toContain(
-      "connect-src 'self' blob: https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434 wss://signaling.yjs.dev",
+      "connect-src 'self' blob: https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434 wss://signaling.yjs.dev https://huggingface.co https://*.hf.co",
     );
     // Gemini was removed as a provider — its host must stay gone.
     expect(csp).not.toContain('generativelanguage');
@@ -26,6 +26,8 @@ describe('buildCsp', () => {
     expect(csp).not.toContain('generativelanguage');
     expect(csp).not.toContain('openrouter');
     expect(csp).not.toContain('11434');
+    expect(csp).not.toContain('hf.co');
+    expect(csp).not.toContain('huggingface');
   });
 
   it('both modes keep the non-connect directives identical', () => {

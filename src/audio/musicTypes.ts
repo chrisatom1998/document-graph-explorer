@@ -2,6 +2,7 @@ import { installedFusionIdentity } from './fusionRelease';
 import { sanitizeFusion, type FusionAnalysis } from './fusion';
 import { sanitizeFullMixAnalysis, type FullMixAnalysis } from './fullMixHeads';
 import { sanitizeTaggerAnalysis, type TaggerAnalysis } from './tagger';
+import { DASHENG_POLICY } from './dashengAddon';
 import { sourceLabels, sanitizeRecognition, sanitizeSoundReviews, type Recognition, type SoundReview } from './recognition';
 import { MERGED_DJ_LABELS, mergedDjLabel, sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
@@ -48,6 +49,8 @@ export interface MusicAnalysis {
   fullMix?: FullMixAnalysis;
   /** The trained tagger's recording scores for the tags it decides (src/audio/tagger.ts); thresholds apply at display. */
   tagger?: TaggerAnalysis;
+  /** The desktop Dasheng add-on's scores over the tagger's windows (src/audio/dashengAddon.ts), when the listener turned it on. */
+  dasheng?: TaggerAnalysis;
   recognition?: Recognition;
   soundReviews?: SoundReview[];
   stage?: 'preview';
@@ -107,6 +110,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   if (fullMix) out.fullMix = fullMix;
   const tagger = sanitizeTaggerAnalysis(m.tagger, out.durationSeconds);
   if (tagger) out.tagger = tagger;
+  const dasheng = sanitizeTaggerAnalysis(m.dasheng, out.durationSeconds, DASHENG_POLICY);
+  if (dasheng) out.dasheng = dasheng;
   out.recognition = sanitizeRecognition(m.recognition, out.durationSeconds);
   if (!out.recognition) delete out.recognition;
   if (Array.isArray(m.soundReviews)) out.soundReviews = sanitizeSoundReviews(m.soundReviews);

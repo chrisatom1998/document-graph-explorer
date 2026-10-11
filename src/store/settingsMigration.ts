@@ -68,6 +68,8 @@ export interface PersistedSettings {
   embeddingQueryStyle: EmbeddingQueryStyle;
   ocrLanguage: OcrLanguageId;
   ocrMaxPages: OcrMaxPages;
+  /** Opt-in desktop Dasheng add-on for percussion tags (src/audio/dashengAddon.ts): a one-time 651 MB download. */
+  dashengAddon: boolean;
 }
 
 // Chat and enrichment select models independently because their workloads pull
@@ -98,6 +100,7 @@ export const DEFAULTS: PersistedSettings = {
   embeddingQueryStyle: 'english',
   ocrLanguage: 'eng',
   ocrMaxPages: 20,
+  dashengAddon: false,
 };
 
 /**
@@ -192,6 +195,7 @@ export function loadPersistedSettings(): PersistedSettings {
           : DEFAULTS.embeddingQueryStyle,
       ocrLanguage: isOcrLanguage(parsed.ocrLanguage) ? parsed.ocrLanguage : DEFAULTS.ocrLanguage,
       ocrMaxPages: isOcrMaxPages(parsed.ocrMaxPages) ? parsed.ocrMaxPages : DEFAULTS.ocrMaxPages,
+      dashengAddon: parsed.dashengAddon === true,
     };
     // Rewrite storage eagerly when it still contains fields from removed
     // features (the Gemini-era key/model) or a session-only OpenRouter key.

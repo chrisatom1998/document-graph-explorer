@@ -94,13 +94,14 @@ export interface TaggerAnalysis {
 }
 
 export class TaggerEvidence {
+  constructor(private readonly policy: TaggerPolicy = TAGGER_POLICY) {}
   private perWindow = new Map<string, number[]>();
   private intervals: Interval[] = [];
   private count = 0;
   add(scores: Record<string, number>, interval?: Interval): void {
     this.count++;
     if (interval) this.intervals.push({ start: interval.start, end: interval.end });
-    for (const tag of TAGGER_POLICY.tags) {
+    for (const tag of this.policy.tags) {
       const s = scores[tag.output];
       if (typeof s !== 'number' || !Number.isFinite(s) || s < 0 || s > 1) continue;
       const list = this.perWindow.get(tag.output) ?? [];
@@ -112,7 +113,7 @@ export class TaggerEvidence {
     // Missing/invalid output is unknown, not a negative observation. Only outputs scored in every
     // window can decide a tag. Keep model precision: rounding here can cross a calibrated threshold.
     const windowScores = Object.fromEntries([...this.perWindow].filter(([, v]) => v.length === this.count).map(([k, v]) => [k, [...v]]));
-    return { revision: TAGGER_REVISION, windows: this.count, scores: Object.fromEntries(Object.entries(windowScores).map(([k, v]) => [k, Math.max(...v)])), windowScores,
+    return { revision: this.policy.revision, windows: this.count, scores: Object.fromEntries(Object.entries(windowScores).map(([k, v]) => [k, Math.max(...v)])), windowScores,
       ...(this.intervals.length === this.count ? { intervals: this.intervals.map(i => ({ ...i })) } : {}) };
   }
 }
@@ -136,12 +137,12 @@ export function taggerIntervals(tagger: TaggerAnalysis | undefined, duration: nu
   const starts = taggerWindowStarts(duration);
   return starts.length === tagger.windows ? starts.map(start => ({ start, end: Math.min(duration, start + TAGGER_WINDOW_SECONDS) })) : [];
 }
-export function sanitizeTaggerAnalysis(raw: unknown, durationSeconds = 86400): TaggerAnalysis | undefined {
+export function sanitizeTaggerAnalysis(raw: unknown, durationSeconds = 86400, policy: TaggerPolicy = TAGGER_POLICY): TaggerAnalysis | undefined {
   const t = raw as Partial<TaggerAnalysis> | undefined;
   if (!t || typeof t !== 'object' || typeof t.revision !== 'string' || !t.revision || t.revision.length > 120) return;
-  if (!finite(t.windows) || !Number.isInteger(t.windows) || t.windows < 1 || t.windows > TAGGER_MAX_WINDOWS) return;
+  if (!finite(t.windows) || !Number.isInteger(t.windows) || t.windows < 1 || t.windows > policy.input.maxWindows) return;
   if (!t.scores || typeof t.scores !== 'object' || Array.isArray(t.scores)) return;
-  const outputs = new Set(TAGGER_POLICY.tags.map(tag => tag.output));
+  const outputs = new Set(policy.tags.map(tag => tag.output));
   const scores = Object.fromEntries(Object.entries(t.scores).filter(([k, v]) => outputs.has(k) && finite(v) && v >= 0 && v <= 1));
   const out: TaggerAnalysis = { revision: t.revision, windows: t.windows, scores };
   if (t.intervals !== undefined) {
@@ -184,9 +185,9 @@ function ruleScore(tag: TaggerTag, tagger: TaggerAnalysis, durationSeconds: numb
 /** The installed policy applied to a stored result: every tag the tagger decides for this recording, whether it is
  * shown, and its display score (the threshold reads as the app's 0.5 likely cutoff, 1 stays 1). Undefined when the
  * stored result came from another tagger revision. */
-export function taggerDecisions(tagger: TaggerAnalysis | undefined, durationSeconds: number): TaggerDisplay[] | undefined {
-  if (!tagger || tagger.revision !== TAGGER_REVISION) return;
-  return TAGGER_POLICY.tags.filter(tag => !tag.minSeconds || (Number.isFinite(durationSeconds) && durationSeconds >= tag.minSeconds - 1e-6)).flatMap(tag => {
+export function taggerDecisions(tagger: TaggerAnalysis | undefined, durationSeconds: number, policy: TaggerPolicy = TAGGER_POLICY): TaggerDisplay[] | undefined {
+  if (!tagger || tagger.revision !== policy.revision) return;
+  return policy.tags.filter(tag => !tag.minSeconds || (Number.isFinite(durationSeconds) && durationSeconds >= tag.minSeconds - 1e-6)).flatMap(tag => {
     const rule = ruleScore(tag, tagger, durationSeconds);
     if (!rule) return [];
     const { raw, threshold } = rule;
@@ -196,6 +197,6 @@ export function taggerDecisions(tagger: TaggerAnalysis | undefined, durationSeco
   });
 }
 
-export const isTaggerScores = (value: unknown): value is Record<string, number> => !!value && typeof value === 'object' && !Array.isArray(value)
-  && TAGGER_POLICY.tags.every(tag => Object.hasOwn(value, tag.output))
+export const isTaggerScores = (value: unknown, policy: TaggerPolicy = TAGGER_POLICY): value is Record<string, number> => !!value && typeof value === 'object' && !Array.isArray(value)
+  && policy.tags.every(tag => Object.hasOwn(value, tag.output))
   && Object.values(value).every(v => finite(v) && v >= 0 && v <= 1);

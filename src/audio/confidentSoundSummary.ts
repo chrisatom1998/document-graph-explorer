@@ -8,7 +8,8 @@ import calibratedLabelList from './calibratedLabels.json';
 import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 import { FULL_MIX_FAMILY, FULL_MIX_REVISION } from './fullMixHeads';
-import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_SCORE, taggerDecisions, taggerIntervals, type TaggerTag } from './tagger';
+import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_SCORE, taggerDecisions, taggerIntervals, type TaggerDisplay, type TaggerTag } from './tagger';
+import { DASHENG_MAYBE_SCORE, DASHENG_SCORE, dashengDecisions } from './dashengAddon';
 import { nativeScoreOutside, type NativeWindowEvidence } from './nativeWindowEvidence';
 import { isRuleDescribedLabel } from './timbreDescriptions';
 
@@ -49,9 +50,14 @@ export const soundTier=(score:number):SoundTier=>score>=LIKELY_SOUND_CUTOFF?'lik
 const profileNames:Record<string,string>={'AudioSet AST':'AST score','MTG-Jamendo':'Jamendo score','Music CLAP':'CLAP similarity','Reviewed examples':'Reviewed-example similarity','Trained head':'Trained head score','Trained head (maybe)':'Trained head score (maybe)'};
 /** Only these scores come from detectors that passed held-out testing; other models still show under Model scores. */
 export const TESTED_SCORES=new Set(['Trained head score','Baseline fallback score']);
-const MAYBE_SCORES=new Set(['Trained head score (maybe)',TAGGER_MAYBE_SCORE]);
+const MAYBE_SCORES=new Set(['Trained head score (maybe)',TAGGER_MAYBE_SCORE,DASHENG_MAYBE_SCORE]);
 /** The trained tagger (src/audio/tagger.ts) passed held-out testing on the tags it decides; below SOUND_TAG_BAR it shows as "maybe". */
 TESTED_SCORES.add(TAGGER_SCORE);
+/** The desktop Dasheng add-on (src/audio/dashengAddon.ts) decides its percussion tags the way the tagger decides its own,
+ * after it, while the listener has it turned on; below SOUND_TAG_BAR it shows as "maybe". */
+TESTED_SCORES.add(DASHENG_SCORE);
+/** Scores that replace other detectors' evidence inside the tagger's windows. */
+const OVERLAY_SCORES=new Set([TAGGER_SCORE,TAGGER_MAYBE_SCORE,DASHENG_SCORE,DASHENG_MAYBE_SCORE]);
 /** Jamendo (music-trained) window scores that passed a held-out full-mix check: thresholds were picked on half the
  * frozen OpenMIC test selection and checked on the other half (scripts/calibrate-full-mix-jamendo.py). Only recordings of at
  * least one full ten-second window qualify; shorter loops and one-shots were never measured. */
@@ -87,6 +93,7 @@ const nativeNames={ast:'AST score',jamendo:'Jamendo score',clap:'CLAP similarity
 export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):DisplaySound[] {
   const result=new Map<string,DisplaySound>();
   const tagger=taggerDecisions(audio.tagger,audio.durationSeconds);
+  const dasheng=dashengDecisions(audio.dasheng,audio.tagger,audio.durationSeconds);
   const coverage=taggerIntervals(audio.tagger,audio.durationSeconds);
   const covered=({start,end}:Interval)=>{
     if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>audio.durationSeconds+1e-6)return false;
@@ -133,7 +140,7 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     const item=old??{dimension,label,origin:'model estimate' as const,scores:[]};
     item.scores??=[];delete item.coverageUnknown;
     model=profileNames[model]??model;
-    if(tagger?.length&&!coversRecording&&model!==TAGGER_SCORE&&model!==TAGGER_MAYBE_SCORE){
+    if((tagger?.length||dasheng?.length)&&!coversRecording&&!OVERLAY_SCORES.has(model)){
       const outside=nativeScoreOutside(windowEvidence,covered);
       if(validScore(outside.score)){
         const scores=outsideTagger.get(key)??new Map<string,number>();
@@ -191,7 +198,8 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   const detectorsShow=(tag:TaggerTag)=>{
     detectors??=new Set(confidentSoundSummary({...audio,tagger:undefined},fusionMode).map(s=>`${s.dimension}:${s.label}`));
     return tagKeys(tag).some(key=>detectors!.has(key));};
-  if(tagger)for(const{tag,shown,score,needsAgreement}of tagger){
+  // The desktop Dasheng add-on applies after the tagger, the same way, so on its tags its own score stands.
+  const overlay=(decisions:TaggerDisplay[]|undefined,tested:string,maybe:string)=>{if(decisions)for(const{tag,shown,score,needsAgreement}of decisions){
     const keys=new Set(tagKeys(tag)),primary=`${tag.dimension}:${canonical(tag.dimension,tag.label)}`;
     // The latest listener decision applies to the same sound even when an older detector used another dimension.
     const review=audio.soundReviews?.filter(r=>keys.has(`${r.dimension}:${canonical(r.dimension,r.labelId)}`)).at(-1);
@@ -207,7 +215,9 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
       if(unknown&&!item.scores.some(s=>qualifies(item.dimension,item.label,s.model,s.score))){delete item.scores;item.coverageUnknown=true;item.tier='possible';}
       else if(!item.scores.length)result.delete(key);
     }
-    if(agreed)estimate(tag.dimension,tag.label,score,tag.tested?TAGGER_SCORE:TAGGER_MAYBE_SCORE);}
+    if(agreed)estimate(tag.dimension,tag.label,score,tag.tested?tested:maybe);}};
+  overlay(tagger,TAGGER_SCORE,TAGGER_MAYBE_SCORE);
+  overlay(dasheng,DASHENG_SCORE,DASHENG_MAYBE_SCORE);
   // Alias identity belongs to the sound, not to whether the tagger happens to decide it on this recording.
   // In particular, a long-recording 'detectors' rule or unavailable tagger cannot revive a rejected cymbal alias.
   for(const tag of TAGGER_POLICY.tags.filter(t=>t.alsoDecides?.length)){

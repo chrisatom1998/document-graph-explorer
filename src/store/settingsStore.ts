@@ -57,6 +57,7 @@ export interface SettingsState extends PersistedSettings {
   setEmbeddingQueryStyle: (style: EmbeddingQueryStyle) => void;
   setOcrLanguage: (lang: OcrLanguageId) => void;
   setOcrMaxPages: (pages: OcrMaxPages) => void;
+  setDashengAddon: (on: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -84,6 +85,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setEmbeddingQueryStyle: (embeddingQueryStyle) => set({ embeddingQueryStyle }),
   setOcrLanguage: (ocrLanguage) => set({ ocrLanguage }),
   setOcrMaxPages: (ocrMaxPages) => set({ ocrMaxPages }),
+  setDashengAddon: (dashengAddon) => set({ dashengAddon }),
 }));
 
 // Persist on every change; the payload is small enough for a direct write.
@@ -109,6 +111,7 @@ useSettingsStore.subscribe((s) => {
       embeddingQueryStyle: s.embeddingQueryStyle,
       ocrLanguage: s.ocrLanguage,
       ocrMaxPages: s.ocrMaxPages,
+      dashengAddon: s.dashengAddon,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
   } catch {

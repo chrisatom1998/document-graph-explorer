@@ -29,6 +29,9 @@ export interface AnalysisOptions {
   fullMix?: FullMixModel;
   /** Run the trained tagger (src/audio/tagger.ts) on up to three 10 s windows of 32 kHz audio. */
   tagger?: boolean;
+  /** Also score the tagger's windows with the desktop Dasheng add-on (src/audio/dashengAddon.ts); the listener's opt-in,
+   * on eligible desktops only. Run by analyzeMusic after the other models, on finished and saved analyses alike. */
+  dasheng?: boolean;
   /** Original input MIME, used only by an installed qualified-tier scorer. */
   sourceMime?: string;
   signal?: AbortSignal;

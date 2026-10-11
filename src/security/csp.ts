@@ -21,9 +21,12 @@ export function buildCsp({ airgap }: { airgap: boolean }): string {
   // Collaboration signaling is wss://signaling.yjs.dev. Public STUN is
   // disabled in createCollabSession (iceServers: []), so no stun: hosts
   // belong here; re-enable only together with SECURITY.md and the header copies.
+  // huggingface.co and its download CDN (*.hf.co, where /resolve/ redirects) serve
+  // only the opt-in desktop Dasheng add-on (src/audio/dashengAddon.ts): off by
+  // default, a pinned and checksummed model file, never any user data.
   const connectSrc = airgap
     ? "connect-src 'self' blob:"
-    : "connect-src 'self' blob: https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434 wss://signaling.yjs.dev";
+    : "connect-src 'self' blob: https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434 wss://signaling.yjs.dev https://huggingface.co https://*.hf.co";
   return [
     "default-src 'self'",
     // 'wasm-unsafe-eval' + blob: are both for onnxruntime: it compiles WASM and

@@ -1,4 +1,5 @@
 import MusicAnalysisMode from './MusicAnalysisMode';
+import DashengAddonToggle from './DashengAddonToggle';
 import LibrarySettings from './LibrarySettings';
 /**
  * Settings modal: AI provider config (OpenRouter / Ollama), export options,
@@ -341,7 +342,7 @@ export default function SettingsPanel() {
           </label>
         </section>
 
-        <section className="settings-section"><h3 className="settings-section__heading">Music analysis</h3><MusicAnalysisMode /></section>
+        <section className="settings-section"><h3 className="settings-section__heading">Music analysis</h3><MusicAnalysisMode /><DashengAddonToggle /></section>
         {AIRGAP && (
           <section className="settings-section">
             <h3 className="settings-section__heading">AI</h3>

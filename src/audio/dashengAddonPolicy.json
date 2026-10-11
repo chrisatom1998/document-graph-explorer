@@ -1,0 +1,87 @@
+{
+ "version": 1,
+ "revision": "dasheng-addon-2026-10-11-r1",
+ "modelSha256": "f5e520f2e457f8c2d887cd54640a51f54dcdf584d851469a06c8cf8c9ae855b6",
+ "repository": "cmjatom/dge-dasheng-addon",
+ "repositoryRevision": "main",
+ "downloadMB": 651,
+ "input": {
+  "name": "samples16k",
+  "output": "scores",
+  "sampleRate": 16000,
+  "windowSamples": 160000,
+  "maxWindows": 3
+ },
+ "tags": [
+  {
+   "output": "tom",
+   "label": "tom",
+   "dimension": "effect",
+   "threshold": 0.1466,
+   "decides": [
+    "tom"
+   ],
+   "tested": false
+  },
+  {
+   "output": "drum fill",
+   "label": "drum fill",
+   "dimension": "effect",
+   "threshold": 0.0157,
+   "decides": [
+    "drum fill"
+   ],
+   "tested": false
+  },
+  {
+   "output": "conga",
+   "label": "conga",
+   "dimension": "effect",
+   "threshold": 0.0045,
+   "decides": [
+    "conga"
+   ],
+   "tested": false
+  },
+  {
+   "output": "djembe",
+   "label": "djembe",
+   "dimension": "source",
+   "threshold": 0.0035,
+   "decides": [
+    "djembe"
+   ],
+   "tested": false
+  },
+  {
+   "output": "breakbeat",
+   "label": "breakbeat",
+   "dimension": "effect",
+   "threshold": 0.0709,
+   "decides": [
+    "breakbeat"
+   ],
+   "tested": false
+  },
+  {
+   "output": "shaker",
+   "label": "shaker",
+   "dimension": "effect",
+   "threshold": 0.1344,
+   "decides": [
+    "shaker"
+   ],
+   "tested": false
+  },
+  {
+   "output": "reverse cymbal",
+   "label": "reverse cymbal",
+   "dimension": "effect",
+   "threshold": 0.024,
+   "decides": [
+    "reverse cymbal"
+   ],
+   "tested": false
+  }
+ ]
+}

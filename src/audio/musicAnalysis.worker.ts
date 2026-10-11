@@ -13,6 +13,7 @@ import { KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_ANALYSIS_REVISION, type MusicAn
 import { classifyJamendo, preloadJamendo } from './jamendo';
 import { classifyTagger, preloadTagger } from './taggerInference';
 import { isTaggerScores } from './tagger';
+import { classifyDasheng, preloadDasheng } from './dashengInference';
 import { GENRE_ENERGY_VERSION } from './genreEnergy';
 import { detectRepeatedPitch } from './detectedPitch';
 import { countAttacks, estimateTempo, MIN_ATTACKS } from './tempo';
@@ -153,9 +154,10 @@ async function warmFamily(family: string): Promise<void> {
   if (family === 'instruments') { if (gpuUnavailable || !await getGpuClassifier().then(() => true, () => false)) { gpuUnavailable = true; await getClassifier(); } }
   else if (family === 'profile' || family === 'sound') await Promise.all([getSoundDescriptions(), getSoundClassifier()]);
   else if (family === 'jamendo') await Promise.all([ready, preloadJamendo(), preloadTagger()]);
+  else if (family === 'dasheng') await preloadDasheng();
   else await ready;
 }
-self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; family: string } | { id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'tagger'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array; samples16?: Float32Array }>) => {
+self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; family: string } | { id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'tagger'; samples: Float32Array } | { id: number; kind: 'dasheng'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array; samples16?: Float32Array }>) => {
   const { id } = data;
   // The main thread decided this browser needs the single-thread runtime (see THREADED_RUNTIME_STALLED).
   if ((data as { singleThread?: boolean }).singleThread) switchToSingleThreadRuntime(false);
@@ -171,7 +173,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
     : musicRuntimeDiagnostics(data.kind === 'tagger' ? 'jamendo' : data.kind);
   let inferenceExecuted = false;
   const postResult = async (result: unknown) => {
-    const effectiveInferenceThreads = inferenceExecuted
+    const effectiveInferenceThreads = inferenceExecuted && data.kind !== 'dasheng'
       ? data.kind === 'jamendo' || data.kind === 'tagger' ? 1 : (await import('@huggingface/transformers')).env.backends.onnx.wasm?.numThreads
       : undefined;
     self.postMessage({ id, runtime: { ...runtime, inferenceExecuted, ...(effectiveInferenceThreads ? { effectiveInferenceThreads } : {}) }, result });
@@ -192,6 +194,12 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
         const scores = await classifyTagger(data.samples); inferenceExecuted = true; return scores;
       });
       await postResult(result);
+      return;
+    }
+    if (data.kind === 'dasheng') {
+      // Its own worker family (analyzeMusic familyOf): a 651 MB session must not share the Jamendo worker's memory.
+      const scores = await classifyDasheng(data.samples, progress => self.postMessage({ id, progress })); inferenceExecuted = true;
+      await postResult(scores);
       return;
     }
     if (data.kind === 'sound' || data.kind === 'profile') {
