@@ -273,6 +273,8 @@ echo "training budget ${HOURS} h"
 if [ -n "${SOFT_LABELS:-}" ]; then EXTRA+=(--soft /tmp/soft-labels.json); fi
 if [ -n "${ABSENT_FIX:-}" ]; then EXTRA+=(--absent-fix /tmp/absent-fix.json); fi
 if [ "${ROUND12:-0}" = 1 ]; then EXTRA+=(--merge $S/round12/round12.json --rare-tags "$RARE_TAGS"); fi
+# DJ_RARE=<tag>,<tag>,... (without ROUND12): oversample windows with these app tags present RARE_REPEAT times, beside train.py's defaults.
+if [ "${ROUND12:-0}" != 1 ] && [ -n "${DJ_RARE:-}" ]; then EXTRA+=(--rare-tags "bass,organ,cello,trumpet,violin,saxophone,$DJ_RARE"); fi
 if [ -n "$TRAIN_DROP" ]; then EXTRA+=(--drop "$TRAIN_DROP"); fi
 if [ "${MERGE_ONLY:-0}" = 1 ]; then EXTRA+=(--merge $S/round12/round12.json); fi   # round 13: round 12's merges without its oversampling
 python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --rare-repeat "${RARE_REPEAT:-1}" --repeat "${SOURCE_REPEAT:-}" --threads 8 --hours "$HOURS"

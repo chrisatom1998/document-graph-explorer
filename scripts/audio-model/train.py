@@ -70,6 +70,7 @@ def load_source(name, mel_path, items, weak):
         if it.get('weakAll') == 'run9':   # run 9 (prepare-run9.py): every run 9 tag the item does not list is a weak absence
             for l in RUN9_TAGS:
                 if f'cat:{l}' not in labels: labels[f'cat:{l}'] = 0.0; weak_set.add(f'cat:{l}')
+        absent_fix.relabel(it['id'], labels, weak_set)   # label cleanup: wrong-sense positives, before merges so parents follow
         for c, p in MERGE.items():
             if labels.get(f'cat:{c}', 0) >= 0.5: labels[f'cat:{p}'] = 1.0; weak_set.discard(f'cat:{p}')
         for c, l in ALIAS.items():   # the same sound under the app's name, unless the source labels that name itself
@@ -125,6 +126,8 @@ def main():
         MERGE.update(json.load(open(args.merge)).get('merge', {})); print(f'merged tags: {MERGE or "none"}', flush=True)
     if args.absent_fix:
         nd, na = absent_fix.load(args.absent_fix); print(f'absent fix: weak absences dropped on {nd} items, positives added on {na} items, sure absences on {len(absent_fix.FIX["absent"])} items', flush=True)
+        F = absent_fix.FIX
+        if F['wrong'] or F['unsure'] or F['rules']: print(f'label cleanup: wrong positives on {len(F["wrong"])} items, unsure on {len(F["unsure"])} items, {len(F["rules"])} id rules', flush=True)
     if args.drop:
         DROP.update(json.load(open(args.drop))); print(f'leaving out {len(DROP)} training ids', flush=True)
     if args.soft:

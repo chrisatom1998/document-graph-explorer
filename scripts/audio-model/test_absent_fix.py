@@ -42,6 +42,33 @@ class AbsentFixTests(unittest.TestCase):
         self.fix.FIX.update(drop={}, add={}, absent={})
         self.assertEqual(self.fix.edits('b', {'cat:oboe': 0.0}, {'cat:oboe'}), {})
 
+    def test_relabel_own_positives(self):
+        json.dump({'wrong': {'freesound:1': ['ride cymbal', 'oboe']}, 'unsure': {'freesound:1': ['sub bass']},
+                   'relabel_rules': [{'id': '^nsynth:flute_synthetic_', 'unsure': ['flute']}]}, open(self.path, 'w'))
+        self.fix.load(self.path)
+        labels = {'cat:ride cymbal': 1.0, 'cat:sub bass': 1.0, 'cat:oboe': 0.0, 'cat:kick': 1.0}
+        weak = {'cat:oboe'}
+        self.assertEqual(self.fix.relabel('freesound:1', labels, weak), 2)
+        self.assertEqual(labels, {'cat:ride cymbal': 0.0, 'cat:oboe': 0.0, 'cat:kick': 1.0})   # wrong -> absent, unsure -> unknown
+        self.assertEqual(weak, {'cat:oboe'})   # an absence that was already there stays as it was
+        labels = {'cat:flute': 1.0, 'cat:synthesizer': 1.0}
+        self.assertEqual(self.fix.relabel('nsynth:flute_synthetic_000-060-127', labels, set()), 1)
+        self.assertEqual(labels, {'cat:synthesizer': 1.0})
+        self.assertEqual(self.fix.relabel('nsynth:flute_acoustic_000-060-127', {'cat:flute': 1.0}, set()), 0)
+
+    def test_rule_hard_negatives(self):
+        json.dump({'relabel_rules': [{'id': '^nsynth:bass_synthetic_', 'absent': ['kick']}]}, open(self.path, 'w'))
+        self.fix.load(self.path)
+        labels, weak = {'cat:synth bass': 1.0}, set()
+        self.assertEqual(self.fix.relabel('nsynth:bass_synthetic_001-030-100', labels, weak), 1)
+        self.assertEqual(labels, {'cat:synth bass': 1.0, 'cat:kick': 0.0})
+        labels, weak = {'cat:kick': 0.0}, {'cat:kick'}   # a weak absence becomes a sure one
+        self.fix.relabel('nsynth:bass_synthetic_001-030-100', labels, weak)
+        self.assertEqual((labels, weak), ({'cat:kick': 0.0}, set()))
+        labels = {'cat:kick': 1.0}   # never against the clip's own positive
+        self.assertEqual(self.fix.relabel('nsynth:bass_synthetic_001-030-100', labels, set()), 0)
+        self.assertEqual(labels, {'cat:kick': 1.0})
+
 
 if __name__ == '__main__':
     unittest.main()
