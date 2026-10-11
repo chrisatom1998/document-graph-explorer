@@ -115,6 +115,14 @@ describe('the 50/50 shipping bar', () => {
     // Run 9 (tagger-run9): bell (0.72/0.62 on FSD50K eval; the old detector was 0.78/0.58, so a precision/recall trade), water ambience
     // and fm synth clear their bars on held-out audio.
     expect(['cat:bell', 'cat:fm synth'].map(tested)).toEqual([true, true]);
+    // Ship line 60/30 (Chris, 2026-10-11): bass passes on both held-out DJ clip rounds of the 89288f0 tagger
+    // (0.667/0.444 on 9 and 0.60/0.60 on 15 clips, eval.json), which hold real wrong-answer clips.
+    expect(tested('bass')).toBe(true);
+    // Fresh test sets (FSD50K eval + free-tag-set test half, reports/idea-loop-oneshot-2026-10-11): bird ambience passes at
+    // its cutoff (0.857/0.568 and 0.785/0.420). Trumpet failed at 0.6648 (0.42 and 0.26 precision); precision first, its
+    // cutoff rises to 0.8944, which passes on clips that did not pick it (2-fold: 0.826/0.864 and 0.633/0.679).
+    expect(tested('cat:bird ambience')).toBe(true);
+    expect(TAGGER_POLICY.tags.find(t => t.output === 'trumpet')!.threshold).toBe(.8944);
     // Measured only on NSynth and its effect renders: unchanged.
     expect(['cat:bright', 'cat:dark', 'cat:distorted', 'cat:falling'].map(tested)).toEqual([false, false, false, false]);
     expect(['cat:percussive', 'cat:pulsing', 'cat:swelling', 'cat:wobbling', 'cat:reverse effect'].map(tested)).toEqual([true, true, true, true, true]);

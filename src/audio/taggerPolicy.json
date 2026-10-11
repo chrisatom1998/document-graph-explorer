@@ -94,7 +94,7 @@
    "output": "trumpet",
    "label": "trumpet",
    "dimension": "source",
-   "threshold": 0.6648,
+   "threshold": 0.8944,
    "decides": [
     "trumpet"
    ],
@@ -127,7 +127,7 @@
     "bass",
     "double bass"
    ],
-   "tested": false,
+   "tested": true,
    "minSeconds": 10,
    "long": {
     "rule": "detectors"
@@ -297,7 +297,7 @@
    "decides": [
     "bird ambience"
    ],
-   "tested": false
+   "tested": true
   },
   {
    "output": "cat:rain ambience",

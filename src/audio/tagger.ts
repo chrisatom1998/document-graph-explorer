@@ -23,7 +23,8 @@ export interface TaggerTag {
   /** Equivalent display labels stored under another dimension by a native detector. */
   alsoDecides?: { dimension: Extract<Dimension, 'source' | 'character' | 'effect'>; label: string }[];
   /** Held-out precision and recall both reached the shipping bar (SOUND_TAG_BAR, 0.50 since 2026-10-10; 0.70 before) on every
-   * complete-label set; otherwise shown as a "maybe" tag. */
+   * complete-label set, or the 60/30 ship line (precision >= 0.60, recall >= 0.30; Chris, 2026-10-11) on sets that hold
+   * wrong-answer clips; otherwise shown as a "maybe" tag. */
   tested: boolean;
   /** Recordings shorter than this keep the existing detectors for this tag (the held-out sets had no shorter audio). */
   minSeconds?: number;

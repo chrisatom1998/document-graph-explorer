@@ -102,8 +102,14 @@ describe('trained tagger display', () => {
     expect(sources(a)).toEqual(['bass', 'drums', 'synthesizer']);
     expect(shown.find(s => s.label === 'drums')).toMatchObject({ scores: [{ model: TAGGER_SCORE }], tier: 'likely' });
     expect(shown.find(s => s.label === 'synthesizer')!.scores).toEqual([{ model: 'Trained head score', score: .9 }]);
-    // Bass is below 0.70 held out: still shown, marked as a maybe tag with its provenance.
-    expect(shown.find(s => s.label === 'bass')).toMatchObject({ maybe: true, scores: [{ model: TAGGER_MAYBE_SCORE }] });
+    // Bass passes the 60/30 ship line on the held-out DJ rounds: a normal tag with its provenance.
+    expect(shown.find(s => s.label === 'bass')).toMatchObject({ scores: [{ model: TAGGER_SCORE }] });
+    expect(shown.find(s => s.label === 'bass')?.maybe).toBeUndefined();
+  });
+  it('marks an output below the ship line as a maybe tag with its provenance', () => {
+    // falling was measured only on NSynth effect renders, so it stays untested.
+    const shown = confidentSoundSummary(track(10, { 'cat:falling': threshold('cat:falling') + .01 }, []));
+    expect(shown.find(s => s.label === 'falling')).toMatchObject({ maybe: true, scores: [{ model: TAGGER_MAYBE_SCORE }] });
   });
   it('leaves instruments to the other detectors on clips shorter than 10 s', () => {
     expect(sources(track(8, { drums: .01, piano: .99 }, [{ group: 'source', label: 'drums', score: .9, model: 'Trained head' }]))).toEqual(['drums']);
