@@ -33,7 +33,8 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // ambience and wobbling move to run 10).
 // 105/106: the tagger decides hi-hat (fresh test sets 60/30; the CLAP head failed precision there).
 // 107/108: 12 learned heads retrained without FSD50K eval clips (clean-retrain-2026-10-11).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 108 : 107;
+// 109/110: neighbour heads (few-shot example matching) for vinyl crackle and vocal shout (knn-heads-2026-10-11).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 110 : 109;
 export interface InstrumentEstimate {
   label: string;
   score: number;
