@@ -487,6 +487,34 @@
    "long": {
     "rule": "detectors"
    }
+  },
+  {
+   "output": "cat:hi-hat",
+   "label": "hi-hat",
+   "dimension": "effect",
+   "threshold": 0.3663,
+   "decides": [
+    "hi-hat"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:crash cymbal",
+   "label": "crash cymbal",
+   "dimension": "effect",
+   "threshold": 0.1631,
+   "decides": [
+    "crash cymbal"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
   }
  ]
 }
