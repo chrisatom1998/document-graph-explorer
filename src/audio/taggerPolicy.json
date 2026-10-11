@@ -94,7 +94,7 @@
    "output": "trumpet",
    "label": "trumpet",
    "dimension": "source",
-   "threshold": 0.6648,
+   "threshold": 0.9486,
    "decides": [
     "trumpet"
    ],
@@ -233,7 +233,7 @@
    "output": "cat:falling",
    "label": "falling",
    "dimension": "character",
-   "threshold": 0.5795,
+   "threshold": 0.8101,
    "decides": [
     "falling"
    ],
@@ -486,6 +486,20 @@
    "tested": true,
    "long": {
     "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:hi-hat",
+   "label": "hi-hat",
+   "dimension": "effect",
+   "threshold": 0.3663,
+   "decides": [
+    "hi-hat"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
    }
   }
  ]

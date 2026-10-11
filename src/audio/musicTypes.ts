@@ -31,7 +31,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 99/100: tagger blend adds run 9 (bell, fm synth, water ambience).
 // 101/102: tagger blend adds runs 10 and 11 (bass guitar, machine ambience, pitched vocal; falling, glockenspiel, rain
 // ambience and wobbling move to run 10).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 102 : 101;
+// 105/106: the tagger decides hi-hat (fresh test sets 60/30; the CLAP head failed precision there). Skips 103/104, which
+// the clean CLAP head retrain takes.
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 106 : 105;
 export interface InstrumentEstimate {
   label: string;
   score: number;
