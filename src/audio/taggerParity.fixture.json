@@ -1,5 +1,5 @@
 {
- "model": "3a1af0173416dad714e9cab281cea662d5badafe4f68f866f8464c8ca1a56d46",
+ "model": "97e522a5386d196161b4ddf0ff8567e156eaae332db65aac6695c7889d815343",
  "sampleRate": 32000,
  "cases": [
   {
@@ -10,9 +10,9 @@
    "scores": {
     "drums": 0.067266,
     "piano": 0.469858,
-    "guitar": 0.014974,
+    "cat:guitar": 0.00033,
     "cymbals": 0.001272,
-    "violin": 0.074072,
+    "cat:violin / fiddle": 0.000225,
     "trumpet": 0.000964,
     "saxophone": 0.002762,
     "bass": 0.092992,
@@ -38,7 +38,7 @@
     "cat:environmental sound": 0.025185,
     "cat:foley": 4.6e-05,
     "cat:turntable": 2e-06,
-    "cat:finger snap": 2e-06,
+    "cat:finger snap": 1e-06,
     "cat:water ambience": 6.7e-05,
     "cat:bell": 0.002299,
     "cat:fm synth": 0.018872,
@@ -46,7 +46,11 @@
     "cat:machine ambience": 0.018218,
     "cat:pitched vocal": 0.00188,
     "cat:hi-hat": 0.000388,
-    "cat:crash cymbal": 0.000005
+    "cat:siren": 0.003089,
+    "cat:flute": 0.001252,
+    "cat:marimba": 0.00038,
+    "cat:vibraphone": 0.003913,
+    "cat:crash cymbal": 5e-06
    }
   },
   {
@@ -57,9 +61,9 @@
    "scores": {
     "drums": 0.031419,
     "piano": 0.377605,
-    "guitar": 0.108083,
+    "cat:guitar": 0.019071,
     "cymbals": 0.001421,
-    "violin": 0.095703,
+    "cat:violin / fiddle": 0.001146,
     "trumpet": 0.007243,
     "saxophone": 0.000652,
     "bass": 0.029701,
@@ -85,7 +89,7 @@
     "cat:environmental sound": 0.002167,
     "cat:foley": 0.000673,
     "cat:turntable": 1e-06,
-    "cat:finger snap": 3e-06,
+    "cat:finger snap": 2.1e-05,
     "cat:water ambience": 0.000337,
     "cat:bell": 0.013276,
     "cat:fm synth": 0.017205,
@@ -93,7 +97,11 @@
     "cat:machine ambience": 0.013919,
     "cat:pitched vocal": 0.008377,
     "cat:hi-hat": 0.000246,
-    "cat:crash cymbal": 0.000008
+    "cat:siren": 0.052141,
+    "cat:flute": 0.038695,
+    "cat:marimba": 0.001908,
+    "cat:vibraphone": 0.001663,
+    "cat:crash cymbal": 8e-06
    }
   },
   {
@@ -105,9 +113,9 @@
    "scores": {
     "drums": 0.034065,
     "piano": 0.51203,
-    "guitar": 0.108083,
+    "cat:guitar": 0.019071,
     "cymbals": 0.001796,
-    "violin": 0.095703,
+    "cat:violin / fiddle": 0.001208,
     "trumpet": 0.007243,
     "saxophone": 0.001871,
     "bass": 0.03626,
@@ -133,7 +141,7 @@
     "cat:environmental sound": 0.008192,
     "cat:foley": 0.002341,
     "cat:turntable": 2e-06,
-    "cat:finger snap": 1.2e-05,
+    "cat:finger snap": 0.000239,
     "cat:water ambience": 0.001565,
     "cat:bell": 0.013276,
     "cat:fm synth": 0.017205,
@@ -141,7 +149,11 @@
     "cat:machine ambience": 0.024291,
     "cat:pitched vocal": 0.008377,
     "cat:hi-hat": 0.000414,
-    "cat:crash cymbal": 0.000015
+    "cat:siren": 0.052141,
+    "cat:flute": 0.038695,
+    "cat:marimba": 0.002233,
+    "cat:vibraphone": 0.001663,
+    "cat:crash cymbal": 1.5e-05
    }
   },
   {
@@ -154,9 +166,9 @@
    "scores": {
     "drums": 0.190864,
     "piano": 0.594748,
-    "guitar": 0.148859,
+    "cat:guitar": 0.021546,
     "cymbals": 0.004164,
-    "violin": 0.085213,
+    "cat:violin / fiddle": 0.001825,
     "trumpet": 0.005435,
     "saxophone": 0.00239,
     "bass": 0.153786,
@@ -182,7 +194,7 @@
     "cat:environmental sound": 0.017395,
     "cat:foley": 0.003292,
     "cat:turntable": 7e-06,
-    "cat:finger snap": 1.7e-05,
+    "cat:finger snap": 0.00135,
     "cat:water ambience": 0.005967,
     "cat:bell": 0.010821,
     "cat:fm synth": 0.01556,
@@ -190,7 +202,11 @@
     "cat:machine ambience": 0.022556,
     "cat:pitched vocal": 0.006442,
     "cat:hi-hat": 0.001516,
-    "cat:crash cymbal": 0.000029
+    "cat:siren": 0.01601,
+    "cat:flute": 0.052776,
+    "cat:marimba": 0.005582,
+    "cat:vibraphone": 0.001673,
+    "cat:crash cymbal": 2.9e-05
    }
   }
  ]

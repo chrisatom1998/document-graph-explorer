@@ -34,9 +34,13 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 105/106: the tagger decides hi-hat (fresh test sets 60/30; the CLAP head failed precision there).
 // 107/108: 12 learned heads retrained without FSD50K eval clips (clean-retrain-2026-10-11).
 // 109/110: neighbour heads (few-shot example matching) for vinyl crackle and vocal shout (knn-heads-2026-10-11).
-// 111/112: the tagger decides crash cymbal on recordings up to 30 s (FSD50K eval 60/30 on the app's own code path; the
-// clean CLAP head's 0.994 cutoff found 1 of 20 there).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 112 : 111;
+// 111/112: both neighbour heads removed again (vinyl crackle went over the 1% false-alarm cap on FSD50K).
+// 113/114: crash cymbal, vocal laugh, whisper and whoosh back to their pre-#232 learned heads (failed on the app path).
+// 115/116: the tagger gains the recall network: it decides guitar, violin, finger snap, siren, flute, marimba and vibraphone
+// on recall-run outputs (fresh test sets 60/30).
+// 117/118: the tagger decides crash cymbal on recordings up to 30 s (FSD50K eval 60/30 on the app's own code path; the
+// learned head reads 0.48 / 0.55 there).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 118 : 117;
 export interface InstrumentEstimate {
   label: string;
   score: number;

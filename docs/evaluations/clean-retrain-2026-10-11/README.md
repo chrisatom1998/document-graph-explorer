@@ -2,7 +2,8 @@
 
 The 28 CLAP detectors in `public/sound-model/learned.json` for FSD50K-mapped sounds were trained on Chris's Mac by
 `scripts/train-with-extras.py`, which read FSD50K **eval** (a judge set) and refit each head on train+test. This change
-refits them in the cloud from training clips only and swaps in the 12 that pass a fair test on clips they never saw.
+refits them in the cloud from training clips only. PR #232 swapped in the 12 that passed a fair test on clips they never saw;
+8 remain after crash cymbal, vocal laugh, whisper and whoosh were reverted because they failed on the app's own fingerprints.
 
 **All numbers are new scores on the rebuilt test sets and are not comparable with the old scoreboard.**
 
@@ -25,8 +26,15 @@ How:
 - Heads that fail keep their old weights and are marked **unverified** (they still carry the FSD50K eval leak).
 - Old FSD50K eval numbers are inflated: those heads trained on those clips.
 
-Swapped: crash cymbal, crowd ambience, finger snap, harmonica, harp, snare, tabla, trumpet, vinyl scratch, vocal
-laugh, whisper, whoosh. Finger snap and trumpet are decided by the tagger on long recordings (`taggerPolicy.json`),
+**Update after merge: 4 heads reverted.** These judges used CLAP fingerprints from the Python fp32 model. The app
+computes them with the q8 transformers.js model (`scripts/embed-clap.mjs`), and the two differ (cosine median 0.93 on
+380 clips). On the app's real path (`reports/scoreboard/app-clap.json` at 2b12ceb), crash cymbal (FSD50K 0.18/0.10),
+vocal laugh (0.58/0.71), whisper (0.32/0.83) and whoosh (0.56/0.88) failed, so they went back to their old weights.
+Crash cymbal's 0.994 cutoff caught 58 of 84 sample positives on Python fingerprints but 7 on the app's. Future CLAP
+heads must be judged, and their cutoffs picked, on the app's own fingerprints.
+
+Swapped and kept: crowd ambience, finger snap, harmonica, harp, snare, tabla, trumpet, vinyl scratch (crowd ambience,
+harmonica, harp and snare pass 60/30 on the app path). Reverted: crash cymbal, vocal laugh, whisper, whoosh. Finger snap and trumpet are decided by the tagger on long recordings (`taggerPolicy.json`),
 so their swap mostly removes leaked weights.
 
 No regression on the app path (scoreboard `latest.json`, main c870cfe): snare, trumpet and vinyl scratch pass 60/30
@@ -41,7 +49,7 @@ Precision / recall at the shipped cutoff, on each counted set (false alarms show
 | acoustic guitar | FTS 1.00/0.83, FSD50K 0.86/0.68, IDMT 54 false alarms of 3623, NSynth 0.53/0.62, SASSE 7 false alarms of 2702 | FTS 1.00/1.00, FSD50K 0.80/0.87, IDMT 339 false alarms of 3623, NSynth 0.54/0.48 | precision-first 0.772 | no | kept old, unverified |
 | bird ambience | FTS 1.00/0.68, FSD50K 0.73/0.56 | FTS 1.00/0.51, FSD50K 0.92/0.34 | balanced 0.979 | yes | held (tagger kept, see below) |
 | cowbell | FTS 1.00/0.23, FSD50K 0.81/0.81 | FTS 1.00/0.12, FSD50K 0.83/0.68 | precision-first 0.504 | no | kept old, unverified |
-| crash cymbal | FTS 1.00/0.92, FSD50K 0.41/0.82 | FTS 1.00/0.39, FSD50K 0.77/0.75 | precision-first 0.994 | yes | swapped |
+| crash cymbal | FTS 1.00/0.92, FSD50K 0.41/0.82 | FTS 1.00/0.39, FSD50K 0.77/0.75 | precision-first 0.994 | yes | swapped in #232, reverted to old (failed on the app path) |
 | crowd ambience | FTS 1.00/0.83, FSD50K 0.60/0.85 | FTS 1.00/0.50, FSD50K 0.92/0.49 | precision-first 0.985 | yes | swapped |
 | drums | FTS 0.87/0.85, FSD50K 0.09/0.80, SASSE 40 false alarms of 2702 | FTS 0.00/0.00, FSD50K 0.00/0.00 | precision-first 0.994 | no | kept old, unverified |
 | electric guitar | FSD50K 0.92/0.72, IDMT 1581 false alarms of 3623, NSynth 0.15/0.66 | FSD50K 0.98/0.25, IDMT 66 false alarms of 3623, NSynth 0.00/0.00 | precision-first 0.980 | no | kept old, unverified |
@@ -61,10 +69,10 @@ Precision / recall at the shipped cutoff, on each counted set (false alarms show
 | trumpet | FTS 0.87/1.00, FSD50K 0.72/0.84 | FTS 0.95/0.95, FSD50K 0.70/0.84 | precision-first 0.957 | yes | swapped |
 | vinyl scratch | FSD50K 0.24/0.85 | FSD50K 0.91/0.91 | precision-first 0.595 | yes | swapped |
 | vocal gasp | FSD50K 0.26/0.90 | FSD50K 0.47/0.67 | precision-first 0.989 | no | kept old, unverified |
-| vocal laugh | FTS 1.00/0.83, FSD50K 0.61/0.77 | FTS 1.00/0.83, FSD50K 0.68/0.71 | precision-first 0.674 | yes | swapped |
+| vocal laugh | FTS 1.00/0.83, FSD50K 0.61/0.77 | FTS 1.00/0.83, FSD50K 0.68/0.71 | precision-first 0.674 | yes | swapped in #232, reverted to old (failed on the app path) |
 | water ambience | FTS 1.00/0.42, FSD50K 0.48/0.85 | FTS 1.00/0.11, FSD50K 0.64/0.41 | precision-first 0.966 | no | kept old, unverified |
-| whisper | FSD50K 0.16/0.89 | FSD50K 0.72/0.79 | precision-first 0.787 | yes | swapped |
-| whoosh | FSD50K 0.84/0.58 | FSD50K 0.63/0.84 | precision-first 0.710 | yes | swapped |
+| whisper | FSD50K 0.16/0.89 | FSD50K 0.72/0.79 | precision-first 0.787 | yes | swapped in #232, reverted to old (failed on the app path) |
+| whoosh | FSD50K 0.84/0.58 | FSD50K 0.63/0.84 | precision-first 0.710 | yes | swapped in #232, reverted to old (failed on the app path) |
 
 Free-tag-set (FTS) has no negatives for ambience and effect tags, so precision there reads 1.00 by construction.
 Clean heads lose recall on sample-pack and NSynth audio (drums, electric guitar, mallet instrument, piano, strings,

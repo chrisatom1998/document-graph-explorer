@@ -31,8 +31,9 @@ describe('trained tagger policy', () => {
     const decided = new Set(TAGGER_POLICY.tags.flatMap(t => t.decides));
     for (const label of ['voice', 'organ', 'cello']) expect(decided.has(label)).toBe(false);
     expect(TAGGER_POLICY.tags.filter(t => t.dimension === 'source').map(t => t.output).sort())
-      .toEqual(['bass', 'cat:animal sound', 'cat:bass guitar', 'cat:bell', 'cat:environmental sound', 'cat:foley', 'cat:glockenspiel', 'cat:percussion', 'cat:turntable', 'cat:whistle', 'cymbals',
-        'drums', 'guitar', 'piano', 'saxophone', 'synthesizer', 'trumpet', 'violin']);
+      .toEqual(['bass', 'cat:animal sound', 'cat:bass guitar', 'cat:bell', 'cat:environmental sound', 'cat:flute', 'cat:foley', 'cat:glockenspiel', 'cat:guitar',
+        'cat:marimba', 'cat:percussion', 'cat:turntable', 'cat:vibraphone', 'cat:violin / fiddle', 'cat:whistle', 'cymbals', 'drums', 'piano', 'saxophone',
+        'synthesizer', 'trumpet']);
   });
 });
 
@@ -95,7 +96,7 @@ describe('trained tagger display', () => {
   const sources = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'source').map(s => s.label).sort();
   it('decides its instruments on recordings of at least 10 s, replacing other models', () => {
     // CLAP-head drums and piano, Jamendo-style guitar: the tagger keeps drums (its own score) and drops piano and guitar.
-    const a = track(10, { drums: .99, piano: .01, guitar: .01, bass: threshold('bass') + .01 }, [
+    const a = track(10, { drums: .99, piano: .01, 'cat:guitar': .01, bass: threshold('bass') + .01 }, [
       { group: 'source', label: 'drums', score: .9, model: 'Trained head' }, { group: 'source', label: 'piano', score: .9, model: 'Trained head' },
       { group: 'source', label: 'guitar', score: .9, model: 'Trained head' }, { group: 'source', label: 'synthesizer', score: .9, model: 'Trained head' }]);
     const shown = confidentSoundSummary(a);
@@ -137,6 +138,16 @@ describe('trained tagger display', () => {
     expect(effects(windows(30))).toEqual([]);
     expect(effects(windows(40))).toEqual(['crash cymbal']);
   });
+  it('decides siren, flute, marimba and vibraphone over their CLAP heads, and guitar and violin on short clips', () => {
+    const shownLabels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
+    const heads = [{ group: 'production' as const, label: 'siren', score: .9, model: 'Trained head' as const },
+      ...['flute', 'marimba', 'vibraphone', 'guitar', 'violin'].map(label => ({ group: 'source' as const, label, score: .9, model: 'Trained head' as const }))];
+    const outputs = ['cat:siren', 'cat:flute', 'cat:marimba', 'cat:vibraphone', 'cat:guitar', 'cat:violin / fiddle'];
+    expect(shownLabels(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads))).toEqual([]);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads));
+    expect(shown.map(s => s.label).sort()).toEqual(['flute', 'guitar', 'marimba', 'siren', 'vibraphone', 'violin']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
   it('never overrides what the listener confirmed or rejected', () => {
     const a = track(30, { drums: .01, piano: .99 });
     a.confirmedInstruments = ['drums'];
@@ -177,8 +188,8 @@ describe('trained tagger long-recording rules', () => {
   };
   it('installs the rules picked on the full-song tuning set', () => {
     expect(Object.fromEntries(TAGGER_POLICY.tags.filter(t => t.long).map(t => [t.output, t.long]))).toEqual({
-      drums: { rule: 'max', threshold: .5757 }, trumpet: { rule: 'max' }, piano: { rule: 'detectors' }, guitar: { rule: 'detectors' },
-      cymbals: { rule: 'detectors' }, violin: { rule: 'detectors' }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' },
+      drums: { rule: 'max', threshold: .5757 }, trumpet: { rule: 'max' }, piano: { rule: 'detectors' }, 'cat:guitar': { rule: 'detectors', afterSeconds: 30 },
+      cymbals: { rule: 'detectors' }, 'cat:violin / fiddle': { rule: 'detectors', afterSeconds: 30 }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' },
       synthesizer: { rule: 'max' }, 'cat:percussion': { rule: 'detectors' }, 'cat:animal sound': { rule: 'detectors' },
       'cat:glockenspiel': { rule: 'detectors' }, 'cat:whistle': { rule: 'detectors' }, 'cat:tambourine': { rule: 'detectors' },
       'cat:vocal scream': { rule: 'detectors' }, 'cat:environmental sound': { rule: 'detectors', afterSeconds: 30 },
@@ -186,7 +197,8 @@ describe('trained tagger long-recording rules', () => {
       'cat:finger snap': { rule: 'detectors', afterSeconds: 30 }, 'cat:water ambience': { rule: 'detectors', afterSeconds: 30 },
       'cat:bell': { rule: 'detectors' }, 'cat:fm synth': { rule: 'detectors' },
       'cat:bass guitar': { rule: 'detectors', afterSeconds: 30 }, 'cat:machine ambience': { rule: 'detectors', afterSeconds: 30 },
-      'cat:pitched vocal': { rule: 'detectors' }, 'cat:hi-hat': { rule: 'detectors', afterSeconds: 30 },
+      'cat:pitched vocal': { rule: 'detectors' }, 'cat:hi-hat': { rule: 'detectors', afterSeconds: 30 }, 'cat:siren': { rule: 'detectors', afterSeconds: 30 },
+      'cat:flute': { rule: 'detectors', afterSeconds: 30 }, 'cat:marimba': { rule: 'detectors', afterSeconds: 30 }, 'cat:vibraphone': { rule: 'detectors', afterSeconds: 30 },
       'cat:crash cymbal': { rule: 'detectors', afterSeconds: 30 } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
@@ -200,11 +212,12 @@ describe('trained tagger long-recording rules', () => {
   });
   it('leaves fallback instruments to the existing detectors on long recordings, and keeps the tagger on 10 s clips', () => {
     const others = [{ group: 'source' as const, label: 'piano', score: .9, model: 'Trained head' as const }];
-    expect(sources(long({ piano: [.01, .01, .01], guitar: [.99, .99, .99] }, others))).toEqual(['piano']);
+    expect(sources(long({ piano: [.01, .01, .01], saxophone: [.99, .99, .99] }, others))).toEqual(['piano']);
     expect(taggerDecisions(long({ piano: [.99, .99, .99] }).tagger, 30)!.map(d => d.tag.output)).not.toContain('piano');
-    expect(sources(track(10, { piano: .01, guitar: .99 }, others))).toEqual(['guitar']);
+    expect(sources(track(10, { piano: .01, saxophone: .99 }, others))).toEqual(['saxophone']);
   });
-  it.each(['cat:environmental sound', 'cat:foley', 'cat:turntable', 'cat:finger snap', 'cat:water ambience'])(
+  it.each(['cat:environmental sound', 'cat:foley', 'cat:turntable', 'cat:finger snap', 'cat:water ambience', 'cat:guitar', 'cat:violin / fiddle', 'cat:siren',
+    'cat:flute', 'cat:marimba', 'cat:vibraphone'])(
     'keeps the tagger deciding %s up to 30 s, as the held-out scorer did, and defers on longer recordings', output => {
       const at = (duration: number, windows: number) => taggerDecisions({ revision: TAGGER_REVISION, windows, scores: { [output]: threshold(output) } }, duration)!
         .find(d => d.tag.output === output);
