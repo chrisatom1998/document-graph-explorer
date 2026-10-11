@@ -39,7 +39,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 115/116: the tagger gains the recall network: it decides guitar, violin, finger snap, siren, flute, marimba and vibraphone
 // on recall-run outputs (fresh test sets 60/30).
 // 117/118: the tagger decides crash cymbal and whisper (fresh test sets 60/30; their learned heads failed on the app path).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 118 : 117;
+// 119/120: the tagger decides voice on clips up to 30 s (fresh test sets 60/30 under the fair half-split rule; the CLAP head
+// failed precision on every set).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 120 : 119;
 export interface InstrumentEstimate {
   label: string;
   score: number;
