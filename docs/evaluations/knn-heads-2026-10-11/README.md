@@ -23,7 +23,9 @@ Cutoffs were fitted on the calibration half: freesound-reserved plus half of eac
 (`sha256('code-fix-cal|'+group) % 2`, the code-fixes split). The numbers below are on the other half, which the cutoffs
 never saw. The locked free-tag-set holdout was not read. Labels are as of the test-label audit
 (Oct 11, ~4:15 am PT). Per tag, the precision-first and balanced cutoffs were both tried, and the one that passed
-better on the judge half was kept (Chris, 1:56 am PT).
+better on the judge half was kept (Chris, 1:56 am PT). That tie-break uses the judge half, but here it changes no
+line: vocal shout is 0.61/0.44 either way, and vinyl crackle is 0.85/1.00 (precision-first) or 0.61/1.00 (balanced),
+both passing 60/30.
 
 | Tag | Set | Today in the app | With neighbour head | False alarms |
 |---|---|---|---|---|
@@ -57,6 +59,6 @@ Short-clip heads (one-shot model) were not modelled.
    `pool.csv`.
 2. `scripts/embed-clap.mjs` on each fresh test list (the app's own q8 CLAP).
 3. `scripts/knn-heads/knn_eval.py` with `BASE=app`, once in precision-first mode and once with `MODE=balanced`. Then
-   `scripts/knn-heads/pick.py` with `ONLY=or`.
-4. `scripts/knn-heads/build.py <pool.npz> <banks.json> <picks.json>`, then update `learned.json`'s hash in
+   `scripts/knn-heads/pick.py` with `ONLY=or` and `SHIP=ship.json` (adds the 1% false-alarm cap).
+4. `scripts/knn-heads/build.py <pool.npz> <banks.json> <ship.json>`, then update `learned.json`'s hash in
    `public/sound-model/manifest.json`.
