@@ -17,7 +17,8 @@ import { isRuleDescribedLabel } from './timbreDescriptions';
 export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v13';
 /** The shipping bar (Chris, 2026-10-10): a detector shows as a normal tag when its held-out precision AND recall on clips and
  * samples are both at least this; below it, a useful detector shows as a faded "maybe". Full songs are a no-regression check
- * only. scripts/head-scorecard.py, scripts/dj-effects/ship.py and the tagger's `tested` flags use the same bar. */
+ * only. scripts/head-scorecard.py and scripts/dj-effects/ship.py use the same bar; the tagger's `tested` flags use the 60/30
+ * ship line since 2026-10-11 (see TaggerTag.tested). */
 export const SOUND_TAG_BAR = .5;
 /** A detector score at or above this shows as "likely" (and is the only floor for short clips). */
 export const LIKELY_SOUND_CUTOFF = .5;

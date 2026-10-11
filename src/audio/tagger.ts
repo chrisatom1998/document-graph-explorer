@@ -22,8 +22,9 @@ export interface TaggerTag {
   decides: string[];
   /** Equivalent display labels stored under another dimension by a native detector. */
   alsoDecides?: { dimension: Extract<Dimension, 'source' | 'character' | 'effect'>; label: string }[];
-  /** Held-out precision and recall both reached the shipping bar (SOUND_TAG_BAR, 0.50 since 2026-10-10; 0.70 before) on every
-   * complete-label set; otherwise shown as a "maybe" tag. */
+  /** Passed the ship line on every fresh test set; otherwise shown as a "maybe" tag. Since 2026-10-11 (Chris) the line is 60/30:
+   * precision >= 0.60 and recall >= 0.30 on each set with 5+ positives, and at most 1% false alarms on sets with fewer. Before,
+   * precision and recall both reached SOUND_TAG_BAR (0.50 from 2026-10-10; 0.70 before). Not the display cutoff. */
   tested: boolean;
   /** Recordings shorter than this keep the existing detectors for this tag (the held-out sets had no shorter audio). */
   minSeconds?: number;
