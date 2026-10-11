@@ -10,25 +10,17 @@ import { TAGGER_POLICY, TAGGER_REVISION } from './tagger';
 const PROMOTED: [label: string, threshold: number, precision: number, recall: number, report: string][] = [
   ['beatbox', .843, 1, .96, 'dj-labels-2026-10-04/added-maybe-heads.json'],
   ['electric guitar', .933, .98, .81, 'dj-labels-2026-10-04/added-maybe-heads.json'],
-  ['piano', .85, .99, .82, 'dj-labels-2026-10-04/added-maybe-heads.json'],
   ['organ', .92, .99, .90, 'dj-labels-2026-10-04/added-maybe-heads.json'],
-  ['harmonica', .964, 1, .91, 'dj-labels-2026-10-04/added-maybe-heads.json'],
-  ['vocal laugh', .965, .95, .91, 'dj-labels-2026-10-04/added-maybe-heads.json'],
-  ['strings', .924, .99, .78, 'dj-labels-2026-10-04/added-maybe-heads.json'],
-  ['harp', .927, 1, .84, 'dj-labels-2026-10-04/added-maybe-heads.json'],
   ['mallet instrument', .936, .99, .80, 'dj-labels-2026-10-04/added-maybe-heads.json'],
-  ['crowd ambience', .969, .92, .89, 'dj-labels-2026-10-04/added-maybe-heads.json'],
   ['cowbell', .964, 1, .87, 'dj-labels-2026-10-04/added-maybe-heads.json'],
   ['accordion', .959, 1, .79, 'dj-labels-2026-10-04/added-maybe-heads.json'],
   ['gong', .923, .95, .81, 'dj-labels-2026-10-04/added-maybe-heads.json'],
   ['trumpet', .88, .94, .83, 'dj-labels-2026-10-04/added-maybe-heads.json'],
   ['vocal gasp', .979, .85, .82, 'dj-labels-2026-10-04/added-maybe-heads.json'],
-  ['rain ambience', .926, .90, .75, 'dj-labels-2026-10-04/added-heads-round21.json'],
   ['synthesizer', .66, .59, .67, 'dj-labels-2026-10-04/added-heads-round14-bar45.json'],
   ['drum fill', .909, .56, .64, 'dj-labels-2026-10-04/added-heads-round14-bar45.json'],
   ['choir', .967, .75, .51, 'dj-labels-2026-10-04/added-heads-round14-bar45.json'],
   ['clap', .943, .79, .51, 'dj-labels-2026-10-04/added-heads-round14-bar45.json'],
-  ['snare', .895, .71, .53, 'dj-labels-2026-10-04/added-heads-round24.json'],
   ['chiptune synth', .959, .86, .52, 'dj-labels-2026-10-04/added-heads-round19.json'],
   ['voice', .5, .66, .59, 'dj-labels-2026-10-04/shipped-heads.json'],
   ['reverse cymbal', .7627, .69, .85, 'dj-effects-2026-10-06/shipped.json'],
@@ -40,6 +32,24 @@ const PROMOTED: [label: string, threshold: number, precision: number, recall: nu
 ];
 /** tag-heads-2026-10-09 heads are not cleared for one-shots, so ship.py tiers them on the held-out clips longer than
  * 2.25 s where the browser actually runs them (heldOutLongClip), not on the aggregate that included short clips. */
+/** Clean cloud retrain (2026-10-11): heads first trained on the Mac (with FSD50K eval in training) refit from training
+ * clips only, filtered against the fresh exclude list, and swapped in only when they pass the 60/30 ship line on FSD50K
+ * eval and the free-tag-set. Scores are FSD50K eval at the shipped cutoff (docs/evaluations/clean-retrain-2026-10-11). */
+const CLEAN_RETRAINED: [label: string, threshold: number, precision: number, recall: number][] = [
+  ['acoustic guitar', 0.772, 0.795, 0.866],
+  ['crash cymbal', 0.988, 0.709, 0.789],
+  ['crowd ambience', 0.985, 0.81, 0.558],
+  ['finger snap', 0.958, 0.681, 0.731],
+  ['harmonica', 0.752, 0.709, 0.966],
+  ['harp', 0.846, 0.78, 0.807],
+  ['piano', 0.925, 0.781, 0.75],
+  ['rain ambience', 0.822, 0.607, 0.946],
+  ['snare', 0.856, 0.784, 0.6],
+  ['strings', 0.5, 0.893, 0.714],
+  ['tabla', 0.732, 0.837, 0.911],
+  ['vocal laugh', 0.674, 0.678, 0.708],
+  ['whisper', 0.903, 0.806, 0.773],
+];
 const RUNTIME_ELIGIBLE: [label: string, threshold: number, precision: number, recall: number][] = [
   ['kalimba', .8026, .74, .86], ['falling', .777, .61, .65], ['djembe', .9096, .62, .70], ['whistle', .8491, .62, .62],
   ['bongo', .9228, .54, .625], ['tom', .8114, .64, .69],
@@ -72,6 +82,18 @@ describe('the 50/50 shipping bar', () => {
     expect(row, `${label} @ ${threshold} in ${report}`).toBeDefined();
     expect(row!.precision!).toBeCloseTo(precision, 2);
     expect(row!.recall!).toBeCloseTo(recall, 2);
+  });
+
+  it.each(CLEAN_RETRAINED)('ships %s as a clean-retrained head, backed by its FSD50K eval score', (label, threshold, precision, recall) => {
+    const h = head(label);
+    expect(h.maybe).toBeUndefined();
+    expect(h.threshold).toBeCloseTo(threshold, 4);
+    expect(precision).toBeGreaterThanOrEqual(.6);
+    expect(recall).toBeGreaterThanOrEqual(.3);
+    const row = rows('clean-retrain-2026-10-11/report.json').find(r => r.label === label);
+    expect(row?.threshold).toBeCloseTo(threshold, 4);
+    expect(row!.precision!).toBeCloseTo(precision, 3);
+    expect(row!.recall!).toBeCloseTo(recall, 3);
   });
 
   it.each(RUNTIME_ELIGIBLE)('ships %s as a normal head from its runtime-eligible held-out score', (label, threshold, precision, recall) => {

@@ -1,0 +1,1995 @@
+{
+ "kind": "clean-retrain-2026-10-11",
+ "shipLine": {
+  "precision": 0.6,
+  "recall": 0.3
+ },
+ "heads": [
+  {
+   "label": "acoustic guitar",
+   "threshold": 0.772,
+   "precision": 0.795,
+   "recall": 0.866,
+   "judge": "FSD50K eval",
+   "cutoff": "precision-first"
+  },
+  {
+   "label": "crash cymbal",
+   "threshold": 0.988,
+   "precision": 0.709,
+   "recall": 0.789,
+   "judge": "FSD50K eval",
+   "cutoff": "balanced"
+  },
+  {
+   "label": "crowd ambience",
+   "threshold": 0.985,
+   "precision": 0.81,
+   "recall": 0.558,
+   "judge": "FSD50K eval",
+   "cutoff": "precision-first"
+  },
+  {
+   "label": "finger snap",
+   "threshold": 0.958,
+   "precision": 0.681,
+   "recall": 0.731,
+   "judge": "FSD50K eval",
+   "cutoff": "precision-first"
+  },
+  {
+   "label": "harmonica",
+   "threshold": 0.752,
+   "precision": 0.709,
+   "recall": 0.966,
+   "judge": "FSD50K eval",
+   "cutoff": "precision-first"
+  },
+  {
+   "label": "harp",
+   "threshold": 0.846,
+   "precision": 0.78,
+   "recall": 0.807,
+   "judge": "FSD50K eval",
+   "cutoff": "precision-first"
+  },
+  {
+   "label": "piano",
+   "threshold": 0.925,
+   "precision": 0.781,
+   "recall": 0.75,
+   "judge": "FSD50K eval",
+   "cutoff": "precision-first"
+  },
+  {
+   "label": "rain ambience",
+   "threshold": 0.822,
+   "precision": 0.607,
+   "recall": 0.946,
+   "judge": "FSD50K eval",
+   "cutoff": "precision-first"
+  },
+  {
+   "label": "snare",
+   "threshold": 0.856,
+   "precision": 0.784,
+   "recall": 0.6,
+   "judge": "FSD50K eval",
+   "cutoff": "precision-first"
+  },
+  {
+   "label": "strings",
+   "threshold": 0.5,
+   "precision": 0.893,
+   "recall": 0.714,
+   "judge": "FSD50K eval",
+   "cutoff": "precision-first"
+  },
+  {
+   "label": "tabla",
+   "threshold": 0.732,
+   "precision": 0.837,
+   "recall": 0.911,
+   "judge": "FSD50K eval",
+   "cutoff": "precision-first"
+  },
+  {
+   "label": "vocal laugh",
+   "threshold": 0.674,
+   "precision": 0.678,
+   "recall": 0.708,
+   "judge": "FSD50K eval",
+   "cutoff": "precision-first"
+  },
+  {
+   "label": "whisper",
+   "threshold": 0.903,
+   "precision": 0.806,
+   "recall": 0.773,
+   "judge": "FSD50K eval",
+   "cutoff": "balanced"
+  }
+ ],
+ "results": [
+  {
+   "tag": "accordion",
+   "fsd": {
+    "tag": "accordion",
+    "trainPositive": 40,
+    "evalPositive": 50,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.738,
+     "recall": 0.9,
+     "flagged": 61,
+     "threshold": 0.959,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "clean": {
+     "precision": 0.538,
+     "recall": 0.7,
+     "flagged": 65,
+     "threshold": 0.9,
+     "outOfFoldMinPR": 0.611,
+     "passes": {
+      "60/30": false,
+      "50/50": true,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.574,
+     "recall": 0.7,
+     "flagged": 61,
+     "threshold": 0.914,
+     "outOfFoldMinPR": 0.653,
+     "passes": {
+      "60/30": false,
+      "50/50": true,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 0
+   },
+   "ftsCounts": false,
+   "choice": null,
+   "held": false
+  },
+  {
+   "tag": "acoustic guitar",
+   "fsd": {
+    "tag": "acoustic guitar",
+    "trainPositive": 318,
+    "evalPositive": 134,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.858,
+     "recall": 0.679,
+     "flagged": 106,
+     "threshold": 0.931,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.795,
+     "recall": 0.866,
+     "flagged": 146,
+     "threshold": 0.772,
+     "outOfFoldMinPR": 0.601,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.934,
+     "recall": 0.53,
+     "flagged": 76,
+     "threshold": 0.943,
+     "outOfFoldMinPR": 0.804,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 36,
+    "negatives": 482,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.944,
+     "flagged": 34
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "flagged": 36
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.5,
+     "flagged": 18
+    }
+   },
+   "ftsCounts": true,
+   "choice": "clean",
+   "held": false
+  },
+  {
+   "tag": "bird ambience",
+   "fsd": {
+    "tag": "bird ambience",
+    "trainPositive": 803,
+    "evalPositive": 459,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.734,
+     "recall": 0.564,
+     "flagged": 353,
+     "threshold": 0.98,
+     "maybe": true,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.945,
+     "recall": 0.261,
+     "flagged": 127,
+     "threshold": 0.989,
+     "outOfFoldMinPR": 0.453,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.918,
+     "recall": 0.34,
+     "flagged": 170,
+     "threshold": 0.979,
+     "outOfFoldMinPR": 0.586,
+     "passes": {
+      "60/30": true,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 127,
+    "negatives": 0,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.591,
+     "flagged": 75
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.244,
+     "flagged": 31
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.402,
+     "flagged": 51
+    }
+   },
+   "ftsCounts": true,
+   "choice": "cleanBalanced",
+   "held": true
+  },
+  {
+   "tag": "cowbell",
+   "fsd": {
+    "tag": "cowbell",
+    "trainPositive": 160,
+    "evalPositive": 63,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.81,
+     "recall": 0.81,
+     "flagged": 63,
+     "threshold": 0.964,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "clean": {
+     "precision": 0.827,
+     "recall": 0.683,
+     "flagged": 52,
+     "threshold": 0.504,
+     "outOfFoldMinPR": 0.712,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.333,
+     "flagged": 21,
+     "threshold": 0.793,
+     "outOfFoldMinPR": 0.914,
+     "passes": {
+      "60/30": true,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 17,
+    "negatives": 0,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.235,
+     "flagged": 4
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.118,
+     "flagged": 2
+    },
+    "cleanBalanced": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "flagged": 0
+    }
+   },
+   "ftsCounts": true,
+   "choice": null,
+   "held": false
+  },
+  {
+   "tag": "crash cymbal",
+   "fsd": {
+    "tag": "crash cymbal",
+    "trainPositive": 253,
+    "evalPositive": 71,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.406,
+     "recall": 0.817,
+     "flagged": 143,
+     "threshold": 0.838,
+     "maybe": false,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.768,
+     "recall": 0.746,
+     "flagged": 69,
+     "threshold": 0.994,
+     "outOfFoldMinPR": 0.458,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.709,
+     "recall": 0.789,
+     "flagged": 79,
+     "threshold": 0.988,
+     "outOfFoldMinPR": 0.54,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    }
+   },
+   "fts": {
+    "positives": 40,
+    "negatives": 457,
+    "old": {
+     "precision": 0.86,
+     "recall": 0.925,
+     "flagged": 43
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.55,
+     "flagged": 22
+    },
+    "cleanBalanced": {
+     "precision": 0.964,
+     "recall": 0.675,
+     "flagged": 28
+    }
+   },
+   "ftsCounts": true,
+   "choice": "cleanBalanced",
+   "held": false
+  },
+  {
+   "tag": "crowd ambience",
+   "fsd": {
+    "tag": "crowd ambience",
+    "trainPositive": 208,
+    "evalPositive": 199,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.49,
+     "recall": 0.899,
+     "flagged": 365,
+     "threshold": 0.969,
+     "maybe": false,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.81,
+     "recall": 0.558,
+     "flagged": 137,
+     "threshold": 0.985,
+     "outOfFoldMinPR": 0.465,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.81,
+     "recall": 0.558,
+     "flagged": 137,
+     "threshold": 0.985,
+     "outOfFoldMinPR": 0.465,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 29,
+    "negatives": 0,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.759,
+     "flagged": 22
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.483,
+     "flagged": 14
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.483,
+     "flagged": 14
+    }
+   },
+   "ftsCounts": true,
+   "choice": "clean",
+   "held": false
+  },
+  {
+   "tag": "drums",
+   "fsd": {
+    "tag": "drums",
+    "trainPositive": 138,
+    "evalPositive": 60,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.05,
+     "recall": 0.8,
+     "flagged": 959,
+     "threshold": 0.506,
+     "maybe": false,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "flagged": 0,
+     "threshold": 0.994,
+     "outOfFoldMinPR": 0.29,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "flagged": 0,
+     "threshold": 0.994,
+     "outOfFoldMinPR": 0.29,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 406,
+    "negatives": 739,
+    "old": {
+     "precision": 0.863,
+     "recall": 0.884,
+     "flagged": 416
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.015,
+     "flagged": 6
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.015,
+     "flagged": 6
+    }
+   },
+   "ftsCounts": true,
+   "choice": null,
+   "held": false
+  },
+  {
+   "tag": "electric guitar",
+   "fsd": {
+    "tag": "electric guitar",
+    "trainPositive": 154,
+    "evalPositive": 181,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.915,
+     "recall": 0.718,
+     "flagged": 142,
+     "threshold": 0.933,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "clean": {
+     "precision": 0.978,
+     "recall": 0.249,
+     "flagged": 46,
+     "threshold": 0.98,
+     "outOfFoldMinPR": 0.602,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.977,
+     "recall": 0.232,
+     "flagged": 43,
+     "threshold": 0.982,
+     "outOfFoldMinPR": 0.626,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 42,
+    "negatives": 482,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.881,
+     "flagged": 37
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.31,
+     "flagged": 13
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.286,
+     "flagged": 12
+    }
+   },
+   "ftsCounts": true,
+   "choice": null,
+   "held": false
+  },
+  {
+   "tag": "finger snap",
+   "fsd": {
+    "tag": "finger snap",
+    "trainPositive": 72,
+    "evalPositive": 67,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.513,
+     "recall": 0.896,
+     "flagged": 117,
+     "threshold": 0.851,
+     "maybe": true,
+     "passes": {
+      "60/30": false,
+      "50/50": true,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.681,
+     "recall": 0.731,
+     "flagged": 72,
+     "threshold": 0.958,
+     "outOfFoldMinPR": 0.602,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.788,
+     "recall": 0.612,
+     "flagged": 52,
+     "threshold": 0.979,
+     "outOfFoldMinPR": 0.694,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 9,
+    "negatives": 0,
+    "old": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "flagged": 9
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "flagged": 9
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 1.0,
+     "flagged": 9
+    }
+   },
+   "ftsCounts": false,
+   "choice": "clean",
+   "held": false
+  },
+  {
+   "tag": "gong",
+   "fsd": {
+    "tag": "gong",
+    "trainPositive": 345,
+    "evalPositive": 72,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.695,
+     "recall": 0.792,
+     "flagged": 82,
+     "threshold": 0.923,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.659,
+     "recall": 0.778,
+     "flagged": 85,
+     "threshold": 0.971,
+     "outOfFoldMinPR": 0.602,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.696,
+     "recall": 0.764,
+     "flagged": 79,
+     "threshold": 0.976,
+     "outOfFoldMinPR": 0.633,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 20,
+    "negatives": 463,
+    "old": {
+     "precision": 0.567,
+     "recall": 0.85,
+     "flagged": 30
+    },
+    "clean": {
+     "precision": 0.486,
+     "recall": 0.9,
+     "flagged": 37
+    },
+    "cleanBalanced": {
+     "precision": 0.529,
+     "recall": 0.9,
+     "flagged": 34
+    }
+   },
+   "ftsCounts": true,
+   "choice": null,
+   "held": false
+  },
+  {
+   "tag": "harmonica",
+   "fsd": {
+    "tag": "harmonica",
+    "trainPositive": 59,
+    "evalPositive": 58,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.879,
+     "recall": 0.879,
+     "flagged": 58,
+     "threshold": 0.964,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "clean": {
+     "precision": 0.709,
+     "recall": 0.966,
+     "flagged": 79,
+     "threshold": 0.752,
+     "outOfFoldMinPR": 0.469,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.709,
+     "recall": 0.966,
+     "flagged": 79,
+     "threshold": 0.752,
+     "outOfFoldMinPR": 0.469,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    }
+   },
+   "fts": {
+    "positives": 0
+   },
+   "ftsCounts": false,
+   "choice": "clean",
+   "held": false
+  },
+  {
+   "tag": "harp",
+   "fsd": {
+    "tag": "harp",
+    "trainPositive": 148,
+    "evalPositive": 57,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.762,
+     "recall": 0.842,
+     "flagged": 63,
+     "threshold": 0.927,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "clean": {
+     "precision": 0.78,
+     "recall": 0.807,
+     "flagged": 59,
+     "threshold": 0.846,
+     "outOfFoldMinPR": 0.601,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.792,
+     "recall": 0.667,
+     "flagged": 48,
+     "threshold": 0.922,
+     "outOfFoldMinPR": 0.758,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 3,
+    "negatives": 0,
+    "old": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "flagged": 0
+    },
+    "clean": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "flagged": 0
+    },
+    "cleanBalanced": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "flagged": 0
+    }
+   },
+   "ftsCounts": false,
+   "choice": "clean",
+   "held": false
+  },
+  {
+   "tag": "kick",
+   "fsd": {
+    "tag": "kick",
+    "trainPositive": 382,
+    "evalPositive": 119,
+    "evalClips": 10231,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.118,
+     "flagged": 14,
+     "threshold": 0.951,
+     "maybe": false,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.092,
+     "flagged": 11,
+     "threshold": 0.998,
+     "outOfFoldMinPR": 0.12,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.82,
+     "recall": 0.345,
+     "flagged": 50,
+     "threshold": 0.98,
+     "outOfFoldMinPR": 0.482,
+     "passes": {
+      "60/30": true,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 51,
+    "negatives": 823,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.02,
+     "flagged": 1
+    },
+    "clean": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "flagged": 0
+    },
+    "cleanBalanced": {
+     "precision": 0.846,
+     "recall": 0.216,
+     "flagged": 13
+    }
+   },
+   "ftsCounts": true,
+   "choice": null,
+   "held": false
+  },
+  {
+   "tag": "mallet instrument",
+   "fsd": {
+    "tag": "mallet instrument",
+    "trainPositive": 147,
+    "evalPositive": 126,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.736,
+     "recall": 0.841,
+     "flagged": 144,
+     "threshold": 0.936,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "clean": {
+     "precision": 0.927,
+     "recall": 0.603,
+     "flagged": 82,
+     "threshold": 0.931,
+     "outOfFoldMinPR": 0.573,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.927,
+     "recall": 0.603,
+     "flagged": 82,
+     "threshold": 0.931,
+     "outOfFoldMinPR": 0.573,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 125,
+    "negatives": 298,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.288,
+     "flagged": 36
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.128,
+     "flagged": 16
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.128,
+     "flagged": 16
+    }
+   },
+   "ftsCounts": true,
+   "choice": null,
+   "held": false
+  },
+  {
+   "tag": "organ",
+   "fsd": {
+    "tag": "organ",
+    "trainPositive": 198,
+    "evalPositive": 35,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.364,
+     "recall": 0.457,
+     "flagged": 44,
+     "threshold": 0.92,
+     "maybe": false,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.5,
+     "recall": 0.543,
+     "flagged": 38,
+     "threshold": 0.973,
+     "outOfFoldMinPR": 0.566,
+     "passes": {
+      "60/30": false,
+      "50/50": true,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.452,
+     "recall": 0.543,
+     "flagged": 42,
+     "threshold": 0.969,
+     "outOfFoldMinPR": 0.581,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 30,
+    "negatives": 573,
+    "old": {
+     "precision": 0.818,
+     "recall": 0.3,
+     "flagged": 11
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.133,
+     "flagged": 4
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.133,
+     "flagged": 4
+    }
+   },
+   "ftsCounts": true,
+   "choice": null,
+   "held": false
+  },
+  {
+   "tag": "piano",
+   "fsd": {
+    "tag": "piano",
+    "trainPositive": 338,
+    "evalPositive": 76,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.656,
+     "recall": 0.803,
+     "flagged": 93,
+     "threshold": 0.85,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.781,
+     "recall": 0.75,
+     "flagged": 73,
+     "threshold": 0.925,
+     "outOfFoldMinPR": 0.603,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.893,
+     "recall": 0.658,
+     "flagged": 56,
+     "threshold": 0.981,
+     "outOfFoldMinPR": 0.781,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 42,
+    "negatives": 554,
+    "old": {
+     "precision": 0.923,
+     "recall": 0.857,
+     "flagged": 39
+    },
+    "clean": {
+     "precision": 0.972,
+     "recall": 0.833,
+     "flagged": 36
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.714,
+     "flagged": 30
+    }
+   },
+   "ftsCounts": true,
+   "choice": "clean",
+   "held": false
+  },
+  {
+   "tag": "rain ambience",
+   "fsd": {
+    "tag": "rain ambience",
+    "trainPositive": 826,
+    "evalPositive": 242,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.696,
+     "recall": 0.86,
+     "flagged": 299,
+     "threshold": 0.926,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.607,
+     "recall": 0.946,
+     "flagged": 377,
+     "threshold": 0.822,
+     "outOfFoldMinPR": 0.6,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.787,
+     "recall": 0.872,
+     "flagged": 268,
+     "threshold": 0.93,
+     "outOfFoldMinPR": 0.788,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    }
+   },
+   "fts": {
+    "positives": 36,
+    "negatives": 0,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.361,
+     "flagged": 13
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.333,
+     "flagged": 12
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.25,
+     "flagged": 9
+    }
+   },
+   "ftsCounts": true,
+   "choice": "clean",
+   "held": false
+  },
+  {
+   "tag": "siren",
+   "fsd": {
+    "tag": "siren",
+    "trainPositive": 35,
+    "evalPositive": 55,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.096,
+     "recall": 0.909,
+     "flagged": 521,
+     "threshold": 0.7545,
+     "maybe": false,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.964,
+     "recall": 0.491,
+     "flagged": 28,
+     "threshold": 0.998,
+     "outOfFoldMinPR": 0.457,
+     "passes": {
+      "60/30": true,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.921,
+     "recall": 0.636,
+     "flagged": 38,
+     "threshold": 0.994,
+     "outOfFoldMinPR": 0.564,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 29,
+    "negatives": 0,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.345,
+     "flagged": 10
+    },
+    "clean": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "flagged": 0
+    },
+    "cleanBalanced": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "flagged": 0
+    }
+   },
+   "ftsCounts": true,
+   "choice": null,
+   "held": false
+  },
+  {
+   "tag": "snare",
+   "fsd": {
+    "tag": "snare",
+    "trainPositive": 861,
+    "evalPositive": 145,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.982,
+     "recall": 0.386,
+     "flagged": 57,
+     "threshold": 0.895,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.784,
+     "recall": 0.6,
+     "flagged": 111,
+     "threshold": 0.856,
+     "outOfFoldMinPR": 0.601,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.882,
+     "recall": 0.462,
+     "flagged": 76,
+     "threshold": 0.935,
+     "outOfFoldMinPR": 0.712,
+     "passes": {
+      "60/30": true,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 44,
+    "negatives": 746,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.295,
+     "flagged": 13
+    },
+    "clean": {
+     "precision": 0.97,
+     "recall": 0.727,
+     "flagged": 33
+    },
+    "cleanBalanced": {
+     "precision": 0.96,
+     "recall": 0.545,
+     "flagged": 25
+    }
+   },
+   "ftsCounts": true,
+   "choice": "clean",
+   "held": false
+  },
+  {
+   "tag": "strings",
+   "fsd": {
+    "tag": "strings",
+    "trainPositive": 1583,
+    "evalPositive": 140,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.917,
+     "recall": 0.786,
+     "flagged": 120,
+     "threshold": 0.924,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "clean": {
+     "precision": 0.893,
+     "recall": 0.714,
+     "flagged": 112,
+     "threshold": 0.5,
+     "outOfFoldMinPR": 0.744,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.925,
+     "recall": 0.7,
+     "flagged": 106,
+     "threshold": 0.637,
+     "outOfFoldMinPR": 0.749,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    }
+   },
+   "fts": {
+    "positives": 143,
+    "negatives": 493,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.483,
+     "flagged": 69
+    },
+    "clean": {
+     "precision": 0.987,
+     "recall": 0.517,
+     "flagged": 75
+    },
+    "cleanBalanced": {
+     "precision": 0.986,
+     "recall": 0.476,
+     "flagged": 69
+    }
+   },
+   "ftsCounts": true,
+   "choice": "clean",
+   "held": false
+  },
+  {
+   "tag": "tabla",
+   "fsd": {
+    "tag": "tabla",
+    "trainPositive": 283,
+    "evalPositive": 45,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.936,
+     "recall": 0.978,
+     "flagged": 47,
+     "threshold": 0.923,
+     "maybe": true,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "clean": {
+     "precision": 0.837,
+     "recall": 0.911,
+     "flagged": 49,
+     "threshold": 0.732,
+     "outOfFoldMinPR": 0.603,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.919,
+     "recall": 0.756,
+     "flagged": 37,
+     "threshold": 0.931,
+     "outOfFoldMinPR": 0.837,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    }
+   },
+   "fts": {
+    "positives": 0
+   },
+   "ftsCounts": false,
+   "choice": "clean",
+   "held": false
+  },
+  {
+   "tag": "trumpet",
+   "fsd": {
+    "tag": "trumpet",
+    "trainPositive": 668,
+    "evalPositive": 56,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.723,
+     "recall": 0.839,
+     "flagged": 65,
+     "threshold": 0.88,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "clean": {
+     "precision": 0.701,
+     "recall": 0.839,
+     "flagged": 67,
+     "threshold": 0.957,
+     "outOfFoldMinPR": 0.274,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.452,
+     "recall": 0.929,
+     "flagged": 115,
+     "threshold": 0.812,
+     "outOfFoldMinPR": 0.457,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 22,
+    "negatives": 462,
+    "old": {
+     "precision": 0.27,
+     "recall": 0.909,
+     "flagged": 74
+    },
+    "clean": {
+     "precision": 0.528,
+     "recall": 0.864,
+     "flagged": 36
+    },
+    "cleanBalanced": {
+     "precision": 0.339,
+     "recall": 0.909,
+     "flagged": 59
+    }
+   },
+   "ftsCounts": true,
+   "choice": null,
+   "held": false
+  },
+  {
+   "tag": "vinyl scratch",
+   "fsd": {
+    "tag": "vinyl scratch",
+    "trainPositive": 97,
+    "evalPositive": 81,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.241,
+     "recall": 0.852,
+     "flagged": 286,
+     "threshold": 0.7742,
+     "maybe": false,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.914,
+     "recall": 0.914,
+     "flagged": 81,
+     "threshold": 0.595,
+     "outOfFoldMinPR": 0.603,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.741,
+     "flagged": 60,
+     "threshold": 0.935,
+     "outOfFoldMinPR": 0.878,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    }
+   },
+   "fts": {
+    "positives": 15,
+    "negatives": 0,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.067,
+     "flagged": 1
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.133,
+     "flagged": 2
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.067,
+     "flagged": 1
+    }
+   },
+   "ftsCounts": true,
+   "choice": null,
+   "held": false
+  },
+  {
+   "tag": "vocal gasp",
+   "fsd": {
+    "tag": "vocal gasp",
+    "trainPositive": 145,
+    "evalPositive": 52,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.255,
+     "recall": 0.904,
+     "flagged": 184,
+     "threshold": 0.979,
+     "maybe": false,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.467,
+     "recall": 0.673,
+     "flagged": 75,
+     "threshold": 0.989,
+     "outOfFoldMinPR": 0.379,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.467,
+     "recall": 0.673,
+     "flagged": 75,
+     "threshold": 0.989,
+     "outOfFoldMinPR": 0.379,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 0
+   },
+   "ftsCounts": false,
+   "choice": null,
+   "held": false
+  },
+  {
+   "tag": "vocal laugh",
+   "fsd": {
+    "tag": "vocal laugh",
+    "trainPositive": 359,
+    "evalPositive": 253,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.61,
+     "recall": 0.767,
+     "flagged": 318,
+     "threshold": 0.965,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.678,
+     "recall": 0.708,
+     "flagged": 264,
+     "threshold": 0.674,
+     "outOfFoldMinPR": 0.602,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.942,
+     "recall": 0.573,
+     "flagged": 154,
+     "threshold": 0.953,
+     "outOfFoldMinPR": 0.867,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 8,
+    "negatives": 0,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.875,
+     "flagged": 7
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.75,
+     "flagged": 6
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.375,
+     "flagged": 3
+    }
+   },
+   "ftsCounts": false,
+   "choice": "clean",
+   "held": false
+  },
+  {
+   "tag": "water ambience",
+   "fsd": {
+    "tag": "water ambience",
+    "trainPositive": 820,
+    "evalPositive": 327,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.358,
+     "recall": 0.841,
+     "flagged": 769,
+     "threshold": 0.935,
+     "maybe": true,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.584,
+     "recall": 0.502,
+     "flagged": 281,
+     "threshold": 0.966,
+     "outOfFoldMinPR": 0.535,
+     "passes": {
+      "60/30": false,
+      "50/50": true,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.559,
+     "recall": 0.52,
+     "flagged": 304,
+     "threshold": 0.96,
+     "outOfFoldMinPR": 0.566,
+     "passes": {
+      "60/30": false,
+      "50/50": true,
+      "60/60": false,
+      "70/70": false
+     }
+    }
+   },
+   "fts": {
+    "positives": 106,
+    "negatives": 0,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.425,
+     "flagged": 45
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.17,
+     "flagged": 18
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.189,
+     "flagged": 20
+    }
+   },
+   "ftsCounts": true,
+   "choice": null,
+   "held": false
+  },
+  {
+   "tag": "whisper",
+   "fsd": {
+    "tag": "whisper",
+    "trainPositive": 123,
+    "evalPositive": 75,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.157,
+     "recall": 0.893,
+     "flagged": 428,
+     "threshold": 0.824,
+     "maybe": false,
+     "passes": {
+      "60/30": false,
+      "50/50": false,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.72,
+     "recall": 0.787,
+     "flagged": 82,
+     "threshold": 0.787,
+     "outOfFoldMinPR": 0.6,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.806,
+     "recall": 0.773,
+     "flagged": 72,
+     "threshold": 0.903,
+     "outOfFoldMinPR": 0.74,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    }
+   },
+   "fts": {
+    "positives": 0
+   },
+   "ftsCounts": false,
+   "choice": "cleanBalanced",
+   "held": false
+  },
+  {
+   "tag": "whoosh",
+   "fsd": {
+    "tag": "whoosh",
+    "trainPositive": 279,
+    "evalPositive": 100,
+    "evalClips": 10231,
+    "old": {
+     "precision": 0.841,
+     "recall": 0.58,
+     "flagged": 69,
+     "threshold": 0.941,
+     "maybe": false,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": false,
+      "70/70": false
+     }
+    },
+    "clean": {
+     "precision": 0.632,
+     "recall": 0.84,
+     "flagged": 133,
+     "threshold": 0.71,
+     "outOfFoldMinPR": 0.601,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": false
+     }
+    },
+    "cleanBalanced": {
+     "precision": 0.89,
+     "recall": 0.73,
+     "flagged": 82,
+     "threshold": 0.936,
+     "outOfFoldMinPR": 0.889,
+     "passes": {
+      "60/30": true,
+      "50/50": true,
+      "60/60": true,
+      "70/70": true
+     }
+    }
+   },
+   "fts": {
+    "positives": 14,
+    "negatives": 0,
+    "old": {
+     "precision": 1.0,
+     "recall": 0.071,
+     "flagged": 1
+    },
+    "clean": {
+     "precision": 1.0,
+     "recall": 0.214,
+     "flagged": 3
+    },
+    "cleanBalanced": {
+     "precision": 1.0,
+     "recall": 0.143,
+     "flagged": 2
+    }
+   },
+   "ftsCounts": true,
+   "choice": null,
+   "held": false
+  }
+ ]
+}
