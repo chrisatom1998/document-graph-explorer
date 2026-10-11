@@ -70,3 +70,24 @@ it('carries a maybe-level head through to a maybe tag, and rejects a malformed m
   expect(applyReviewedDecisions([], [score])[0].model).toBe('Trained head (maybe)');
   expect(sanitizeLearnedDjModel({ version: 1, encoder: 'e', revision: 'r', examples: [], heads: [{ ...head, maybe: 'yes' }] })).toBeUndefined();
 });
+const bank=(...vs:number[][])=>btoa(String.fromCharCode(...vs.flatMap(v=>v.map(x=>Math.round(x*127)&255))));
+const mix=(a:number,b:number,w:number)=>vector(a).map((x,i)=>x*w+vector(b)[i]*(1-w));
+const neighbourModel=(extra:object={})=>({version:1,encoder:'test',revision:'test',examples:[],neighbours:{k:1,
+  background:bank(vector(2),vector(3),vector(0)),heads:[{group:'production',label:'shaker loop',examples:bank(vector(0),mix(0,4,.9)),skipBackground:[2],cutoff:.2,...extra}]}});
+it('tags a clip near a neighbour head\'s examples and ignores background sounds that carry the tag',()=>{
+ const m=sanitizeLearnedDjModel(neighbourModel())!;
+ const hit=learnedDjScores(mix(0,2,.8),m);
+ expect(hit).toEqual([expect.objectContaining({label:'shaker loop',learnedGroup:'production',basis:'head',decision:'include'})]);
+ expect(hit[0].score).toBeGreaterThan(.5);
+ expect(learnedDjScores(vector(2),m)).toEqual([]);
+ expect(learnedDjScores(mix(0,3,.5),m)).toEqual([]);
+ expect(applyReviewedDecisions([],hit).map(t=>t.label)).toContain('shaker loop');
+});
+it('rejects a learned model with a malformed neighbour bank',()=>{
+ expect(sanitizeLearnedDjModel(neighbourModel())).toBeDefined();
+ expect(sanitizeLearnedDjModel(neighbourModel({examples:'not base64!'}))).toBeUndefined();
+ expect(sanitizeLearnedDjModel(neighbourModel({examples:btoa('abc')}))).toBeUndefined();
+ expect(sanitizeLearnedDjModel(neighbourModel({skipBackground:[3]}))).toBeUndefined();
+ expect(sanitizeLearnedDjModel(neighbourModel({cutoff:Number.NaN}))).toBeUndefined();
+ expect(sanitizeLearnedDjModel({...neighbourModel(),neighbours:{k:0,background:bank(vector(2)),heads:[]}})).toBeUndefined();
+});

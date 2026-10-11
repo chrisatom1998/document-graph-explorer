@@ -33,9 +33,10 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // ambience and wobbling move to run 10).
 // 105/106: the tagger decides hi-hat (fresh test sets 60/30; the CLAP head failed precision there).
 // 107/108: 12 learned heads retrained without FSD50K eval clips (clean-retrain-2026-10-11).
-// 109/110: the tagger gains the recall network: it decides guitar, violin, finger snap, siren, flute, marimba and vibraphone
+// 109/110: neighbour heads (few-shot example matching) for vinyl crackle and vocal shout (knn-heads-2026-10-11).
+// 111/112: the tagger gains the recall network: it decides guitar, violin, finger snap, siren, flute, marimba and vibraphone
 // on recall-run outputs (fresh test sets 60/30).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 110 : 109;
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 112 : 111;
 export interface InstrumentEstimate {
   label: string;
   score: number;
