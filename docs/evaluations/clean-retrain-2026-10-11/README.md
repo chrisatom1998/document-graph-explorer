@@ -49,7 +49,7 @@ Precision / recall at the shipped cutoff, on each counted set (false alarms show
 | acoustic guitar | FTS 1.00/0.83, FSD50K 0.86/0.68, IDMT 54 false alarms of 3623, NSynth 0.53/0.62, SASSE 7 false alarms of 2702 | FTS 1.00/1.00, FSD50K 0.80/0.87, IDMT 339 false alarms of 3623, NSynth 0.54/0.48 | precision-first 0.772 | no | kept old, unverified |
 | bird ambience | FTS 1.00/0.68, FSD50K 0.73/0.56 | FTS 1.00/0.51, FSD50K 0.92/0.34 | balanced 0.979 | yes | held (tagger kept, see below) |
 | cowbell | FTS 1.00/0.23, FSD50K 0.81/0.81 | FTS 1.00/0.12, FSD50K 0.83/0.68 | precision-first 0.504 | no | kept old, unverified |
-| crash cymbal | FTS 1.00/0.92, FSD50K 0.41/0.82 | FTS 1.00/0.39, FSD50K 0.77/0.75 | precision-first 0.994 | yes | swapped |
+| crash cymbal | FTS 1.00/0.92, FSD50K 0.41/0.82 | FTS 1.00/0.39, FSD50K 0.77/0.75 | precision-first 0.994 | yes | swapped in #232, reverted to old (failed on the app path) |
 | crowd ambience | FTS 1.00/0.83, FSD50K 0.60/0.85 | FTS 1.00/0.50, FSD50K 0.92/0.49 | precision-first 0.985 | yes | swapped |
 | drums | FTS 0.87/0.85, FSD50K 0.09/0.80, SASSE 40 false alarms of 2702 | FTS 0.00/0.00, FSD50K 0.00/0.00 | precision-first 0.994 | no | kept old, unverified |
 | electric guitar | FSD50K 0.92/0.72, IDMT 1581 false alarms of 3623, NSynth 0.15/0.66 | FSD50K 0.98/0.25, IDMT 66 false alarms of 3623, NSynth 0.00/0.00 | precision-first 0.980 | no | kept old, unverified |
@@ -69,10 +69,10 @@ Precision / recall at the shipped cutoff, on each counted set (false alarms show
 | trumpet | FTS 0.87/1.00, FSD50K 0.72/0.84 | FTS 0.95/0.95, FSD50K 0.70/0.84 | precision-first 0.957 | yes | swapped |
 | vinyl scratch | FSD50K 0.24/0.85 | FSD50K 0.91/0.91 | precision-first 0.595 | yes | swapped |
 | vocal gasp | FSD50K 0.26/0.90 | FSD50K 0.47/0.67 | precision-first 0.989 | no | kept old, unverified |
-| vocal laugh | FTS 1.00/0.83, FSD50K 0.61/0.77 | FTS 1.00/0.83, FSD50K 0.68/0.71 | precision-first 0.674 | yes | swapped |
+| vocal laugh | FTS 1.00/0.83, FSD50K 0.61/0.77 | FTS 1.00/0.83, FSD50K 0.68/0.71 | precision-first 0.674 | yes | swapped in #232, reverted to old (failed on the app path) |
 | water ambience | FTS 1.00/0.42, FSD50K 0.48/0.85 | FTS 1.00/0.11, FSD50K 0.64/0.41 | precision-first 0.966 | no | kept old, unverified |
-| whisper | FSD50K 0.16/0.89 | FSD50K 0.72/0.79 | precision-first 0.787 | yes | swapped |
-| whoosh | FSD50K 0.84/0.58 | FSD50K 0.63/0.84 | precision-first 0.710 | yes | swapped |
+| whisper | FSD50K 0.16/0.89 | FSD50K 0.72/0.79 | precision-first 0.787 | yes | swapped in #232, reverted to old (failed on the app path) |
+| whoosh | FSD50K 0.84/0.58 | FSD50K 0.63/0.84 | precision-first 0.710 | yes | swapped in #232, reverted to old (failed on the app path) |
 
 Free-tag-set (FTS) has no negatives for ambience and effect tags, so precision there reads 1.00 by construction.
 Clean heads lose recall on sample-pack and NSynth audio (drums, electric guitar, mallet instrument, piano, strings,
