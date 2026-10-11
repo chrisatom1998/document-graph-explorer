@@ -26,33 +26,6 @@
  },
  "heads": [
   {
-   "label": "crash cymbal",
-   "threshold": 0.994,
-   "cutoff": "precision-first",
-   "coefficientDigest": "434a13b99e1b42633245828f3243da42a20f83f048b6307217c587b2d9330b75",
-   "countedSets": [
-    "free-tag-set-test",
-    "fsd50k-eval"
-   ],
-   "fairPass60_30": true,
-   "sets": {
-    "free-tag-set-test": {
-     "p": 1.0,
-     "r": 0.385,
-     "positives": 13,
-     "negatives": 411,
-     "fp": 0
-    },
-    "fsd50k-eval": {
-     "p": 0.768,
-     "r": 0.746,
-     "positives": 71,
-     "negatives": 10160,
-     "fp": 16
-    }
-   }
-  },
-  {
    "label": "crowd ambience",
    "threshold": 0.985,
    "cutoff": "precision-first",
@@ -247,71 +220,6 @@
      "positives": 81,
      "negatives": 10150,
      "fp": 7
-    }
-   }
-  },
-  {
-   "label": "vocal laugh",
-   "threshold": 0.674,
-   "cutoff": "precision-first",
-   "coefficientDigest": "d9c720f2f912d25a8d9000a77530166f67768a6f8c88e21f1cad49485fb3e185",
-   "countedSets": [
-    "free-tag-set-test",
-    "fsd50k-eval"
-   ],
-   "fairPass60_30": true,
-   "sets": {
-    "free-tag-set-test": {
-     "p": 1.0,
-     "r": 0.833,
-     "positives": 6,
-     "negatives": 0,
-     "fp": 0
-    },
-    "fsd50k-eval": {
-     "p": 0.678,
-     "r": 0.708,
-     "positives": 253,
-     "negatives": 9978,
-     "fp": 85
-    }
-   }
-  },
-  {
-   "label": "whisper",
-   "threshold": 0.787,
-   "cutoff": "precision-first",
-   "coefficientDigest": "463c65dcbc4c39db978d74b90a3cce45634581f5a85519a1e7651cbc466842f9",
-   "countedSets": [
-    "fsd50k-eval"
-   ],
-   "fairPass60_30": true,
-   "sets": {
-    "fsd50k-eval": {
-     "p": 0.72,
-     "r": 0.787,
-     "positives": 75,
-     "negatives": 10156,
-     "fp": 23
-    }
-   }
-  },
-  {
-   "label": "whoosh",
-   "threshold": 0.71,
-   "cutoff": "precision-first",
-   "coefficientDigest": "481ce863f10f8b13c3da09d9ddac470a19a97c69d7ed635c14572840f5ab2a12",
-   "countedSets": [
-    "fsd50k-eval"
-   ],
-   "fairPass60_30": true,
-   "sets": {
-    "fsd50k-eval": {
-     "p": 0.632,
-     "r": 0.84,
-     "positives": 100,
-     "negatives": 10131,
-     "fp": 49
     }
    }
   }
@@ -620,7 +528,7 @@
   },
   {
    "tag": "crash cymbal",
-   "decision": "swapped",
+   "decision": "reverted to old, unverified (failed on the app path after #232)",
    "countedSets": [
     "free-tag-set-test",
     "fsd50k-eval"
@@ -686,7 +594,8 @@
     "70/70": false
    },
    "oldThreshold": 0.838,
-   "appPathToday": false
+   "appPathToday": false,
+   "appPathAfterSwap": "FSD50K 0.18/0.10, free-tag-set 0.00/0.00"
   },
   {
    "tag": "crowd ambience",
@@ -2103,7 +2012,7 @@
   },
   {
    "tag": "vocal laugh",
-   "decision": "swapped",
+   "decision": "reverted to old, unverified (failed on the app path after #232)",
    "countedSets": [
     "free-tag-set-test",
     "fsd50k-eval"
@@ -2169,7 +2078,8 @@
     "70/70": false
    },
    "oldThreshold": 0.965,
-   "appPathToday": null
+   "appPathToday": null,
+   "appPathAfterSwap": "FSD50K 0.58/0.71"
   },
   {
    "tag": "water ambience",
@@ -2243,7 +2153,7 @@
   },
   {
    "tag": "whisper",
-   "decision": "swapped",
+   "decision": "reverted to old, unverified (failed on the app path after #232)",
    "countedSets": [
     "fsd50k-eval"
    ],
@@ -2294,11 +2204,12 @@
     "70/70": false
    },
    "oldThreshold": 0.824,
-   "appPathToday": null
+   "appPathToday": null,
+   "appPathAfterSwap": "FSD50K 0.32/0.83"
   },
   {
    "tag": "whoosh",
-   "decision": "swapped",
+   "decision": "reverted to old, unverified (failed on the app path after #232)",
    "countedSets": [
     "fsd50k-eval"
    ],
@@ -2349,8 +2260,36 @@
     "70/70": false
    },
    "oldThreshold": 0.941,
-   "appPathToday": null
+   "appPathToday": null,
+   "appPathAfterSwap": "FSD50K 0.56/0.88"
   }
  ],
- "coefficientDigestFormat": "sha256 of the big-endian float64 bias then weights, taken from the heads fair-judge.py evaluated"
+ "coefficientDigestFormat": "sha256 of the big-endian float64 bias then weights, taken from the heads fair-judge.py evaluated",
+ "appPathRevert": "After #232 the scoreboard scored the app's real path (q8 transformers.js CLAP fingerprints, reports/scoreboard/app-clap.json at 2b12ceb). These judges used Python fp32 fingerprints, and the 4 heads above failed there, so they went back to their weights at 59efdbd (Chris chose \"Revert 4\", Oct 11 2026).",
+ "revertedHeads": [
+  {
+   "label": "crash cymbal",
+   "restoredFrom": "59efdbd",
+   "threshold": 0.838,
+   "coefficientDigest": "a10326002f616313c3d4e21f8213673a557da308f5ba896d6f157c306cdb2967"
+  },
+  {
+   "label": "vocal laugh",
+   "restoredFrom": "59efdbd",
+   "threshold": 0.965,
+   "coefficientDigest": "a48b329bb8c2b56b857a1c5d37bf583cf09a9e1c5d681bf914b0d0fe08ee159d"
+  },
+  {
+   "label": "whisper",
+   "restoredFrom": "59efdbd",
+   "threshold": 0.824,
+   "coefficientDigest": "89a75d89b7c0e3d5c45dceb10ade9648d01c38f47c9134ef3125df27689f4552"
+  },
+  {
+   "label": "whoosh",
+   "restoredFrom": "59efdbd",
+   "threshold": 0.941,
+   "coefficientDigest": "627b6f6d196a243c688cac5a1ef97a93153c3ed7fd249082a2244c9729705dea"
+  }
+ ]
 }
