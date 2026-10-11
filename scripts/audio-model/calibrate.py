@@ -24,6 +24,8 @@ FILES = {'openmic': ('train-mel.npy', 'train.json'), 'jamendo': ('jamendo-mel.np
          'fsd50k': ('fsd50k-mel.npy', 'fsd50k.json'), 'nsynth': ('nsynth-mel.npy', 'nsynth.json'), 'freesound': ('freesound-mel.npy', 'freesound.json')}
 log = json.load(open(os.path.join(run, 'log.json'))); classes = log['classes']
 assert classes == train.CLASSES, 'run was trained with a different class list'
+if log['args'].get('merge'):   # the same child -> parent label promotion train.py trained with (round 12 / MERGE_ONLY)
+    train.MERGE.update(json.load(open(log['args']['merge'])).get('merge', {}))
 val = {}
 for name, ids in log['val'].items():
     if name not in preps: continue

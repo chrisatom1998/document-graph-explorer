@@ -283,11 +283,13 @@ a = sys.argv[1:]; srcs = {}
 for k, v in zip(a, a[1:]):
     if k == '--extra': n, d = v.split('=', 1); srcs[n] = d
     elif k in ('--fsd50k', '--nsynth', '--freesound', '--soundcloud'): srcs[k[2:]] = v
+drop = set(json.load(open(a[a.index('--drop') + 1]))) if '--drop' in a else set()   # round 13: ids train.py left out
 man = {'repoSha': os.environ.get('REPO_SHA'), 'initFrom': os.environ.get('INIT_FROM'), 'sources': {}}
+if drop: man['droppedIds'] = sorted(drop)
 for n, d in sorted(srcs.items()):
     js = os.path.join(d, f'{n}.json')
     if not os.path.exists(js): continue
-    j = json.load(open(js)); items = j['items']
+    j = json.load(open(js)); items = [i for i in j['items'] if i['id'] not in drop]
     man['sources'][n] = {'description': j.get('source'), 'windows': len(items), 'validation': sum(bool(i.get('val')) for i in items)}
     if n in ('chrisdrive', 'chrisfx', 'iowa', 'vcsl', 'fsnew'): man['sources'][n]['ids'] = sorted({i['id'].split('#')[0].split('@')[0] for i in items})
 if os.path.exists('vcslprep/eval-vcsl.json'):
