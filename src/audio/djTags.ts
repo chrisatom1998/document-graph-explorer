@@ -36,7 +36,6 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'character:saturated': { group: 'character', label: 'distorted' },
   // Tag keep list Chris picked on 2026-10-11 ("Skip 2 passers", reports/tag-keep-list-2026-10-11): sample libraries
   // (Splice, Loopmasters, NKS) file each of these under the broader tag, and most score near 0 or were never tested alone.
-  'source:cello': { group: 'source', label: 'strings' },
   'source:viola': { group: 'source', label: 'strings' },
   'source:trombone': { group: 'source', label: 'horn' },
   'source:tuba': { group: 'source', label: 'horn' },
@@ -71,7 +70,7 @@ export const DJ_PICKER_LABELS: Record<DjGroup, readonly string[]> = { source: pi
  * picker; they just aren't listed until searched for. On 2026-10-11 Chris brought back the eleven a DJ does reach for
  * (sound effect, percussion hit, foley hit, staccato, syncopated, rising, plucked, pulsing, wobbling, flanged, chorused). */
 export const DJ_HIDDEN_LABELS: ReadonlySet<string> = new Set([
-  ...['bassoon', 'oboe', 'clarinet', 'double bass', 'banjo', 'mandolin', 'sitar', 'jaw harp',
+  ...['bassoon', 'oboe', 'clarinet', 'cello', 'double bass', 'banjo', 'mandolin', 'sitar', 'jaw harp',
     'singing bowl', 'waterphone', 'kalimba', 'environmental sound',
     // Tag keep list (Chris, 2026-10-11): rare in DJ sample libraries and untested or unlearnable here.
     'ukulele', 'steel guitar', 'steel drum', 'tabla'].map(l => `source:${l}`),
