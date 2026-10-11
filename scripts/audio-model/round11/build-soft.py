@@ -1,14 +1,14 @@
 """Round 11: teacher soft labels for the tagger (train.py --soft). LOCAL: reads teacher-features npz + manifests.
 
-python3 build-soft.py <teacher dir> <features dir> <out.json> <tag,tag,...>
+python3 build-soft.py <teacher dir> <features dir> <out.json> <tag,tag,...> [extra features dir ...]
 Each clip gets the out-of-fold teacher (the fold model that never saw its group), shifted so the teacher threshold sits
 at 0.5. Ids match prepare-run9.py (manifest id) and prepare-round10.py (round10:<source>:<path>)."""
 import sys, glob, csv, json, hashlib, os, numpy as np, torch
 HERE = os.path.dirname(os.path.abspath(__file__))
 import importlib.util
 spec = importlib.util.spec_from_file_location('ft', os.path.join(HERE, 'fit-teacher.py')); ft = importlib.util.module_from_spec(spec); spec.loader.exec_module(ft)
-tdir, feat, out = sys.argv[1:4]; TAGS = sys.argv[4].split(',')
-ck = torch.load(f'{tdir}/teacher.pt'); vocab = ck['vocab']; kind = ck.get('kind', 'all')
+tdir, feat, out = sys.argv[1:4]; TAGS = sys.argv[4].split(','); EXTRA = sys.argv[5:]
+ck = torch.load(f'{tdir}/teacher.pt'); mu = None if ck.get('mu') is None else ck['mu'].numpy(); sd = None if ck.get('sd') is None else ck['sd'].numpy(); vocab = ck['vocab']; kind = ck.get('kind', 'all')
 ms = []
 for st in ck['states']:
     m = ft.Head(ck['dim'], len(vocab)); m.load_state_dict(st); m.eval(); ms.append(m)
@@ -24,7 +24,10 @@ for mf in glob.glob(f'{feat}/manifests/*.csv'):
         man[f"{d}/{r['file']}"] = (d, r)
 soft = {}
 for f in sorted(glob.glob(f'{feat}/*.npz')):
-    z = np.load(f); F = ft.feats(z, kind)
+    z = ft.joined(f, EXTRA)
+    if z is None: continue
+    F = ft.feats(z, kind)
+    if mu is not None: F = ((F - mu) / sd).astype(np.float32)
     with torch.no_grad():
         P = [torch.sigmoid(m(torch.from_numpy(F))).numpy()[:, cols] for m in ms]
     for i, cid in enumerate(z['id']):

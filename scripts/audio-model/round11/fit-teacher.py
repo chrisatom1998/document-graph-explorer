@@ -51,6 +51,22 @@ def drop_ids(path):
     return out
 
 
+def joined(f, extra=()):
+    """One features file plus the same-named file in each extra dir, keeping the clips all of them describe."""
+    z = dict(np.load(f))
+    for e in extra:
+        ep = os.path.join(e, os.path.basename(f))
+        if not os.path.exists(ep):  # another extra dir may hold it; feats() then finds every block or skips the file
+            continue
+        ez = np.load(ep); ix = {str(c): i for i, c in enumerate(ez["id"])}
+        sel = [i for i, c in enumerate(z["id"]) if str(c) in ix]
+        z = {k: v[sel] for k, v in z.items()}
+        for k in ez.files:
+            if k not in z:
+                z[k] = ez[k][[ix[str(c)] for c in z["id"]]]
+    return z if len(z["id"]) else None
+
+
 class Head(nn.Module):
     def __init__(self, d, k, h=768):
         super().__init__()
@@ -93,7 +109,7 @@ def pick(s, y, min_n=10):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("feat"); ap.add_argument("out"); ap.add_argument("--keep")
+    ap.add_argument("feat", help="features dir(s), comma-separated, each with manifests/"); ap.add_argument("out"); ap.add_argument("--keep")
     ap.add_argument("--epochs", type=int, default=40); ap.add_argument("--min-pos", type=int, default=15); ap.add_argument("--folds", type=int, default=5)
     ap.add_argument("--feats", default="all", help="all, ced, or '+'-joined blocks of ced, das, mert")
     ap.add_argument("--extra", action="append", default=[], help="another features dir for the same clips (joined by id)")
@@ -102,7 +118,8 @@ def main():
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     man = {}
-    for m in glob.glob(os.path.join(a.feat, "manifests", "*.csv")):
+    dirs = a.feat.split(",")
+    for m in [m for d in dirs for m in glob.glob(os.path.join(d, "manifests", "*.csv"))]:
         d = os.path.basename(m)[:-4].split("__")[-1]
         for r in csv.DictReader(open(m, newline="", encoding="utf-8")):
             if r.get("split", "train") != "train":
@@ -114,21 +131,15 @@ def main():
     drop = drop_ids(a.exclude) if a.exclude else set()
     X, tags, groups = [], [], []
     ndrop = 0
-    for f in sorted(glob.glob(os.path.join(a.feat, "*.npz"))):
-        z = dict(np.load(f))
-        for e in a.extra:  # same file name in the other dir; keep the clips both describe
-            ep = os.path.join(e, os.path.basename(f))
-            if not os.path.exists(ep):
-                z = None; break
-            ez = np.load(ep); ix = {str(c): i for i, c in enumerate(ez["id"])}
-            sel = [i for i, c in enumerate(z["id"]) if str(c) in ix]
-            z = {k: v[sel] for k, v in z.items()}
-            for k in ez.files:
-                if k not in z:
-                    z[k] = ez[k][[ix[str(c)] for c in z["id"]]]
-        if z is None or not len(z["id"]):
+    for f in sorted(f for d in dirs for f in glob.glob(os.path.join(d, "*.npz"))):
+        z = joined(f, a.extra)
+        if z is None:
             continue
-        F = feats(z, a.feats)
+        try:
+            F = feats(z, a.feats)
+        except KeyError:  # a block (das, mert) missing for this file
+            print(f"skipped {os.path.basename(f)}: not every feature block", flush=True)
+            continue
         for i, cid in enumerate(z["id"]):
             r = man.get(str(cid))
             if r is None or (keep is not None and r["id"] not in keep):
@@ -158,7 +169,8 @@ def main():
     fold = np.array([int(hashlib.sha256(f"dge-r11|{g}".encode()).hexdigest()[:8], 16) % a.folds for g in groups])
     print(f"{len(X)} clips, {len(vocab)} tags, {a.folds} folds by group", flush=True)
 
-    Xt, Yt = torch.from_numpy(X), torch.from_numpy(Y)
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    Xt, Yt = torch.from_numpy(X).to(dev), torch.from_numpy(Y).to(dev)
     charts.start(os.environ.get('TRACKIO_RUN') or 'round11-teacher-' + os.path.basename(a.out.rstrip('/')),
                  {'clips': len(X), 'tags': len(vocab), 'folds': a.folds, 'epochs': a.epochs, 'model': f'{a.feats} MLP teacher'})
     S = np.zeros_like(Y)  # out-of-fold scores: thresholds are frozen on these, never on held-out clips
@@ -168,10 +180,10 @@ def main():
         tr, va = np.where(fold != k)[0], np.where(fold == k)[0]
         pos = Y[tr].sum(0)
         pw = torch.from_numpy(np.clip((len(tr) - pos) / np.maximum(pos, 1), 1, 30) ** 0.5).float()
-        model = Head(X.shape[1], len(vocab))
+        model = Head(X.shape[1], len(vocab)).to(dev)
         opt = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-2)
         sched = torch.optim.lr_scheduler.OneCycleLR(opt, 1e-3, total_steps=a.epochs * (len(tr) // 256 + 1))
-        lossf = nn.BCEWithLogitsLoss(pos_weight=pw)
+        lossf = nn.BCEWithLogitsLoss(pos_weight=pw.to(dev))
         for ep in range(a.epochs):
             model.train()
             perm = np.random.default_rng(ep + 100 * k).permutation(tr)
@@ -184,8 +196,8 @@ def main():
             charts.log({'epoch': k * a.epochs + ep + 1, 'fold': k, 'loss': tot / len(tr)}, step=k * a.epochs + ep + 1)
         model.eval()
         with torch.no_grad():
-            S[va] = torch.sigmoid(model(Xt[va])).numpy()
-        states.append(model.state_dict())
+            S[va] = torch.sigmoid(model(Xt[va])).cpu().numpy()
+        states.append({k: v.cpu() for k, v in model.state_dict().items()})
         print(f"fold {k} done, loss {tot / len(tr):.4f}", flush=True)
     thr, rep = {}, {}
     for t, i in ix.items():
