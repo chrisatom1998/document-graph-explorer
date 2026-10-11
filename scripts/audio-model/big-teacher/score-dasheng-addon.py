@@ -5,14 +5,15 @@ python3 score-dasheng-addon.py <model dir (model.onnx, model.json)> <policy json
     [--cutoffs name=cutoffs.json ...] [--baseline latest.json] [--skip-sets free-tag-set-holdout,freesound-reserved]
 
 The sets dir holds the scoreboard's fresh test sets (<set>.csv: id, path, group, present, absent, weak; ';'-separated
-tags). Only clips that label at least one policy tag are scored (present, absent, or any clip of a weak set). Each clip
+tags). Only clips that label at least one policy tag (present or absent) are scored. Each clip
 is read the way the app reads it (src/audio/tagger.ts taggerWindowStarts + dashengPass.ts): whole 10 s windows from the
 start, the middle 30 s of longer audio, each window its own unpadded 16 kHz audio (at least 0.25 s), and the best window
 decides. Per-clip scores go to <out dir>/<set>.npz (container only) so cutoffs can be re-checked without rescoring.
 
-Pass rules are the scoreboard's (reports/scoreboard/scripts/build_scoreboard.py): strong labels only, except weak sets
-where an unlabelled tag counts as absent; a set counts for a tag with >= 5 positives; a tag passes a bar when every
-counted set reaches that precision AND recall and at least one counted set has negatives. Cutoffs come from the policy
+Pass rules are the scoreboard's headline (reports/scoreboard/scripts/build_scoreboard.py): strong labels only; a set
+counts for a tag with >= 5 positives; a tag passes a bar when every counted set reaches that precision AND recall and at
+least one counted set has negatives, and fails every bar when it fires on more than 1% of the negatives of a set that
+cannot count it (< 5 positives, >= 50 negatives). Cutoffs come from the policy
 and from each --cutoffs file (picked on training clips by dasheng-oof-cutoffs.py), never from these clips. --baseline
 adds the scoreboard's row for the same tag (the app before the add-on).
 """
@@ -20,7 +21,7 @@ import argparse, csv, glob, json, math, os, sys, time
 
 import numpy as np
 
-SR, WIN, MAXW, MIN, MIN_POS = 16000, 10.0, 3, 4000, 5
+SR, WIN, MAXW, MIN, MIN_POS, FA_CAP, FA_MIN_NEG = 16000, 10.0, 3, 4000, 5, 0.01, 50
 BARS = {"50/50": (.5, .5), "60/30": (.6, .3), "50/30": (.5, .3), "60/60": (.6, .6), "70/70": (.7, .7)}
 
 
@@ -46,9 +47,10 @@ def load(path):
 
 
 def label(row, tag):
+    """Strong labels only, as the scoreboard's headline: unlabelled tags are skipped, weak sets included."""
     if tag in set(filter(None, row["present"].split(";"))):
         return 1
-    if tag in set(filter(None, row["absent"].split(";"))) or row["weak"] == "1":
+    if tag in set(filter(None, row["absent"].split(";"))):
         return 0
     return None
 
@@ -77,9 +79,11 @@ def evaluate(rows, scores, tags, cut):
                              "counted": pos >= MIN_POS}
         counted = {k: v for k, v in per.items() if v["counted"]}
         measured = bool(counted) and any(v["negatives"] for v in counted.values())
-        row = {"cutoff": round(float(cut[t]), 5), "measured": measured, "sets": per}
+        # false-alarm cap: a set that cannot count the tag (< 5 positives) but has >= 50 negatives fails it above 1% firing
+        breach = [k for k, v in per.items() if not v["counted"] and v["negatives"] >= FA_MIN_NEG and v["fp"] / v["negatives"] > FA_CAP]
+        row = {"cutoff": round(float(cut[t]), 5), "measured": measured, "falseAlarmCapBreached": breach, "sets": per}
         for b, (p, rc) in BARS.items():
-            row[b] = measured and all((v["precision"] or 0) >= p and (v["recall"] or 0) >= rc for v in counted.values())
+            row[b] = measured and not breach and all((v["precision"] or 0) >= p and (v["recall"] or 0) >= rc for v in counted.values())
         out[t] = row
     return out
 
@@ -108,8 +112,9 @@ def main():
         cache = os.path.join(a.out, f"{name}.npz")
         if os.path.exists(cache):
             z = np.load(cache, allow_pickle=False)
-            if list(z["ids"]) == [r["id"] for r in sel]:
-                scores[name] = [s if ok else None for s, ok in zip(z["scores"], z["ok"])]
+            got = {i: (s if ok else None) for i, s, ok in zip(z["ids"], z["scores"], z["ok"])}
+            if all(r["id"] in got for r in sel):
+                scores[name] = [got[r["id"]] for r in sel]
                 print(f"{name}: {len(sel)} clips from cache", flush=True)
                 continue
         if sess is None:
