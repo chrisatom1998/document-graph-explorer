@@ -5,7 +5,8 @@
     "all-tags-run7",
     "all-tags-run8",
     "all-tags-run9",
-    "all-tags-run11"
+    "all-tags-run11",
+    "all-tags-run10"
   ],
   "only": {
     "all-tags-run7": [
@@ -28,6 +29,9 @@
     "all-tags-run11": [
       "cat:bass guitar",
       "cat:machine ambience"
+    ],
+    "all-tags-run10": [
+      "cat:pitched vocal"
     ]
   },
   "pin": {
@@ -40,5 +44,5 @@
   "license": "cc-by-nc-sa-4.0",
   "flavor": "cpu-xl",
   "timeout": "5h",
-  "attempt": 10
+  "attempt": 11
 }
