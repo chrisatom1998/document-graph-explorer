@@ -32,7 +32,7 @@ V2_TAGS = ['vocal chops', 'chops', 'vocoder vocal', 'glitch effect', 'pulsing', 
 # a source already carrying any of these is not a clean dry copy for v2
 SKIP_TAGS = EFFECTISH | set(V2_TAGS) | {'gliding', 'swelling', 'wobble bass', 'bass growl', 'acid synth', 'acid bass', 'vocal-like synth',
                                         'sound effect', 'texture', 'beatbox', 'vinyl scratch', 'noise', 'siren'}
-SKIP_TITLE = re.compile(r'chop|vocod|glitch|stutter|revers|pitch|tune|robot|talkbox|gate|tremolo|wobbl|wub|lfo|riser|rise|drop|sweep|'
+SKIP_TITLE = re.compile(r'chop|vocod|glitch|stutter|revers|pitch|tune|robot|talkbox|gate|tremolo|wobbl|wub|lfo|ris(?:e|ing)|fall|puls|drop|sweep|'
                         r'fx|effect|filter|flang|phase|crush|bitcrush|distort|stretch', re.I)
 TARGET = {t: 500 for t in V2_TAGS}
 MIX = {
@@ -99,6 +99,11 @@ def load_rows(mdir):
     return rows
 
 
+def validation_group(group):
+    """Match prepare-run9.py's group-only validation partition for both audio inputs."""
+    return int(hashlib.sha256(f'dge-run9-val|{group}'.encode()).hexdigest()[:8], 16) % 5 == 0
+
+
 def plan(a):
     rows = load_rows(a.mdir)
     v1_ids = {x['id'] for x in csv.DictReader(open(os.path.join(a.mdir, 'coverage/effect-pairs/plan.csv')))}
@@ -132,14 +137,19 @@ def plan(a):
                         if per_group[r['group']] >= PER_GROUP_TAG.get(tag, PER_GROUP): continue
                         per_group[r['group']] += 1; used.add(r['id']); row = dict(r, effect=tag)
                         if tag == 'vocoder vocal' and h('carrier?', r['id']) % 2 == 0 and carriers:   # half get a real synth clip as carrier
-                            c = carriers[h('carrier-pick', r['id']) % len(carriers)]
-                            row.update(carrier_part=c['part'], carrier_file=c['file'], carrier_id=c['id'])
+                            eligible = [c for c in carriers if c['id'] not in used
+                                        and validation_group(c['group']) == validation_group(r['group'])]
+                            if eligible:
+                                c = eligible[h('carrier-pick', r['id']) % len(eligible)]
+                                used.add(c['id'])  # no other pair may consume this recording, dry or wet
+                                row.update({f'carrier_{key}': c[key] for key in
+                                            ('part', 'file', 'id', 'group', 'source', 'licence', 'creator', 'url')})
                         out.append(row); got += 1; break
                     if got >= want: break
             n_tag[kind] = got
         print(f'{tag}: {sum(n_tag.values())} ({dict(n_tag)})')
     cols = ['effect', 'kind', 'part', 'file', 'id', 'source', 'group', 'tags', 'licence', 'creator', 'url', 'seconds', 'evidence',
-            'carrier_part', 'carrier_file', 'carrier_id']
+            'carrier_part', 'carrier_file', 'carrier_id', 'carrier_group', 'carrier_source', 'carrier_licence', 'carrier_creator', 'carrier_url']
     with open(a.out, 'w', newline='') as f:
         w = csv.DictWriter(f, cols, extrasaction='ignore'); w.writeheader(); w.writerows(out)
     print('plan rows', len(out))
@@ -184,7 +194,24 @@ def work(job):
                      seconds=round(len(d) / RATE, 3), settings=s), None
 
 
-COLS = [c for c in BP.COLS if c not in ('ir_file', 'ir_source', 'ir_licence')] + ['carrier_id']
+CARRIER_COLS = ['carrier_id', 'carrier_group', 'carrier_source', 'carrier_licence', 'carrier_creator', 'carrier_url']
+COLS = [c for c in BP.COLS if c not in ('ir_file', 'ir_source', 'ir_licence')] + CARRIER_COLS
+
+
+def provenance(row, role, settings):
+    """Preserve both inputs' provenance only when a real carrier was actually used."""
+    out = {k: row[k] for k in ('url', 'creator', 'licence')}
+    out['licence_class'] = 'restricted' if row['source'] == 'looperman' else ('nc' if 'NC' in row['licence'] else 'open')
+    out.update({k: '' for k in CARRIER_COLS})
+    if role == 'wet' and settings.get('carrier_id'):
+        out.update({k: row[k] for k in CARRIER_COLS})
+        for key in ('url', 'creator', 'licence'):
+            out[key] = ' | '.join(dict.fromkeys((row[key], row[f'carrier_{key}'])))
+        if row['carrier_source'] == 'looperman':
+            out['licence_class'] = 'restricted'
+        elif out['licence_class'] == 'open' and 'NC' in row['carrier_licence']:
+            out['licence_class'] = 'nc'
+    return out
 
 
 def render(a):
@@ -203,8 +230,7 @@ def render(a):
             for role in ('dry', 'wet'):
                 data = res[role]; f = writers[part].add(f"{pid.split(':')[1]}_{role}.flac", data); present, full, weak = labels(row, role)
                 rows[part].append({
-                    'id': f'{pid}:{role}', 'url': row['url'], 'creator': row['creator'], 'licence': row['licence'],
-                    'licence_class': 'restricted' if row['source'] == 'looperman' else ('nc' if 'NC' in row['licence'] else 'open'),
+                    'id': f'{pid}:{role}', **provenance(row, role, res['settings']),
                     'encoded_sha256': hashlib.sha256(data).hexdigest(), 'pcm_sha256': res[f'{role}_pcm'], 'seconds': res['seconds'], 'split': 'train',
                     'group': row['group'], 'tags': '|'.join(present),
                     'label_evidence': (f"dry copy of a clean train clip ({row['source']}); v2 effect tags absent by source rule" if role == 'dry' else
@@ -213,7 +239,7 @@ def render(a):
                     'pair_id': pid, 'role': role, 'effect': row['effect'], 'absent_tags': '|'.join(full), 'weak_absent_tags': '|'.join(weak),
                     'effect_settings': json.dumps(res['settings'], sort_keys=True) if role == 'wet' else '',
                     'source_dataset': row['source'], 'source_id': row['id'], 'source_origin': f"cmjatom/dge-private-train {row['part']}",
-                    'source_file': row['file'], 'source_tags': row['tags'], 'carrier_id': res['settings'].get('carrier_id', '') if role == 'wet' else ''})
+                    'source_file': row['file'], 'source_tags': row['tags']})
     for w in writers.values(): w.close()
     for part, rr in rows.items():
         rr.sort(key=lambda x: x['file'])
