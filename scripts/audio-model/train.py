@@ -111,6 +111,8 @@ def main():
     ap.add_argument('--pos-weight', type=float, default=1.0, help='recall push: loss weight on a present label of a --pos-tags output (1 = off)')
     ap.add_argument('--pos-tags', default='', help="outputs --pos-weight applies to, named like --rare-tags (app tag names match their cat: output); "
                     "'tag:k' gives that tag its own weight k")
+    ap.add_argument('--neg-weight', type=float, default=1.0, help='precision push: loss weight on a sure (non-weak) absent label of a --neg-tags output (1 = off)')
+    ap.add_argument('--neg-tags', default='', help="outputs --neg-weight applies to, named like --pos-tags; 'tag:k' gives that tag its own weight k")
     ap.add_argument('--threads', type=int, default=os.cpu_count()); ap.add_argument('--resume', action='store_true')
     ap.add_argument('--limit', type=int, default=0, help='first N clips per source only (smoke test)')
     ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
@@ -170,6 +172,15 @@ def main():
             if c == t or SAME.get(c) == SAME.get(t, t) or c.startswith('cat:') and c[4:] == SAME.get(t, t): pos[c] = float(k or args.pos_weight)
     for c, k in pos.items(): pos_w[CLASSES.index(c)] = k
     if pos: print(f'recall push, loss weight on present labels: {dict(sorted(pos.items()))}', flush=True)
+    # Precision push (--neg-weight): a false alarm on a clip known NOT to hold the sound (a sure absence, e.g. a hard negative)
+    # costs more, so these outputs stop firing on look-alikes. Weak absences keep their --weak weight.
+    neg_w = torch.ones(len(CLASSES)); neg = {}
+    for e in filter(None, args.neg_tags.split(',')):
+        t, _, k = e.partition(':') if not e.startswith('cat:') else (e, '', '')
+        for c in CLASSES:
+            if c == t or SAME.get(c) == SAME.get(t, t) or c.startswith('cat:') and c[4:] == SAME.get(t, t): neg[c] = float(k or args.neg_weight)
+    for c, k in neg.items(): neg_w[CLASSES.index(c)] = k
+    if neg: print(f'precision push, loss weight on sure absences: {dict(sorted(neg.items()))}', flush=True)
     for src in sources: src['rare'] = (src['y'][:, rare_cols] >= 0.5).any(1) if len(rare_cols) else np.zeros(len(src['y']), bool)
     src_repeat = {k: int(v) for k, v in (p.split('=') for p in args.repeat.split(',') if p)}
     pool = [(s, i) for s, src in enumerate(sources) for i in np.flatnonzero(~src['val'])[:args.limit or None]
@@ -242,7 +253,9 @@ def main():
                 yt = yt * lam.view(-1, 1) + yt[p2] * (1 - lam.view(-1, 1))
                 wt = wt * (wt[p2] > 0)                                          # score a pair only where both clips label it
             logits, _ = model(x); logits = logits.reshape(-1, len(CLASSES))
+            sure = (wt >= 1).float()                                         # full-weight labels, before the pushes below
             wt = wt * (1 + (pos_w.to(dev) - 1) * yt)                       # --pos-weight: present (or partly present) labels weigh more
+            wt = wt * (1 + (neg_w.to(dev) - 1) * (1 - yt) * sure)          # --neg-weight: sure absences weigh more
             loss = (F.binary_cross_entropy_with_logits(logits, yt, reduction='none') * wt).sum() / wt.sum().clamp(min=1)
             opt.zero_grad(); loss.backward(); opt.step(); sched.step(); losses.append(loss.item())
             if len(losses) % 50 == 0:
