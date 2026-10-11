@@ -21,6 +21,8 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'source:noise': { group: 'production', label: 'static noise' },
   'production:synth stab': { group: 'production', label: 'synth hit' },
   'production:downlifter': { group: 'character', label: 'falling' },
+  // A foley hit is a one-shot foley sound; the tested foley tagger decides both (Chris, 2026-10-11).
+  'production:foley hit': { group: 'source', label: 'foley' },
   'source:turntable': { group: 'production', label: 'vinyl scratch' },
   'production:vocal harmony': { group: 'production', label: 'choir' },
   'production:acid bass': { group: 'production', label: 'acid synth' },
