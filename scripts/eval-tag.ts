@@ -144,6 +144,8 @@ function loadSet(path: string): { name: string; clips: Clip[] } {
   const meta = JSON.parse(readFileSync(path, 'utf8')) as { items: { id: string; artist?: string; labels?: Record<string, unknown> }[]; offsets?: number[] };
   const npyPath = opt('npy') ?? path.replace(/\.json$/, '.npy');
   const npy = parseNpy(npyPath);
+  const seen = new Set<string>();
+  for (const item of meta.items) { if (seen.has(item.id)) throw new Error(`${path}: duplicate item id ${item.id} (the cache keys clips by id)`); seen.add(item.id); }
   const clips: Clip[] = meta.items.map((item, i) => {
     const labels: Record<string, 0 | 1> = {};
     for (const t of [...targets, ...watched]) { const v = labelOf(item.labels ?? {}, t); if (v !== undefined) labels[t.displayKey] = v; }
@@ -172,7 +174,9 @@ function decode(path: string, rate: number): Float32Array {
   return new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 }
 function loadClips(dir: string): { name: string; clips: Clip[] } {
-  const perTag = targets.length === 1 && existsSync(join(dir, 'yes')) ? [[targets[0], dir] as const] : targets.map(t => [t, join(dir, t.label)] as const);
+  // Watched tags read <dir>/<tag>/yes|no too, so they get ground truth under every candidate like the targets.
+  const perTag = [...(targets.length === 1 && existsSync(join(dir, 'yes')) ? [[targets[0], dir] as const] : targets.map(t => [t, join(dir, t.label)] as const)),
+    ...watched.map(t => [t, join(dir, t.label)] as const)];
   const byId = new Map<string, Clip>();
   for (const [t, folder] of perTag) for (const answer of ['yes', 'no'] as const) {
     const sub = join(folder, answer); if (!existsSync(sub)) continue;
@@ -296,7 +300,7 @@ async function scorePhase() {
       }
       for (const start of taggerWindowStarts(duration)) {
         const seconds = Math.min(10, duration - start), from = Math.round(start * TAGGER_SAMPLE_RATE);
-        rec.tagger.push({ start, end: start + seconds, scores: (await models.tag(pcm.slice(from, from + Math.round(seconds * TAGGER_SAMPLE_RATE)))).map(v => Math.round(v * 1e6) / 1e6) });
+        rec.tagger.push({ start, end: start + seconds, scores: await models.tag(pcm.slice(from, from + Math.round(seconds * TAGGER_SAMPLE_RATE))) });
       }
       appendFileSync(file, JSON.stringify(rec) + '\n');
     } catch (error) { console.log(`  skip ${clip.id}: ${(error as Error).message.slice(0, 120)}`); }
@@ -322,7 +326,9 @@ function withPolicy<T>(o: Overrides, run: () => T): T {
   } finally { policyTags.length = 0; policyTags.push(...original); }
 }
 interface Shown { maybe: boolean; tier?: string; uncalibrated?: boolean }
-/** Exactly what the Sounds row would list for this clip, keyed "dimension:label". */
+/** What the Sounds row would list for this clip, keyed "dimension:label", with AST, Jamendo and the long-recording event
+ * windows not run (see the header for why they do not move a head's or the tagger's decision). */
+const SCOPE = 'AST, Jamendo and long-recording event windows not run';
 function decide(rec: CachedClip, o: Overrides): Map<string, Shown> {
   const learnedModel = withHeads(learned!, o.headThreshold), shortModel = withShort(shortClip!, o.shortThreshold);
   return withPolicy(o, () => {
@@ -398,7 +404,7 @@ function decidePhase() {
   unscoredClips = unscored;
   const clapAudio = [...new Set(records.map(r => r.clapAudio ?? 'resampled-32k'))];
   console.log(`CLAP audio: ${clapAudio.join(' and ')}${clapAudio.includes('resampled-32k') ? ' (upsampled from 32 kHz: content above 16 kHz is missing, an approximation of the app)' : ' (decoded at 48 kHz from the files, as the app does)'}`);
-  const report: Record<string, unknown> = { set: set.name, clips: records.length, models: modelIdentity, inputIdentity, clapBackend, clapAudio, taggerRevision: TAGGER_POLICY.revision, learnedRevision: learned!.revision, shortClipRevision: shortClip!.revision,
+  const report: Record<string, unknown> = { scope: SCOPE, set: set.name, clips: records.length, models: modelIdentity, inputIdentity, clapBackend, clapAudio, taggerRevision: TAGGER_POLICY.revision, learnedRevision: learned!.revision, shortClipRevision: shortClip!.revision,
     halves: 'groups (uploader / artist / file prefix) hashed into pick and check', unscoredClips: unscored.length, complete: unscored.length === 0, current: {}, candidates: {} };
   // Tested Jamendo scores (FULL_MIX_JAMENDO) can also show piano, synthesizer and drums on recordings of 10 s or more; this
   // evaluator does not run Jamendo, so for those three the "today" recall on such clips is a lower bound.
@@ -406,7 +412,7 @@ function decidePhase() {
   if (jamendoTags.length) { console.log(`note: ${jamendoTags.map(t => t.label).join(', ')} can also show through tested Jamendo scores on recordings of 10 s or more, which this evaluator does not run; "today" recall for them is a lower bound.`); report.jamendoLowerBound = jamendoTags.map(t => t.label); }
   const current = evaluate(records, {}, keys);
   (report.current as Record<string, unknown>) = current.table;
-  console.log('\n== today (the app as shipped) ==');
+  console.log(`\n== today (the app as shipped; ${SCOPE}) ==`);
   for (const k of keys) { const m = current.table[k]; console.log(`${k.padEnd(28)} all P ${fmt(m.all.precision)} R ${fmt(m.all.recall)} FA ${fmt(m.all.falseAlarmRate)}  (tp ${m.all.tp} fp ${m.all.fp} fn ${m.all.fn}; pos ${m.all.positives} neg ${m.all.negatives})  pick P ${fmt(m.pick.precision)} R ${fmt(m.pick.recall)}  check P ${fmt(m.check.precision)} R ${fmt(m.check.recall)}  one-shots R ${fmt(m.oneShots.recall)} (${m.oneShots.positives}) longer R ${fmt(m.longer.recall)} (${m.longer.positives})  ${m.all.passes6030 ? 'PASSES 60/30' : 'fails 60/30'}`); }
   const candidates = report.candidates as Record<string, unknown>;
   for (const t of targets) {
