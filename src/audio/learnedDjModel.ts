@@ -16,6 +16,76 @@ export interface LearnedDjModel {
   revision: string;
   examples: LearnedDjExample[];
   heads?: LearnedDjHead[];
+  neighbours?: LearnedDjNeighbours;
+}
+/** Few-shot example matching for tags with few training clips (scripts/knn-heads/): a clip is tagged when it sits
+ *  closer to a tag's labelled training examples than to unrelated sounds. Vectors are int8 CLAP fingerprints in
+ *  base64, 512 bytes each; scale is irrelevant because every vector is compared by cosine. */
+export interface LearnedDjNeighbours {
+  /** How many nearest examples (and nearest background sounds) are averaged. */
+  k: number;
+  /** Shared background bank of training sounds with mixed tags. */
+  background: string;
+  heads: LearnedDjNeighbourHead[];
+}
+export interface LearnedDjNeighbourHead {
+  group: ReviewedGroup;
+  label: string;
+  examples: string;
+  /** Background sounds that carry this tag, left out of its comparison. */
+  skipBackground: number[];
+  /** Tagged when mean top-k similarity to the examples minus that to the background reaches this. */
+  cutoff: number;
+}
+const VECTOR = 512;
+interface DecodedNeighbours { k: number; background: Float32Array[]; heads: { head: LearnedDjNeighbourHead; examples: Float32Array[]; skip: Set<number> }[] }
+function decodeBank(base64: string): Float32Array[] | undefined {
+  let bytes: string;
+  try { bytes = atob(base64); } catch { return; }
+  if (!bytes.length || bytes.length % VECTOR) return;
+  const out: Float32Array[] = [];
+  for (let a = 0; a < bytes.length; a += VECTOR) {
+    const v = new Float32Array(VECTOR); let n = 0;
+    for (let i = 0; i < VECTOR; i++) { const b = bytes.charCodeAt(a + i); v[i] = b > 127 ? b - 256 : b; n += v[i] * v[i]; }
+    n = Math.sqrt(n); if (!n) return;
+    for (let i = 0; i < VECTOR; i++) v[i] /= n;
+    out.push(v);
+  }
+  return out;
+}
+const decodedNeighbours = new WeakMap<LearnedDjNeighbours, DecodedNeighbours>();
+function sanitizeNeighbours(raw: unknown): LearnedDjNeighbours | undefined | null {
+  if (raw === undefined) return undefined;
+  const n = raw as Partial<LearnedDjNeighbours>;
+  if (!n || typeof n !== 'object' || !Number.isInteger(n.k) || n.k! < 1 || n.k! > 50 || typeof n.background !== 'string' || !Array.isArray(n.heads) || n.heads.length > 500) return null;
+  const background = decodeBank(n.background);
+  if (!background || background.length > 20000) return null;
+  const heads: DecodedNeighbours['heads'] = [];
+  for (const h of n.heads) {
+    if (!h || !groups.includes(h.group) || typeof h.label !== 'string' || !h.label || h.label.length > 80 || typeof h.examples !== 'string' ||
+      !Number.isFinite(h.cutoff) || !Array.isArray(h.skipBackground) || !h.skipBackground.every(i => Number.isInteger(i) && i >= 0 && i < background.length)) return null;
+    const examples = decodeBank(h.examples);
+    if (!examples || examples.length > 1000) return null;
+    heads.push({ head: { group: h.group, label: h.label, examples: h.examples, skipBackground: h.skipBackground, cutoff: h.cutoff }, examples, skip: new Set(h.skipBackground) });
+  }
+  const model: LearnedDjNeighbours = { k: n.k!, background: n.background, heads: heads.map(h => h.head) };
+  decodedNeighbours.set(model, { k: model.k, background, heads });
+  return model;
+}
+const meanTop = (sims: number[], k: number): number => {
+  sims.sort((a, b) => b - a); const n = Math.min(k, sims.length); let s = 0;
+  for (let i = 0; i < n; i++) s += sims[i];
+  return n ? s / n : -1;
+};
+/** Neighbour-head scores for one unit CLAP vector: positive when a tag's examples are nearer than the background. */
+export function neighbourMargins(unit: ArrayLike<number>, neighbours: LearnedDjNeighbours): { head: LearnedDjNeighbourHead; margin: number }[] {
+  const decoded = decodedNeighbours.get(neighbours);
+  if (!decoded) return [];
+  const dot = (v: Float32Array) => { let s = 0; for (let i = 0; i < VECTOR; i++) s += v[i] * unit[i]; return s; };
+  const bg = decoded.background.map(dot);
+  return decoded.heads.map(({ head, examples, skip }) => ({
+    head, margin: meanTop(examples.map(dot), decoded.k) - meanTop(bg.filter((_, i) => !skip.has(i)), decoded.k),
+  }));
 }
 export interface LearnedDjHead {
   group: ReviewedGroup;
@@ -72,7 +142,9 @@ export function sanitizeLearnedDjModel(raw: unknown): LearnedDjModel | undefined
     !h || !groups.includes(h.group) || typeof h.label !== 'string' || !h.label || h.label.length > 80 ||
     !Array.isArray(h.weights) || h.weights.length !== 512 || !h.weights.every(Number.isFinite) ||
     !Number.isFinite(h.bias) || !Number.isFinite(h.threshold) || h.threshold < .5 || h.threshold > 1 || (h.maybe !== undefined && typeof h.maybe !== 'boolean') || (h.oneShot !== undefined && typeof h.oneShot !== 'boolean')))) return;
-  return {version:1,encoder:model.encoder,revision:model.revision,examples,...(model.heads ? {heads:model.heads} : {})};
+  const neighbours = sanitizeNeighbours(model.neighbours);
+  if (neighbours === null) return;
+  return {version:1,encoder:model.encoder,revision:model.revision,examples,...(model.heads ? {heads:model.heads} : {}),...(neighbours ? {neighbours} : {})};
 }
 /** Conservative exemplar classifier over frozen CLAP features; not base-model fine-tuning.
  * Positive and negative evidence compete independently for each reviewed label.
@@ -108,6 +180,15 @@ export function learnedDjScores(embedding: ArrayLike<number>, model: LearnedDjMo
     const logit = head.bias + head.weights.reduce((sum,w,i) => sum + w * vector[i] / norm, 0);
     const score = 1 / (1 + Math.exp(-Math.max(-35,Math.min(35,logit))));
     if (score >= head.threshold) results.push({group:'dj-learned',label:head.label,score,learnedGroup:head.group,decision:'include',basis:'head',...(head.maybe ? {maybe:true} : {})});
+  }
+  // Neighbour heads were checked like trained heads (held-out precision >= 0.60, recall >= 0.30) and add their tag
+  // the same way. The score is a 0-1 squash of the margin over the cutoff (0.5 at the cutoff), not a probability.
+  if (model.neighbours) {
+    const unit = vector.map(v => v / norm);
+    for (const {head, margin} of neighbourMargins(unit, model.neighbours)) {
+      if (margin < head.cutoff || results.some(r => r.learnedGroup === head.group && r.label === head.label)) continue;
+      results.push({group:'dj-learned',label:head.label,score:1 / (1 + Math.exp(-40 * (margin - head.cutoff))),learnedGroup:head.group,decision:'include',basis:'head'});
+    }
   }
   return results;
 }
