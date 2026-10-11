@@ -22,6 +22,7 @@
  * Options: --cache <dir> (per-clip model outputs, reused by later runs), --limit N, --shard i/n, --threads N,
  *          --clap-backend cpu|wasm (wasm = the browser's own runtime, slower; cached separately),
  *          --learned / --short-clip / --policy <file> (evaluate another branch's or a proposed model file as "today"),
+ *          --row-seconds N (fixed-length .npy rows: the clips' real length, e.g. 4 for NSynth notes),
  *          --score-only / --decide-only, --watch a,b (extra tags measured under every candidate), --parity (check the
  *          tagger against src/audio/taggerParity.fixture.json first), --grid-tagger / --grid-head "0.1,0.2,...".
  * Requires: npm run setup:music (model weights) and ffmpeg on PATH (resampling, decoding).
@@ -52,6 +53,8 @@ const outPath = opt('out');
 const limit = Number(opt('limit', '0'));
 const [shardIndex, shardCount] = (opt('shard', '0/1')!).split('/').map(Number);
 const threads = Number(opt('threads', '0'));
+/** Fixed-length .npy rows: the clip's real length in seconds (e.g. 4 for NSynth notes); without it trailing digital silence is trimmed. */
+const rowSeconds = Number(opt('row-seconds', '0'));
 /** 'cpu' (onnxruntime-node, fast) or 'wasm' (onnxruntime-web, the runtime the browser uses). Same q8 weights either way; on three
  * clips the two agreed to a cosine of 0.9996 or better, so 'cpu' is the default and 'wasm' is the slow, exact check. */
 const clapBackend = opt('clap-backend', 'cpu') as 'cpu' | 'wasm';
@@ -124,7 +127,10 @@ function loadSet(path: string): { name: string; clips: Clip[] } {
     const read32 = () => {
       let s = readInt16(npyPath, npy.offset, first, count);
       // Fixed-length rows pad each clip with digital silence; the app would see the clip's own length.
-      if (!meta.offsets) { let n = s.length; while (n > 0 && s[n - 1] === 0) n--; s = s.subarray(0, Math.max(n, 1)); }
+      if (!meta.offsets) {
+        if (rowSeconds > 0) s = s.subarray(0, Math.min(s.length, Math.round(rowSeconds * TAGGER_SAMPLE_RATE)));
+        else { let n = s.length; while (n > 0 && s[n - 1] === 0) n--; s = s.subarray(0, Math.max(n, 1)); }
+      }
       return s;
     };
     const duration = meta.offsets ? count / TAGGER_SAMPLE_RATE : -1;
