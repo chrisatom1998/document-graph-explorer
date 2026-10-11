@@ -17,7 +17,8 @@ import { isRuleDescribedLabel } from './timbreDescriptions';
 export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v13';
 /** The shipping bar (Chris, 2026-10-10): a detector shows as a normal tag when its held-out precision AND recall on clips and
  * samples are both at least this; below it, a useful detector shows as a faded "maybe". Full songs are a no-regression check
- * only. scripts/head-scorecard.py, scripts/dj-effects/ship.py and the tagger's `tested` flags use the same bar. */
+ * only. scripts/head-scorecard.py and scripts/dj-effects/ship.py use the same bar; the tagger's `tested` flags use the 60/30
+ * ship line since 2026-10-11 (see TaggerTag.tested). */
 export const SOUND_TAG_BAR = .5;
 /** A detector score at or above this shows as "likely" (and is the only floor for short clips). */
 export const LIKELY_SOUND_CUTOFF = .5;
@@ -193,6 +194,7 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   const detectorsShow=(tag:TaggerTag)=>{
     detectors??=new Set(confidentSoundSummary({...audio,tagger:undefined},fusionMode).map(s=>`${s.dimension}:${s.label}`));
     return tagKeys(tag).some(key=>detectors!.has(key));};
+  const taggerShown=new Set<string>();
   if(tagger)for(const{tag,shown,score,needsAgreement}of tagger){
     const keys=new Set(tagKeys(tag)),primary=`${tag.dimension}:${canonical(tag.dimension,tag.label)}`;
     // The latest listener decision applies to the same sound even when an older detector used another dimension.
@@ -209,7 +211,7 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
       if(unknown&&!item.scores.some(s=>qualifies(item.dimension,item.label,s.model,s.score))){delete item.scores;item.coverageUnknown=true;item.tier='possible';}
       else if(!item.scores.length)result.delete(key);
     }
-    if(agreed)estimate(tag.dimension,tag.label,score,tag.tested?TAGGER_SCORE:TAGGER_MAYBE_SCORE);}
+    if(agreed){estimate(tag.dimension,tag.label,score,tag.tested?TAGGER_SCORE:TAGGER_MAYBE_SCORE);taggerShown.add(primary);}}
   // Alias identity belongs to the sound, not to whether the tagger happens to decide it on this recording.
   // In particular, a long-recording 'detectors' rule or unavailable tagger cannot revive a rejected cymbal alias.
   for(const tag of TAGGER_POLICY.tags.filter(t=>t.alsoDecides?.length)){
@@ -222,7 +224,8 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   const long=floor===TRACK_SOUND_FLOOR;
   const voiceHeads=fullMix&&fusion?.qualified?fusion.windows.filter(w=>w.status==='complete'&&w.end-w.start>=FULL_MIX_MIN_SECONDS-1e-6)
     .flatMap(w=>w.decisions.filter(d=>d.label==='voice'&&typeof d.headProbability==='number').map(d=>d.headProbability as number)):[];
-  if(voiceHeads.length&&Math.max(...voiceHeads)<FULL_MIX_VOICE_VETO&&result.get('source:voice')?.origin==='model estimate')result.delete('source:voice');
+  // A voice the tagger decided (clips up to its 30 s handoff) was tested on its own and is not vetoed.
+  if(voiceHeads.length&&Math.max(...voiceHeads)<FULL_MIX_VOICE_VETO&&!taggerShown.has('source:voice')&&result.get('source:voice')?.origin==='model estimate')result.delete('source:voice');
   const testedBest=(s:DisplaySound)=>Math.max(...s.scores!.filter(x=>TESTED_SCORES.has(x.model)).map(x=>x.score));
   const raised=(s:DisplaySound)=>fullMix&&s.dimension==='source'&&FULL_MIX_MIN_TESTED_SCORE[s.label]!==undefined&&testedBest(s)<FULL_MIX_MIN_TESTED_SCORE[s.label];
   return foldMerged([...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]

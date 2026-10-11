@@ -27,12 +27,12 @@ describe('trained tagger policy', () => {
       expect(supported, tag.label).toBe(true);
     }
   });
-  it('keeps the existing detectors for voice, organ and cello', () => {
+  it('keeps the existing detectors for organ and cello', () => {
     const decided = new Set(TAGGER_POLICY.tags.flatMap(t => t.decides));
-    for (const label of ['voice', 'organ', 'cello']) expect(decided.has(label)).toBe(false);
+    for (const label of ['organ', 'cello']) expect(decided.has(label)).toBe(false);
     expect(TAGGER_POLICY.tags.filter(t => t.dimension === 'source').map(t => t.output).sort())
       .toEqual(['bass', 'cat:animal sound', 'cat:bass guitar', 'cat:bell', 'cat:environmental sound', 'cat:flute', 'cat:foley', 'cat:glockenspiel', 'cat:guitar',
-        'cat:marimba', 'cat:percussion', 'cat:turntable', 'cat:vibraphone', 'cat:violin / fiddle', 'cat:whistle', 'cymbals', 'drums', 'piano', 'saxophone',
+        'cat:marimba', 'cat:percussion', 'cat:turntable', 'cat:vibraphone', 'cat:violin / fiddle', 'cat:voice', 'cat:whistle', 'cymbals', 'drums', 'piano', 'saxophone',
         'synthesizer', 'trumpet']);
   });
 });
@@ -134,6 +134,22 @@ describe('trained tagger display', () => {
     expect(shown.map(s => s.label).sort()).toEqual(['flute', 'guitar', 'marimba', 'siren', 'vibraphone', 'violin']);
     for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
   });
+  it('decides crash cymbal and whisper over their CLAP heads', () => {
+    const effects = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'effect').map(s => s.label).sort();
+    const heads = ['crash cymbal', 'whisper'].map(label => ({ group: 'production' as const, label, score: .9, model: 'Trained head' as const }));
+    const outputs = ['cat:crash cymbal', 'cat:whisper'];
+    expect(effects(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads))).toEqual([]);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads)).filter(s => s.dimension === 'effect');
+    expect(shown.map(s => s.label).sort()).toEqual(['crash cymbal', 'whisper']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('decides voice over its CLAP head on clips', () => {
+    const heads = [{ group: 'source' as const, label: 'voice', score: .9, model: 'Trained head' as const }];
+    expect(sources(track(4, { 'cat:voice': .01 }, heads))).toEqual([]);
+    const shown = confidentSoundSummary(track(4, { 'cat:voice': threshold('cat:voice') }, heads)).filter(s => s.dimension === 'source');
+    expect(shown.map(s => s.label)).toEqual(['voice']);
+    expect(shown[0].scores).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
   it('never overrides what the listener confirmed or rejected', () => {
     const a = track(30, { drums: .01, piano: .99 });
     a.confirmedInstruments = ['drums'];
@@ -184,7 +200,9 @@ describe('trained tagger long-recording rules', () => {
       'cat:bell': { rule: 'detectors' }, 'cat:fm synth': { rule: 'detectors' },
       'cat:bass guitar': { rule: 'detectors', afterSeconds: 30 }, 'cat:machine ambience': { rule: 'detectors', afterSeconds: 30 },
       'cat:pitched vocal': { rule: 'detectors' }, 'cat:hi-hat': { rule: 'detectors', afterSeconds: 30 }, 'cat:siren': { rule: 'detectors', afterSeconds: 30 },
-      'cat:flute': { rule: 'detectors', afterSeconds: 30 }, 'cat:marimba': { rule: 'detectors', afterSeconds: 30 }, 'cat:vibraphone': { rule: 'detectors', afterSeconds: 30 } });
+      'cat:flute': { rule: 'detectors', afterSeconds: 30 }, 'cat:marimba': { rule: 'detectors', afterSeconds: 30 }, 'cat:vibraphone': { rule: 'detectors', afterSeconds: 30 },
+      'cat:crash cymbal': { rule: 'detectors', afterSeconds: 30 }, 'cat:whisper': { rule: 'detectors', afterSeconds: 30 },
+      'cat:voice': { rule: 'detectors', afterSeconds: 30 } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
   it('needs the higher full-song drums threshold on long recordings only', () => {
@@ -202,7 +220,7 @@ describe('trained tagger long-recording rules', () => {
     expect(sources(track(10, { piano: .01, saxophone: .99 }, others))).toEqual(['saxophone']);
   });
   it.each(['cat:environmental sound', 'cat:foley', 'cat:turntable', 'cat:finger snap', 'cat:water ambience', 'cat:guitar', 'cat:violin / fiddle', 'cat:siren',
-    'cat:flute', 'cat:marimba', 'cat:vibraphone'])(
+    'cat:flute', 'cat:marimba', 'cat:vibraphone', 'cat:crash cymbal', 'cat:whisper', 'cat:voice'])(
     'keeps the tagger deciding %s up to 30 s, as the held-out scorer did, and defers on longer recordings', output => {
       const at = (duration: number, windows: number) => taggerDecisions({ revision: TAGGER_REVISION, windows, scores: { [output]: threshold(output) } }, duration)!
         .find(d => d.tag.output === output);

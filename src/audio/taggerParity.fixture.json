@@ -49,7 +49,10 @@
     "cat:siren": 0.003089,
     "cat:flute": 0.001252,
     "cat:marimba": 0.00038,
-    "cat:vibraphone": 0.003913
+    "cat:vibraphone": 0.003913,
+    "cat:crash cymbal": 5e-06,
+    "cat:whisper": 0.0,
+    "cat:voice": 0.005647
    }
   },
   {
@@ -99,7 +102,10 @@
     "cat:siren": 0.052141,
     "cat:flute": 0.038695,
     "cat:marimba": 0.001908,
-    "cat:vibraphone": 0.001663
+    "cat:vibraphone": 0.001663,
+    "cat:crash cymbal": 8e-06,
+    "cat:whisper": 3e-06,
+    "cat:voice": 0.002735
    }
   },
   {
@@ -150,7 +156,10 @@
     "cat:siren": 0.052141,
     "cat:flute": 0.038695,
     "cat:marimba": 0.002233,
-    "cat:vibraphone": 0.001663
+    "cat:vibraphone": 0.001663,
+    "cat:crash cymbal": 1.5e-05,
+    "cat:whisper": 3e-06,
+    "cat:voice": 0.002735
    }
   },
   {
@@ -202,7 +211,10 @@
     "cat:siren": 0.01601,
     "cat:flute": 0.052776,
     "cat:marimba": 0.005582,
-    "cat:vibraphone": 0.001673
+    "cat:vibraphone": 0.001673,
+    "cat:crash cymbal": 2.9e-05,
+    "cat:whisper": 6e-06,
+    "cat:voice": 0.001504
    }
   }
  ]
