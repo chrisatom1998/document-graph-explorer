@@ -14,8 +14,10 @@ Training (cloud only, train side only):
   in the project container by filtering these candidate ids against the private exclude list. Only listed ids train.
   The exclude list itself never leaves the container.
 Each head: logistic regression on the L2-normalised 512-d CLAP embedding (class_weight=balanced, as on the Mac). The
-threshold is frozen on out-of-fold scores (5 folds by uploader/source group): argmax min(P, R), never below 0.5 (the
-app ignores lower thresholds), ties to the higher threshold.
+threshold is frozen on out-of-fold scores (5 folds by uploader/source group), precision first (Chris, Oct 11): the
+lowest cutoff whose precision is at least MIN_PRECISION (default 0.5), so recall is whatever that gives; if none reaches
+it, argmax min(P, R). Never below 0.5 (the app ignores lower thresholds).
+Each result reports whether it passes 50/50, 60/30 and 50/30 on FSD50K eval while the ship line is being decided.
 
 Judge: FSD50K eval (public; clip score = max over its whole 10 s windows, as the app-rescore bird check scored it).
 Both the shipped head ("old", biased: it trained on these clips) and the clean head are scored.
@@ -48,6 +50,8 @@ MAP = {  # FSD50K class -> app label; same as scripts/fsd50k-manifest.py
 FSD, PRIV, EVAL_RUNS = 'Fhrozen/FSD50k', 'cmjatom/dge-private-train', 'cmjatom/dge-eval-runs'
 R11 = 'hf://buckets/cmjatom/dge-audio-training/round11/run9'
 OUT = os.environ.get('OUT_DIR', 'runs/clean-heads-' + time.strftime('%Y-%m-%d'))
+MIN_PRECISION = float(os.environ.get('MIN_PRECISION', 0.5))
+BARS = {'50/50': (0.5, 0.5), '60/30': (0.6, 0.3), '50/30': (0.5, 0.3)}
 fs, api = HfFileSystem(), HfApi()
 
 
@@ -136,17 +140,22 @@ def main():
             if y[tr].sum() == 0: continue
             m = LogisticRegression(C=1.0, class_weight='balanced', max_iter=600, tol=1e-3).fit(X[tr], y[tr])
             oof[te] = m.predict_proba(X[te])[:, 1]
-        best = None
+        best, balanced = None, None
         for th in np.unique(np.round(oof[oof >= 0.5], 3)):
             p = oof >= th; tp = (p & y).sum()
             if not tp: continue
-            s = min(tp / p.sum(), tp / y.sum())
-            if best is None or s >= best[0]: best = (s, float(th))
+            prec, rec = tp / p.sum(), tp / y.sum()
+            if best is None and prec >= MIN_PRECISION: best = (min(prec, rec), float(th))   # lowest qualifying cutoff
+            if balanced is None or min(prec, rec) >= balanced[0]: balanced = (min(prec, rec), float(th))
+        best = best or balanced
         if best is None:
             row['clean'] = None; row['why'] = 'no threshold at or above 0.5'; report.append(row); continue
         m = LogisticRegression(C=1.0, class_weight='balanced', max_iter=600, tol=1e-3).fit(X, y)
         w, b = m.coef_[0], float(m.intercept_[0])
         row['clean'] = {**pr(judge(w, b, best[1])), 'threshold': best[1], 'outOfFoldMinPR': round(best[0], 3)}
+        for side in ('old', 'clean'):
+            r = row.get(side)
+            if r: r['passes'] = {k: r['precision'] >= p_ and r['recall'] >= r_ for k, (p_, r_) in BARS.items()}
         report.append(row)
         heads.append({'group': old.get(tag, {}).get('group', 'source'), 'label': tag, 'weights': [round(float(v), 6) for v in w],
                       'bias': round(b, 6), 'threshold': round(best[1], 4)})
