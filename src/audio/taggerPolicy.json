@@ -94,7 +94,7 @@
    "output": "trumpet",
    "label": "trumpet",
    "dimension": "source",
-   "threshold": 0.6648,
+   "threshold": 0.9486,
    "decides": [
     "trumpet"
    ],

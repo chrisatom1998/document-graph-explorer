@@ -131,7 +131,7 @@ describe('the 50/50 shipping bar', () => {
   });
 
   it('shows a tagger trumpet on a full recording as a normal tag', () => {
-    const a: MusicAnalysis = { version: 2, durationSeconds: 10, analyzedSeconds: 10, instruments: [], notes: [], tagger: { revision: TAGGER_REVISION, windows: 1, scores: { trumpet: .9 } } };
+    const a: MusicAnalysis = { version: 2, durationSeconds: 10, analyzedSeconds: 10, instruments: [], notes: [], tagger: { revision: TAGGER_REVISION, windows: 1, scores: { trumpet: .98 } } };
     const trumpet = confidentSoundSummary(a).find(s => s.label === 'trumpet');
     expect(trumpet).toMatchObject({ origin: 'model estimate', tier: 'likely', scores: [{ model: 'Trained tagger score' }] });
     expect(trumpet?.maybe).toBeUndefined();
