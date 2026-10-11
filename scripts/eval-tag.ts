@@ -36,6 +36,7 @@
  */
 import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, writeFileSync, appendFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { DJ_CATALOG, DjTagEvidence, MERGED_DJ_LABELS, selectDjTags, type DjGroup } from '../src/audio/djTags';
 import { mergeDjTags } from '../src/audio/djClassification';
@@ -77,7 +78,7 @@ const rowSeconds = num('row-seconds', '0');
  * clips the two agreed to a cosine of 0.9996 or better, so 'cpu' is the default and 'wasm' is the slow, exact check. */
 const clapBackend = opt('clap-backend', 'cpu') as 'cpu' | 'wasm';
 if (!tags.length || (!clipsDir && !setPath)) { console.error('Pass --tag <label[,label]> and --clips <dir> or --set <items.json>. See the header of this file.'); process.exit(2); }
-const ROOT = resolve(dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC = join(ROOT, 'public');
 
 // ---------- the app's models and lists ----------
