@@ -29,7 +29,8 @@ it('lists rarely used tags only when searched for, or when already picked', () =
   render(<DjTagCorrection node={node}/>);
   expect(screen.getByLabelText('kick')).toBeDefined();
   expect(screen.queryByLabelText('oboe')).toBeNull();
-  expect(screen.queryByLabelText('syncopated')).toBeNull();
+  expect(screen.queryByLabelText('rolling')).toBeNull();
+  expect(screen.getByLabelText('syncopated')).toBeDefined();
   expect(screen.getByLabelText('cello')).toHaveProperty('checked',true);
   fireEvent.change(screen.getByRole('searchbox'),{target:{value:'oboe'}});
   expect(screen.getByLabelText('oboe')).toBeDefined();
