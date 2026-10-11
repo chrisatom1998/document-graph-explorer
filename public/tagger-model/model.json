@@ -276,13 +276,15 @@
   "name": "scores",
   "activation": "sigmoid"
  },
- "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
+ "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
  "runs": [
   "all-tags",
   "all-tags-run5",
   "all-tags-run7",
   "all-tags-run8",
-  "all-tags-run9"
+  "all-tags-run9",
+  "all-tags-run11",
+  "all-tags-run10"
  ],
  "outputRun": {
   "accordion": "all-tags",
@@ -355,7 +357,7 @@
   "cat:animal sound": "all-tags-run7",
   "cat:atmospheric pad": "all-tags",
   "cat:bass growl": "all-tags",
-  "cat:bass guitar": "all-tags",
+  "cat:bass guitar": "all-tags-run11",
   "cat:bass hit": "all-tags",
   "cat:bass pluck": "all-tags",
   "cat:bassoon": "all-tags",
@@ -398,7 +400,7 @@
   "cat:electric guitar": "all-tags",
   "cat:electric piano": "all-tags",
   "cat:environmental sound": "all-tags",
-  "cat:falling": "all-tags",
+  "cat:falling": "all-tags-run10",
   "cat:filter sweep": "all-tags",
   "cat:filtered": "all-tags",
   "cat:finger snap": "all-tags",
@@ -411,7 +413,7 @@
   "cat:glassy": "all-tags",
   "cat:gliding": "all-tags",
   "cat:glitch effect": "all-tags",
-  "cat:glockenspiel": "all-tags-run8",
+  "cat:glockenspiel": "all-tags-run10",
   "cat:gong": "all-tags",
   "cat:gritty": "all-tags",
   "cat:guitar": "all-tags",
@@ -427,7 +429,7 @@
   "cat:kalimba": "all-tags",
   "cat:kick": "all-tags",
   "cat:laser": "all-tags",
-  "cat:machine ambience": "all-tags",
+  "cat:machine ambience": "all-tags-run11",
   "cat:mallet instrument": "all-tags",
   "cat:marimba": "all-tags",
   "cat:metallic": "all-tags",
@@ -445,7 +447,7 @@
   "cat:piano": "all-tags",
   "cat:plucked": "all-tags",
   "cat:pulsing": "all-tags-run5",
-  "cat:rain ambience": "all-tags-run7",
+  "cat:rain ambience": "all-tags-run10",
   "cat:record stop": "all-tags",
   "cat:reese bass": "all-tags",
   "cat:reverberant": "all-tags",
@@ -527,7 +529,7 @@
   "cat:whoosh": "all-tags",
   "cat:wind ambience": "all-tags",
   "cat:wobble bass": "all-tags",
-  "cat:wobbling": "all-tags-run5",
+  "cat:wobbling": "all-tags-run10",
   "cat:woodblock": "all-tags",
   "cat:woody": "all-tags",
   "cat:xylophone": "all-tags",
@@ -541,7 +543,7 @@
   "cat:tuned percussion": "all-tags-run7",
   "cat:banjo": "all-tags-run7",
   "cat:mandolin": "all-tags-run7",
-  "cat:pitched vocal": "all-tags-run7",
+  "cat:pitched vocal": "all-tags-run10",
   "cat:shaker loop": "all-tags-run7",
   "cat:synth hit": "all-tags-run7",
   "cat:vocal shush": "all-tags-run7",
@@ -552,8 +554,8 @@
   "cat:vocal harmony": "all-tags-run9"
  },
  "sha256": {
-  "model.onnx": "9a1d45948f70a30b30172ae95b8c1a354e0455a8e26e871d84d8301125f27ec3"
+  "model.onnx": "3a1af0173416dad714e9cab281cea662d5badafe4f68f866f8464c8ca1a56d46"
  },
- "bytes": 298179763,
+ "bytes": 436078009,
  "maxAbsErrorVsPyTorch": 1.9669532775878906e-06
 }
