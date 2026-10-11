@@ -68,5 +68,10 @@ it('uses current labels, invalidates row interpretation, and sweeps merged polic
     expect(partial.complete).toBe(false);
     expect(partial.unscoredClips).toBe(1);
     expect(partial.current['effect:clap'].all).toMatchObject({ positives: 1, fn: 1, passes6030: false });
+    const missingFiles = cli(...args, '--audio-dir', dir);
+    expect(missingFiles.status, missingFiles.stderr).toBe(0);
+    const missing = JSON.parse(readFileSync(out, 'utf8'));
+    expect(missing.complete).toBe(false);
+    expect(missing.current['effect:clap'].all).toMatchObject({ positives: 1, fn: 1, passes6030: false });
   } finally { rmSync(dir, { recursive: true, force: true }); }
 }, 45000);

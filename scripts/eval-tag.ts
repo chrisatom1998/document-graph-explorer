@@ -162,8 +162,8 @@ function loadSet(path: string): { name: string; clips: Clip[] } {
     const read = file ? (rate: number) => decode(file, rate) : (rate: number) => rate === TAGGER_SAMPLE_RATE ? read32() : resample(read32(), rate);
     return { id: item.id, group: item.artist || item.id, labels, read, fromFile: !!file };
   });
-  if (audioDir) { const missing = clips.filter(c => !existsSync(join(audioDir, c.id.slice(c.id.indexOf(':') + 1) + audioExt))).length; if (missing) console.log(`${missing} of ${clips.length} clips have no file under ${audioDir}; they are skipped`); }
-  return { name: basename(path, '.json') + (audioDir ? '-files' : ''), clips: audioDir ? clips.filter(c => existsSync(join(audioDir, c.id.slice(c.id.indexOf(':') + 1) + audioExt))) : clips };
+  if (audioDir) { const missing = clips.filter(c => !existsSync(join(audioDir, c.id.slice(c.id.indexOf(':') + 1) + audioExt))).length; if (missing) console.log(`${missing} of ${clips.length} clips have no file under ${audioDir}; they remain unscored and count toward completeness`); }
+  return { name: basename(path, '.json') + (audioDir ? '-files' : ''), clips };
 }
 const AUDIO = /\.(wav|mp3|ogg|flac|aiff?|m4a|opus|webm)$/i;
 function decode(path: string, rate: number): Float32Array {
