@@ -11,8 +11,10 @@ Usage: python3 -I fair-judge.py <emb dir> <learned-main.json> <clean heads.json>
 - Fair best of both: clips go to half A or B by sha256('pf|' + group) % 2 (whole uploader / pack / instrument on one side,
   as precision_first.py). Each clean head has two cutoffs fixed from training out-of-fold scores (precision-first and
   balanced). On each half the cutoff is chosen (precision-first, training's default, unless it fails there and balanced passes), then judged only on the other
-  half. A head passes when both directions pass."""
-import csv, glob, hashlib, json, os, sys
+  half. A head passes when both directions pass.
+- Each result includes a digest of the evaluated input bias and weights. Carry this digest into any derived shipped-head
+  report; do not backfill older reports from the shipped asset (that would not establish evaluation provenance)."""
+import csv, glob, hashlib, json, os, struct, sys
 import numpy as np
 emb, old_p, new_p, board_p, out = sys.argv[1:6]
 SETS = '/mnt/project-files/datasets/fresh-tests-2026-10-11/sets'
@@ -34,6 +36,12 @@ for n in board['sets']:
     sets[n] = dict(X=X, inv=inv, n=len(ids), missing=len(rows) - len(ids),
                    half=np.array([int(hashlib.sha256(('pf|' + r['group']).encode()).hexdigest()[:8], 16) % 2 for r in rs]),
                    pres=[fold(filter(None, r['present'].split(';'))) for r in rs], absn=[set(filter(None, r['absent'].split(';'))) for r in rs])
+def coefficient_digest(head):
+    """Identify the actual evaluated bias and weights, serialized as big-endian float64s."""
+    values = [head['bias'], *head['weights']]
+    return hashlib.sha256(struct.pack(f'>{len(values)}d', *values)).hexdigest()
+
+
 def clip_scores(s, h):
     w = 1 / (1 + np.exp(-(s['X'] @ np.array(h['weights'], np.float32) + h['bias'])))
     c = np.full(s['n'], -1.0); np.maximum.at(c, s['inv'], w); return c
@@ -72,7 +80,8 @@ for tag in sorted(set(old) & set(new)):
     ship = max(picks, key=lambda k: cand[k])   # mixed: the higher (precision-first pair) cutoff
     full = {k: stats(tag, sn, th) for k, th in cand.items()}
     oldfull = stats(tag, so, old[tag]['threshold'])
-    res.append({'tag': tag, 'countedSets': sorted(counted), 'fairBestOfBoth': fair, 'shipCutoff': ship, 'shipThreshold': cand[ship],
+    res.append({'tag': tag, 'coefficientDigest': coefficient_digest(new[tag]),
+                'coefficientDigestFormat': 'sha256-f64be-bias-weights-v1', 'countedSets': sorted(counted), 'fairBestOfBoth': fair, 'shipCutoff': ship, 'shipThreshold': cand[ship],
                 'clean': full[ship], 'cleanPasses': {b: passes(full[ship], counted, *v) for b, v in BARS.items()},
                 'cleanOther': {k: full[k] for k in cand if k != ship},
                 'old': oldfull, 'oldPasses': {b: passes(oldfull, {k for k, v in oldfull.items() if v['positives'] >= 5}, *v) for b, v in BARS.items()},

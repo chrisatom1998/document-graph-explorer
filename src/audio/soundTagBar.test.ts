@@ -42,7 +42,7 @@ const PROMOTED: [label: string, threshold: number, precision: number, recall: nu
 const CLEAN_RETRAINED = ['crash cymbal', 'crowd ambience', 'finger snap', 'harmonica', 'harp', 'snare', 'tabla', 'trumpet',
   'vinyl scratch', 'vocal laugh', 'whisper', 'whoosh'];
 type CleanSet = { p: number; r: number; positives: number; negatives: number; fp: number };
-type CleanHead = { label: string; threshold: number; weightsChecksum: number; countedSets: string[]; sets: Record<string, CleanSet> };
+type CleanHead = { label: string; threshold: number; weightsChecksum: number; fairPass60_30: boolean; countedSets: string[]; sets: Record<string, CleanSet> };
 const cleanHeads = (): CleanHead[] =>
   (JSON.parse(readFileSync('docs/evaluations/clean-retrain-2026-10-11/report.json', 'utf8')) as { heads: CleanHead[] }).heads;
 const RUNTIME_ELIGIBLE: [label: string, threshold: number, precision: number, recall: number][] = [
@@ -89,6 +89,7 @@ describe('the 50/50 shipping bar', () => {
     expect(h.maybe).toBeUndefined();
     expect(h.threshold).toBeCloseTo(c.threshold, 4);
     expect(h.weights.reduce((sum, w, i) => sum + (i + 1) * w, 0)).toBeCloseTo(c.weightsChecksum, 2);
+    expect(c.fairPass60_30).toBe(true);
     expect(c.countedSets.length).toBeGreaterThan(0);
     for (const set of c.countedSets) {
       expect(c.sets[set].p).toBeGreaterThanOrEqual(.6);
