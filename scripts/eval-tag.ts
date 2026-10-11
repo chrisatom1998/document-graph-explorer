@@ -21,6 +21,7 @@
  *   npx vite-node scripts/eval-tag.ts --tag kick --set eval-fsd50k.json --decide-only --watch drums,cymbal
  * Options: --cache <dir> (per-clip model outputs, reused by later runs), --limit N, --shard i/n, --threads N,
  *          --clap-backend cpu|wasm (wasm = the browser's own runtime, slower; cached separately),
+ *          --learned / --short-clip / --policy <file> (evaluate another branch's or a proposed model file as "today"),
  *          --score-only / --decide-only, --watch a,b (extra tags measured under every candidate), --parity (check the
  *          tagger against src/audio/taggerParity.fixture.json first), --grid-tagger / --grid-head "0.1,0.2,...".
  * Requires: npm run setup:music (model weights) and ffmpeg on PATH (resampling, decoding).
@@ -61,8 +62,11 @@ const PUBLIC = join(ROOT, 'public');
 // ---------- the app's models and lists ----------
 const soundManifest = JSON.parse(readFileSync(join(PUBLIC, 'sound-model/manifest.json'), 'utf8')) as { repository: string; revision: string; sha256: Record<string, string> };
 const prompts = JSON.parse(readFileSync(join(PUBLIC, 'sound-model/prompts.json'), 'utf8')) as DescriptionPrompt[];
-const learnedRaw = JSON.parse(readFileSync(join(PUBLIC, 'sound-model/learned.json'), 'utf8'));
-const shortRaw = JSON.parse(readFileSync(join(PUBLIC, 'sound-model/short-clip.json'), 'utf8'));
+// Candidate model files (a branch's learned.json, a proposed short-clip.json or taggerPolicy.json) can stand in for
+// the shipped ones; the cached model outputs are reused because the CLAP weights and the tagger weights do not change.
+const learnedRaw = JSON.parse(readFileSync(opt('learned') ?? join(PUBLIC, 'sound-model/learned.json'), 'utf8'));
+const shortRaw = JSON.parse(readFileSync(opt('short-clip') ?? join(PUBLIC, 'sound-model/short-clip.json'), 'utf8'));
+if (opt('policy')) { const alt = JSON.parse(readFileSync(opt('policy')!, 'utf8')) as typeof TAGGER_POLICY; if (alt.modelSha256 !== TAGGER_POLICY.modelSha256) throw new Error('--policy is for another tagger model'); TAGGER_POLICY.tags.length = 0; TAGGER_POLICY.tags.push(...alt.tags); }
 const learned = sanitizeLearnedDjModel(learnedRaw), shortClip = sanitizeShortClipModel(shortRaw);
 if (!learned || !shortClip) throw new Error('learned.json or short-clip.json did not pass the app\'s own sanitizer');
 const taggerMeta = JSON.parse(readFileSync(join(PUBLIC, 'tagger-model/model.json'), 'utf8')) as { classes: string[]; sha256: Record<string, string> };
