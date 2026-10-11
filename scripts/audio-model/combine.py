@@ -99,7 +99,7 @@ def main():
     for t, name in pin.items(): assert t in next(r for r in runs if r['name'] == name)['classes'], f'{t} is not an output of {name}'
     tags = [t['output'] for t in json.load(open(args.policy))['tags']]
     tags += sorted(({t for ts in only.values() for t in ts} | set(pin)) - set(tags))
-    for t in tags: assert t in runs[0]['classes'], f'{t} is not an output of {runs[0]["name"]}'
+    for t in tags: assert t in runs[0]['classes'] or t in pin, f'{t} is not an output of {runs[0]["name"]} (only a pinned tag may come from a newer run alone)'
     picks = choose(tags, runs, {t for t in args.keep.split(',') if t}, only, pin)
     used = [k for k, run in enumerate(runs) if k == 0 or any(p['run'] == run['name'] for p in picks.values())]
     names = [runs[k]['name'] for k in used]

@@ -29,14 +29,14 @@
     "all-tags-run11": [
       "cat:bass guitar",
       "cat:machine ambience"
-    ],
-    "all-tags-run10": [
-      "cat:pitched vocal"
     ]
   },
   "pin": {
     "all-tags-run9": [
       "cat:fm synth"
+    ],
+    "all-tags-run10": [
+      "cat:pitched vocal"
     ]
   },
   "keep": "drums",
@@ -44,5 +44,5 @@
   "license": "cc-by-nc-sa-4.0",
   "flavor": "cpu-xl",
   "timeout": "5h",
-  "attempt": 11
+  "attempt": 12
 }
