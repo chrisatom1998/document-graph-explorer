@@ -36,3 +36,10 @@ it('lists rarely used tags only when searched for, or when already picked', () =
   fireEvent.change(screen.getByRole('searchbox'),{target:{value:'oboe'}});
   expect(screen.getByLabelText('oboe')).toBeDefined();
 });
+it('finds a tag by the name it shows on screen', () => {
+  render(<DjTagCorrection node={{id:'clip', audio:{}} as unknown as DocNode}/>);
+  for (const shown of ['brass', 'wet', 'downlifter']) {
+    fireEvent.change(screen.getByRole('searchbox'),{target:{value:shown}});
+    expect(screen.getByLabelText(shown)).toBeDefined();
+  }
+});
