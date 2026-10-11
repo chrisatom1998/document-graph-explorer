@@ -13,3 +13,5 @@
 - Long recordings already defer percussion to the other detectors (`long: { rule: 'detectors' }`), so full songs are unchanged.
 - The same pass refitted every tagger output with one rule; that was net worse (50/50: 48 -> 45), so only this
   tag ships. Per-clip scores and scripts: private dataset `cmjatom/dge-eval-runs`, `runs/cutoffs-2026-10-11/`.
+- No re-analysis is needed: saved analyses keep the raw tagger scores and `taggerDecisions()` applies the current
+  policy cutoff when a track is shown, so `INSTRUMENT_ANALYSIS_REVISION` stays as it is.
