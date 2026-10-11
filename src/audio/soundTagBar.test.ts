@@ -40,12 +40,21 @@ const PROMOTED: [label: string, threshold: number, precision: number, recall: nu
  * with 5+ positives, with the cutoff chosen on one half of the clips and judged on the other, both ways. Some of these
  * sounds have no free-tag-set positives, so FSD50K eval is their only scored set. Scores, set counts and a weight
  * checksum are in docs/evaluations/clean-retrain-2026-10-11/report.json. */
-const CLEAN_RETRAINED = ['crash cymbal', 'crowd ambience', 'finger snap', 'harmonica', 'harp', 'snare', 'tabla', 'trumpet',
-  'vinyl scratch', 'vocal laugh', 'whisper', 'whoosh'];
+// Crash cymbal, vocal laugh, whisper and whoosh were swapped too, then reverted: they failed on the app's own (q8) fingerprints.
+const CLEAN_RETRAINED = ['crowd ambience', 'finger snap', 'harmonica', 'harp', 'snare', 'tabla', 'trumpet', 'vinyl scratch'];
 type CleanSet = { p: number; r: number; positives: number; negatives: number; fp: number };
 type CleanHead = { label: string; threshold: number; coefficientDigest: string; fairPass60_30: boolean; countedSets: string[]; sets: Record<string, CleanSet> };
-const cleanHeads = (): CleanHead[] =>
-  (JSON.parse(readFileSync('docs/evaluations/clean-retrain-2026-10-11/report.json', 'utf8')) as { heads: CleanHead[] }).heads;
+const cleanReport = () => JSON.parse(readFileSync('docs/evaluations/clean-retrain-2026-10-11/report.json', 'utf8')) as {
+  heads: CleanHead[]; revertedHeads: { label: string; restoredFrom: string; threshold: number; coefficientDigest: string }[];
+};
+const cleanHeads = (): CleanHead[] => cleanReport().heads;
+const REVERTED = ['crash cymbal', 'vocal laugh', 'whisper', 'whoosh'];
+/** SHA-256 of the big-endian float64 bias followed by the weights. */
+const coefficientDigest = (h: { bias: number; weights: number[] }) => {
+  const coefficients = new DataView(new ArrayBuffer(8 * (h.weights.length + 1)));
+  [h.bias, ...h.weights].forEach((v, i) => coefficients.setFloat64(8 * i, v));
+  return createHash('sha256').update(new Uint8Array(coefficients.buffer)).digest('hex');
+};
 const RUNTIME_ELIGIBLE: [label: string, threshold: number, precision: number, recall: number][] = [
   ['kalimba', .8026, .74, .86], ['falling', .777, .61, .65], ['djembe', .9096, .62, .70], ['whistle', .8491, .62, .62],
   ['bongo', .9228, .54, .625], ['tom', .8114, .64, .69],
@@ -84,14 +93,24 @@ describe('the 50/50 shipping bar', () => {
     expect(cleanHeads().map(c => c.label).sort()).toEqual([...CLEAN_RETRAINED].sort());
   });
 
+  it('lists exactly the heads reverted to their pre-#232 weights', () => {
+    expect(cleanReport().revertedHeads.map(r => r.label).sort()).toEqual([...REVERTED].sort());
+  });
+
+  it.each(REVERTED)('ships %s with its pre-#232 weights and cutoff', label => {
+    const h = head(label);
+    const r = cleanReport().revertedHeads.find(x => x.label === label)!;
+    expect(r.restoredFrom).toBe('59efdbd');
+    expect(h.threshold).toBeCloseTo(r.threshold, 6);
+    expect(coefficientDigest(h)).toBe(r.coefficientDigest);
+  });
+
   it.each(CLEAN_RETRAINED)('ships %s as a clean-retrained head that passes 60/30 on every fresh test set', label => {
     const h = head(label);
     const c = cleanHeads().find(r => r.label === label)!;
     expect(h.maybe).toBeUndefined();
     expect(h.threshold).toBeCloseTo(c.threshold, 4);
-    const coefficients = new DataView(new ArrayBuffer(8 * (h.weights.length + 1)));
-    [h.bias, ...h.weights].forEach((v, i) => coefficients.setFloat64(8 * i, v));
-    expect(createHash('sha256').update(new Uint8Array(coefficients.buffer)).digest('hex')).toBe(c.coefficientDigest);
+    expect(coefficientDigest(h)).toBe(c.coefficientDigest);
     expect(c.fairPass60_30).toBe(true);
     expect(c.countedSets.length).toBeGreaterThan(0);
     for (const set of c.countedSets) {
