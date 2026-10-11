@@ -136,16 +136,20 @@ def main():
             h = old[tag]; row['old'] = {**pr(judge(np.array(h['weights']), h['bias'], h['threshold'])), 'threshold': h['threshold'], 'maybe': bool(h.get('maybe'))}
         if y.sum() < 20:
             row['clean'] = None; row['why'] = 'fewer than 20 clean training clips'; report.append(row); continue
-        oof = np.zeros(len(y))
+        # A fold whose training side has no positives can't be scored; its clips stay NaN and are left out of the
+        # cutoff search instead of counting as score 0.
+        oof = np.full(len(y), np.nan)
         for tr, te in GroupKFold(5).split(X, y, G):
             if y[tr].sum() == 0: continue
             m = LogisticRegression(C=1.0, class_weight='balanced', max_iter=600, tol=1e-3).fit(X[tr], y[tr])
             oof[te] = m.predict_proba(X[te])[:, 1]
+        row['outOfFoldUnscored'] = int(np.isnan(oof).sum())
+        scored = ~np.isnan(oof); oof, ys = oof[scored], y[scored]
         best, balanced = None, None
         for th in np.unique(np.round(oof[oof >= 0.5], 3)):
-            p = oof >= th; tp = (p & y).sum()
+            p = oof >= th; tp = (p & ys).sum()
             if not tp: continue
-            prec, rec = tp / p.sum(), tp / y.sum()
+            prec, rec = tp / p.sum(), tp / ys.sum()
             if best is None and prec >= MIN_PRECISION: best = (min(prec, rec), float(th))   # lowest qualifying cutoff
             if balanced is None or min(prec, rec) >= balanced[0]: balanced = (min(prec, rec), float(th))
         best = best or balanced
