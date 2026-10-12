@@ -3,7 +3,11 @@
     "all-tags",
     "all-tags-run5",
     "all-tags-run7",
-    "all-tags-run8"
+    "all-tags-run8",
+    "all-tags-run9",
+    "all-tags-run11",
+    "all-tags-run10",
+    "all-tags-recall1"
   ],
   "only": {
     "all-tags-run7": [
@@ -15,15 +19,57 @@
       "synthesizer"
     ],
     "all-tags-run8": [
-      "cat:fm synth",
       "cat:glockenspiel",
       "cat:whistle"
+    ],
+    "all-tags-run9": [
+      "cat:bell",
+      "cat:water ambience",
+      "cat:fm synth"
+    ],
+    "all-tags-run11": [
+      "cat:bass guitar",
+      "cat:machine ambience"
+    ],
+    "all-tags-recall1": [
+      "cat:guitar",
+      "cat:drums",
+      "cat:finger snap",
+      "cat:violin / fiddle",
+      "cat:siren",
+      "cat:atmospheric pad",
+      "cat:flute",
+      "cat:marimba",
+      "cat:vibraphone"
+    ]
+  },
+  "pin": {
+    "all-tags": [
+      "cat:foley",
+      "cat:turntable"
+    ],
+    "all-tags-run9": [
+      "cat:fm synth"
+    ],
+    "all-tags-run10": [
+      "cat:pitched vocal"
+    ],
+    "all-tags-recall1": [
+      "cat:guitar",
+      "cat:drums",
+      "cat:finger snap",
+      "cat:violin / fiddle",
+      "cat:siren",
+      "cat:atmospheric pad",
+      "cat:flute",
+      "cat:marimba",
+      "cat:vibraphone"
     ]
   },
   "keep": "drums",
   "public_repo": "dge-all-tags-tagger-nc",
   "license": "cc-by-nc-sa-4.0",
   "flavor": "cpu-xl",
-  "timeout": "4h",
-  "attempt": 5
+  "timeout": "3h",
+  "attempt": 14
 }

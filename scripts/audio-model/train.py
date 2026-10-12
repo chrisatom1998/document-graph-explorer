@@ -107,6 +107,9 @@ def main():
     ap.add_argument('--rare-repeat', type=int, default=1, help='times each window labelling a --rare-tags instrument as present is seen per epoch')
     ap.add_argument('--rare-tags', default='bass,organ,cello,trumpet,violin,saxophone',
                     help='OpenMIC classes whose positive windows --rare-repeat oversamples (outputs naming the same sound count too)')
+    ap.add_argument('--pos-weight', type=float, default=1.0, help='recall push: loss weight on a present label of a --pos-tags output (1 = off)')
+    ap.add_argument('--pos-tags', default='', help="outputs --pos-weight applies to, named like --rare-tags (app tag names match their cat: output); "
+                    "'tag:k' gives that tag its own weight k")
     ap.add_argument('--threads', type=int, default=os.cpu_count()); ap.add_argument('--resume', action='store_true')
     ap.add_argument('--limit', type=int, default=0, help='first N clips per source only (smoke test)')
     ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
@@ -156,6 +159,14 @@ def main():
     names |= {'double bass', 'synth bass'} if 'bass guitar' in names else set()
     rare = {c for c in CLASSES if c in args.rare_tags.split(',') or SAME.get(c) in names or c[4:] in names and c.startswith('cat:')}
     rare_cols = np.array(sorted(CLASSES.index(c) for c in rare), int)
+    # Recall push (--pos-weight): a missed present label of these outputs costs more than a false alarm, so they fire more often.
+    pos_w = torch.ones(len(CLASSES)); pos = {}
+    for e in filter(None, args.pos_tags.split(',')):
+        t, _, k = e.partition(':') if not e.startswith('cat:') else (e, '', '')
+        for c in CLASSES:
+            if c == t or SAME.get(c) == SAME.get(t, t) or c.startswith('cat:') and c[4:] == SAME.get(t, t): pos[c] = float(k or args.pos_weight)
+    for c, k in pos.items(): pos_w[CLASSES.index(c)] = k
+    if pos: print(f'recall push, loss weight on present labels: {dict(sorted(pos.items()))}', flush=True)
     for src in sources: src['rare'] = (src['y'][:, rare_cols] >= 0.5).any(1) if len(rare_cols) else np.zeros(len(src['y']), bool)
     src_repeat = {k: int(v) for k, v in (p.split('=') for p in args.repeat.split(',') if p)}
     pool = [(s, i) for s, src in enumerate(sources) for i in np.flatnonzero(~src['val'])[:args.limit or None]
@@ -228,6 +239,7 @@ def main():
                 yt = yt * lam.view(-1, 1) + yt[p2] * (1 - lam.view(-1, 1))
                 wt = wt * (wt[p2] > 0)                                          # score a pair only where both clips label it
             logits, _ = model(x); logits = logits.reshape(-1, len(CLASSES))
+            wt = wt * (1 + (pos_w.to(dev) - 1) * yt)                       # --pos-weight: present (or partly present) labels weigh more
             loss = (F.binary_cross_entropy_with_logits(logits, yt, reduction='none') * wt).sum() / wt.sum().clamp(min=1)
             opt.zero_grad(); loss.backward(); opt.step(); sched.step(); losses.append(loss.item())
             if len(losses) % 50 == 0:
