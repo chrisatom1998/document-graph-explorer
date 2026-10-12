@@ -590,7 +590,7 @@
    "output": "cat:voice",
    "label": "voice",
    "dimension": "source",
-   "threshold": 0.5717,
+   "threshold": 0.587,
    "decides": [
     "voice"
    ],
