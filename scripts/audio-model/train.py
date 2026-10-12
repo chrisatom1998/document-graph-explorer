@@ -162,7 +162,8 @@ def main():
     # Recall push (--pos-weight): a missed present label of these outputs costs more than a false alarm, so they fire more often.
     pos_w = torch.ones(len(CLASSES)); pos = {}
     for e in filter(None, args.pos_tags.split(',')):
-        t, _, k = e.partition(':') if not e.startswith('cat:') else (e, '', '')
+        t, _, k = e.rpartition(':')
+        if not t or not k.replace('.', '', 1).isdigit(): t, k = e, ''   # a weight is an optional numeric suffix (cat:kick, cat:kick:3)
         for c in CLASSES:
             if c == t or SAME.get(c) == SAME.get(t, t) or c.startswith('cat:') and c[4:] == SAME.get(t, t): pos[c] = float(k or args.pos_weight)
     for c, k in pos.items(): pos_w[CLASSES.index(c)] = k
