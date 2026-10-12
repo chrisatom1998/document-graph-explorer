@@ -157,10 +157,11 @@ describe('trained tagger display', () => {
   });
   it('decides laser and riser over their CLAP heads, and reverberant over its CLAP prompt', () => {
     const shownLabels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
-    const heads = ['laser', 'riser'].map(label => ({ group: 'production' as const, label, score: .9, model: 'Trained head' as const }));
+    const heads = [...['laser', 'riser'].map(label => ({ group: 'production' as const, label, score: .9, model: 'Trained head' as const })),
+      { group: 'character' as const, label: 'reverberant', score: .9, model: 'Music CLAP' as const }];
     const outputs = ['cat:laser', 'cat:riser', 'cat:reverberant'];
     const low = shownLabels(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads));
-    for (const label of ['laser', 'riser']) expect(low).not.toContain(label);
+    for (const label of ['laser', 'riser', 'reverberant']) expect(low).not.toContain(label);
     const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads))
       .filter(s => ['laser', 'riser', 'reverberant'].includes(s.label));
     expect(shown.map(s => s.label).sort()).toEqual(['laser', 'reverberant', 'riser']);
