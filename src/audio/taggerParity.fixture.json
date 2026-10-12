@@ -56,7 +56,10 @@
     "cat:kick": 0.000699,
     "cat:clap": 2.6e-05,
     "cat:organ": 0.516755,
-    "cat:gong": 1.3e-05
+    "cat:gong": 1.3e-05,
+    "cat:laser": 0.012237,
+    "cat:riser": 0.093932,
+    "cat:reverberant": 0.061228
    }
   },
   {
@@ -113,7 +116,10 @@
     "cat:kick": 0.007614,
     "cat:clap": 0.001028,
     "cat:organ": 0.094514,
-    "cat:gong": 0.000157
+    "cat:gong": 0.000157,
+    "cat:laser": 0.036598,
+    "cat:riser": 0.01786,
+    "cat:reverberant": 0.245503
    }
   },
   {
@@ -171,7 +177,10 @@
     "cat:kick": 0.008389,
     "cat:clap": 0.002837,
     "cat:organ": 0.097393,
-    "cat:gong": 0.00039
+    "cat:gong": 0.00039,
+    "cat:laser": 0.050181,
+    "cat:riser": 0.045739,
+    "cat:reverberant": 0.247116
    }
   },
   {
@@ -230,7 +239,10 @@
     "cat:kick": 0.022869,
     "cat:clap": 0.009862,
     "cat:organ": 0.095428,
-    "cat:gong": 0.000984
+    "cat:gong": 0.000984,
+    "cat:laser": 0.063676,
+    "cat:riser": 0.073431,
+    "cat:reverberant": 0.398901
    }
   }
  ]

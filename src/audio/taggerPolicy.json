@@ -655,6 +655,48 @@
     "rule": "detectors",
     "afterSeconds": 30
    }
+  },
+  {
+   "output": "cat:laser",
+   "label": "laser",
+   "dimension": "effect",
+   "threshold": 0.6142,
+   "decides": [
+    "laser"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:riser",
+   "label": "riser",
+   "dimension": "effect",
+   "threshold": 0.5525,
+   "decides": [
+    "riser"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:reverberant",
+   "label": "reverberant",
+   "dimension": "character",
+   "threshold": 0.4625,
+   "decides": [
+    "reverberant"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
   }
  ]
 }
