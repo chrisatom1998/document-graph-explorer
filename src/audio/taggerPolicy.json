@@ -1,7 +1,7 @@
 {
  "version": 1,
- "revision": "all-tags-recall-2026-10-11-r1",
- "modelSha256": "97e522a5386d196161b4ddf0ff8567e156eaae332db65aac6695c7889d815343",
+ "revision": "all-tags-recall2-2026-10-11-r1",
+ "modelSha256": "14f80825ba22af6048b62ad8c4dbddd0977eccffa66247b4ee657e9f15e62a56",
  "input": {
   "name": "samples32k",
   "output": "scores",
@@ -44,7 +44,7 @@
    "output": "cat:guitar",
    "label": "guitar",
    "dimension": "source",
-   "threshold": 0.8531,
+   "threshold": 0.3,
    "decides": [
     "guitar"
    ],
@@ -79,7 +79,7 @@
    "output": "cat:violin / fiddle",
    "label": "violin",
    "dimension": "source",
-   "threshold": 0.6363,
+   "threshold": 0.579,
    "decides": [
     "violin",
     "violin / fiddle"
@@ -397,7 +397,7 @@
    "output": "cat:finger snap",
    "label": "finger snap",
    "dimension": "effect",
-   "threshold": 0.1752,
+   "threshold": 0.175,
    "decides": [
     "finger snap"
    ],
@@ -506,7 +506,7 @@
    "output": "cat:siren",
    "label": "siren",
    "dimension": "effect",
-   "threshold": 0.2452,
+   "threshold": 0.277,
    "decides": [
     "siren"
    ],
@@ -520,7 +520,7 @@
    "output": "cat:flute",
    "label": "flute",
    "dimension": "source",
-   "threshold": 0.7538,
+   "threshold": 0.54,
    "decides": [
     "flute"
    ],
@@ -534,7 +534,7 @@
    "output": "cat:marimba",
    "label": "marimba",
    "dimension": "source",
-   "threshold": 0.8359,
+   "threshold": 0.827,
    "decides": [
     "marimba"
    ],
@@ -548,7 +548,7 @@
    "output": "cat:vibraphone",
    "label": "vibraphone",
    "dimension": "source",
-   "threshold": 0.7489,
+   "threshold": 0.657,
    "decides": [
     "vibraphone"
    ],
@@ -593,6 +593,62 @@
    "threshold": 0.587,
    "decides": [
     "voice"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:kick",
+   "label": "kick",
+   "dimension": "effect",
+   "threshold": 0.53,
+   "decides": [
+    "kick"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:clap",
+   "label": "clap",
+   "dimension": "effect",
+   "threshold": 0.5,
+   "decides": [
+    "clap"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:organ",
+   "label": "organ",
+   "dimension": "source",
+   "threshold": 0.774,
+   "decides": [
+    "organ"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:gong",
+   "label": "gong",
+   "dimension": "source",
+   "threshold": 0.2,
+   "decides": [
+    "gong"
    ],
    "tested": true,
    "long": {
