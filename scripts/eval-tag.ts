@@ -98,6 +98,8 @@ const modelIdentity = { clap: soundManifest.sha256['onnx/audio_model_quantized.o
 if (modelIdentity.tagger !== TAGGER_POLICY.modelSha256) throw new Error('public/tagger-model/model.json does not match taggerPolicy.json');
 
 interface ResolvedTag { input: string; group: DjGroup; label: string; dimension: 'source' | 'effect' | 'character'; displayKey: string; setKeys: string[];
+  /** Folder names a --clips directory may use for this tag: the name as typed, the catalog label, the merged destination. */
+  folders: string[];
   /** The stored identities whose detectors show under this name: the merged destination first, then every name folded into it. */
   names: { group: DjGroup; label: string }[] }
 /** "kick" -> the catalog label, its display dimension and the key it shows under after merges. */
@@ -110,7 +112,9 @@ function resolveTag(input: string): ResolvedTag {
   const m = MERGED_DJ_LABELS[`${hit.group}:${hit.label}`] ?? { group: hit.group as DjGroup, label: hit.label };
   const dimension = m.group === 'source' ? 'source' : m.group === 'production' ? 'effect' : 'character';
   const names = [m, ...Object.entries(MERGED_DJ_LABELS).filter(([, to]) => to.group === m.group && to.label === m.label).map(([from]) => ({ group: from.split(':')[0] as DjGroup, label: from.slice(from.indexOf(':') + 1) }))];
-  return { input, group: m.group, label: m.label, dimension, displayKey: `${dimension}:${m.label}`, setKeys: [`cat:${hit.label}`, hit.label, `${hit.group}:${hit.label}`], names };
+  // A set may label the name typed, the merged destination or any name folded into it; the tag shows when any of them fires.
+  const setKeys = [...new Set([{ group: hit.group, label: hit.label }, ...names].flatMap(n => [`cat:${n.label}`, n.label, `${n.group}:${n.label}`]))];
+  return { input, group: m.group, label: m.label, dimension, displayKey: `${dimension}:${m.label}`, setKeys, folders: [...new Set([label, hit.label, m.label])], names };
 }
 const targets = tags.map(resolveTag), watched = watch.map(resolveTag);
 
@@ -137,23 +141,23 @@ function readInt16(path: string, offset: number, firstSample: number, count: num
   const out = new Float32Array(count); for (let i = 0; i < count; i++) out[i] = buf.readInt16LE(i * 2) / 32768; return out;
 }
 const labelOf = (labels: Record<string, unknown>, t: ResolvedTag): 0 | 1 | undefined => {
-  for (const k of t.setKeys) if (k in labels) { const v = labels[k]; return v === 'present' || v === 1 || v === true || v === '1' ? 1 : v === 'absent' || v === 0 || v === false || v === '0' ? 0 : undefined; }
-  return undefined;
+  let absent = false;
+  for (const k of t.setKeys) if (k in labels) { const v = labels[k]; if (v === 'present' || v === 1 || v === true || v === '1') return 1; if (v === 'absent' || v === 0 || v === false || v === '0') absent = true; }
+  return absent ? 0 : undefined;
 };
 function loadSet(path: string): { name: string; clips: Clip[] } {
   const meta = JSON.parse(readFileSync(path, 'utf8')) as { items: { id: string; artist?: string; labels?: Record<string, unknown> }[]; offsets?: number[] };
   const npyPath = opt('npy') ?? path.replace(/\.json$/, '.npy');
-  const npy = parseNpy(npyPath);
+  const npy = audioDir ? undefined : parseNpy(npyPath); // the .npy is only read when the audio is not given as files
   const seen = new Set<string>();
   for (const item of meta.items) { if (seen.has(item.id)) throw new Error(`${path}: duplicate item id ${item.id} (the cache keys clips by id)`); seen.add(item.id); }
   const clips: Clip[] = meta.items.map((item, i) => {
     const labels: Record<string, 0 | 1> = {};
     for (const t of [...targets, ...watched]) { const v = labelOf(item.labels ?? {}, t); if (v !== undefined) labels[t.displayKey] = v; }
-    let first: number, count: number;
-    if (meta.offsets) { first = meta.offsets[i]; count = meta.offsets[i + 1] - first; }
-    else { count = npy.shape[1]; first = i * count; }
+    let first = 0, count = 0;
+    if (npy) { if (meta.offsets) { first = meta.offsets[i]; count = meta.offsets[i + 1] - first; } else { count = npy.shape[1]; first = i * count; } }
     const read32 = () => {
-      let s = readInt16(npyPath, npy.offset, first, count);
+      let s = readInt16(npyPath, npy!.offset, first, count);
       // Fixed-length rows pad each clip with digital silence; the app would see the clip's own length.
       if (!meta.offsets) {
         if (rowSeconds > 0) s = s.subarray(0, Math.min(s.length, Math.round(rowSeconds * TAGGER_SAMPLE_RATE)));
@@ -175,10 +179,11 @@ function decode(path: string, rate: number): Float32Array {
 }
 function loadClips(dir: string): { name: string; clips: Clip[] } {
   // Watched tags read <dir>/<tag>/yes|no too, so they get ground truth under every candidate like the targets.
-  const perTag = [...(targets.length === 1 && existsSync(join(dir, 'yes')) ? [[targets[0], dir] as const] : targets.map(t => [t, join(dir, t.label)] as const)),
-    ...watched.map(t => [t, join(dir, t.label)] as const)];
+  const folderFor = (t: ResolvedTag) => t.folders.map(f => join(dir, f)).filter(existsSync);
+  const perTag = [...(targets.length === 1 && existsSync(join(dir, 'yes')) ? [[targets[0], [dir]] as const] : targets.map(t => [t, folderFor(t)] as const)),
+    ...watched.map(t => [t, folderFor(t)] as const)];
   const byId = new Map<string, Clip>();
-  for (const [t, folder] of perTag) for (const answer of ['yes', 'no'] as const) {
+  for (const [t, folders] of perTag) for (const folder of folders) for (const answer of ['yes', 'no'] as const) {
     const sub = join(folder, answer); if (!existsSync(sub)) continue;
     for (const file of readdirSync(sub).filter(f => AUDIO.test(f)).sort()) {
       const path = join(sub, file), id = path.slice(dir.length + 1);
