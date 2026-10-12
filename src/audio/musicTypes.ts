@@ -41,7 +41,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 117/118: the tagger decides crash cymbal and whisper (fresh test sets 60/30; their learned heads failed on the app path).
 // 119/120: the tagger decides voice on clips up to 30 s (fresh test sets 60/30 under the fair half-split rule; the CLAP head
 // failed precision on every set).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 120 : 119;
+// 121/122: the recall network is swapped for recall 2: the tagger also decides kick, clap, organ and gong (fresh test sets
+// 60/30 under the fair half-split rule; their CLAP heads failed on the app path).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 122 : 121;
 export interface InstrumentEstimate {
   label: string;
   score: number;
