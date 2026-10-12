@@ -7,7 +7,7 @@
     "all-tags-run9",
     "all-tags-run11",
     "all-tags-run10",
-    "all-tags-recall1"
+    "all-tags-recall2"
   ],
   "only": {
     "all-tags-run7": [
@@ -31,7 +31,7 @@
       "cat:bass guitar",
       "cat:machine ambience"
     ],
-    "all-tags-recall1": [
+    "all-tags-recall2": [
       "cat:guitar",
       "cat:drums",
       "cat:finger snap",
@@ -40,7 +40,11 @@
       "cat:atmospheric pad",
       "cat:flute",
       "cat:marimba",
-      "cat:vibraphone"
+      "cat:vibraphone",
+      "cat:kick",
+      "cat:clap",
+      "cat:organ",
+      "cat:gong"
     ]
   },
   "pin": {
@@ -54,7 +58,7 @@
     "all-tags-run10": [
       "cat:pitched vocal"
     ],
-    "all-tags-recall1": [
+    "all-tags-recall2": [
       "cat:guitar",
       "cat:drums",
       "cat:finger snap",
@@ -63,7 +67,11 @@
       "cat:atmospheric pad",
       "cat:flute",
       "cat:marimba",
-      "cat:vibraphone"
+      "cat:vibraphone",
+      "cat:kick",
+      "cat:clap",
+      "cat:organ",
+      "cat:gong"
     ]
   },
   "keep": "drums",
@@ -71,5 +79,5 @@
   "license": "cc-by-nc-sa-4.0",
   "flavor": "cpu-xl",
   "timeout": "3h",
-  "attempt": 14
+  "attempt": 15
 }
