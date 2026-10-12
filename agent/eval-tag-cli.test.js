@@ -131,34 +131,3 @@ it('reads --clips folders named after the tag as typed, not only the merged dest
     expect(report.unscoredClips).toBe(1); // the clip was found and labelled; with an empty cache it is unscored
   } finally { rmSync(dir, { recursive: true, force: true }); }
 }, 30000);
-
-it('decide-only does not require a sibling .npy when a score cache is already there', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'eval-tag-decide-'));
-  try {
-    const { setPath, cache } = tinySet(dir, { 'cat:kick': 'present' }, { npy: false });
-    const manifest = JSON.parse(readFileSync('public/sound-model/manifest.json', 'utf8'));
-    const tagger = JSON.parse(readFileSync('public/tagger-model/model.json', 'utf8'));
-    const mark = `${manifest.sha256['onnx/audio_model_quantized.onnx'].slice(0, 8)}-${tagger.sha256['model.onnx'].slice(0, 8)}`;
-    const out = join(dir, 'report.json');
-    writeFileSync(join(cache, `set.${'ab'.repeat(32)}.${mark}.shard-0-of-1.jsonl`), JSON.stringify({ id: 'one', group: 'g', labels: {}, duration: 1, clap: [], tagger: [] }) + '\n');
-    const reused = cli('--tag', 'kick', '--set', setPath, '--cache', cache, '--decide-only', '--out', out);
-    expect(reused.status, reused.stderr).toBe(0);
-    expect(reused.stdout).toContain('reusing the one cached audio');
-    const report = JSON.parse(readFileSync(out, 'utf8'));
-    expect(report.complete).toBe(true);
-    expect(report.current['effect:kick'].all).toMatchObject({ positives: 1, fn: 1 });
-    writeFileSync(join(cache, `set.${'cd'.repeat(32)}.${mark}.shard-0-of-1.jsonl`), JSON.stringify({ id: 'other', group: 'g', labels: {}, duration: 1, clap: [], tagger: [] }) + '\n');
-    const ambiguous = cli('--tag', 'kick', '--set', setPath, '--cache', cache, '--decide-only', '--out', out);
-    expect(ambiguous.status, ambiguous.stderr).toBe(0);
-    expect(ambiguous.stdout).toContain('more than one cached audio');
-    expect(JSON.parse(readFileSync(out, 'utf8')).complete).toBe(false);
-    writeFileSync(join(dir, 'set.npy'), 'not-an-npy');
-    const dummy = cli('--tag', 'kick', '--set', setPath, '--cache', cache, '--decide-only', '--out', out);
-    expect(dummy.status, dummy.stderr).toBe(0);
-    expect(dummy.stderr).not.toContain('<i2');
-    expect(dummy.stderr).not.toContain('not a .npy');
-    const scoring = cli('--tag', 'kick', '--set', setPath, '--cache', cache, '--score-only');
-    expect(scoring.status).not.toBe(0);
-    expect(scoring.stderr).toContain('not a .npy');
-  } finally { rmSync(dir, { recursive: true, force: true }); }
-}, 45000);

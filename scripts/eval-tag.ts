@@ -148,8 +148,7 @@ const labelOf = (labels: Record<string, unknown>, t: ResolvedTag): 0 | 1 | undef
 function loadSet(path: string): { name: string; clips: Clip[] } {
   const meta = JSON.parse(readFileSync(path, 'utf8')) as { items: { id: string; artist?: string; labels?: Record<string, unknown> }[]; offsets?: number[] };
   const npyPath = opt('npy') ?? path.replace(/\.json$/, '.npy');
-  // Samples are read from the .npy only while scoring a set that has no --audio-dir. --decide-only never reads them.
-  const npy = audioDir || flag('decide-only') ? undefined : parseNpy(npyPath);
+  const npy = audioDir ? undefined : parseNpy(npyPath); // the .npy is only read when the audio is not given as files
   const seen = new Set<string>();
   for (const item of meta.items) { if (seen.has(item.id)) throw new Error(`${path}: duplicate item id ${item.id} (the cache keys clips by id)`); seen.add(item.id); }
   const clips: Clip[] = meta.items.map((item, i) => {
@@ -158,8 +157,7 @@ function loadSet(path: string): { name: string; clips: Clip[] } {
     let first = 0, count = 0;
     if (npy) { if (meta.offsets) { first = meta.offsets[i]; count = meta.offsets[i + 1] - first; } else { count = npy.shape[1]; first = i * count; } }
     const read32 = () => {
-      if (!npy) throw new Error(`${npyPath} is required to read samples`);
-      let s = readInt16(npyPath, npy.offset, first, count);
+      let s = readInt16(npyPath, npy!.offset, first, count);
       // Fixed-length rows pad each clip with digital silence; the app would see the clip's own length.
       if (!meta.offsets) {
         if (rowSeconds > 0) s = s.subarray(0, Math.min(s.length, Math.round(rowSeconds * TAGGER_SAMPLE_RATE)));
@@ -213,11 +211,7 @@ if (setPath) {
   const meta = JSON.parse(readFileSync(setPath, 'utf8'));
   if (audioDir) {
     for (const item of meta.items) { const file = join(audioDir, item.id.slice(item.id.indexOf(':') + 1) + audioExt); if (existsSync(file)) inputPaths.push(file); }
-  } else {
-    const npyFile = opt('npy') ?? setPath.replace(/\.json$/, '.npy');
-    // A decide-only run can reuse a score cache when the array is gone; scoring still needs the file.
-    if (existsSync(npyFile) || !flag('decide-only')) inputPaths.push(npyFile);
-  }
+  } else inputPaths.push(opt('npy') ?? setPath.replace(/\.json$/, '.npy'));
   interpretation = { rowSeconds, fromFiles: !!audioDir, ids: meta.items.map((item: { id: string }) => item.id), offsets: meta.offsets };
 } else {
   // All files, including currently unlabelled ones, keep target/watch changes reusable.
@@ -226,15 +220,7 @@ if (setPath) {
   } };
   walk(clipsDir!);
 }
-let inputIdentity = inputCacheIdentity(inputPaths, interpretation);
-// The cache file name still carries the audio hash, so one cached audio can be reused after the .npy is gone.
-if (setPath && flag('decide-only') && !audioDir && inputPaths.length === 0) {
-  const mark = `${modelIdentity.clap.slice(0, 8)}${clapBackend === 'wasm' ? '-wasm' : ''}-${modelIdentity.tagger.slice(0, 8)}`;
-  const head = `${set.name}.`, tail = `.${mark}.`;
-  const identities = [...new Set(readdirSync(cacheDir).filter(f => f.startsWith(head) && f.includes(tail) && f.endsWith('.jsonl')).map(f => f.slice(head.length, f.indexOf(tail))).filter(id => /^[0-9a-f]{64}$/.test(id)))];
-  if (identities.length === 1) { inputIdentity = identities[0]; console.log('no .npy next to the set; reusing the one cached audio'); }
-  else if (identities.length > 1) console.log('no .npy next to the set and more than one cached audio; pass the .npy so the right scores are reused');
-}
+const inputIdentity = inputCacheIdentity(inputPaths, interpretation);
 const cachePrefix = `${set.name}.${inputIdentity}.${modelIdentity.clap.slice(0, 8)}${clapBackend === 'wasm' ? '-wasm' : ''}-${modelIdentity.tagger.slice(0, 8)}.`;
 const cacheFile = (i: number, n: number) => join(cacheDir, `${cachePrefix}shard-${i}-of-${n}.jsonl`);
 function readCache(): Map<string, CachedClip> {
