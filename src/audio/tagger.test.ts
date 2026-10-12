@@ -155,6 +155,18 @@ describe('trained tagger display', () => {
     expect(shown.map(s => s.label).sort()).toEqual(['clap', 'gong', 'kick', 'organ']);
     for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
   });
+  it('decides laser and riser over their CLAP heads, and reverberant over its CLAP prompt', () => {
+    const shownLabels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
+    const heads = [...['laser', 'riser'].map(label => ({ group: 'production' as const, label, score: .9, model: 'Trained head' as const })),
+      { group: 'character' as const, label: 'reverberant', score: .9, model: 'Music CLAP' as const }];
+    const outputs = ['cat:laser', 'cat:riser', 'cat:reverberant'];
+    const low = shownLabels(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads));
+    for (const label of ['laser', 'riser', 'reverberant']) expect(low).not.toContain(label);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads))
+      .filter(s => ['laser', 'riser', 'reverberant'].includes(s.label));
+    expect(shown.map(s => s.label).sort()).toEqual(['laser', 'reverberant', 'riser']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
   it('decides voice over its CLAP head on clips', () => {
     const heads = [{ group: 'source' as const, label: 'voice', score: .9, model: 'Trained head' as const }];
     expect(sources(track(4, { 'cat:voice': .01 }, heads))).toEqual([]);
@@ -215,7 +227,9 @@ describe('trained tagger long-recording rules', () => {
       'cat:flute': { rule: 'detectors', afterSeconds: 30 }, 'cat:marimba': { rule: 'detectors', afterSeconds: 30 }, 'cat:vibraphone': { rule: 'detectors', afterSeconds: 30 },
       'cat:crash cymbal': { rule: 'detectors', afterSeconds: 30 }, 'cat:whisper': { rule: 'detectors', afterSeconds: 30 },
       'cat:voice': { rule: 'detectors', afterSeconds: 30 }, 'cat:kick': { rule: 'detectors', afterSeconds: 30 }, 'cat:clap': { rule: 'detectors', afterSeconds: 30 },
-      'cat:organ': { rule: 'detectors', afterSeconds: 30 }, 'cat:gong': { rule: 'detectors', afterSeconds: 30 } });
+      'cat:organ': { rule: 'detectors', afterSeconds: 30 }, 'cat:gong': { rule: 'detectors', afterSeconds: 30 },
+      'cat:laser': { rule: 'detectors', afterSeconds: 30 }, 'cat:riser': { rule: 'detectors', afterSeconds: 30 },
+      'cat:reverberant': { rule: 'detectors', afterSeconds: 30 } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
   it('needs the higher full-song drums threshold on long recordings only', () => {
@@ -234,7 +248,7 @@ describe('trained tagger long-recording rules', () => {
   });
   it.each(['cat:environmental sound', 'cat:foley', 'cat:turntable', 'cat:finger snap', 'cat:water ambience', 'cat:guitar', 'cat:violin / fiddle', 'cat:siren',
     'cat:flute', 'cat:marimba', 'cat:vibraphone', 'cat:crash cymbal', 'cat:whisper', 'cat:voice', 'cat:kick', 'cat:clap',
-    'cat:organ', 'cat:gong'])(
+    'cat:organ', 'cat:gong', 'cat:laser', 'cat:riser', 'cat:reverberant'])(
     'keeps the tagger deciding %s up to 30 s, as the held-out scorer did, and defers on longer recordings', output => {
       const at = (duration: number, windows: number) => taggerDecisions({ revision: TAGGER_REVISION, windows, scores: { [output]: threshold(output) } }, duration)!
         .find(d => d.tag.output === output);

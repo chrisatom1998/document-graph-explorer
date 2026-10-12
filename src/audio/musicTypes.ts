@@ -43,7 +43,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // failed precision on every set).
 // 121/122: the recall network is swapped for recall 2: the tagger also decides kick, clap, organ and gong (fresh test sets
 // 60/30 under the fair half-split rule; their CLAP heads failed on the app path).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 122 : 121;
+// 123/124: the tagger decides laser, riser and reverberant on clips up to 30 s (fresh test sets 60/30 at its own cutoffs; the
+// CLAP head or prompt that showed them failed on the app path).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 124 : 123;
 export interface InstrumentEstimate {
   label: string;
   score: number;
