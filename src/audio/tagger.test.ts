@@ -170,13 +170,15 @@ describe('trained tagger display', () => {
   it('decides conga and vocal chant over their CLAP prompt and head, and static noise over its CLAP prompt', () => {
     const shownLabels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
     const labels = ['conga', 'vocal chant', 'static noise'];
-    const heads = labels.map(label => ({ group: 'production' as const, label, score: .9, model: (label === 'vocal chant' ? 'Trained head' : 'Music CLAP') as 'Trained head' | 'Music CLAP' }));
+    // Native source conga evidence too: the tagger also decides that identity (alsoDecides).
+    const heads = [...labels.map(label => ({ group: 'production' as const, label, score: .9, model: (label === 'vocal chant' ? 'Trained head' : 'Music CLAP') as 'Trained head' | 'Music CLAP' })),
+      { group: 'source' as const, label: 'conga', score: .9, model: 'Music CLAP' as const }];
     const outputs = labels.map(label => `cat:${label}`);
     const low = shownLabels(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads));
     for (const label of labels) expect(low).not.toContain(label);
     const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads))
       .filter(s => labels.includes(s.label));
-    expect(shown.map(s => s.label).sort()).toEqual(['conga', 'static noise', 'vocal chant']);
+    expect(shown.map(s => `${s.dimension}:${s.label}`).sort()).toEqual(['effect:conga', 'effect:static noise', 'effect:vocal chant']);
     for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
   });
   it('decides voice over its CLAP head on clips', () => {
