@@ -107,7 +107,8 @@ npm install      # install dependencies
 npm run dev      # start the Vite dev server at http://localhost:5173
 ```
 
-Node 24 is the supported runtime (`.nvmrc`); Node 22.13 or newer also works. The first
+Node 24 is the supported runtime (`.nvmrc`); Node 22.13 or newer also works, except Node 23, which
+the locked dependencies do not support. The first
 `npm run dev` or `npm run build` needs network access: a pre-script downloads about 632 MB of
 checksum-verified audio-model weights from Hugging Face into `public/` (not stored in Git). Later
 runs reuse the local files. Run `npm run setup:music` once while online to work offline afterwards.
@@ -334,8 +335,8 @@ IndexedDB/idb · Yjs/WebRTC · Vitest · Playwright · Electron.
 ## Licences
 
 The app is GPL-3.0 ([LICENSE](LICENSE)). Bundled audio dependencies keep their own terms:
-Essentia.js is AGPL-3.0, the FFmpeg core is GPL-2.0-or-later, the AudioSet AST and CLAP models are
-Apache-2.0, and the MTG-Jamendo models and the trained sound tagger carry non-commercial
+Essentia.js is AGPL-3.0, the FFmpeg core is GPL-2.0-or-later, the AudioSet AST model is BSD-3-Clause,
+the CLAP model is Apache-2.0, and the MTG-Jamendo models and the trained sound tagger carry non-commercial
 (CC BY-NC-SA) terms that the app licence does not override. Keep the bundled notices when
 distributing builds; commercial use of the MTG models needs separate permission. Provenance notices
 live in `public/jamendo-model/NOTICE`, `public/music-model/NOTICE.md`, `public/sound-model/NOTICE`

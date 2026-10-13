@@ -194,8 +194,8 @@ vocabulary is in [dj-sound-catalog.md](dj-sound-catalog.md).
 ## Licences
 
 Audio dependencies keep their own terms: Essentia.js is AGPL-3.0, the FFmpeg
-core is GPL-2.0-or-later, AudioSet AST and LAION CLAP are Apache-2.0, and the
-MTG-Jamendo/Discogs models and the trained tagger carry non-commercial terms.
+core is GPL-2.0-or-later, AudioSet AST is BSD-3-Clause, LAION CLAP is Apache-2.0,
+and the MTG-Jamendo/Discogs models and the trained tagger carry non-commercial terms.
 The app licence does not override these model restrictions. Keep the bundled
 notices and licence texts when distributing builds; commercial use of the MTG
 models requires separate permission. See `public/jamendo-model/NOTICE`,
