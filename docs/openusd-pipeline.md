@@ -12,7 +12,7 @@ re-render, and build on.
 
 ## Quick start
 
-1. Load a corpus, then **Data → Export OpenUSD scene**. This downloads a
+1. Load a corpus, then open the **Export** tab and choose **Export 3D scene (USD)**. This downloads a
    self-contained `document-graph-explorer-<date>.usda` (text USD, no
    dependencies).
 2. Validate and inspect it with the Python pipeline tool:

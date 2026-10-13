@@ -1,17 +1,19 @@
 <div align="center">
-  <img src="public/icon.svg" alt="Document Graph Explorer icon" width="96" height="96" />
-  <h1>Document Graph Explorer</h1>
-  <p><strong>A private, local-first 2D/3D knowledge map for documents and source repositories.</strong></p>
+  <img src="public/icon.svg" alt="Resonance icon" width="96" height="96" />
+  <h1>Resonance</h1>
+  <p><strong>A private, local-first map of how your sounds and documents relate.</strong></p>
   <p>
-    Drop in PDFs, Markdown, Office files, HTML, text, or code. Document Graph Explorer finds topics,
-    entities, references, and semantic relationships in your browser—then turns the corpus into an
-    explorable graph you can search, read, synchronize, compare, and export.
+    Drop in clips, loops or whole sample packs and get a graph of what sounds alike, shares a tempo or
+    key, uses the same instruments, and mixes well together. Drop in PDFs, Markdown, Office files or a
+    source repository and the same graph links them by topic, citation and meaning. Everything is
+    analyzed in your browser; nothing is uploaded unless you turn on a cloud AI provider.
   </p>
   <p>
     <a href="https://document-graph-explorer.vercel.app"><strong>Try the live app</strong></a>
-    · <a href="docs/user-guide.md">Read the user guide</a>
+    · <a href="docs/user-guide.md">User guide</a>
+    · <a href="docs/audio-analysis.md">Audio analysis in depth</a>
     · <a href="https://github.com/chrisatom1998/document-graph-explorer/releases/latest">Download a release</a>
-    · <a href="SECURITY.md">Review the security model</a>
+    · <a href="SECURITY.md">Security model</a>
   </p>
   <p>
     <a href="https://github.com/chrisatom1998/document-graph-explorer/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/chrisatom1998/document-graph-explorer/actions/workflows/ci.yml/badge.svg" /></a>
@@ -22,301 +24,329 @@
   </p>
 </div>
 
+> [!NOTE]
+> This repository is still named **document-graph-explorer**, and packaged desktop builds and
+> older releases carry the name **Document Graph Explorer**. The app itself, its installable web
+> manifest and its exports now call themselves **Resonance**. Same project, one name going forward.
+
 > [!IMPORTANT]
-> **Your documents stay on your device by default.** Parsing, OCR, embeddings, similarity, clustering, search, and rendering run client-side. OpenRouter is an explicit opt-in cloud provider; Ollama runs against your own local server. For environments that require an enforced guarantee rather than a toggle, `npm run build:airgap` produces a build whose browser policy permits no external hosts. See [SECURITY.md](SECURITY.md) for the exact data-flow contract.
+> **Your files stay on your device by default.** Decoding, tempo/key/instrument detection, parsing,
+> OCR, embeddings, similarity, clustering, search and rendering all run client-side. The only ways
+> data can leave the browser are ones you switch on: an OpenRouter key for document AI, a local
+> Ollama server (stays on your machine), a collaboration session you start, a share link you copy, or
+> the developer-only OpenAI sound assistant that exists solely under `npm run dev`. For an enforced
+> guarantee rather than a toggle, `npm run build:airgap` produces a build whose browser policy permits
+> no external hosts. [SECURITY.md](SECURITY.md) has the exact data-flow table.
 
-## From folder to knowledge map
+## What it does
 
-1. **Ingest.** Drop files or a whole folder, choose **Add a folder**, connect a watched folder, or load the built-in demo corpus.
-2. **Understand.** The browser pipeline parses the content, extracts topics and entities, creates local BGE embeddings, builds evidence-backed relationships, and groups the result with Louvain community detection. Heavy stages run in workers; PDF.js text extraction remains client-side on the main thread.
-3. **Explore.** Navigate the graph in 2D or 3D, open the full reader, search passages, inspect why documents are connected, compare snapshots, annotate findings, and optionally ask an OpenRouter or Ollama model questions.
+**For sounds.** Add a sample pack and every clip becomes a node. Resonance decodes each file
+locally, estimates tempo, key (with Camelot code), genre and energy, finds mix points
+(intro, build, drop, breakdown, outro), and tags what it hears: instruments, production type and
+sound character from a 199-label DJ vocabulary. Clips are then linked by what they share, so you can
+see at a glance which loops sound alike, which one-shots share an instrument, and which tracks will
+mix in key and tempo.
 
-The product loop is intentionally simple: **drop files → explore the graph → read and search**. OpenUSD, collaboration, AI enrichment, and packaging are powerful extensions, not prerequisites.
+**For documents.** Add a folder of notes, papers, contracts or a whole source repository. Resonance
+parses the text, works out topics, names and places, and semantic similarity with a self-hosted
+embedding model, follows cross-references and code imports, and groups the result into named
+clusters. Click any node to read it, search by meaning, ask questions, and trace why two documents
+are connected.
 
-### Measured on the published benchmark setup
-
-| Workload | Result |
-| --- | ---: |
-| 100 real PDF documents → 202 nodes, 850 edges, 13 clusters | **9.2 s** end to end, about **11 docs/s** |
-| 2,000-node / 8,400-edge force layout | **5.93 s** to settle |
-| Settled 2,000-node / 8,400-edge scene | **119.8 FPS**, capped by the 120 Hz display |
-
-These numbers are one calibrated data point from an Apple M5 Max with 36 GB RAM—not a promise for every machine. Ingest and rendering were measured in the Chromium-based embedded browser; the layout benchmark drives the production worker protocol under Node/V8. The full methodology, caveats, layout sweep, and OpenUSD export timings are in [docs/benchmarks.md](docs/benchmarks.md).
-
-## What it can do
+**Both at once.** Sounds and documents live in the same graph and the same saved workspace, so a
+sample library and the notes about it can sit side by side.
 
 | Capability | What you get |
 | --- | --- |
-| **Local semantic graph** | Self-hosted `bge-small-en-v1.5` embeddings, lexical signals, references, entities, and Louvain communities—all computed client-side without an account or backend. |
-| **Broad document ingestion** | Markdown, HTML, text, PDF, DOCX, PPTX, XLSX, EPUB, RTF, OpenDocument formats, YAML, CSV, notebooks, and many source-code formats. Scanned PDFs fall back to bundled Tesseract OCR; English is included, with extra language packs and the page cap configurable in Settings. |
-| **Repository understanding** | Drop a source tree, honor `.gitignore`, skip generated/vendor directories, extract symbols, and turn relative imports/includes into high-confidence graph edges. |
-| **Search and reading** | Semantic search, passage highlighting, full document readers, connection evidence, paths between documents, cluster insights, and optional document Q&A. |
-| **Live workspaces** | Create multiple named corpora, persist them in IndexedDB, and connect a watched folder so additions, edits, and deletions stay synchronized while the app is open. |
-| **Notes and change tracking** | Add notes, tags, and pins; save named snapshots; compare graph versions; report added, removed, and updated documents plus connection churn; and paint changed current documents on the live graph. |
-| **Optional AI** | Use OpenRouter with your own key or a local Ollama server for summaries, topics, cluster names, chat, and per-document questions. Core ingestion and graph intelligence require neither. |
-| **Share and interchange** | Export sanitized share URLs, JSON, PNG, composed OpenUSD stages, and (for audio) a Rekordbox collection XML with detected BPM, key and sound tags. Share URLs exclude original bytes, full text, paths, embeddings, handles, and settings. |
-| **Flexible distribution** | Run as a static web app, local browser app, Electron desktop app, Windows portable app, Linux AppImage, runtime offline mode, or sealed air-gapped build. |
+| **Local audio intelligence** | FFmpeg decoding, Essentia tempo and key, bundled tempo and key networks, AudioSet AST instruments, MTG-Jamendo, a music-trained CLAP encoder and a trained sound tagger, all run on your device. Details in [docs/audio-analysis.md](docs/audio-analysis.md). |
+| **Relationship types** | Instruments, sound properties, sounds alike, tempo, key, versions (same recording or another version of the song), same genre, shared title, similar meaning, keywords, names and places, and explicit links. Each one can be switched on or off in the filter sidebar. |
+| **Explain every link** | Pick a clip or document and the inspector lists why each neighbour is connected, with a strength bar for every piece of evidence. |
+| **Sample assistant** | Filter your library by label, BPM range, length and confirmed tags; find similar sounds; audition them; build and export crates; correct tags with the sound-category picker. |
+| **Document readers and search** | PDF, Markdown, HTML, CSV, JSON, YAML, code and plain-text readers with passage highlighting; ⌘K search by meaning and title; side-by-side compare; shortest path between two documents. |
+| **Insights and change tracking** | Orphans, possible duplicates, bridge and hub documents, stale files; named snapshots with visual compare; notes, tags and pins on any node. |
+| **Chat** | Ask about your library. Answers come from your own passages and sample labels by default, with optional OpenRouter or Ollama models for richer replies. |
+| **Workspaces** | Multiple named corpora saved in the browser, a watched folder that keeps the graph in sync while the app is open, and a saved library that skips unchanged files on re-import. |
+| **Export and share** | Rekordbox collection XML, PNG, graph JSON backup and restore, a sanitized share link, and an OpenUSD scene for 3D tools. |
+| **Runs anywhere** | Static web app, local launcher, Electron desktop app for macOS, Windows and Linux, runtime offline mode, or a sealed air-gapped build. |
+
+## The workspace
+
+Once a graph is ready, the screen has four parts:
+
+- **Top bar.** The **Graph**, **Library** and **Export** tabs; search; a 2D/3D toggle; the
+  **Sample assistant** (shown once audio is loaded); **Ask about your library** chat; and a
+  **More tools** menu with Insights, Find a path, Snapshots, Saved views, Collaborate, Settings
+  and Help.
+- **Left sidebar.** Import buttons, then filters: similarity type, tempo range, key, genre, loop or
+  one-shot, part (drums, bass, vocals, melody), detected sounds, file type, and advanced filters for
+  cluster, minimum connections, link strength and recency.
+- **Graph.** A force-directed map. A fresh profile starts in 2D; switch to 3D from the top bar. Drag
+  to orbit, scroll to zoom, click a node to select it, press Home to fit everything.
+- **Right inspector.** The selected clip or document, an inline player for audio, its connected
+  neighbours one at a time with **Why they're connected**, and **Full details** for the complete
+  panel: playback, tempo and key, mix points, versions, sounds, mix-with candidates, instrument
+  evidence with **Listen at** buttons, manual track links, notes and tags, and for documents the
+  reader, summary, topics, connections and Ask AI.
+
+The **Library** tab is a keyboard-driven list of everything in the graph. The **Export** tab holds
+every export and import action.
 
 ## Quick start
 
-Demo workspaces are saved locally, including notes and tags, and reopen after a reload.
-
 ### Try it in the browser
 
-Open the **[live app](https://document-graph-explorer.vercel.app)** and choose **Load demo corpus** to explore immediately, or add your own files. Core processing happens in that browser; adding files does not upload them to Vercel.
+Open the **[live app](https://document-graph-explorer.vercel.app)** and choose **Load demo corpus**
+to explore immediately, or **Add files** / **Add a folder** to use your own. Processing happens in
+that browser tab; adding files does not upload them to the host. Workspaces, notes and tags are saved
+locally and reopen after a reload.
 
 ### Run it locally
 
 ```bash
 npm install      # install dependencies
-npm run dev      # start the Vite dev server
+npm run dev      # start the Vite dev server at http://localhost:5173
 ```
 
-Node 24 is the supported runtime (`.nvmrc`); Node 22.13 or newer also works (Node 23 is not supported by the locked dependencies). The first `npm run dev` or `npm run build`
-needs outbound network access: a pre-script downloads about 632 MB of checksum-verified audio-recognition
-model weights from Hugging Face into `public/` (they are not stored in Git). Later runs reuse the verified
-local files, and `npm run setup:music` can pre-fetch them before working offline.
+Node 24 is the supported runtime (`.nvmrc`); Node 22.13 or newer also works, except Node 23, which
+the locked dependencies do not support. The first
+`npm run dev` or `npm run build` needs network access: a pre-script downloads about 632 MB of
+checksum-verified audio-model weights from Hugging Face into `public/` (not stored in Git). Later
+runs reuse the local files. Run `npm run setup:music` once while online to work offline afterwards.
 
-Open the printed local URL, then drag documents onto the window or click **Add a folder** to ingest a directory and its relevant subfolders. Whole source repositories are supported and `.gitignore` rules are honored.
-
-**New here?** The [User Guide](docs/user-guide.md) walks through ingestion, navigation, search, readers, filters, snapshots, annotations, collaboration, AI providers, privacy modes, and exports.
+Open the printed URL, then drag clips, sample packs, documents or folders onto the window. Whole
+source repositories are supported and `.gitignore` rules are honoured.
 
 ### Use a packaged build
 
-Download the latest published artifacts from [GitHub Releases](https://github.com/chrisatom1998/document-graph-explorer/releases/latest), or build a target yourself using the commands below. Published releases can trail `main`; use the live app or build from the current source tree for the newest unreleased changes. Use `npm run build:airgap` when the distribution must enforce zero external destinations.
+Download the latest artifacts from
+[GitHub Releases](https://github.com/chrisatom1998/document-graph-explorer/releases/latest), or build
+a target yourself with the commands under [Builds](#builds). Published releases can trail `main`; the
+live app and the current source tree have the newest changes. Use `npm run build:airgap` when the
+distribution must enforce zero external destinations.
 
-## From document pile to digital twin
+## Working with sounds
 
-Document Graph Explorer treats a document collection the way digital-twin tooling treats a physical asset: ingest operational inputs, build a semantic model, keep it synchronized with reality, and make it portable to other tools.
+**Add and play.** Add audio with **Add files**, **Import a folder** or drag and drop. Select a clip to
+play it in the inspector; **Prepare playback** converts formats your browser cannot play, using the
+bundled FFmpeg decoder on your device.
 
-- **Ingest:** parsing, embedding, and linking run entirely client-side. The compute-heavy pipeline is worker-based, while PDF.js text extraction remains on the main thread. A watched folder is the live operational input—the graph tracks the corpus on disk as it changes.
-- **Model:** topics, entities, evidence-backed edges, and Louvain communities form a queryable knowledge structure, not just a rendering. Every connection can answer “why are these related?”
-- **Synthetic data:** the 100-document demo corpus is 36 committed samples plus 64 records from a synthetic-data generator ([generatedDocuments.ts](src/demo/generatedDocuments.ts)). The generated records are written as real PDFs and pushed through the normal ingest path, with tests pinning every generated cross-reference to a document that exists.
-- **Interchange:** the OpenUSD export carries geometry, the `docGraph:` attribute schema, connection evidence, cluster hulls, and composition variants into downstream USD toolchains.
-- **Agency:** [usd-agent](tools/usd_pipeline/usd_agent.py) answers natural-language questions by tool-calling over an exported USD scene graph via OpenRouter, local Ollama, or an offline mock provider.
-- **Measurement:** [docs/benchmarks.md](docs/benchmarks.md) documents ingest throughput, layout convergence, render frame rate, and export cost with methodology and caveats.
+**Analysis.** New audio is analyzed during import, with a background status card you can minimize or
+stop. **Settings → Music analysis mode** chooses between **Full — whole track** and
+**Quick → Full in background**, which shows early estimates and then verifies the whole track.
+Reanalyze a single track from **Full details → Track actions**, or a whole library from
+**Settings → Data** (**Update older tracks**, **Re-analyze all tracks**).
 
-## Rekordbox export
+**What the track panel shows.** Length; tempo and key, marking values that came from the file or
+folder name and showing the audio estimate when it differs; genre and energy; mix points with
+play-from buttons; same recording and other versions of the song; detected sounds marked likely,
+maybe or possible; compatible tracks to mix with; and, under technical details, each model's guesses,
+scan coverage and **Listen at** buttons that jump to the strongest passage for each instrument.
 
-With audio loaded, **Data → Export for Rekordbox (XML)** writes a Rekordbox collection XML (`DJ_PLAYLISTS` format) with each track's BPM (`AverageBpm`), key (`Tonality`, e.g. `Am`), and the Camelot key plus sound tags in `Comments`, all in one playlist named "Resonance". Values match the track panel: a BPM or key written in the file or folder name wins, otherwise the detected one is used. Two folders with the same name added from different places can't be told apart by the browser, so files whose paths collide are left out rather than given a guessed location. The browser only knows folder names, so the dialog asks where each loaded folder is on disk and builds `file://localhost/...` locations from the original file names. No `TEMPO` beat-grid markers are written because the app doesn't detect the first downbeat; Rekordbox draws its own grid. In Rekordbox, set Preferences → Advanced → Database → "rekordbox xml" to the file and import the playlist from the "rekordbox xml" tree.
+**Name clues win.** Tags in file or folder names such as `Dm`, `140bpm`, `Dm_140` or `Synths` take
+precedence over audio estimates, and confirmed labels take precedence over both. The evidence always
+says which source a value came from.
 
-Serato has no import file for BPM or key: it reads them from tags inside the audio files (or its own analysis), and a browser can't rewrite files in place, so there is no Serato export.
+**Sample assistant.** Opens from the top bar once audio is loaded. **My library** filters by labels
+or filename phrases, BPM range, maximum length and confirmed labels; **Find similar sounds** compares
+labels, tempo and key (not waveforms); results can be auditioned, added to a crate, or corrected with
+**More → Correct tags**. **Your crate** collects picks and **Export crate** downloads them as an
+importable graph subset (no audio files). **Upload overview** summarizes what came in and groups it.
 
-## OpenUSD interoperability
+**Developer-only AI for sounds.** Under `npm run dev` with an `OPENAI_API_KEY` in a local `.env`,
+the dev server adds natural-language library search, an AI crate builder, **Copilot review** of up
+to five sounds, vocal transcription, upload summaries, voice input and an AI search for free sample
+packs. The key stays in the Node process, and none of this ships in `npm run build`, the desktop apps
+or the air-gapped build, where the local filters, similarity search, crates and tag correction keep
+working. See [docs/dj-sample-assistant.md](docs/dj-sample-assistant.md) and
+[docs/music-copilot-integration.md](docs/music-copilot-integration.md).
 
-The graph can leave the application as a composed [OpenUSD stage](docs/openusd-pipeline.md), so it remains queryable in `usdview`, NVIDIA Omniverse, Apple Reality Composer Pro, and other USD-aware tools. This is an advanced interoperability path; no NVIDIA hardware is required to validate the exported stage.
+**Rekordbox.** **Export → Export for Rekordbox (XML)** writes a Rekordbox collection with each
+track's BPM, key, Camelot code and sound tags in one playlist named "Resonance". The browser only
+knows folder names, so the dialog asks where each imported folder lives on disk. No beat-grid markers
+are written; Rekordbox draws its own. In Rekordbox, point **Preferences → Advanced → Database →
+rekordbox xml** at the file and import the playlist from the rekordbox xml tree. Serato has no import
+file for BPM or key, so there is no Serato export.
+
+The full model list, thresholds and limits are in [docs/audio-analysis.md](docs/audio-analysis.md).
+
+## Working with documents
+
+- **Read.** Click a node, then **Full details**, for the document reader with passage highlighting,
+  an **Open** button for the original file, summary, topics, names and places, and connections with
+  evidence.
+- **Search.** Press ⌘K or Ctrl+K to search by meaning and title. **Show all in graph** frames every
+  match; Alt+Enter finds documents similar to a result.
+- **Compare and trace.** **Compare** opens two documents side by side with shared topics, names and
+  keywords highlighted. **More tools → Find a path** shows the fewest-hop route between any two
+  documents, with the evidence for each hop.
+- **Insights.** **More tools → Insights** lists pinned, unlinked, possibly duplicate, bridge, hub and
+  stale documents plus cluster membership. A **What we found** card appears after every ingest.
+- **Snapshots.** Save named graph states, reload them, and **Compare** paints added and updated
+  documents on the live graph and lists what was removed.
+- **Notes, tags and pins.** Every node takes free-text notes, tags and a pin. Search covers them.
+- **Chat.** **Ask about your library** answers from the most relevant passages, or from all documents,
+  with clickable citations that scroll the reader to the passage. Transcripts export to Markdown.
+- **Optional AI.** **Settings → AI connections** adds an OpenRouter key (cloud) or a local Ollama
+  server for summaries, topics, cluster names, per-document questions and richer chat. Off by
+  default; core ingestion and graph intelligence never need it.
+- **Repositories.** Drop a source tree: `.gitignore` is honoured, generated and vendor directories
+  are skipped, symbols are extracted, and relative imports and includes become reference edges.
+- **Watched folders and corpora.** The corpus switcher creates and renames named corpora and
+  connects a watched folder so additions, edits and deletions stay in sync while the app is open.
+- **Collaboration.** **More tools → Collaborate** starts or joins a session that shares selection,
+  camera and filters over WebRTC. Notes and tags sync only if you opt in; document text never
+  leaves your browser.
+
+## Supported files
+
+| Kind | Formats |
+| --- | --- |
+| **Audio** | MP3, WAV, FLAC, AIFF, Ogg, Opus, M4A, AAC, WMA, WebM, AMR, AU, AC3, DTS, APE, WavPack, CAF, ALAC, MKA, DSF and other containers; any `audio/*` type the browser reports. |
+| **Documents** | Plain text, Markdown, PDF (with link annotations; scanned pages fall back to bundled Tesseract OCR), HTML, DOCX, PPTX, XLSX, EPUB, RTF, OpenDocument text, spreadsheets, presentations and drawings. |
+| **Data** | CSV, TSV, JSON, JSON Lines, GeoJSON, YAML, Jupyter notebooks. |
+| **Code** | About 120 languages by extension or filename, including TypeScript, JavaScript, Python, Go, Rust, C and C++, C#, Java, Kotlin, Swift, Ruby, PHP, shell, SQL, CSS, TOML, Dockerfile and Makefile. |
+
+Unknown non-binary files are treated as text. Files are capped at 64 MB each.
+
+## Export, import and sharing
+
+All of these live on the **Export** tab.
+
+| Action | What it produces |
+| --- | --- |
+| **Export image PNG** | The current scene as an image. |
+| **Export for Rekordbox (XML)** | A Rekordbox collection with BPM, key and sound tags (audio only). |
+| **Copy shareable URL** | A link whose fragment carries titles, summaries, topics, entities, clusters and connection evidence. It excludes full text, original bytes, local paths, embeddings, handles and settings, and shows a confirmation listing exactly that before copying. |
+| **Export graph JSON** / **Copy graph JSON** | A backup of the graph: nodes, links, clusters, summaries, notes, tags and audio analysis, with document embeddings optional under Settings → Advanced. It omits full text and original files, so an imported graph reads and searches at reduced fidelity; keep the originals. |
+| **Import graph JSON** | Restore a backup or open a crate someone exported. Also available as **Import a graph** on the welcome screen. |
+| **Export 3D scene (USD)** | One self-contained `.usda` stage with documents as prims, relationships as curves, cluster hulls, a `docGraph:` attribute schema and a `graphView` variant set, openable in `usdview`, NVIDIA Omniverse and Apple Reality Composer Pro. |
 
 | Pixar Storm (`usdrecord`), detailed view | Pixar Storm, `summary` variant | Apple Reality Composer Pro |
 | --- | --- | --- |
 | ![Exported stage rendered by Pixar's Storm renderer, showing document nodes and connections](docs/assets/openusd-detailed.png) | ![Same stage with the graphView variantSet switched to summary, showing translucent cluster hulls](docs/assets/openusd-summary.png) | ![Stage imported into Reality Composer Pro, showing the cluster hierarchy and graphView variantSet](docs/assets/openusd-realitycomposerpro.png) |
 
-The export is one self-contained text `.usda` file with documents and topic hubs as prims, relationships as curves, cluster hulls, evidence attributes, and a `graphView` variant set that switches between detailed and summary views. Full document text, original bytes, local paths, and embeddings are excluded.
+The OpenUSD path has a companion Python CLI that validates and packages exported stages, and an
+LLM agent that answers questions about a stage by querying it. Both are documented in
+[docs/openusd-pipeline.md](docs/openusd-pipeline.md).
 
-See [docs/product-surface.md](docs/product-surface.md) for the distinction between the core canvas experience and advanced studio, interoperability, and packaging surfaces.
+## How it works
 
-## Using the OpenUSD export
+Ingestion is an off-main-thread pipeline coordinated by
+[src/pipeline/coordinator.ts](src/pipeline/coordinator.ts):
 
-OpenUSD is the scene-description format Pixar built for film and NVIDIA, Apple, and the wider 3D industry adopted. Exporting to it means the graph is no longer trapped in this app: any USD tool can open it, and because the export carries document metadata alongside the geometry, the file stays *queryable*, not just renderable.
+**parse or decode → analyze → chunk and embed → link → Louvain clustering → topic synthesis**
 
-**1. Export.** With a corpus loaded, choose **Data → Export OpenUSD scene**. You get one self-contained text file, `document-graph-explorer-<date>.usda`, with no external references. Each document is a sphere sized by connectivity and colored by cluster; each relationship is a curve colored by kind; and every prim carries `docGraph:*` attributes for titles, topics, entities, and connection evidence.
+- **Audio** ([src/audio/](src/audio/)) is decoded by a bundled FFmpeg runtime, then analyzed by
+  Essentia plus a set of ONNX models served from `public/*-model/`: tempo and key networks, the
+  AudioSet AST instrument detector, MTG-Jamendo, a music-trained CLAP encoder, a trained sound
+  tagger and a fusion step. [docs/tag-decision-map.md](docs/tag-decision-map.md) records which model
+  decides each tag.
+- **Documents** are parsed by [src/pipeline/parsers/](src/pipeline/parsers/) (Markdown, HTML, text,
+  PDF with OCR fallback, Office, OpenDocument, EPUB, RTF, notebooks, code). Embeddings use a
+  self-hosted `bge-small-en-v1.5` model from [public/models/](public/models/) via transformers.js,
+  FP16 on WebGPU with a quantized WASM fallback.
+- **The graph** is built by [src/graph/](src/graph/): lexical, semantic, reference, entity and
+  audio-relationship edges, then Louvain communities.
+- **The scene** ([src/scene/](src/scene/)) uses React Three Fiber over Three.js with instanced
+  nodes, batched edges, a force-directed layout worker, 2D and 3D modes and adaptive quality.
+- **State** lives in Zustand stores under [src/store/](src/store/). Corpora, graph data, layouts,
+  annotations, snapshots, chat history, settings, original files, analyses, embeddings and
+  watched-folder handles persist in IndexedDB according to the cache settings.
+- **Workers and offline behaviour** are described in
+  [docs/architecture-workers-offline.md](docs/architecture-workers-offline.md), including the
+  difference between runtime offline mode and the air-gapped build.
 
-**2. Open it anywhere.** Run `usdview corpus.usda`, drag it into NVIDIA Omniverse USD Composer or Apple Reality Composer Pro, or render it headlessly with `usdrecord`. The stage ships a `graphView` variant set that switches between **detailed** documents/connections and **summary** cluster hulls without editing the export.
-
-**3. Validate and package.** The companion CLI needs Python and one dependency:
-
-```bash
-cd tools/usd_pipeline
-python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements.txt
-
-python usd_pipeline.py report corpus.usda     # schema + composition check, non-zero exit on violation
-python usd_pipeline.py usdz corpus.usda       # package for Omniverse / AR Quick Look
-```
-
-`report` is suitable for use as a CI gate on exported assets.
-
-**4. Ask the stage questions.** [usd_agent.py](tools/usd_pipeline/usd_agent.py) is an LLM agent whose tools are read-only USD stage operations, so it answers from the file rather than guessing. Start with the network-free self-test:
-
-```bash
-python usd_agent.py selftest corpus.usda
-```
-
-Then use OpenRouter or a local Ollama server:
-
-```bash
-python usd_agent.py ask corpus.usda "Which cluster has the most documents?"
-python usd_agent.py ask corpus.usda "Why are the on-call handoff docs connected?" --provider ollama
-python usd_agent.py repl corpus.usda
-```
-
-The agent prints its tool calls unless `--quiet` is supplied. `switch_view` changes the selected variant in memory only; it does not write back to the stage.
-
-Common snags: `the 'pxr' module is missing` means the virtual environment is not active or `pip install` has not run; `OPENROUTER_API_KEY is not set` means you need to provide the key or select `--provider ollama`. If `selftest` passes, the stage is valid and any remaining issue is with the model connection.
-
-Full schema tables, validation contracts, and third-party tooling notes are in the [OpenUSD pipeline guide](docs/openusd-pipeline.md).
+Measured on an Apple M5 Max: the 100-PDF demo corpus ingests end to end in about 9 seconds, a
+2,000-node layout settles in under 6 seconds, and the settled scene holds the display's 120 Hz cap.
+Methodology and caveats are in [docs/benchmarks.md](docs/benchmarks.md).
 
 ## Scripts
 
 | Script | What it does |
 | --- | --- |
-| `npm run dev` | Start the Vite development server with HMR |
+| `npm run dev` | Start the Vite development server with HMR (also hosts the developer-only sound assistant) |
 | `npm run build` | Type-check, build the production app, verify runtime assets, and enforce the bundle budget |
 | `npm run build:airgap` | Build and verify the sealed zero-external-host distribution |
-| `npm run typecheck` | Run TypeScript without emitting files |
-| `npm test` | Run the Vitest suite once |
-| `npm run test:watch` | Run Vitest in watch mode |
+| `npm run setup:music` | Download and verify the audio-model weights ahead of offline work |
+| `npm run typecheck` | Run TypeScript over the app and the e2e suite without emitting files |
 | `npm run lint` | Run ESLint across the repository |
-| `npm run bench:layout` | Run the layout-convergence benchmark against the production worker |
+| `npm test` / `npm run test:watch` | Run the Vitest suite once, or in watch mode |
 | `npm run preview` | Preview the production build locally |
 | `npm run check:bundle` | Enforce eager-JavaScript limits for normal and air-gapped builds |
+| `npm run bench:layout` | Layout-convergence benchmark against the production worker |
+| `npm run bench:import`, `bench:dj:*`, `test:benchmarks` | Audio import and tag-accuracy benchmarks ([docs/audio-evaluation-infrastructure.md](docs/audio-evaluation-infrastructure.md)) |
+| `npm run review:sounds` | Start the local Python sound reviewer used by **Find free packs** |
+| `npm run agent` | Run the standalone read-only repo agent ([agent/README.md](agent/README.md)) |
 
 ## Builds
 
-| Command | Output | Network behavior |
+| Command | Output | Network behaviour |
 | --- | --- | --- |
-| `npm run build` | `dist/` | Fully local by default; optional OpenRouter, local Ollama, or explicitly started collaboration features |
-| `npm run build:airgap` | `dist-airgap/` | **Zero external destinations** enforced by CSP, runtime refusal, sanitization, and a post-build verification gate |
-| `npm run build:desktop` | `release/mac-arm64/Document Graph Explorer.app`, copied to `/Applications` | Normal app build wrapped as a local macOS desktop executable |
-| `npm run dist:mac` | DMG and ZIP under `release/` | Distributable macOS installer images; not notarized by default |
-| `npm run dist:win` | Portable Electron executable under `release/` | Distributable Windows desktop build |
-| `npm run build:exe` | `release/win/run.exe` plus staged `dist/` | Standalone Windows localhost server and static web build |
+| `npm run build` | `dist/` | Fully local by default; optional OpenRouter, local Ollama, or an explicitly started collaboration session |
+| `npm run build:airgap` | `dist-airgap/` | **Zero external destinations** enforced by CSP, runtime refusal, sanitization and a post-build verification gate |
+| `npm run build:desktop` | `release/mac-arm64/*.app`, copied to `/Applications` | Local macOS desktop app (run on a Mac) |
+| `npm run dist:mac` | DMG and ZIP under `release/` | macOS installer images; ad-hoc signed, not notarized, Apple Silicon by default |
+| `npm run dist:win` | Portable Electron executable under `release/` | Windows desktop build |
+| `npm run build:exe` | `release/win/run.exe` plus staged `dist/` | Standalone Windows localhost server as a Node single executable |
 | `npm run dist:linux` | AppImage under `release/` | Linux desktop package; not signed |
 
-The production shell lazy-loads the 3D renderer, parsing pipeline, chat, document viewers, settings, and analytics panels. `npm run build` enforces an 80 kB uncompressed entry limit and a 280 kB total eager-JavaScript limit so the heavier scene and ingestion chunks remain demand-loaded.
-
-See [SECURITY.md](SECURITY.md) for the complete privacy guarantee, collaboration disclosures, and verification steps.
-
-
-## Desktop app
-
-### Build a local macOS application
-
-Run on a Mac:
-
-```bash
-npm install
-npm run build:desktop
-```
-
-This produces `release/mac-arm64/Document Graph Explorer.app` and copies it to `/Applications`, where it appears in Launchpad and Spotlight. This is the local-install path; it does not package an installer for other machines.
-
-### Distributing the app (dmg)
-
-```bash
-npm run dist:mac
-```
-
-This produces a `Document Graph Explorer-<version>-arm64.dmg` drag-to-Applications installer and a matching ZIP under `release/`. Both targets must be built on macOS.
-
-Distribution caveats:
-
-- **Gatekeeper:** the build is only ad-hoc signed. On another Mac, recipients must right-click → **Open**, or approve it under System Settings → Privacy & Security → **Open Anyway**, the first time. Friction-free distribution requires an Apple Developer ID certificate and notarization.
-- **Architecture:** the default output is Apple Silicon (`arm64`) only. Add `--universal` or build a separate `x64` artifact for Intel Macs.
-
-### Run the browser build without development tools
-
-Once you have built the app, launch it without the Vite development server:
-
-1. Run `npm run build` once.
-2. Double-click `run.cmd` on Windows or `run.command` on macOS, or run `./run.sh` on Linux.
-
-The launcher starts a dependency-free, localhost-only static server on `127.0.0.1` and opens the app in the default browser. Node.js is the only runtime requirement.
-
-To launch the sealed build, run `npm run build:airgap` once and pass `--airgap` to the launcher: `run.cmd --airgap`, `./run.sh --airgap`, `./run.command --airgap`, or `node scripts/serve.mjs --airgap`.
-
-### Add a Windows desktop shortcut
-
-```bash
-npm run install:desktop
-```
-
-This adds a **Document Graph Explorer** shortcut that points to `run.cmd` in the repository. No separate application is installed, and the shortcut continues to use updated local builds. To create a shortcut for the sealed build, run:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-desktop-shortcut.ps1 -Airgap
-```
-
-The icon is generated from `public/icon.svg` into `packaging/document-graph-explorer.ico`; regenerate it with `scripts/make-app-icon.ps1` when the brand icon changes. On macOS, `run.command` can be added to the Dock or turned into an alias after the first Gatekeeper approval.
-
-## How it works
-
-Ingestion is an off-main-thread pipeline:
-
-**parse → boilerplate strip → chunk → tokenize → TF-IDF → embeddings → similarity links → Louvain clustering → topic synthesis**
-
-- **Parsing** ([src/pipeline/parsers/](src/pipeline/parsers/)) handles Markdown, HTML, plain text, PDF link annotations and OCR fallback, Office files, OpenDocument formats, archives such as EPUB, notebooks, and source code. Repository walks honor `.gitignore`, skip generated/vendor trees and lockfiles, and turn relative imports into graph edges.
-- **Embeddings** use a self-hosted `bge-small-en-v1.5` model from [public/models/](public/models/) through transformers.js. WebGPU uses FP16 when supported; WASM falls back to the quantized model.
-- **Optional AI enrichment** for summaries, topics, cluster names, document Q&A, and chat uses the provider and model selected in Settings: OpenRouter with the user's key or a local Ollama server.
-- **The scene** ([src/scene/](src/scene/)) uses React Three Fiber over Three.js with instanced nodes, batched edges, a force-directed layout worker, 2D/3D modes, cluster collapse, and adaptive quality controls.
-- **State** lives in Zustand stores under [src/store/](src/store/). Named corpora, graph data, layouts, annotations, snapshots, chat history, settings, original files, embeddings, and watched-folder metadata persist in browser-local IndexedDB according to the active cache settings.
-- **Workers and offline behavior** are coordinated by [src/pipeline/coordinator.ts](src/pipeline/coordinator.ts). See [docs/architecture-workers-offline.md](docs/architecture-workers-offline.md) for worker responsibilities and the enforcement differences between runtime offline mode and the air-gapped build.
-
-For the full design, see [knowledge-nebula-spec.md](knowledge-nebula-spec.md), the [product surface guide](docs/product-surface.md), and [docs/](docs/).
-
-## Tech stack
-
-React 19 · React Three Fiber · Three.js · TypeScript 6 · Vite · Zustand · Web Workers · transformers.js · graphology/Louvain · IndexedDB/idb · Yjs/WebRTC · Vitest · Electron.
+After `npm run build`, the launchers `run.cmd` (Windows), `run.command` (macOS) and `run.sh`
+(Linux) start a dependency-free localhost server and open the app without the dev tools; pass
+`--airgap` to serve the sealed build. On Windows, `npm run install:desktop` adds a desktop shortcut
+to that launcher. The production shell lazy-loads the renderer, pipeline, audio models, chat, readers
+and settings; `npm run build` enforces an 80 kB entry and 280 kB total eager-JavaScript budget.
 
 ## Testing
 
-The suite also runs offline Python tag-head regressions, which require Python 3.11+ and NumPy. CI uses Python 3.12 and `numpy==2.3.5`. For local tests, activate a virtual environment first:
-
 ```bash
-python3 -m venv /tmp/dge-test-venv
-source /tmp/dge-test-venv/bin/activate
-python3 -m pip install numpy==2.3.5
+npm test                 # Vitest: pipeline, parsers, graph, audio, UI, persistence, exports
+npm run build && npx playwright test   # browser smoke suite against the built app
 ```
 
-```bash
-npm test
-```
+Vitest covers pipeline modules, parsers, graph algorithms, audio analysis and tagging, semantic
+indexing, search, import validation and sanitization, persistence, collaboration, scene helpers, UI
+components, packaging helpers, offline and air-gap safeguards, exports and the standalone agent. Some
+audio tag-head regressions run in Python and need Python 3.11+ with NumPy (CI uses Python 3.12 and
+`numpy==2.3.5`); create a virtual environment and install NumPy before `npm test` to include them.
 
-The suite covers pipeline modules, parsers, graph algorithms, semantic indexing, search and retrieval, import validation and sanitization, persistence, collaboration behavior, scene helpers, UI components, packaging helpers, offline/air-gap safeguards, exports, and the standalone subagent. CI also runs linting, TypeScript, normal and air-gapped builds, bundle-budget enforcement, Windows executable validation, Docker image construction, and a container smoke test.
+The Playwright suite loads the demo corpus and audio fixtures end to end in headless Chromium against
+`vite preview`, so it exercises the real worker pipeline. Never point it at the dev server. Set
+`PLAYWRIGHT_CHANNEL=chrome` to use an installed Chrome with native GPU, and `PLAYWRIGHT_PORT` when
+the default `4173` is busy. Browser tests take several minutes while the local models process the
+fixtures.
 
-Browser smoke tests run against the production build: run `npm run build`, then `npx playwright test`. Playwright starts Vite preview automatically. When bundled Chromium is unavailable but Google Chrome is installed, select it with `PLAYWRIGHT_CHANNEL=chrome npx playwright test` on macOS/Linux. In PowerShell, use:
-
-```powershell
-$env:PLAYWRIGHT_CHANNEL = 'chrome'
-npx playwright test
-Remove-Item Env:PLAYWRIGHT_CHANNEL
-```
-
-The runner refuses to reuse an occupied port so it cannot silently test another local application. Set `PLAYWRIGHT_PORT` (for example, `4273`) when the default `4173` is in use.
-
-The Chrome override uses the installed browser and native GPU; the default CI Chromium configuration uses software rendering. Browser tests can take several minutes while the local embedding model processes the demo corpus.
+CI runs lint, type-check, both builds, bundle-budget enforcement, unit and browser tests, Windows
+executable validation, a Docker image build and a container smoke test.
 
 ## Deployment notes
 
-Production hosting must send the security headers used in Vite development and preview—`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy`—and should send the Content-Security-Policy as a response header. The checked-in Vercel and Docker configurations provide the current production examples; see [vite.config.ts](vite.config.ts), [vercel.json](vercel.json), [DEPLOYMENT.md](DEPLOYMENT.md), and [SECURITY.md](SECURITY.md).
+Production hosting must send the security headers used in Vite development and preview
+(`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`) and should
+send the Content-Security-Policy as a response header. The checked-in Vercel and Docker
+configurations are the current examples; see [DEPLOYMENT.md](DEPLOYMENT.md) and
+[SECURITY.md](SECURITY.md).
 
-### Audio graphs
+## Tech stack
 
-Add audio files using Add files or drag and drop. Select a track to play it; use Prepare playback for codecs your browser cannot play directly. The bundled FFmpeg decoder runs on your device in both web and desktop builds, with no upload. Supported extensions include MP3, WAV, FLAC, AIFF, Ogg, Opus, M4A, AAC, WMA, APE, CAF, AMR, and other audio containers. Browser-reported audio MIME types are also accepted. Decoder support varies: encrypted/protected, corrupt, and some specialist codecs cannot be played. Existing limits apply: 64 MB per file and the batch size limit.
+React 19 · React Three Fiber · Three.js · TypeScript 6 · Vite · Zustand · Web Workers ·
+transformers.js · ONNX Runtime Web · Essentia.js · FFmpeg (WASM) · graphology/Louvain ·
+IndexedDB/idb · Yjs/WebRTC · Vitest · Playwright · Electron.
 
-Select another audio track and enter a relationship, such as shared sample or similar bassline. Named links appear in the graph, survive subsequent ingestion, and are included in graph exports. Graph exports contain the relationships but do not bundle original audio; add originals again on another device. Automatic links connect tracks that sound alike (sound fingerprints at least 70% similar, checked against each track's closest-sounding tracks), naming the tested tags they share. They also use explicit musical tags in file/folder names when available, then audio estimates: similar tempo, the same or related keys, and likely shared instruments. See [docs/audio-graph-relationships.md](docs/audio-graph-relationships.md). New audio is analyzed during import; for older tracks, choose **Analyze musical features** in the player. Titles now also create **shared title** relationships from adjacent descriptive phrases, such as “melodic loop” or “bass loop”, before any audio analysis. This works for ordinary document titles too. Case, separators, and simple plurals are normalized; generic words, key tags, and numbers do not create title phrases. Groups of up to seven are fully connected; larger groups use bounded links that keep every member connected. Title links refresh on import, reopening, and title changes. Use the shared-title filter or connection details to inspect them. Audio filenames remain excluded from content-based lexical and semantic linking.
+## Licences
 
-The decoder runtime is staged during dev startup and builds. First-time builds download roughly 632 MB of checksum-verified model weights (347 MB of it is the full-precision AST that runs on the graphics card, 91.4 MB the trained tagger, licensed CC BY-NC-SA 4.0 for non-commercial use); later builds reuse verified local files. `npm run setup:music` can prepare these assets before an offline build. Model binaries and private audio samples are not stored in Git. It is loaded for music analysis or Prepare playback.
+The app is GPL-3.0 ([LICENSE](LICENSE)). Bundled audio dependencies keep their own terms:
+Essentia.js is AGPL-3.0, the FFmpeg core is GPL-2.0-or-later, the AudioSet AST model is BSD-3-Clause,
+the CLAP model is Apache-2.0, and the MTG-Jamendo models and the trained sound tagger carry non-commercial
+(CC BY-NC-SA) terms that the app licence does not override. Keep the bundled notices when
+distributing builds; commercial use of the MTG models needs separate permission. Provenance notices
+live in `public/jamendo-model/NOTICE`, `public/music-model/NOTICE.md`, `public/sound-model/NOTICE`
+and the generated `audio-runtime/NOTICE.txt`.
 
-Music analysis uses Essentia for tempo/key on up to 60 seconds (three excerpts for longer tracks). If a sparse loop does not establish a full key, an audio-only fundamental tracker can report its repeated pitch separately; the audio detector never treats a single pitch as a confirmed key. Separately, explicit file/folder tags such as `Dm`, `D# minor`, `140bpm`, `Dm_140`, `C#3`, or `Synths` supply labeled name clues. For each feature, file tags take precedence over the nearest enclosing folder tags, then audio estimates. User-confirmed instruments retain first priority. The UI and relationship evidence distinguish name clues from audio detections and retain the original audio results for comparison. Generic folders such as `Melodic` or `Bass` do not establish a specific instrument. Folder clues require a supplied relative path (use folder upload); browsers generally omit parent paths for individual files. Instrument detection uses the bundled AudioSet AST model on overlapping 10-second windows across the **whole track**, decoded in bounded batches at the model's native 16 kHz. It retains specific model labels (for example cello and violin separately), removes redundant parent families, and no longer caps the display at eight instruments. The player shows full/partial scan coverage and a **Listen at** button for each detection's strongest passage. Cancellation stops decoding/inference; a model failure preserves partial results with an explicit warning.
+## More documentation
 
-Strong single detections (score ≥0.85) or repeated detections (≥0.60 in windows at least five seconds apart) are shown as likely. Weaker supported detections are shown separately as possible and never create instrument links. Overlapping windows are correlated observations, not independent confirmations. These thresholds are conservative heuristics, not calibrated probabilities or a measured accuracy guarantee. Instrument links require the same specific likely label in both tracks; broad families alone do not link a violin to a cello or a trumpet to a trombone. Version 1 scans remain readable and require reanalysis for the new instrument matching rules.
-
-BPM matches allow 3 BPM or 4%, whichever is larger; key matches include identical keys, relative major/minor, and neighboring keys on the circle of fifths. The strongest six neighbors per track/type are retained to limit graph density. Instrument detection is limited to the trained model's vocabulary: it cannot identify every instrument, reliably separate layered mixes, or name sounds absent from its classes. Full-track scans take longer than excerpt scans. These connections do not establish sampling or influence.
-
-Sound identification combines three local models: the ~91 MB **AudioSet AST** instrument detector, the ~21 MB **MTG-Jamendo** music instrument model, and the ~78 MB [music-trained CLAP audio encoder](https://huggingface.co/Xenova/larger_clap_music_and_speech). AST scans the full track; Jamendo and CLAP compare up to three real 10-second excerpts. The display separates **sound source**, **sounds like**, **sound character**, and **suggested role**. For example, a synthesizer may resemble a trumpet while functioning as a sustained pad. Resemblance is not treated as another instrument in the recording.
-
-The ensemble retains strong, specific AST detections. A substantial AST candidate can also take priority when CLAP independently gives it a clear match; otherwise a qualifying Jamendo instrument supplies the estimate. This agreement does not promote weak detections into graph evidence. CLAP compares audio with 41 fixed descriptions for source resemblance, articulation, tone, space and role. Weak or closely tied descriptions remain undetermined. Its instrument resemblances do not independently establish a physical sound source or create instrument links. The model comparison shows attribution, disagreement and incomplete analyses; incompatible model scores are not averaged into a confidence percentage. These are heuristic decisions, not calibrated accuracy guarantees. Models receive audio only; explicit filename/folder hints are handled separately. `npm run setup:music` restores pinned weights; build checks verify weights, configuration and local description-vector checksums. Sources: [Essentia.js](https://github.com/MTG/essentia.js) (AGPL-3.0), [AudioSet AST](https://huggingface.co/Xenova/ast-finetuned-audioset-10-10-0.4593), and [LAION music-and-speech CLAP](https://huggingface.co/laion/larger_clap_music_and_speech) (Apache-2.0).
-
-Choose **Music analysis mode** in Settings or a track's details. **Full** is the default: it shows an early instrument estimate and then verifies the whole track with the existing three-model pipeline. The early estimate is labeled as unfinished and can change during verification. Completed results remain visible during reanalysis. **Fast** still uses all three models, but checks at most three non-overlapping 10-second instrument sections and one music/description excerpt; brief appearances can be missed. Tempo/key analysis is unchanged. The selected mode persists and applies to new imports and reanalysis. Fast results show sampled coverage and can be upgraded by choosing Full and reanalyzing. Files with unknown duration use Full so the end can be discovered safely.
-
-The ensemble runs in the shared web/desktop client without uploading audio or needing an inference server. It downloads/loads its bundled assets on first use. Qwen2-Audio is not included: its published weights are about 16.8 GB and require a separate inference runtime. Identification cannot recover an exact synthesizer preset or establish every instrument hidden in a mix.
-
-Use **Correct the instrument** to confirm a known instrument on one track or all analyzed audio tracks in the current collection. Confirmations replace the displayed model labels and participate in instrument relationships, with their source stated in the edge evidence. They persist through saving, export, and reanalysis. **Use automatic estimates** removes the correction. These are explicit user labels, not model training or a guarantee about future uploads.
-
-The additional **MTG-Jamendo instrument** model uses the official Discogs-EffNet encoder and 40-class classifier (~21 MB combined). It checks up to three real 10-second excerpts at 16 kHz, using Essentia's MusiCNN preprocessing and complete 128-frame patches. The strongest specific instrument at an average score of at least 0.30 becomes an attributed automatic estimate; broad roles such as bass, beat, pad and computer are not converted to instruments. Candidates remain suggestions and do not independently create instrument links. Music-trained CLAP runs alongside it to describe resemblance, character and role. These thresholds are heuristic, not calibrated confidence. Model files and licensing notices are in `public/jamendo-model`; official terms restrict commercial use.
-
-The trained sound tagger applies its thresholds to full-precision model scores. Missing or invalid scores leave that sound to the other detectors; they are never treated as evidence that a sound is absent. Invalid model probabilities make the tagger unavailable for that run, preserving the other detectors' results. Reanalyze existing tracks to apply the updated score handling.
-
-### Audio dependency licenses
-
-Audio dependencies retain their own terms: Essentia.js is AGPL-3.0, FFmpeg core is GPL-2.0-or-later, and the MTG-Jamendo/Discogs models carry noncommercial terms. The app license does not override these model restrictions. Keep the bundled notices and license texts when distributing builds; commercial use of the MTG models requires separate permission. See `public/jamendo-model/NOTICE`, `public/music-model/NOTICE.md`, and `public/sound-model/NOTICE` for model provenance, and the generated `audio-runtime/NOTICE.txt` for decoder source/build references.
+- [User guide](docs/user-guide.md), the feature walkthrough for documents
+- [Audio analysis in depth](docs/audio-analysis.md), [automatic audio relationships](docs/audio-graph-relationships.md), [DJ sound tags](docs/dj-sound-tags.md) and the [sound category catalog](docs/dj-sound-catalog.md)
+- [Sample assistant](docs/dj-sample-assistant.md) and [music copilot integration](docs/music-copilot-integration.md)
+- [OpenUSD pipeline](docs/openusd-pipeline.md) and [benchmarks](docs/benchmarks.md)
+- [Workers and offline architecture](docs/architecture-workers-offline.md), [product surface](docs/product-surface.md) and the original [Knowledge Nebula spec](knowledge-nebula-spec.md)
+- [SECURITY.md](SECURITY.md), [DEPLOYMENT.md](DEPLOYMENT.md), [CHANGELOG.md](CHANGELOG.md)
