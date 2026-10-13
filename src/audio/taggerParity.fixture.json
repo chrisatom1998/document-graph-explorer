@@ -59,7 +59,10 @@
     "cat:gong": 1.3e-05,
     "cat:laser": 0.012237,
     "cat:riser": 0.093932,
-    "cat:reverberant": 0.061228
+    "cat:reverberant": 0.061228,
+    "cat:conga": 1.9e-05,
+    "cat:vocal chant": 0.003811,
+    "cat:static noise": 0.560946
    }
   },
   {
@@ -119,7 +122,10 @@
     "cat:gong": 0.000157,
     "cat:laser": 0.036598,
     "cat:riser": 0.01786,
-    "cat:reverberant": 0.245503
+    "cat:reverberant": 0.245503,
+    "cat:conga": 2.2e-05,
+    "cat:vocal chant": 0.013444,
+    "cat:static noise": 0.922628
    }
   },
   {
@@ -180,7 +186,10 @@
     "cat:gong": 0.00039,
     "cat:laser": 0.050181,
     "cat:riser": 0.045739,
-    "cat:reverberant": 0.247116
+    "cat:reverberant": 0.247116,
+    "cat:conga": 2.3e-05,
+    "cat:vocal chant": 0.013444,
+    "cat:static noise": 0.955487
    }
   },
   {
@@ -242,7 +251,10 @@
     "cat:gong": 0.000984,
     "cat:laser": 0.063676,
     "cat:riser": 0.073431,
-    "cat:reverberant": 0.398901
+    "cat:reverberant": 0.398901,
+    "cat:conga": 0.000104,
+    "cat:vocal chant": 0.011418,
+    "cat:static noise": 0.984949
    }
   }
  ]
