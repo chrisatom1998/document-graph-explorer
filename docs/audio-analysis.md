@@ -137,15 +137,19 @@ absent from its classes. Full-track scans take longer than excerpt scans.
 
 Sound identification combines several local models:
 
-- the ~91 MB **AudioSet AST** instrument detector (scans the full track);
+- the ~91 MB **AudioSet AST** instrument detector, on overlapping 10-second
+  windows across the whole track;
 - the ~21 MB **MTG-Jamendo** music instrument model (official Discogs-EffNet
-  encoder and 40-class classifier) on up to three real 10-second excerpts at
-  16 kHz, using Essentia's MusiCNN preprocessing and complete 128-frame
-  patches;
+  encoder and 40-class classifier) at 16 kHz, using Essentia's MusiCNN
+  preprocessing and complete 128-frame patches;
 - the ~78 MB music-trained **CLAP** audio encoder
   ([larger_clap_music_and_speech](https://huggingface.co/Xenova/larger_clap_music_and_speech)),
   which compares audio against fixed text descriptions for source resemblance,
   articulation, tone, space and role;
+
+  In **Full** mode Jamendo and CLAP run over the same overlapping whole-track
+  windows as AST. In **Quick** mode they check one representative 10-second
+  excerpt at the first drop until the background full pass completes;
 - the **trained sound tagger** (`public/tagger-model`) and small learned heads
   on frozen CLAP features (`public/sound-model`), which decide a growing set of
   DJ sound tags; [tag-decision-map.md](tag-decision-map.md) lists which model

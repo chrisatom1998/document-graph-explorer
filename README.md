@@ -217,7 +217,7 @@ All of these live on the **Export** tab.
 | **Export image PNG** | The current scene as an image. |
 | **Export for Rekordbox (XML)** | A Rekordbox collection with BPM, key and sound tags (audio only). |
 | **Copy shareable URL** | A link whose fragment carries titles, summaries, topics, entities, clusters and connection evidence. It excludes full text, original bytes, local paths, embeddings, handles and settings, and shows a confirmation listing exactly that before copying. |
-| **Export graph JSON** / **Copy graph JSON** | A full backup including graph metadata and audio analysis (embeddings optional, under Settings → Advanced). |
+| **Export graph JSON** / **Copy graph JSON** | A backup of the graph: nodes, links, clusters, summaries, notes, tags and audio analysis, with document embeddings optional under Settings → Advanced. It omits full text and original files, so an imported graph reads and searches at reduced fidelity; keep the originals. |
 | **Import graph JSON** | Restore a backup or open a crate someone exported. Also available as **Import a graph** on the welcome screen. |
 | **Export 3D scene (USD)** | One self-contained `.usda` stage with documents as prims, relationships as curves, cluster hulls, a `docGraph:` attribute schema and a `graphView` variant set, openable in `usdview`, NVIDIA Omniverse and Apple Reality Composer Pro. |
 
