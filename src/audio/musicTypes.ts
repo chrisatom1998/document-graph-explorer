@@ -45,7 +45,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 60/30 under the fair half-split rule; their CLAP heads failed on the app path).
 // 123/124: the tagger decides laser, riser and reverberant on clips up to 30 s (fresh test sets 60/30 at its own cutoffs; the
 // CLAP head or prompt that showed them failed on the app path).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 124 : 123;
+// 125/126: the tagger decides conga, vocal chant and static noise on clips up to 30 s (Listen Check clips 60/30 at its own
+// cutoffs; the CLAP head or prompt that showed them found none).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 126 : 125;
 export interface InstrumentEstimate {
   label: string;
   score: number;
