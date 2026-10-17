@@ -190,7 +190,7 @@
    "output": "cat:whistle",
    "label": "whistle",
    "dimension": "source",
-   "threshold": 0.4791,
+   "threshold": 0.9,
    "decides": [
     "whistle"
    ],
@@ -739,6 +739,34 @@
    "threshold": 0.1409,
    "decides": [
     "static noise"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:acid synth",
+   "label": "acid synth",
+   "dimension": "effect",
+   "threshold": 0.15,
+   "decides": [
+    "acid synth"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:vocal phrase",
+   "label": "vocal phrase",
+   "dimension": "effect",
+   "threshold": 0.1,
+   "decides": [
+    "vocal phrase"
    ],
    "tested": true,
    "long": {

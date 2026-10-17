@@ -47,7 +47,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // CLAP head or prompt that showed them failed on the app path).
 // 125/126: the tagger decides conga, vocal chant and static noise on clips up to 30 s (Listen Check clips 60/30 at its own
 // cutoffs; the CLAP head or prompt that showed them found none).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 126 : 125;
+// 127/128: the tagger decides acid synth and vocal phrase on clips up to 30 s, and whistle needs 0.90 (fresh test sets 60/30
+// under the fair half-split rule; the CLAP heads that showed acid synth and vocal phrase found none, whistle missed precision).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 128 : 127;
 export interface InstrumentEstimate {
   label: string;
   score: number;
