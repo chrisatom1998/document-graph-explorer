@@ -181,6 +181,21 @@ describe('trained tagger display', () => {
     expect(shown.map(s => `${s.dimension}:${s.label}`).sort()).toEqual(['effect:conga', 'effect:static noise', 'effect:vocal chant']);
     for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
   });
+  it('decides acid synth and vocal phrase over their maybe CLAP heads on clips', () => {
+    const labels = ['acid synth', 'vocal phrase'];
+    const heads = labels.map(label => ({ group: 'production' as const, label, score: .9, model: 'Trained head' as const, maybe: true }));
+    const outputs = labels.map(label => `cat:${label}`);
+    const low = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads)).map(s => s.label);
+    for (const label of labels) expect(low).not.toContain(label);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads)).filter(s => labels.includes(s.label));
+    expect(shown.map(s => `${s.dimension}:${s.label}`).sort()).toEqual(['effect:acid synth', 'effect:vocal phrase']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('shows whistle only from 0.90 (fresh test sets: the 0.4791 cutoff missed precision)', () => {
+    expect(threshold('cat:whistle')).toBe(.9);
+    expect(sources(track(4, { 'cat:whistle': .85 }))).toEqual([]);
+    expect(sources(track(4, { 'cat:whistle': .9 }))).toEqual(['whistle']);
+  });
   it('decides voice over its CLAP head on clips', () => {
     const heads = [{ group: 'source' as const, label: 'voice', score: .9, model: 'Trained head' as const }];
     expect(sources(track(4, { 'cat:voice': .01 }, heads))).toEqual([]);
@@ -244,7 +259,8 @@ describe('trained tagger long-recording rules', () => {
       'cat:organ': { rule: 'detectors', afterSeconds: 30 }, 'cat:gong': { rule: 'detectors', afterSeconds: 30 },
       'cat:laser': { rule: 'detectors', afterSeconds: 30 }, 'cat:riser': { rule: 'detectors', afterSeconds: 30 },
       'cat:reverberant': { rule: 'detectors', afterSeconds: 30 }, 'cat:conga': { rule: 'detectors', afterSeconds: 30 },
-      'cat:vocal chant': { rule: 'detectors', afterSeconds: 30 }, 'cat:static noise': { rule: 'detectors', afterSeconds: 30 } });
+      'cat:vocal chant': { rule: 'detectors', afterSeconds: 30 }, 'cat:static noise': { rule: 'detectors', afterSeconds: 30 },
+      'cat:acid synth': { rule: 'detectors', afterSeconds: 30 }, 'cat:vocal phrase': { rule: 'detectors', afterSeconds: 30 } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
   it('needs the higher full-song drums threshold on long recordings only', () => {
@@ -263,7 +279,7 @@ describe('trained tagger long-recording rules', () => {
   });
   it.each(['cat:environmental sound', 'cat:foley', 'cat:turntable', 'cat:finger snap', 'cat:water ambience', 'cat:guitar', 'cat:violin / fiddle', 'cat:siren',
     'cat:flute', 'cat:marimba', 'cat:vibraphone', 'cat:crash cymbal', 'cat:whisper', 'cat:voice', 'cat:kick', 'cat:clap',
-    'cat:organ', 'cat:gong', 'cat:laser', 'cat:riser', 'cat:reverberant', 'cat:conga', 'cat:vocal chant', 'cat:static noise'])(
+    'cat:organ', 'cat:gong', 'cat:laser', 'cat:riser', 'cat:reverberant', 'cat:conga', 'cat:vocal chant', 'cat:static noise', 'cat:acid synth', 'cat:vocal phrase'])(
     'keeps the tagger deciding %s up to 30 s, as the held-out scorer did, and defers on longer recordings', output => {
       const at = (duration: number, windows: number) => taggerDecisions({ revision: TAGGER_REVISION, windows, scores: { [output]: threshold(output) } }, duration)!
         .find(d => d.tag.output === output);
