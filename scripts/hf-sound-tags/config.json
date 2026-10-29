@@ -1,0 +1,41 @@
+{
+  "kind": "hf-sound-tag-train-v1",
+  "baseRepository": "cmjatom/dge-all-tags-tagger-nc",
+  "baseRevision": "410638ae8e38766f1647af233157a0c0c95da96a",
+  "method": "Continue the existing EfficientAT fine-tune. The Jamendo instrument head stays in the same network. This run adds no dataset. It only up-weights present labels for the tags below.",
+  "recallTags": [
+    "cello",
+    "horn",
+    "electric piano",
+    "bassoon",
+    "crowd ambience",
+    "atmospheric pad",
+    "breakbeat",
+    "bird ambience"
+  ],
+  "posWeight": 2,
+  "train": { "flavor": "l4x1", "hours": 4, "jobs": 1 },
+  "eval": { "flavor": "cpu-upgrade", "hours": 2, "jobs": 1 },
+  "maxCostUsd": 8,
+  "candidateRepo": "<HF user>/dge-sound-tag-candidate",
+  "doNotOverwrite": "cmjatom/dge-all-tags-tagger-nc",
+  "forbiddenSets": [
+    "fsd50k-eval",
+    "nsynth-test",
+    "nsynth-test-fx",
+    "holdout-r3",
+    "dj-clips-round1",
+    "dj-clips-round2",
+    "fresh-tests-2026-10-11",
+    "sasse-test",
+    "idmt-bass",
+    "locked-free-tag-holdout"
+  ],
+  "pricesUsdPerHour": {
+    "cpu-basic": 0.01,
+    "cpu-upgrade": 0.03,
+    "t4-small": 0.4,
+    "l4x1": 0.8
+  },
+  "priceSource": "https://huggingface.co/docs/hub/jobs-pricing as of 2026-10-29"
+}
