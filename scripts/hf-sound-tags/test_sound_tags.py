@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import unittest
 
 import numpy as np
@@ -43,11 +44,13 @@ class BarTests(unittest.TestCase):
 
 
 class PlanTests(unittest.TestCase):
-    def test_estimate_stays_under_the_cap(self):
+    def test_estimate_bills_only_the_training_job(self):
         cost = plan.estimate(plan.load_config())
-        self.assertEqual(cost['usd'], 3.26)
+        self.assertEqual([part['step'] for part in cost['parts']], ['train'])
+        self.assertEqual(cost['usd'], 3.20)
         self.assertTrue(cost['withinCap'])
         self.assertLessEqual(cost['usd'], cost['cap'])
+        self.assertLessEqual(cost['usd'], plan.load_config()['maxJobUsd'])
 
     def test_unknown_flavor_is_refused(self):
         config = plan.load_config()
@@ -61,11 +64,46 @@ class PlanTests(unittest.TestCase):
             fit_head.refuse_overlap(['clip-1'], ['clip-1'])
 
     def test_launch_refuses_without_the_confirm_latch(self):
-        env = os.environ.copy()
-        env.pop('DGE_HF_LAUNCH_CONFIRM', None)
-        env.pop('HF_TOKEN', None)
-        with self.assertRaises(SystemExit):
-            plan.launch(plan.load_config())
+        # The token is set on the process environment, so a missing confirm is the reason launch stops.
+        saved = {key: os.environ.get(key) for key in ('DGE_HF_LAUNCH_CONFIRM', 'HF_TOKEN', 'HUGGING_FACE_HUB_TOKEN')}
+        os.environ['HF_TOKEN'] = 'test-token-not-used'
+        os.environ.pop('DGE_HF_LAUNCH_CONFIRM', None)
+        os.environ.pop('HUGGING_FACE_HUB_TOKEN', None)
+        try:
+            with self.assertRaises(SystemExit) as caught:
+                plan.launch(plan.load_config())
+            self.assertIn('DGE_HF_LAUNCH_CONFIRM', str(caught.exception))
+        finally:
+            for key, value in saved.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
+
+    def test_launch_refuses_a_training_id_from_a_forbidden_set(self):
+        saved = {key: os.environ.get(key) for key in ('DGE_HF_LAUNCH_CONFIRM', 'HF_TOKEN', 'HUGGING_FACE_HUB_TOKEN')}
+        os.environ['DGE_HF_LAUNCH_CONFIRM'] = 'yes'
+        os.environ['HF_TOKEN'] = 'test-token-not-used'
+        os.environ.pop('HUGGING_FACE_HUB_TOKEN', None)
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                with open(os.path.join(directory, 'fsd50k-eval.txt'), 'w') as handle:
+                    handle.write('clip-held\n')
+                train = os.path.join(directory, 'train.txt')
+                with open(train, 'w') as handle:
+                    handle.write('clip-ok\nclip-held\n')
+                config = plan.load_config()
+                config['forbiddenIdsDir'] = directory
+                config['trainIdsFile'] = train
+                with self.assertRaises(SystemExit) as caught:
+                    plan.launch(config)
+                self.assertIn('forbidden set', str(caught.exception))
+        finally:
+            for key, value in saved.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
 
     def test_dry_run_prints_the_command_and_does_not_launch(self):
         proc = subprocess.run([sys.executable, os.path.join(HERE, 'plan.py')], check=True, capture_output=True, text=True)

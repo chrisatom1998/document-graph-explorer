@@ -91,16 +91,16 @@ Kick (0.84 / 0.73 on FSD50K, 0.79 / 0.83 on the free-tag set) and gong (0.72 / 0
 
 ## What can realistically clear the bar
 
-**First job, existing private cache only.** Precision is already ≥ 0.65 and recall is just under 0.50, with hundreds of training clips. A recall push (`RECALL_TAGS` / `--pos-weight` in `scripts/audio-model/train.py`) on the current EfficientAT blend can plausibly clear 50/50. It will not, by itself, clear 60/60.
+**First job, existing private cache only.** These eight were the recall-push list: precision already ≥ 0.65 and recall just under 0.50 in the pre-run snapshot, with hundreds of training clips. Run 1 tested that idea. It did not clear them. See Run 1 results.
 
 | Tag | Why it is on the list |
 |---|---|
 | cello, horn, electric piano, bassoon | precision 0.78–0.91, recall 0.46–0.49, 192–947 report positives |
-| crowd ambience | 0.92 / 0.49 on 256 FSD50K eval positives. That clears the tagger 60/30 line and misses the 0.50 head bar by one point of recall |
+| crowd ambience | Pre-run CLAP snapshot was 0.92 / 0.49. Run 1's tagger eval already passed (0.74 / 0.79 on FSD50K) and still passes |
 | atmospheric pad, breakbeat | 0.67 / 0.48 and 0.66 / 0.49, with 3136 and 1040 training positives |
 | bird ambience | 0.79 / 0.41 on 265 FSD50K eval positives and 459 FSD50K train rows. Further from the line than the others, still a recall gap rather than a precision collapse |
 
-**Leave for a later run, after new labels exist.** More epochs on the current mix are unlikely to move these.
+**These need new labeled data.** Another epoch on the current mix does not move them. Run 1 is the measurement.
 
 - Electric guitar and mallet instrument fail on NSynth (precision 0.15 and 0.39) while passing FSD50K. The same note families are already in training. The missing thing is a cleaner electric-versus-acoustic and mallet-versus-other-keyboard distinction.
 - Synth subtypes with only a raw prompt (wobble bass, reese bass, supersaw, synth lead, synth pluck, synth chord, string synth, brass synth) and synth bass. Uploader words for these were already found to be loose, and synthetic renders were rejected.
@@ -115,33 +115,52 @@ Kick (0.84 / 0.73 on FSD50K, 0.79 / 0.83 on the free-tag set) and gong (0.72 / 0
 
 **Base.** Keep `cmjatom/dge-all-tags-tagger-nc` at `410638a`: EfficientAT MobileNets (AudioSet, MIT) fine-tuned with the Jamendo instrument head in the same network as the catalog outputs. The first run continues that fine-tune. It does not add a CLAP encoder, PaSST features, a drum teacher, or synthetic audio. New logistic heads are the wrong tool for this list: the outputs already exist. Heads would be the follow-up only for a tag that still has no output after a dataset actually teaches it.
 
-**Data for run 1.** No new dataset. `RECALL_TAGS` oversamples present windows and `--pos-weight 2` up-weights those present labels. The Jamendo head stays in the loss, as `train.py` already trains it. Training rows that match a forbidden set are dropped. Forbidden sets, already used for scoring or cutoff choice: FSD50K eval, NSynth test and effect renders, holdout round 3, DJ clip rounds 1 and 2, `fresh-tests-2026-10-11`, SASS-E, IDMT bass, and the locked free-tag holdout.
+**Data for run 1.** No new dataset. `RECALL_TAGS` oversamples present windows and `--pos-weight 2` up-weights those present labels, for one epoch (`EPOCHS=1`). The start point is `all-tags-recall2` at `29090c5` (`initFrom`), because the shipped blend at `410638a` is an ONNX with no `model.pt`. The job clones `96705a6`, the commit that trained recall2, so the label cleanup in `recall2-labels.json` is applied. `launch()` copies `hf-launch.py` and `hf-job.sh` from that commit. Before it copies anything, it runs `check_forbidden_overlap()`: a training-id file that shares an id with `forbidden-ids/<set>.txt` stops the launch. The files are optional and were not on disk for Run 1; the filter that actually ran is the tagger-r20 drop list inside the job. Forbidden set names: FSD50K eval, NSynth test and effect renders, holdout round 3, DJ clip rounds 1 and 2, `fresh-tests-2026-10-11`, SASS-E, IDMT bass, and the locked free-tag holdout.
 
-**Run 2, only if run 1 moves the fresh split.** Add one dataset: IRMAS (cello, clarinet, flute, acoustic guitar, electric guitar, organ, piano, saxophone, trumpet, violin, voice). Upstream terms are CC BY-NC-SA 3.0, and the MTG page also says the audio is not redistributed or modified (https://www.upf.edu/web/mtg/irmas, Zenodo 10.5281/zenodo.1290750). Download from Zenodo into the private cache. Do not train from the public Hugging Face mirrors (`confit/irmas`, `charisreneec/IRMAS-Test`): their cards do not carry the license, and republishing the audio conflicts with the MTG clause. Hold out IRMAS's official test split. Drop any artist that already appears in OpenMIC, Jamendo's held-out artists, or the fresh board. IRMAS is not Freesound, so it does not share FSD50K ids; the artist check is still required. The tagger is already CC BY-NC-SA, so a non-commercial training source matches the weights. GuitarSet (CC BY 4.0, Zenodo 10.5281/zenodo.3371780) is the candidate after that, and only if acoustic guitar is still the gap. It is one instrument and a few hundred excerpts.
+**Run 2 is not justified by Run 1.** The recall push did not clear the eight tags. The queued dataset, if new labels are collected, is still IRMAS (cello, clarinet, flute, acoustic guitar, electric guitar, organ, piano, saxophone, trumpet, violin, voice). Upstream terms are CC BY-NC-SA 3.0, and the MTG page also says the audio is not redistributed or modified (https://www.upf.edu/web/mtg/irmas, Zenodo 10.5281/zenodo.1290750). Download from Zenodo into the private cache. The public Hugging Face mirrors (`confit/irmas`, `charisreneec/IRMAS-Test`) do not carry the license, and republishing the audio conflicts with the MTG clause. Hold out IRMAS's official test split. Drop any artist that already appears in OpenMIC, Jamendo's held-out artists, or the fresh board. GuitarSet (CC BY 4.0, Zenodo 10.5281/zenodo.3371780) stays the later candidate, and only if acoustic guitar is still the gap.
 
-**Service and hardware.** Hugging Face Jobs, the path `scripts/audio-model/hf-launch.py` already uses. Train on `l4x1` (1× L4 24 GB, $0.80/hour). Score on `cpu-upgrade` ($0.03/hour). Prices are from https://huggingface.co/docs/hub/jobs-pricing as of 2026-10-29.
+**Service and hardware.** Hugging Face Jobs. Train on `l4x1` (1× L4 24 GB, $0.80/hour). Recall runs use 1 epoch, with `TRAIN_HOURS` 1.5 inside a 4 hour job timeout. Scoring is `evaluate.py` inside that same job. There is no separate `cpu-upgrade` eval job, and the estimate does not bill one. Prices are from https://huggingface.co/docs/hub/jobs-pricing as of 2026-10-29.
 
 | Step | Flavor | Time | Cost |
 |---|---|---|---|
-| Recall-push fine-tune, timeout 4 h | l4x1 | about 3–4 h on the usual 8-epoch recipe; the historical workflow allows 7 h | $3.20 at the 4 h cap |
-| Held-out score | cpu-upgrade | about 2 h | $0.06 |
-| **This run** | | | **$3.26** |
+| Recall-push fine-tune, 1 epoch, timeout 4 h | l4x1 | Run 1 ran 5,271 s (about 1.5 h) | $3.20 at the 4 h cap; Run 1 was about $1.17 |
+| **Estimate for one launch** | | | **$3.20** |
+| Per-job limit | | | **$5** |
 | Cap, including one retry | | | **$8** |
-| Ask, so a failed start can be rerun | | | **$10** |
 
-A second IRMAS run would be about another $4–6 (CPU prep plus one more 4 h L4 job) and is not in this cap. AutoTrain, Spaces GPU, and Inference Endpoints are out.
+AutoTrain, Spaces GPU, and Inference Endpoints stay out.
 
-**How a result is scored.** Carve the fresh split by uploader / artist before training, with `scripts/hf-sound-tags/plan.py`'s overlap check against the forbidden id lists once those lists are on disk. Pick the cutoff on the pick half only. Judge on the check half. Then run `npx vite-node scripts/eval-tag.ts` on that fresh audio (the app's own chain: CLAP heads, one-shot heads, tagger, `confidentSoundSummary`). The forbidden sets are a no-regression read, not a place to pick the cutoff. Ship a head only when the check half meets the repo bar for that decider (50/50 for a CLAP head, 60/30 on every counted fresh set for a tagger output). Write the candidate to a new private repo (`<user>/dge-sound-tag-candidate`). Leave `cmjatom/dge-all-tags-tagger-nc` pinned until that check passes.
+**How a result is scored.** The training job writes aggregate precision and recall on its held-out sets (run9 held-out groups, FSD50K eval, Freesound held-out, NSynth test), with the cutoff picked on validation. A tag passes only when every held-out set with at least 10 positives passes. `scripts/eval-tag.ts` was not run for Run 1: it loads `public/tagger-model` and checks it against `taggerPolicy.json`, so scoring a candidate with it means swapping that candidate into a local copy of the app. That app-level check is still open. The candidate weights stay in the private repo `cmjatom/dge-sound-tag-candidate`. `cmjatom/dge-all-tags-tagger-nc` stays at `410638a`.
 
-## What Chris needs to approve
+## Run 1 results
 
-1. This plan, including the $10 cap and the decision to train the eight recall-push tags before adding IRMAS.
-2. A Hugging Face token in `HF_TOKEN`. A fine-grained token needs Jobs, read on the private datasets the trainer already uses (`<user>/dge-tagger-data`, `cmjatom/dge-private-train`, `cmjatom/dge-eval-runs`), and write on a new private model repo. It should not be required to push over `cmjatom/dge-all-tags-tagger-nc`. A classic write token also works. The Jobs account needs a positive credit balance. No token is in this environment (`HF_TOKEN` and `HUGGING_FACE_HUB_TOKEN` are unset, and there is no `~/.cache/huggingface/token`).
-3. After that, the launch is:
+Job `6ae32fee3fb22a235dd58cbf` on `l4x1`. It started at 4:38 AM Pacific (PDT) on Oct 29, 2026 and finished at 6:06 AM Pacific. Spend was about $1.17 (5,271 s of running time × $0.80/h). The candidate is the private repo `cmjatom/dge-sound-tag-candidate`, folder `recall-push-r1`. The shipped tagger was not changed.
 
-```bash
-DGE_HF_LAUNCH_CONFIRM=yes python3 scripts/hf-sound-tags/plan.py --launch
-```
+None of the 8 tags newly cleared the bar. Crowd ambience already passed 50/50, 60/60, and 70/70, and it still does. Cello recall on the run9 held-out set went from 0.20 to 0.35 and still fails. Count after: 1 of 8 at 50/50. Count before: 1 of 8.
+
+Before is `all-tags-recall2`, the network this run started from. "Shipped" in the table is the all-tags run, where that eval covers the set. After is graded. A pass requires every held-out set with at least 10 positives.
+
+| Tag | Held-out set (pos/neg) | Before | After | 50/50 | 60/60 |
+|---|---|---|---|---|---|
+| cello | run9 (86/4921) | 0.53 / 0.20 | 0.59 / 0.35 | fail | fail |
+| cello (OpenMIC output) | holdout-r3 (12/488) | 0.07 / 0.25 (shipped 0.08 / 0.25) | 0.09 / 0.25 | fail | fail |
+| horn | run9 (19/4988) | 0.14 / 0.16 | 0.16 / 0.16 | fail | fail |
+| electric piano | NSynth test (539/3557) | 0.54 / 0.79 (shipped 0.54 / 0.74) | 0.53 / 0.80 | pass | fail |
+| electric piano | run9 (47/4960) | 0.41 / 0.55 | 0.42 / 0.51 | fail | fail |
+| bassoon | run9 (3/5004) | – / 0.00 | – / 0.00 | fail | fail |
+| bassoon | Freesound (6/1991) | – / 0.00 (shipped 0.50 / 0.33) | – / 0.00 | fail | fail |
+| crowd ambience | FSD50K (110/4774) | 0.73 / 0.78 (shipped 0.74 / 0.81) | 0.74 / 0.79 | pass | pass (also passes 70/70) |
+| atmospheric pad | run9 (104/4903) | 0.30 / 0.44 | 0.31 / 0.42 | fail | fail |
+| breakbeat | run9 (90/4917) | 0.39 / 0.16 | 0.37 / 0.19 | fail | fail |
+| breakbeat | Freesound (92/1905) | 0.31 / 0.11 (shipped 0.53 / 0.39) | 0.35 / 0.14 | fail | fail |
+| bird ambience | FSD50K (265/4619) | 0.83 / 0.34 (shipped 0.79 / 0.41) | 0.84 / 0.34 | fail | fail |
+| bird ambience | run9 (111/4896) | 0.48 / 0.56 | 0.48 / 0.58 | fail | fail |
+
+Electric piano passes 50/50 on NSynth and fails on the real run9 clips, so the tag fails. Across 310 other tag/set pairs the mean change in min(precision, recall) was +0.0005. More training on this labeled mix does not clear these tags. The next gain has to come from new labeled data, not another recall push.
+
+## What is left
+
+Run 1 is finished. Another recall push on the same clips is not the next step. New labeled data is. The shipped model stays at `410638a`. The candidate stays in the private repo until an app-level `eval-tag.ts` check is worth doing, and that check needs a fresh labeled set that was not used to train or to pick cutoffs.
 
 ## Reproduce
 
