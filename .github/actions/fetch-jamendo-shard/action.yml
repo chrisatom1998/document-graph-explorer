@@ -24,6 +24,7 @@ runs:
     - uses: actions/checkout@v7
       with:
         ref: ${{ inputs.harness }}
+        path: harness
     # The harness is the base commit so a PR cannot change how scores are judged. select-jamendo.py stays that copy.
     # The downloader below is replaced with this workflow's copy only while the base still streams whole archives.
     - uses: actions/checkout@v7
@@ -35,14 +36,14 @@ runs:
       run: |
         # Once main has the range downloader, a PR cannot swap in its own copy. Until then the base
         # script still streams whole archives, so this workflow's copy is what can survive a 503.
-        if grep -q 'class RangeSource' scripts/holdout-r3/fetch-jamendo.py; then
+        if grep -q 'class RangeSource' harness/scripts/holdout-r3/fetch-jamendo.py; then
           echo "Base harness already has the range downloader."
         else
-          cp workflow-src/scripts/holdout-r3/fetch-jamendo.py scripts/holdout-r3/fetch-jamendo.py
+          cp workflow-src/scripts/holdout-r3/fetch-jamendo.py harness/scripts/holdout-r3/fetch-jamendo.py
           echo "Base harness still streams whole archives; using this workflow's downloader."
         fi
-        grep -q 'class RangeSource' scripts/holdout-r3/fetch-jamendo.py
-        grep -q 'checksum mismatch' scripts/holdout-r3/fetch-jamendo.py
+        grep -q 'class RangeSource' harness/scripts/holdout-r3/fetch-jamendo.py
+        grep -q 'checksum mismatch' harness/scripts/holdout-r3/fetch-jamendo.py
     - name: Restore this shard's tracks
       id: part
       uses: actions/cache/restore@v6
@@ -62,7 +63,7 @@ runs:
                  derived/music-classification-annotations/music-classification-annotations-clean.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
           mkdir -p "$M/$(dirname $f)"; curl -fsSL --retry 6 -o "$M/$f" "$JAMENDO_META/$f"
         done
-        python3 scripts/holdout-r3/select-jamendo.py "$M"
+        python3 harness/scripts/holdout-r3/select-jamendo.py "$M"
     - name: Fetch and cut this shard's tracks
       id: fetch
       if: steps.part.outputs.cache-hit != 'true'
@@ -71,7 +72,7 @@ runs:
         command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
         # 45m stays under the job's 60m. A job timeout cancels the runner and skips the partial-cache
         # save; a step that exits on its own still has the wavs for that save.
-        timeout 45m python3 scripts/holdout-r3/fetch-jamendo.py "$DOCS/jamendo-manifest.json" \
+        timeout 45m python3 harness/scripts/holdout-r3/fetch-jamendo.py "harness/$DOCS/jamendo-manifest.json" \
           "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ inputs.shard }}/20 gate-audio/jamendo
     - name: Save this shard's tracks
       if: success() && steps.part.outputs.cache-hit != 'true'
