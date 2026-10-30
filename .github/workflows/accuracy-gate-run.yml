@@ -10,6 +10,10 @@ name: Accuracy gate (shared steps)
 # subset rule come from the base commit, so a change can't edit how it's judged (the change's own copy is used only
 # until the gate is on the base branch). Audio is fetched from the datasets on a cache miss and cached; never committed.
 # Only aggregate numbers are reported.
+#
+# accuracy-gate.yml is what runs this on a Monday schedule and on workflow_dispatch. The schedule cannot be added
+# here: a reusable workflow is only started by workflow_call. A scheduled or manual run is report-only, like a push
+# to main, and it re-saves the shared audio cache and this commit's baseline.
 on:
   workflow_call:
     inputs:
@@ -130,7 +134,7 @@ jobs:
     timeout-minutes: 240
     strategy:
       fail-fast: false
-      max-parallel: 6   # leave most of the account's runners to everything else
+      max-parallel: 2   # six parallel archive streams were drawing HTTP 503s from cdn.freesound.org
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     steps:
@@ -381,11 +385,13 @@ jobs:
             summary.md
             reports
           retention-days: 30
+      # A push, the Monday schedule, and a manual run on main all record this commit's numbers. The schedule
+      # is what keeps that baseline (and, via the analyse jobs' restore, the audio cache) inside the 7-day window.
       - name: Keep main's exports as the baseline for later PRs
-        if: github.event_name == 'push' && needs.plan.outputs.run == 'true'
+        if: contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) && needs.plan.outputs.run == 'true'
         run: rm -rf baseline && mkdir baseline && cp exports-by-side/head/*.json baseline/
       - uses: actions/cache/save@v6
-        if: github.event_name == 'push' && needs.plan.outputs.run == 'true'
+        if: contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) && needs.plan.outputs.run == 'true'
         with:
           path: baseline
           key: ${{ env.EXPORTS_CACHE }}-${{ inputs.mode }}-${{ github.sha }}
