@@ -109,6 +109,20 @@ describe('trained tagger display', () => {
   it('leaves instruments to the other detectors on clips shorter than 10 s', () => {
     expect(sources(track(8, { drums: .01, piano: .99 }, [{ group: 'source', label: 'drums', score: .9, model: 'Trained head' }]))).toEqual(['drums']);
   });
+  it('hides the CLAP piano head on a short clip unless the tagger piano score clears its cutoff', () => {
+    const head = [{ group: 'source' as const, label: 'piano', score: .9, model: 'Trained head' as const }];
+    expect(sources(track(4, { piano: threshold('piano') - 1e-4 }, head))).toEqual([]);
+    expect(sources(track(4, { piano: threshold('piano') }, head))).toEqual(['piano']);
+    // One-shots and 10 s recordings keep their own rules. A listener confirmation is never removed.
+    expect(sources(track(2, { piano: 0 }, head))).toEqual(['piano']);
+    expect(sources(track(10, { piano: threshold('piano') }, head))).toEqual(['piano']);
+    const confirmed = track(4, { piano: 0 }, head);
+    confirmed.confirmedInstruments = ['piano'];
+    expect(sources(confirmed)).toEqual(['piano']);
+    const older = track(4, { piano: 0 }, head);
+    older.tagger = { revision: 'older', windows: 1, scores: { piano: 0 } };
+    expect(sources(older)).toEqual(['piano']);
+  });
   it('decides its sound-type and effect tags at any length, and leaves other tags alone', () => {
     const a = track(4, { 'cat:percussive': .99, 'cat:dark': .01 }, [
       { group: 'character', label: 'dark', score: .9, model: 'Trained head' }, { group: 'character', label: 'bright', score: .9, model: 'Trained head' },

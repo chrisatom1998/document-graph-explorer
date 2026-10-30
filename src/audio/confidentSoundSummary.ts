@@ -8,7 +8,7 @@ import calibratedLabelList from './calibratedLabels.json';
 import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 import { FULL_MIX_FAMILY, FULL_MIX_REVISION } from './fullMixHeads';
-import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_SCORE, taggerDecisions, taggerIntervals, type TaggerTag } from './tagger';
+import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, taggerDecisions, taggerIntervals, type TaggerTag } from './tagger';
 import { nativeScoreOutside, type NativeWindowEvidence } from './nativeWindowEvidence';
 import { isRuleDescribedLabel } from './timbreDescriptions';
 
@@ -228,14 +228,27 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   if(voiceHeads.length&&Math.max(...voiceHeads)<FULL_MIX_VOICE_VETO&&!taggerShown.has('source:voice')&&result.get('source:voice')?.origin==='model estimate')result.delete('source:voice');
   const testedBest=(s:DisplaySound)=>Math.max(...s.scores!.filter(x=>TESTED_SCORES.has(x.model)).map(x=>x.score));
   const raised=(s:DisplaySound)=>fullMix&&s.dimension==='source'&&FULL_MIX_MIN_TESTED_SCORE[s.label]!==undefined&&testedBest(s)<FULL_MIX_MIN_TESTED_SCORE[s.label];
-  return foldMerged([...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
+  return shortPianoVeto(foldMerged([...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
     :HIDDEN_UNTIL_TESTED.has(s.label)?[]
     :s.coverageUnknown?[s]
     :s.scores?.some(x=>TESTED_SCORES.has(x.model))?raised(s)?[]:[tiered(s,m=>TESTED_SCORES.has(m))]
     :s.scores?.some(x=>MAYBE_SCORES.has(x.model))?[{...tiered(s,m=>MAYBE_SCORES.has(m)),maybe:true}]
     :long&&!CALIBRATED_LABELS.has(s.label)&&!UNVERIFIED_BLOCKED.has(s.label)&&catalogClap.has(`${s.dimension}:${s.label}`)&&s.scores?.some(x=>x.model==='CLAP similarity'&&x.score>=UNVERIFIED_SOUND_FLOOR)?[{...s,tier:'possible' as const,uncalibrated:true}]:[]),
     // Merged estimates obey the destination's hidden-label policy and listener choices.
-    (dimension,label)=>!HIDDEN_UNTIL_TESTED.has(label)&&allowed(dimension,label)&&(dimension==='source'?confirmed===undefined:audio.confirmedDjTags===undefined));
+    (dimension,label)=>!HIDDEN_UNTIL_TESTED.has(label)&&allowed(dimension,label)&&(dimension==='source'?confirmed===undefined:audio.confirmedDjTags===undefined)), audio);
+}
+/** Between a one-shot and the tagger's 10 s piano handoff, the CLAP piano head is the only decider and it fires on
+ *  keyboards that are not pianos (NSynth test: precision 0.37). The tagger's existing piano cutoff, already used
+ *  from 10 s up, has to agree. A missing or older tagger result leaves the head alone. */
+function shortPianoVeto(sounds: DisplaySound[], audio: MusicAnalysis): DisplaySound[] {
+  const piano = TAGGER_POLICY.tags.find(tag => tag.output === 'piano');
+  const min = piano?.minSeconds;
+  if (!piano || !min || !(audio.durationSeconds > SHORT_CLIP_MAX_SECONDS) || !(audio.durationSeconds < min - 1e-6)) return sounds;
+  const tagger = audio.tagger;
+  if (!tagger || tagger.revision !== TAGGER_REVISION) return sounds;
+  const score = tagger.scores.piano;
+  if (typeof score !== 'number' || score >= piano.threshold) return sounds;
+  return sounds.filter(s => s.origin === 'confirmed by you' || s.dimension !== 'source' || s.label !== 'piano');
 }
 const GROUP_OF:Partial<Record<Dimension,DjGroup>>={source:'source',effect:'production',character:'character'};
 const DIMENSION_OF:Record<DjGroup,Dimension>={source:'source',production:'effect',character:'character'};

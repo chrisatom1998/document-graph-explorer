@@ -206,7 +206,10 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
         } finally { await disposeTensors(inputs); }
       }, () => self.postMessage({ id, progress: 'Applying current reviews to saved sound features' }));
       if (data.kind !== 'profile') { await postResult(soundSuggestions(embedding, prompts.filter(p => p.group === 'source'))); return; }
-      let learnedScores = learned ? learnedDjScores(embedding, learned) : [];
+      // A full 10 s window (a song excerpt) can hold both siblings. Only a shorter recording, which is one
+      // sound padded out to 10 s, has to pick between them. One sample of decoder slack keeps an exact 10 s read ungated.
+      const shortRecording = data.samples.length < 48000 * 10 - 8;
+      let learnedScores = learned ? learnedDjScores(embedding, learned, { shortRecording }) : [];
       // A whole short clip arrives with its 16 kHz copy: score it with heads trained on one-shots.
       const short = data.samples16 && shortClip && data.samples.length <= shortClip.maxSeconds * 48000 ? shortClip : undefined;
       const oneShot = short ? await shortClipProfile(short, data.samples, data.samples16!, embedding) : [];

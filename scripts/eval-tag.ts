@@ -341,7 +341,7 @@ function decide(rec: CachedClip, o: Overrides): Map<string, Shown> {
     const oneShotHeads = new Set(learnedModel.heads?.filter(h => h.oneShot).map(h => `${h.group}:${h.label}`));
     for (const w of rec.clap) {
       if (!w.embedding) { descriptions.add([], w); continue; }
-      let learnedScores = learnedDjScores(w.embedding, learnedModel);
+      let learnedScores = learnedDjScores(w.embedding, learnedModel, { shortRecording: w.end - w.start < 10 - 1e-3 });
       const short = w.start === 0 && w.end >= rec.duration - 1e-6 && rec.duration <= SHORT_CLIP_MAX_SECONDS && w.end - w.start <= shortModel.maxSeconds;
       const oneShot = short ? shortClipScores(shortModel, { clapRepeat: w.embedding }).scores : [];
       if (short) learnedScores = learnedScores.filter(s => s.basis !== 'head' || oneShotHeads.has(`${s.learnedGroup}:${s.label}`));
