@@ -64,7 +64,12 @@
     "cat:vocal chant": 0.003811,
     "cat:static noise": 0.560946,
     "cat:acid synth": 4e-06,
-    "cat:vocal phrase": 9e-06
+    "cat:vocal phrase": 9e-06,
+    "cat:synth lead": 0.0033,
+    "cat:vocoder vocal": 5.1e-05,
+    "cat:record stop": 0.006815,
+    "cat:glitch effect": 0.145739,
+    "cat:choir": 0.00484
    }
   },
   {
@@ -129,7 +134,12 @@
     "cat:vocal chant": 0.013444,
     "cat:static noise": 0.922628,
     "cat:acid synth": 7.7e-05,
-    "cat:vocal phrase": 7.9e-05
+    "cat:vocal phrase": 7.9e-05,
+    "cat:synth lead": 0.01802,
+    "cat:vocoder vocal": 0.000454,
+    "cat:record stop": 0.003376,
+    "cat:glitch effect": 0.344564,
+    "cat:choir": 0.009904
    }
   },
   {
@@ -195,7 +205,12 @@
     "cat:vocal chant": 0.013444,
     "cat:static noise": 0.955487,
     "cat:acid synth": 0.000254,
-    "cat:vocal phrase": 0.000101
+    "cat:vocal phrase": 0.000101,
+    "cat:synth lead": 0.038797,
+    "cat:vocoder vocal": 0.000872,
+    "cat:record stop": 0.003376,
+    "cat:glitch effect": 0.344564,
+    "cat:choir": 0.009904
    }
   },
   {
@@ -262,7 +277,12 @@
     "cat:vocal chant": 0.011418,
     "cat:static noise": 0.984949,
     "cat:acid synth": 0.000813,
-    "cat:vocal phrase": 0.000118
+    "cat:vocal phrase": 0.000118,
+    "cat:synth lead": 0.112313,
+    "cat:vocoder vocal": 0.001852,
+    "cat:record stop": 0.003493,
+    "cat:glitch effect": 0.386851,
+    "cat:choir": 0.009183
    }
   }
  ]

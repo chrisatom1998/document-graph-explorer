@@ -191,6 +191,18 @@ describe('trained tagger display', () => {
     expect(shown.map(s => `${s.dimension}:${s.label}`).sort()).toEqual(['effect:acid synth', 'effect:vocal phrase']);
     for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
   });
+  it('decides synth lead, vocoder vocal, record stop, glitch effect and choir over their CLAP prompts and heads on clips', () => {
+    const labels = ['synth lead', 'vocoder vocal', 'record stop', 'glitch effect', 'choir'];
+    // synth lead, vocoder vocal and record stop showed from the CLAP prompt; glitch effect from a maybe head, choir from a head.
+    const heads = labels.map(label => ({ group: 'production' as const, label, score: .9,
+      model: (label === 'glitch effect' || label === 'choir' ? 'Trained head' : 'Music CLAP') as 'Trained head' | 'Music CLAP', ...(label === 'glitch effect' ? { maybe: true } : {}) }));
+    const outputs = labels.map(label => `cat:${label}`);
+    const low = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads)).map(s => s.label);
+    for (const label of labels) expect(low).not.toContain(label);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads)).filter(s => labels.includes(s.label));
+    expect(shown.map(s => `${s.dimension}:${s.label}`).sort()).toEqual(labels.map(l => `effect:${l}`).sort());
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
   it('shows whistle only from 0.90 (fresh test sets: the 0.4791 cutoff missed precision)', () => {
     expect(threshold('cat:whistle')).toBe(.9);
     expect(sources(track(4, { 'cat:whistle': .85 }))).toEqual([]);
@@ -260,7 +272,10 @@ describe('trained tagger long-recording rules', () => {
       'cat:laser': { rule: 'detectors', afterSeconds: 30 }, 'cat:riser': { rule: 'detectors', afterSeconds: 30 },
       'cat:reverberant': { rule: 'detectors', afterSeconds: 30 }, 'cat:conga': { rule: 'detectors', afterSeconds: 30 },
       'cat:vocal chant': { rule: 'detectors', afterSeconds: 30 }, 'cat:static noise': { rule: 'detectors', afterSeconds: 30 },
-      'cat:acid synth': { rule: 'detectors', afterSeconds: 30 }, 'cat:vocal phrase': { rule: 'detectors', afterSeconds: 30 } });
+      'cat:acid synth': { rule: 'detectors', afterSeconds: 30 }, 'cat:vocal phrase': { rule: 'detectors', afterSeconds: 30 },
+      'cat:synth lead': { rule: 'detectors', afterSeconds: 30 }, 'cat:vocoder vocal': { rule: 'detectors', afterSeconds: 30 },
+      'cat:record stop': { rule: 'detectors', afterSeconds: 30 }, 'cat:glitch effect': { rule: 'detectors', afterSeconds: 30 },
+      'cat:choir': { rule: 'detectors', afterSeconds: 30 } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
   it('needs the higher full-song drums threshold on long recordings only', () => {
@@ -279,7 +294,8 @@ describe('trained tagger long-recording rules', () => {
   });
   it.each(['cat:environmental sound', 'cat:foley', 'cat:turntable', 'cat:finger snap', 'cat:water ambience', 'cat:guitar', 'cat:violin / fiddle', 'cat:siren',
     'cat:flute', 'cat:marimba', 'cat:vibraphone', 'cat:crash cymbal', 'cat:whisper', 'cat:voice', 'cat:kick', 'cat:clap',
-    'cat:organ', 'cat:gong', 'cat:laser', 'cat:riser', 'cat:reverberant', 'cat:conga', 'cat:vocal chant', 'cat:static noise', 'cat:acid synth', 'cat:vocal phrase'])(
+    'cat:organ', 'cat:gong', 'cat:laser', 'cat:riser', 'cat:reverberant', 'cat:conga', 'cat:vocal chant', 'cat:static noise', 'cat:acid synth', 'cat:vocal phrase',
+    'cat:synth lead', 'cat:vocoder vocal', 'cat:record stop', 'cat:glitch effect', 'cat:choir'])(
     'keeps the tagger deciding %s up to 30 s, as the held-out scorer did, and defers on longer recordings', output => {
       const at = (duration: number, windows: number) => taggerDecisions({ revision: TAGGER_REVISION, windows, scores: { [output]: threshold(output) } }, duration)!
         .find(d => d.tag.output === output);
