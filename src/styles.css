@@ -887,22 +887,48 @@ textarea {
   position: relative;
   width: min(100%, 240px);
   margin: 0;
-  aspect-ratio: 360 / 272;
+  aspect-ratio: 236 / 128;
   min-width: 0;
 }
 
 .empty-state__constellation {
   display: block;
   height: 100%;
-  width: min(100%, 330px);
+  width: 100%;
   overflow: visible;
 }
 
-.empty-state__stellar-glow { animation: stellar-breathe 7s ease-in-out infinite; }
+/* One bright dash along the lime relationship. pathLength is 100, so the
+   gap closes the loop and a single packet stays on the segment. */
+.empty-state__bridge {
+  stroke-dasharray: 8 92;
+  animation: empty-state-dash 3.4s linear infinite;
+}
 
-@keyframes stellar-breathe {
-  0%, 100% { opacity: 0.65; }
+.empty-state__select-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: empty-state-select 3.6s ease-in-out infinite;
+}
+
+@keyframes empty-state-dash {
+  to { stroke-dashoffset: -100; }
+}
+
+@keyframes empty-state-select {
+  0%, 100% { opacity: 0.45; }
   50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-state__bridge {
+    animation: none !important;
+    stroke-dasharray: none;
+  }
+  .empty-state__select-ring {
+    animation: none !important;
+    opacity: 1;
+  }
 }
 
 .empty-state__visual-copy {
@@ -4266,7 +4292,7 @@ mark.passage-mark {
   }
   .empty-state__visual-copy { display: none; }
   .empty-state__hero {
-    width: 120px;
+    width: min(220px, 72%);
     margin: 0;
   }
   .empty-state__start { margin-top: 14px; }
@@ -4284,7 +4310,6 @@ mark.passage-mark {
   }
   .empty-state__hero,
   .empty-state__constellation {
-    width: 120px;
     margin-block: 0;
   }
 }
@@ -5746,20 +5771,7 @@ input {
   font-size: 11.5px;
   line-height: 1.45;
 }
-.empty-state__hero-canvas { width: 100%; height: 100%; }
 .empty-state__hero .empty-state__constellation { width: 100%; height: 100%; }
-.empty-state__orbit {
-  stroke: rgba(146, 132, 255, 0.28);
-  stroke-width: 1;
-}
-.empty-state__orbit--outer { stroke-dasharray: 3 7; }
-.empty-state__link {
-  stroke: rgba(119, 229, 255, 0.34);
-  stroke-width: 1.25;
-}
-.empty-state__node { fill: #b5a9ff; filter: drop-shadow(0 0 7px rgba(142, 125, 255, 0.65)); }
-.empty-state__node--core { fill: #e8e3ff; filter: drop-shadow(0 0 18px rgba(142, 125, 255, 0.9)); }
-.empty-state__node--cyan { fill: #8deaff; filter: drop-shadow(0 0 9px rgba(119, 229, 255, 0.85)); }
 .search-result-row:hover {
   transform: translateY(-1px);
   box-shadow: 0 3px 14px rgba(0, 0, 0, 0.35);

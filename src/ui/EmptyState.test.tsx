@@ -16,11 +16,6 @@ vi.mock('./ExportImportMenu', () => ({
   openGraphJsonPicker: vi.fn(),
   importGraphJsonFileWithToast: vi.fn(),
 }));
-vi.mock('./HeroConstellation', () => ({
-  default: function HeroConstellation() {
-    return null;
-  },
-}));
 
 const WORKSPACE_TOOLS = [
   'Graph and Library',
@@ -60,6 +55,13 @@ describe('EmptyState', () => {
     expect(screen.getByRole('region', { name: 'In the workspace' })).toHaveTextContent(/Add files, load the demo, or import a graph/);
 
     expect(await screen.findByRole('button', { name: /Current corpus/ })).toBeVisible();
+
+    const mark = document.querySelector('.empty-state__constellation');
+    expect(mark).toHaveAttribute('aria-hidden', 'true');
+    expect(mark?.querySelector('polygon')).toBeTruthy();
+    expect(mark?.querySelectorAll('circle').length).toBeGreaterThan(4);
+    expect(mark?.querySelector('.empty-state__bridge')).toBeTruthy();
+    expect(document.querySelector('.empty-state__hero canvas')).toBeNull();
   });
 
   it('opens the file pickers, demo, importer, settings and help', async () => {

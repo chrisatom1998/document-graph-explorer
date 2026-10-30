@@ -8,9 +8,6 @@ import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
 import { rememberCenterOrigin } from '../scene/ingestGesture';
 
 const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
-// Split out so the welcome screen paints without waiting on three.js; the flat
-// mark stands in until the hero resolves.
-const HeroConstellation = lazy(() => import('./HeroConstellation'));
 
 /**
  * Tools that exist in the workspace once a graph is open. Copy uses the
@@ -91,7 +88,7 @@ export default function EmptyState() {
       <div className="empty-state__card">
         <div className="empty-state__visual">
           <div className="empty-state__hero">
-            <Suspense fallback={<ConstellationSvg />}><HeroConstellation /></Suspense>
+            <ConstellationSvg />
           </div>
           <div className="empty-state__visual-copy">
             <p className="empty-state__visual-kicker">One map for both</p>
