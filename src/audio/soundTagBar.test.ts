@@ -60,7 +60,14 @@ const coefficientDigest = (h: { bias: number; weights: number[] }) => {
 };
 const RUNTIME_ELIGIBLE: [label: string, threshold: number, precision: number, recall: number][] = [
   ['kalimba', .8026, .74, .86], ['falling', .777, .61, .65], ['djembe', .9096, .62, .70], ['whistle', .8491, .62, .62],
-  ['bongo', .9228, .54, .625], ['tom', .8114, .64, .69],
+  ['bongo', .9228, .54, .625],
+];
+/** Also run on clips of 2.25 s or less (2026-10-29): with the app-path scorer that follows the summary's display rules,
+ * each passes 60/30 on the fresh test sets only when its head runs on short clips too (the one-shot model has no head for
+ * them). Spoken phrase and vocal laugh pass on both group halves; clave, drum fill and tom have short-clip positives in one
+ * half only. docs/evaluations/oneshot-heads-2026-10-29. */
+const ONE_SHOT_2026_10_29: [label: string, threshold: number][] = [
+  ['clave', .5], ['drum fill', .909], ['spoken phrase', .947], ['tom', .8114], ['vocal laugh', .965],
 ];
 /** Below 50/50 on those clips: viola and marimba stay maybe; conga, gliding and tambourine (precision < 0.45) do not ship. */
 const RUNTIME_MAYBE = ['viola', 'marimba'];
@@ -157,6 +164,11 @@ describe('the 50/50 shipping bar', () => {
 
   it.each(RUNTIME_DROPPED)('does not ship %s, which fails on the clips where it would run', label => {
     expect(learned.some(h => h.label === label)).toBe(false);
+  });
+
+  it.each(ONE_SHOT_2026_10_29)('runs %s on short clips at its unchanged cutoff', (label, threshold) => {
+    expect(head(label).oneShot).toBe(true);
+    expect(head(label).threshold).toBeCloseTo(threshold, 4);
   });
 
   it('keeps the one-shot safeguard on promoted one-shot heads', () => {

@@ -123,7 +123,8 @@ class ShippingTests(unittest.TestCase):
             self.assertGreaterEqual(evidence['precision'], .45)
             self.assertGreaterEqual(evidence['recall'], .30)
             actual = next(h for h in learned['heads'] if h['label'] == row['label'])
-            self.assertFalse(actual.get('oneShot', False))
+            # tom was later cleared for short clips on the app-path rescore (docs/evaluations/oneshot-heads-2026-10-29).
+            self.assertEqual(actual.get('oneShot', False), row['label'] == 'tom')
             self.assertEqual(actual.get('maybe', False), row['tier'] == 'maybe')
         for label in ('conga', 'gliding', 'tambourine'):
             self.assertNotIn(label, [h['label'] for h in learned['heads']])
