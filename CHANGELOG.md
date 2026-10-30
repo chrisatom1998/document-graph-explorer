@@ -23,6 +23,7 @@ This project follows the Keep a Changelog format.
 - OpenUSD export: **Data → Export OpenUSD scene** serializes the graph as a composed `.usda` stage — document/topic nodes as Sphere prims carrying a `docGraph:` custom-attribute schema (title, topics, entities, keywords, status), edges as one BasisCurves prim per kind with parallel weight/evidence arrays, translucent cluster hulls, and a `graphView` variantSet switching detailed vs summary views. Validated against stock `usdchecker`. A new Python pipeline CLI (`tools/usd_pipeline/usd_pipeline.py`, Pixar `usd-core`) re-validates every schema invariant, exercises the variants through composition, and packages `.usdz`; see `docs/openusd-pipeline.md`.
 
 ### Changed
+- Welcome screen matches the Resonance workspace. The headline covers sounds and documents, the demo is labeled as 100 sample documents, and the card lists the real workspace tools (graph, library, sample assistant, search, filters, insights, export) with working entry points for adding files, opening a folder, loading the demo, importing a graph, Settings and Help.
 - Roadmaps and SECURITY.md now match the shipped BGE-small embedding model (leftover unused `all-MiniLM-L6-v2` tokenizer files removed).
 - OpenRouter chat and enrichment LLM clients honour the `Retry-After` response header on 429/502/503 (shared `parseRetryAfter` helper, capped at 60s) before falling back to exponential backoff.
 

@@ -203,6 +203,12 @@
 .rs-root { transition: grid-template-columns 200ms var(--ease-out); }
 /* No files yet: the welcome card is the whole screen, so the side columns wait. */
 .rs-root--empty { grid-template-columns: 1fr; grid-template-areas: 'top' 'stage'; }
+/* The brand column is fixed to the sidebar width, which clips the empty-state
+   tagline even though the middle of the bar is free. Let it size to the words
+   on wide screens; the compact header below owns its own grid. */
+@media (min-width: 1101px) {
+  .rs-root--empty .rs-top { grid-template-columns: auto 1fr auto; }
+}
 .app-root:has(.rs-root--empty) { --rs-left: 0px; --rs-right: 0px; }
 .rs-import--folder { padding: 8px 16px; }
 .rs-import--folder strong { font-size: 13px; font-weight: 500; }
