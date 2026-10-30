@@ -41,6 +41,7 @@ This project follows the Keep a Changelog format.
 
 ### Security
 - Updated `electron` to 43.8.1 (fixes GHSA-jr5w-w6x2-84p9, mitigation for compromised eMudhra intermediate certificates in Chromium networking and Node.js `tls` / `https` / `fetch`). Pinned exactly so the install stays on 43.8.1.
+- Dev-only lockfile patches, staying on the same major the parents already allow: `undici` 7.30.0 → 7.30.1 and the nested `node-gyp` copy 6.29.0 → 6.29.1, `brace-expansion` 1.1.15 → 1.1.21, `fast-uri` 3.1.8 → 3.1.9, and `vitest` / `@vitest/mocker` 4.1.11 → 4.1.12.
 - Updated `pdfjs-dist` to 6.4.299 (fixes GHSA-hq66-cqwq-w95j, arbitrary JavaScript execution when opening a malicious PDF), `electron` to 43.7.7 (sandbox-inheritance and protocol-handler advisories), and `vitest` to 4.1.11 (`@vitest/mocker` path traversal).
 - `@huggingface/transformers` 4.2.0 → 4.3.0 together with its coupled `onnxruntime-web` pin (1.26.0-dev → 1.31.0-dev.20260914); the two must move as a pair or the bundle ends up with two ONNX runtimes. Pulls in patched `sharp` 0.35 and `onnxruntime-node` 1.30 (clears the libvips/libheif and adm-zip advisories). Verified end to end in the browser: demo-corpus embeddings and local audio inference both run on the new runtime, and the air-gap sanitizer still finds zero external hosts.
 - `openai` is now a devDependency: it is used only by the dev-server-only DJ assistant plugins and no longer sits in the production dependency tree.
