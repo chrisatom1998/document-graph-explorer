@@ -24,8 +24,9 @@ with the PR's base branch (main), not with the fixed 0.60 bar, so a tag that is 
 - Jamendo audio is read in byte ranges from `cdn.freesound.org`, checked against the dataset's published
   SHA-256, and cut the same way as before. A 503/429 retries the same range for up to 10 minutes. Tracks a
   shard already finished stay cached, and a failed shard is tried once more in the same run. Re-running the
-  failed jobs continues from those tracks. The downloader ships with this workflow; the base commit still
-  supplies the selector and the scorers.
+  failed jobs continues from those tracks. The workflow's downloader is used only while the base commit
+  still streams whole archives; once the base has the range downloader, that copy is what runs. The selector
+  and the scorers always come from the base.
 - A PR labelled `full-accuracy-check`: also the full set (`accuracy-gate-full.yml`, advisory).
 
 The fast slice is fixed by labels and ids only (`scripts/accuracy-gate/subset.mjs`): rarest class first, tracks in id
@@ -53,9 +54,10 @@ it. A change that trades one number for another on purpose (say precision for re
 only as a deliberate decision, and say so in the PR.
 
 **Harness integrity.** Scorers, manifests and the subset rule come from the base commit, so a PR can't change how it is
-judged. The Jamendo downloader is the exception: it is the copy in the workflow under test, and it still refuses a
-track whose bytes do not match the published SHA-256. The app's own `scripts/short-clip-upload-eval.mjs` drives the
-UI (it has to match the app's own buttons).
+judged. The Jamendo downloader is the base's copy once that copy reads by range; until then the workflow uses its
+own, because the base copy cannot survive a CDN 503. Either copy refuses a track whose bytes do not match the
+published SHA-256. The app's own `scripts/short-clip-upload-eval.mjs` drives the UI (it has to match the app's own
+buttons).
 
 **Making it block merges.** In the repository's branch protection (or ruleset) for main, add
 "Accuracy gate / held-out / verdict" as a required status check.

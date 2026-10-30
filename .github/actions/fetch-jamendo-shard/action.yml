@@ -25,17 +25,23 @@ runs:
       with:
         ref: ${{ inputs.harness }}
     # The harness is the base commit so a PR cannot change how scores are judged. select-jamendo.py stays that copy.
-    # The downloader is not a scorer: every kept track still has to match the dataset's published SHA-256. It ships
-    # with this workflow so a resilience fix runs on the PR that adds it. Until it is on main, the base checkout is
-    # the old script that restarts a whole 1.8 GB tar after five tries.
+    # The downloader below is replaced with this workflow's copy only while the base still streams whole archives.
     - uses: actions/checkout@v7
       with:
         ref: ${{ github.sha }}
         path: workflow-src
-    - name: Use this workflow's Jamendo downloader
+    - name: Use this workflow's Jamendo downloader until the base has it
       shell: bash
       run: |
-        cp workflow-src/scripts/holdout-r3/fetch-jamendo.py scripts/holdout-r3/fetch-jamendo.py
+        # Once main has the range downloader, a PR cannot swap in its own copy. Until then the base
+        # script still streams whole archives, so this workflow's copy is what can survive a 503.
+        if grep -q 'class RangeSource' scripts/holdout-r3/fetch-jamendo.py; then
+          echo "Base harness already has the range downloader."
+        else
+          cp workflow-src/scripts/holdout-r3/fetch-jamendo.py scripts/holdout-r3/fetch-jamendo.py
+          echo "Base harness still streams whole archives; using this workflow's downloader."
+        fi
+        grep -q 'class RangeSource' scripts/holdout-r3/fetch-jamendo.py
         grep -q 'checksum mismatch' scripts/holdout-r3/fetch-jamendo.py
     - name: Restore this shard's tracks
       id: part
@@ -63,7 +69,9 @@ runs:
       shell: bash
       run: |
         command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
-        python3 scripts/holdout-r3/fetch-jamendo.py "$DOCS/jamendo-manifest.json" \
+        # 45m stays under the job's 60m. A job timeout cancels the runner and skips the partial-cache
+        # save; a step that exits on its own still has the wavs for that save.
+        timeout 45m python3 scripts/holdout-r3/fetch-jamendo.py "$DOCS/jamendo-manifest.json" \
           "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ inputs.shard }}/20 gate-audio/jamendo
     - name: Save this shard's tracks
       if: success() && steps.part.outputs.cache-hit != 'true'
@@ -73,7 +81,7 @@ runs:
         key: ${{ inputs.audio-cache }}-jamendo-part-${{ inputs.shard }}-of-20
     - name: See whether a failed attempt still has tracks worth keeping
       id: keep
-      if: failure() && steps.part.outputs.cache-hit != 'true'
+      if: (failure() || cancelled()) && steps.part.outputs.cache-hit != 'true'
       shell: bash
       run: |
         if find gate-audio/jamendo -name '*.wav' -size +44c 2>/dev/null | grep -q .; then
@@ -83,7 +91,7 @@ runs:
           echo "no finished tracks to keep"
         fi
     - name: Keep the tracks this attempt finished
-      if: failure() && steps.keep.outputs.keep == 'true'
+      if: (failure() || cancelled()) && steps.keep.outputs.keep == 'true'
       uses: actions/cache/save@v6
       with:
         path: gate-audio/jamendo

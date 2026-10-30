@@ -2,8 +2,10 @@
 import hashlib
 import importlib.util
 import io
+import json
 import random
 import tarfile
+import tempfile
 import threading
 import urllib.error
 import urllib.request
@@ -160,6 +162,22 @@ class RangeSourceTests(unittest.TestCase):
         # A byte that arrives clears the streak, so one more blip does not carry the old count.
         self.assertEqual(body.failures, 0)
 
+    def test_a_dropped_body_is_retried_and_the_next_read_is_returned(self):
+        class Drop(FakeResp):
+            def read(self, n=-1):
+                self.reads += 1
+                raise ConnectionResetError('connection dropped')
+
+        payload = b'abcdefghij'
+        dropped = Drop(206, payload, {'Content-Range': 'bytes 0-9/10', 'Content-Length': '10'})
+        ok = FakeResp(206, payload, {'Content-Range': 'bytes 0-9/10', 'Content-Length': '10'})
+        opener = Script([dropped, ok])
+        body = source(self.mod, opener, max_attempts=5, budget=10_000)
+        self.assertEqual(body.read(0, 10), payload)
+        self.assertEqual(len(opener.requests), 2)
+        self.assertEqual(dropped.reads, 1)
+        self.assertEqual(body.failures, 0)
+
     def test_416_is_the_end_of_the_archive_and_is_not_retried(self):
         opener = Script([http_error(416)])
         body = source(self.mod, opener, max_attempts=5, budget=10_000)
@@ -168,9 +186,9 @@ class RangeSourceTests(unittest.TestCase):
         self.assertEqual(len(opener.requests), 1)
 
 
-def tar_bytes(members):
+def tar_bytes(members, fmt=tarfile.PAX_FORMAT):
     buf = io.BytesIO()
-    with tarfile.open(fileobj=buf, mode='w') as tar:
+    with tarfile.open(fileobj=buf, mode='w', format=fmt) as tar:
         for name, payload in members:
             info = tarfile.TarInfo(name)
             info.size = len(payload)
@@ -206,6 +224,48 @@ class WalkTests(unittest.TestCase):
             raise self.mod.ArchiveEnded()
         with self.assertRaises(ValueError):
             self.mod.walk_tar(read_at, {'00/a.mp3': True}, {'00/a.mp3': 'ab'}, lambda *_args: None)
+
+    def test_pax_and_gnu_long_names_resolve_to_the_last_two_components(self):
+        payload = b'long-name-track'
+        rel = '80/' + ('n' * 90) + '.low.mp3'
+        want = {rel: hashlib.sha256(payload).hexdigest()}
+        for fmt in (tarfile.PAX_FORMAT, tarfile.GNU_FORMAT):
+            blob = tar_bytes([(rel, payload)], fmt)
+            found = {}
+            self.mod.walk_tar(lambda start, length: blob[start:start + length], {rel: True}, want,
+                              lambda name, data: found.__setitem__(name, data))
+            self.assertEqual(found, {rel: payload}, fmt)
+
+    def test_main_leaves_a_stamped_track_on_disk_and_does_not_fetch(self):
+        digest = hashlib.sha256(b'already-fetched').hexdigest()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = root / 'audio'
+            out.mkdir()
+            (out / 'track-1.wav').write_bytes(b'RIFFxxxxWAVE' + b'\0' * 40)
+            (out / 'track-1.wav.sha256').write_text(digest + '\n')
+            manifest = root / 'manifest.json'
+            manifest.write_text(json.dumps({'items': [{
+                'id': 'track-1', 'archivePath': '13/track.low.mp3', 'start': 0, 'end': 1,
+            }]}))
+            sums = root / 'sums.txt'
+            sums.write_text(f'{digest} 13/track.low.mp3\n')
+            real_source = self.mod.RangeSource
+
+            def refuse(*_args, **_kw):
+                raise AssertionError('a stamped track was fetched again')
+
+            self.mod.RangeSource = refuse
+            try:
+                from contextlib import redirect_stdout
+                buf = io.StringIO()
+                with redirect_stdout(buf):
+                    self.mod.main([str(manifest), str(sums), '13/20', str(out)])
+            finally:
+                self.mod.RangeSource = real_source
+            text = buf.getvalue()
+            self.assertIn('folder 13: 1 tracks already on disk', text)
+            self.assertIn('shard 13/20: 1 tracks from 1 folders', text)
 
     def test_checksum_mismatch_is_not_stored(self):
         payload = b'hello jamendo'

@@ -141,9 +141,11 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     steps:
-      # Local actions must exist before the runner can load their steps. The action itself then checks out the
-      # pinned harness used for the frozen manifests and selection.
+      # A local action is loaded from the runner's workspace. Without this checkout the job dies on
+      # "Can't find action.yml" before the action's own checkout can run. The action then checks out the harness.
       - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions
       - uses: ./.github/actions/fetch-jamendo-shard
         with:
           harness: ${{ needs.plan.outputs.harness }}
@@ -156,6 +158,8 @@ jobs:
     # The first pass keeps whatever it finished. This pass runs only when a shard failed, restores that partial
     # cache, and fetches the folders still missing. Shards that already completed hit their cache and return.
     needs: [plan, fetch-jamendo]
+    # !cancelled() is a status check, so GitHub does not also require success(). Without it this job is
+    # skipped whenever fetch-jamendo fails, which is the only time it should run.
     if: ${{ !cancelled() && needs.plan.outputs.run == 'true' && needs.plan.outputs.jamendo_cached != 'true' && needs.fetch-jamendo.result == 'failure' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -166,6 +170,8 @@ jobs:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     steps:
       - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions
       - uses: ./.github/actions/fetch-jamendo-shard
         with:
           harness: ${{ needs.plan.outputs.harness }}

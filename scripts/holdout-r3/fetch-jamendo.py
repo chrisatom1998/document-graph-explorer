@@ -162,7 +162,16 @@ class RangeSource:
                     _close_quietly(resp)
                     self._retry(_Status(status, headers))
                     continue
-                data = resp.read(length + 1)
+                try:
+                    data = resp.read(length + 1)
+                except ArchiveEnded:
+                    raise
+                except Exception as e:
+                    # A timeout or reset while the body is in flight is the same kind of blip as a 503 on open.
+                    _close_quietly(resp)
+                    resp = None
+                    self._retry(e)
+                    continue
                 _close_quietly(resp)
                 resp = None
                 if len(data) != length:
@@ -260,8 +269,10 @@ def main(argv):
     manifest, sums, shard, out = argv
     i, n = map(int, shard.split('/'))
     os.makedirs(out, exist_ok=True)
-    want = {line.split()[1]: line.split()[0] for line in open(sums)}
-    items = {it['archivePath']: it for it in json.load(open(manifest))['items']}
+    with open(sums) as fh:
+        want = {line.split()[1]: line.split()[0] for line in fh}
+    with open(manifest) as fh:
+        items = {it['archivePath']: it for it in json.load(fh)['items']}
     folders = sorted({int(p.split('/')[0]) for p in items if int(p.split('/')[0]) % n == i})
     done = 0
     for f in folders:
