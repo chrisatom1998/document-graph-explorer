@@ -38,7 +38,8 @@ test('unavailable models stay explicit through correction, cancellation and rest
     await expect(page.locator('.audio-preview')).toBeVisible();
   };
   await openTrack();
-  await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('Analysis: partial');
+  // The background pass finishes after the quick estimate; on slow runners that takes over 30 s.
+  await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('Analysis: partial', { timeout: 120_000 });
   const details = page.getByText('Technical details', { exact: true });
   if (await details.locator('..').getAttribute('open') === null) await details.click();
   await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('AST: failed');
