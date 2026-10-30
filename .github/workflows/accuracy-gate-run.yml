@@ -11,9 +11,12 @@ name: Accuracy gate (shared steps)
 # until the gate is on the base branch). Audio is fetched from the datasets on a cache miss and cached; never committed.
 # Only aggregate numbers are reported.
 #
-# accuracy-gate.yml is what runs this on a Monday schedule and on workflow_dispatch. The schedule cannot be added
-# here: a reusable workflow is only started by workflow_call. A scheduled or manual run is report-only, like a push
-# to main, and it re-saves the shared audio cache and this commit's baseline.
+# accuracy-gate.yml runs this on a Monday schedule and on workflow_dispatch. The schedule cannot be added here: a
+# reusable workflow is only started by workflow_call. A scheduled or manual run is report-only, like a push to main,
+# and it re-saves the shared audio cache and this commit's baseline. accuracy-gate-cache.yml restores that audio
+# cache every day so a missed Monday does not let it age out at 7 days. The Jamendo downloader is the copy in this
+# workflow, not the base harness: it only reads ranges and checks the published SHA-256, and finished tracks stay
+# on disk when a later folder gets a 503.
 on:
   workflow_call:
     inputs:
@@ -129,49 +132,43 @@ jobs:
     needs: plan
     if: needs.plan.outputs.run == 'true' && needs.plan.outputs.jamendo_cached != 'true'
     runs-on: ubuntu-latest
-    # Streaming a shard's MTG-Jamendo archives can take well over an hour; each shard caches its own tracks, so a
-    # re-run only fetches the shards that didn't finish.
-    timeout-minutes: 240
+    # One shard reads a few small ranges per folder, then waits up to 10 minutes on a 503. A finished folder is
+    # cached even when a later one fails, so the retry job (and a re-run) does not download it again.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
-      max-parallel: 2   # six parallel archive streams were drawing HTTP 503s from cdn.freesound.org
+      max-parallel: 2   # six parallel full-archive streams were drawing HTTP 503s from cdn.freesound.org
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     steps:
-      - uses: actions/checkout@v7
+      - uses: ./.github/actions/fetch-jamendo-shard
         with:
-          ref: ${{ needs.plan.outputs.harness }}
-      - name: Restore this shard's tracks from an earlier run
-        id: part
-        uses: actions/cache/restore@v6
+          harness: ${{ needs.plan.outputs.harness }}
+          shard: ${{ matrix.shard }}
+          mode: ${{ inputs.mode }}
+          pass: '1'
+          audio-cache: ${{ env.AUDIO_CACHE }}
+
+  fetch-jamendo-retry:
+    # The first pass keeps whatever it finished. This pass runs only when a shard failed, restores that partial
+    # cache, and fetches the folders still missing. Shards that already completed hit their cache and return.
+    needs: [plan, fetch-jamendo]
+    if: needs.plan.outputs.run == 'true' && needs.plan.outputs.jamendo_cached != 'true' && needs.fetch-jamendo.result == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    steps:
+      - uses: ./.github/actions/fetch-jamendo-shard
         with:
-          path: gate-audio/jamendo
-          key: ${{ env.AUDIO_CACHE }}-jamendo-part-${{ matrix.shard }}-of-20
-      - name: Check the frozen selection against the pinned dataset metadata
-        if: steps.part.outputs.cache-hit != 'true'
-        run: |
-          M="$RUNNER_TEMP/mj"
-          for f in data/splits/split-0/autotagging_instrument-test.tsv data/raw_30s_cleantags.tsv \
-                   derived/music-classification-annotations/music-classification-annotations-clean.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
-            mkdir -p "$M/$(dirname $f)"; curl -fsSL --retry 6 -o "$M/$f" "$JAMENDO_META/$f"
-          done
-          python3 scripts/holdout-r3/select-jamendo.py "$M"
-      - name: Fetch and cut this shard's tracks
-        if: steps.part.outputs.cache-hit != 'true'
-        run: |
-          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
-          python3 scripts/holdout-r3/fetch-jamendo.py "$DOCS/jamendo-manifest.json" \
-            "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ matrix.shard }}/20 gate-audio/jamendo
-      - uses: actions/cache/save@v6
-        if: steps.part.outputs.cache-hit != 'true'
-        with:
-          path: gate-audio/jamendo
-          key: ${{ env.AUDIO_CACHE }}-jamendo-part-${{ matrix.shard }}-of-20
-      - uses: actions/upload-artifact@v6
-        with:
-          name: gate-audio-jamendo-${{ inputs.mode }}-${{ matrix.shard }}
-          path: gate-audio/jamendo
-          retention-days: 3
+          harness: ${{ needs.plan.outputs.harness }}
+          shard: ${{ matrix.shard }}
+          mode: ${{ inputs.mode }}
+          pass: '2'
+          audio-cache: ${{ env.AUDIO_CACHE }}
 
   fetch-mtgkey:
     needs: plan
@@ -197,18 +194,20 @@ jobs:
 
   cache-audio:
     # Caches written on main are shared with every PR; a PR's own caches only help its re-runs.
-    needs: [fetch-jamendo, fetch-mtgkey]
-    if: ${{ !cancelled() && (needs.fetch-jamendo.result == 'success' || needs.fetch-mtgkey.result == 'success') }}
+    # The combined Jamendo key is written only when every shard finished (first pass, or the retry). A partial
+    # shard must not become that key, or the next run would treat a short set as complete and skip the fetch.
+    needs: [fetch-jamendo, fetch-jamendo-retry, fetch-mtgkey]
+    if: ${{ !cancelled() && (needs.fetch-jamendo.result == 'success' || needs.fetch-jamendo-retry.result == 'success' || needs.fetch-mtgkey.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v7
-        if: needs.fetch-jamendo.result == 'success'
+        if: needs.fetch-jamendo.result == 'success' || needs.fetch-jamendo-retry.result == 'success'
         with:
           pattern: gate-audio-jamendo-${{ inputs.mode }}-*
           path: gate-audio/jamendo
           merge-multiple: true
       - uses: actions/cache/save@v6
-        if: needs.fetch-jamendo.result == 'success'
+        if: needs.fetch-jamendo.result == 'success' || needs.fetch-jamendo-retry.result == 'success'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo
@@ -224,10 +223,10 @@ jobs:
           key: ${{ env.AUDIO_CACHE }}-mtgkey
 
   analyse:
-    needs: [plan, fetch-jamendo, fetch-mtgkey]
+    needs: [plan, fetch-jamendo, fetch-jamendo-retry, fetch-mtgkey]
     if: >-
       ${{ !cancelled() && needs.plan.outputs.run == 'true'
-      && contains(fromJSON('["success","skipped"]'), needs.fetch-jamendo.result)
+      && (needs.fetch-jamendo.result == 'success' || needs.fetch-jamendo-retry.result == 'success' || (needs.fetch-jamendo.result == 'skipped' && needs.fetch-jamendo-retry.result == 'skipped'))
       && contains(fromJSON('["success","skipped"]'), needs.fetch-mtgkey.result) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120

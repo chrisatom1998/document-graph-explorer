@@ -13,10 +13,19 @@ with the PR's base branch (main), not with the fixed 0.60 bar, so a tag that is 
   that later PRs compare with, so a PR normally analyses only itself. If main's numbers for the PR's
   base commit aren't cached (main's run still going or skipped, or the cache expired after 7 idle days), the PR
   analyses the base commit too.
-- Monday 06:15 UTC, and Actions → Accuracy gate → Run workflow on main: the same full set. That restores the
-  shared audio cache and the current commit's baseline inside the 7-day window even when no merge lands. The
-  manual run is what refills a cache that has already expired; the Monday schedule starts once this workflow is
-  on main.
+- Monday 06:15 UTC, and Actions → Accuracy gate → Run workflow on main: the same full set. That re-saves the
+  shared audio cache and the current commit's baseline. The manual run is what refills a cache that has already
+  expired; the Monday schedule starts once this workflow is on main. Schedules and pushes share one queue, so a
+  busy Monday can drop the cron.
+- Every day at 07:30 UTC (`accuracy-gate-cache.yml`): restore the shared audio cache, and the newest full-set
+  baseline, so a missed Monday does not age them out at 7 days. A miss fails that workflow and means the cache
+  is already gone; Run workflow on the Accuracy gate (main) is what fills it again. The daily restore starts
+  once that file is on main.
+- Jamendo audio is read in byte ranges from `cdn.freesound.org`, checked against the dataset's published
+  SHA-256, and cut the same way as before. A 503/429 retries the same range for up to 10 minutes. Tracks a
+  shard already finished stay cached, and a failed shard is tried once more in the same run. Re-running the
+  failed jobs continues from those tracks. The downloader ships with this workflow; the base commit still
+  supplies the selector and the scorers.
 - A PR labelled `full-accuracy-check`: also the full set (`accuracy-gate-full.yml`, advisory).
 
 The fast slice is fixed by labels and ids only (`scripts/accuracy-gate/subset.mjs`): rarest class first, tracks in id
@@ -44,7 +53,9 @@ it. A change that trades one number for another on purpose (say precision for re
 only as a deliberate decision, and say so in the PR.
 
 **Harness integrity.** Scorers, manifests and the subset rule come from the base commit, so a PR can't change how it is
-judged. The app's own `scripts/short-clip-upload-eval.mjs` drives the UI (it has to match the app's own buttons).
+judged. The Jamendo downloader is the exception: it is the copy in the workflow under test, and it still refuses a
+track whose bytes do not match the published SHA-256. The app's own `scripts/short-clip-upload-eval.mjs` drives the
+UI (it has to match the app's own buttons).
 
 **Making it block merges.** In the repository's branch protection (or ruleset) for main, add
 "Accuracy gate / held-out / verdict" as a required status check.

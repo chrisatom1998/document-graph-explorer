@@ -3,29 +3,37 @@
 Usage: python3 scripts/holdout-r3/fetch-jamendo.py <manifest.json> <raw_30s_audio-low_sha256_tracks.txt> <shard i/n> <audio-out-dir>
 
 Folder f (00-99, the last two digits of the track id) belongs to shard i when f % n == i. Each needed folder's
-raw_30s/audio-low tar is streamed from the dataset's MTG mirror without being stored; only selected tracks are kept,
-each checked against the dataset's published per-track SHA-256, then cut to the manifest's excerpt as 44.1 kHz WAV.
+raw_30s/audio-low tar is an uncompressed ~1.8 GB archive. Streaming one until the wanted tracks appear takes about
+12 minutes and is what cdn.freesound.org answers with HTTP 503 when several shards do it at once. The mirror serves
+byte ranges, so this walks the 512-byte member headers and downloads only the selected members.
 
-cdn.freesound.org answers HTTP 503 when several shards stream those archives at once. Each folder is read through a
-stream that retries 10 times with jittered backoff, waits at least the server's Retry-After, and continues a dropped
-body with an HTTP Range request so a blip does not throw away the bytes already read.
+A 503 or 429 waits out a per-folder budget (jittered backoff, Retry-After as a floor) and then retries that same
+range. Tracks already cut to wav, with a stamp of the verified source SHA-256, are left in place, so a later run of
+the same shard does not download them again.
 """
-import datetime, email.utils, hashlib, http.client, json, os, random, subprocess, sys, tarfile, time, urllib.error, urllib.request
+import datetime, email.utils, hashlib, json, os, random, subprocess, sys, time, urllib.error, urllib.request
 
 URL = 'https://cdn.freesound.org/mtg-jamendo/raw_30s/audio-low/raw_30s_audio-low-{:02d}.tar'
-# Extra attempts after the first failure of a streak. A byte that arrives clears the streak.
-RETRIES = 10
-# Stops a body that delivers one byte and then dies from retrying for the whole job.
-MAX_RECONNECTS = 40
+# Safety cap on one range. A 30 s low-quality mp3 is far under this; a header that asks for more is not fetched.
+MAX_MEMBER = 16_000_000
+# Attempts for one range, and seconds of backoff one folder may spend. Whichever runs out first stops the folder.
+# ~10 minutes rides out a short CDN blip; a longer outage leaves finished tracks on disk for the next run.
+MAX_ATTEMPTS = 20
+RETRY_BUDGET = 600.0
 # 4xx that will not start working if we ask again. 408/429 are temporary and are not in this set.
 PERMANENT_HTTP = frozenset({400, 401, 403, 404, 410})
 BACKOFF_BASE = 5.0
 BACKOFF_CAP = 60.0
 RETRY_AFTER_CAP = 120.0
+USER_AGENT = 'dge-accuracy-gate'
 
 
 class FetchFailed(Exception):
-    """The archive could not be streamed after the retry budget was spent."""
+    """A range could not be read after the retry budget was spent."""
+
+
+class ArchiveEnded(Exception):
+    """The server has no bytes at this offset (HTTP 416). The tar walk treats that as end of archive."""
 
 
 def retry_after_seconds(err, now=None):
@@ -85,13 +93,6 @@ def _content_range(headers):
         return None, None
 
 
-def _header_int(headers, name):
-    raw = headers.get(name) if headers else None
-    if raw is None: return None
-    raw = str(raw).strip()
-    return int(raw) if raw.isdigit() else None
-
-
 def _close_quietly(obj):
     close = getattr(obj, 'close', None)
     if close is None: return
@@ -99,112 +100,160 @@ def _close_quietly(obj):
     except Exception: pass
 
 
-class ResumableBody:
-    """File-like HTTP body. A dropped read continues at the next byte with Range."""
+class _Status(OSError):
+    def __init__(self, code, headers):
+        super().__init__(f'HTTP {code}')
+        self.code, self.headers = code, headers
 
-    def __init__(self, url, opener=urllib.request.urlopen, timeout=120, sleep=time.sleep, rng=None, log=print, label='fetch'):
+
+class RangeSource:
+    """Reads exact byte ranges. A 503/429/dropped connection retries the same range; a 200 is never used."""
+
+    def __init__(self, url, opener=urllib.request.urlopen, timeout=60, sleep=time.sleep, rng=None, log=print,
+                 label='fetch', max_attempts=MAX_ATTEMPTS, budget=RETRY_BUDGET):
         self.url, self.opener, self.timeout = url, opener, timeout
         self.sleep, self.rng, self.log, self.label = sleep, rng or random.Random(), log, label
-        self.pos, self.length, self.failures, self.reconnects = 0, None, 0, 0
-        self._resp, self._eof = None, False
+        self.max_attempts, self.budget = max_attempts, budget
+        self.failures, self.waited = 0, 0.0
 
-    def __enter__(self): return self
-    def __exit__(self, *exc): self.close()
-    def close(self): self._drop()
-
-    def _drop(self):
-        resp, self._resp = self._resp, None
-        _close_quietly(resp)
-
-    def _retry(self, err, progress):
+    def _retry(self, err):
         code = getattr(err, 'code', None)
         if code in PERMANENT_HTTP:
             raise FetchFailed(f'{self.label} could not be fetched: {err}') from err
-        self.reconnects += 1
-        if progress: self.failures = 0
-        self.failures += 1
-        if self.failures > RETRIES or self.reconnects > MAX_RECONNECTS:
+        delay = retry_delay(self.failures, retry_after_seconds(err), self.rng)
+        if self.failures + 1 > self.max_attempts or self.waited + delay > self.budget:
             raise FetchFailed(f'{self.label} could not be fetched: {err}') from err
-        delay = retry_delay(self.failures - 1, retry_after_seconds(err), self.rng)
-        where = f' at byte {self.pos}' if self.pos else ''
-        self.log(f'{self.label} attempt {self.failures}{where}: {err}; waiting {delay:.1f}s')
+        self.failures += 1
+        self.waited += delay
+        self.log(f'{self.label}: {err}; waiting {delay:.1f}s (attempt {self.failures}, {self.waited:.0f}s of {self.budget:.0f}s budget)')
         self.sleep(delay)
 
-    def _open(self):
-        while not self._eof:
-            req = urllib.request.Request(self.url)
-            if self.pos: req.add_header('Range', f'bytes={self.pos}-')
+    def read(self, start, length):
+        if length == 0: return b''
+        if length < 0 or length > MAX_MEMBER:
+            raise FetchFailed(f'{self.label}: refusing a {length}-byte range at {start}')
+        while True:
+            req = urllib.request.Request(self.url, headers={'Range': f'bytes={start}-{start + length - 1}', 'User-Agent': USER_AGENT})
+            resp = None
             try:
-                resp = self.opener(req, timeout=self.timeout)
-            except Exception as e:
-                _close_quietly(e)
-                if getattr(e, 'code', None) == 416 and self.pos and (self.length is None or self.pos >= self.length):
-                    self._eof = True
-                    return
-                self._retry(e, progress=False)
-                continue
-            status = getattr(resp, 'status', 200)
-            headers = getattr(resp, 'headers', {}) or {}
-            start, total = _content_range(headers)
-            if self.pos and status != 206:
-                _close_quietly(resp)
-                self._retry(OSError(f'HTTP {status} ignored Range at byte {self.pos}'), progress=False)
-                continue
-            if self.pos and start not in (None, self.pos):
-                _close_quietly(resp)
-                self._retry(OSError(f'Content-Range started at {start}, wanted {self.pos}'), progress=False)
-                continue
-            if total is not None and self.length not in (None, total):
-                _close_quietly(resp)
-                self._retry(OSError(f'length changed from {self.length} to {total}'), progress=False)
-                continue
-            if total is not None:
-                self.length = total
-            else:
-                size = _header_int(headers, 'Content-Length')
-                if size is not None:
-                    self.length = size if not self.pos else self.pos + size
-                elif self.pos:
+                try:
+                    resp = self.opener(req, timeout=self.timeout)
+                except ArchiveEnded:
+                    raise
+                except Exception as e:
+                    _close_quietly(e)
+                    if getattr(e, 'code', None) == 416:
+                        raise ArchiveEnded() from e
+                    self._retry(e)
+                    continue
+                status = getattr(resp, 'status', None)
+                if status is None: status = getattr(resp, 'code', 200)
+                headers = getattr(resp, 'headers', None)
+                if status == 416:
                     _close_quietly(resp)
-                    self._retry(OSError(f'ranged response at byte {self.pos} had no length'), progress=False)
+                    raise ArchiveEnded()
+                if status != 206:
+                    # A 200 is the whole archive. Reading it would pull ~1.8 GB and splice it into a header walk.
+                    _close_quietly(resp)
+                    self._retry(_Status(status, headers))
                     continue
-            self._resp = resp
-            return
+                got, _total = _content_range(headers)
+                if got not in (None, start):
+                    _close_quietly(resp)
+                    self._retry(_Status(status, headers))
+                    continue
+                data = resp.read(length + 1)
+                _close_quietly(resp)
+                resp = None
+                if len(data) != length:
+                    self._retry(OSError(f'short range at {start}: {len(data)} of {length} bytes'))
+                    continue
+                self.failures = 0
+                return data
+            finally:
+                if resp is not None: _close_quietly(resp)
 
-    def read(self, size=-1):
-        if self._eof or size == 0: return b''
-        want_all = size is None or size < 0
-        buf = bytearray()
-        while want_all or len(buf) < size:
-            if self._resp is None and not self._eof: self._open()
-            if self._eof or self._resp is None: break
-            need = 256 * 1024 if want_all else size - len(buf)
-            try:
-                data = self._resp.read(need)
-            except http.client.IncompleteRead as e:
-                data = e.partial or b''
-                self._drop()
-                if data:
-                    buf.extend(data); self.pos += len(data); self.failures = 0
-                if self.length is not None and self.pos >= self.length:
-                    self._eof = True
-                    break
-                if not want_all and len(buf) >= size: break
-                self._retry(e, progress=bool(data))
-                continue
-            except Exception as e:
-                self._drop()
-                self._retry(e, progress=False)
-                continue
-            if not data:
-                if self.length is not None and self.pos < self.length:
-                    self._drop()
-                    self._retry(EOFError(f'short read at byte {self.pos} of {self.length}'), progress=False)
-                    continue
-                self._eof = True
-                break
-            buf.extend(data); self.pos += len(data); self.failures = 0
-        return bytes(buf)
+
+def _octal(field):
+    raw = field.rstrip(b'\0 ')
+    if not raw: return 0
+    return int(raw.decode(), 8)
+
+
+def _header_name(header):
+    name = header[:100].split(b'\0', 1)[0].decode('utf-8', 'surrogateescape')
+    if header[257:262] == b'ustar':
+        prefix = header[345:500].split(b'\0', 1)[0].decode('utf-8', 'surrogateescape')
+        if prefix: name = prefix + '/' + name
+    return name
+
+
+def _pax_path(body):
+    text = body.decode('utf-8', 'surrogateescape')
+    for rec in text.split('\n'):
+        if ' path=' in rec: return rec.split(' path=', 1)[1]
+    return None
+
+
+def walk_tar(read_at, pending, want, on_track):
+    """Walk an uncompressed tar via read_at(start, length). Calls on_track(rel, mp3_bytes) for each pending member.
+
+    Members that are not pending are skipped: only their 512-byte header is read. `pending` maps archive-relative
+    paths (the last two components) to anything truthy. `want` maps those paths to the published SHA-256.
+    """
+    pos, found, long_name, members = 0, 0, None, 0
+    while found < len(pending):
+        members += 1
+        if members > 100_000: raise ValueError('tar walk did not end')
+        try:
+            header = read_at(pos, 512)
+        except ArchiveEnded:
+            break
+        if header == b'\0' * 512: break
+        size, kind = _octal(header[124:136]), header[156:157]
+        name = long_name if long_name is not None else _header_name(header)
+        long_name = None
+        body = pos + 512
+        if kind == b'L':
+            long_name = read_at(body, size).rstrip(b'\0').decode('utf-8', 'surrogateescape')
+        elif kind in (b'x', b'g'):
+            long_name = _pax_path(read_at(body, size))
+        elif kind in (b'0', b'\0'):
+            rel = '/'.join(name.split('/')[-2:])
+            if rel in pending:
+                data = read_at(body, size)
+                digest = hashlib.sha256(data).hexdigest()
+                if digest != want[rel]: raise ValueError(f'checksum mismatch for {rel}')
+                on_track(rel, data)
+                found += 1
+        pos = body + (size + 511) // 512 * 512
+    if found < len(pending):
+        raise ValueError(f'{len(pending) - found} tracks not in the archive')
+
+
+def track_verified(rel, item, out, want):
+    """True when this track's wav is already on disk and stamped with the published source SHA-256."""
+    wav = os.path.join(out, item['id'] + '.wav')
+    stamp = wav + '.sha256'
+    if not os.path.isfile(wav) or os.path.getsize(wav) < 44: return False
+    if not os.path.isfile(stamp): return False
+    with open(stamp) as fh: return fh.read().strip() == want.get(rel)
+
+
+def store_track(rel, data, item, out):
+    wav = os.path.join(out, item['id'] + '.wav')
+    tmp = wav + '.mp3'
+    digest = hashlib.sha256(data).hexdigest()
+    try:
+        open(tmp, 'wb').write(data)
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', str(item['start']), '-t', str(round(item['end'] - item['start'], 3)),
+                        '-i', tmp, '-ar', '44100', wav], check=True)
+    except Exception:
+        if os.path.exists(wav): os.remove(wav)
+        raise
+    finally:
+        if os.path.exists(tmp): os.remove(tmp)
+    open(wav + '.sha256', 'w').write(digest + '\n')
 
 
 def main(argv):
@@ -217,33 +266,22 @@ def main(argv):
     done = 0
     for f in folders:
         needed = {p: it for p, it in items.items() if int(p.split('/')[0]) == f}
+        pending = {p: it for p, it in needed.items() if not track_verified(p, it, out, want)}
         label = f'folder {f:02d}'
-        for attempt in range(3):
-            got = {}
-            try:
-                with ResumableBody(URL.format(f), label=label) as body, tarfile.open(fileobj=body, mode='r|') as tar:
-                    for m in tar:
-                        rel = '/'.join(m.name.split('/')[-2:])
-                        if m.isfile() and rel in needed:
-                            data = tar.extractfile(m).read()
-                            if hashlib.sha256(data).hexdigest() != want[rel]: raise ValueError(f'checksum mismatch for {rel}')
-                            got[rel] = data
-                            if len(got) == len(needed): break          # stop streaming once every needed track is in hand
-                if len(got) == len(needed): break
-                raise ValueError(f'{label}: {len(needed) - len(got)} tracks not in the archive')
-            except FetchFailed as e:
-                print(e, flush=True); sys.exit(f'{label} could not be fetched')
-            except Exception as e:
-                print(f'{label} pass {attempt + 1}: {e}', flush=True)
-                if attempt == 2: sys.exit(f'{label} could not be fetched')
-                time.sleep(retry_delay(attempt, None, random.Random()))
-        for rel, data in got.items():
-            it = needed[rel]; tmp = os.path.join(out, it['id'] + '.mp3')
-            open(tmp, 'wb').write(data)
-            subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', str(it['start']), '-t', str(round(it['end'] - it['start'], 3)), '-i', tmp,
-                            '-ar', '44100', os.path.join(out, it['id'] + '.wav')], check=True)
-            os.remove(tmp); done += 1
-        print(f'{label}: {len(got)} tracks', flush=True)
+        if not pending:
+            print(f'{label}: {len(needed)} tracks already on disk', flush=True)
+            done += len(needed)
+            continue
+        source = RangeSource(URL.format(f), label=label)
+        def on_track(rel, data, _needed=needed, _out=out):
+            store_track(rel, data, _needed[rel], _out)
+        try:
+            walk_tar(source.read, pending, want, on_track)
+        except FetchFailed as e:
+            print(e, flush=True)
+            sys.exit(1)
+        done += len(needed)
+        print(f'{label}: {len(needed)} tracks ({len(pending)} fetched)', flush=True)
     print(f'shard {shard}: {done} tracks from {len(folders)} folders')
 
 
