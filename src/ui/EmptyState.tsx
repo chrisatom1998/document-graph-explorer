@@ -3,9 +3,14 @@ import { openFilePicker } from '../ingest/DropZone';
 import { openFolderPicker } from '../ingest/folderPicker';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import ConstellationSvg from './ConstellationSvg';
 import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
 import { rememberCenterOrigin } from '../scene/ingestGesture';
+import heroPng960 from '../assets/hero/hero-lime-960.png';
+import heroPng1920 from '../assets/hero/hero-lime-1920.png';
+import heroWebp960 from '../assets/hero/hero-lime-960.webp';
+import heroWebp1920 from '../assets/hero/hero-lime-1920.webp';
+
+const HERO_SIZES = '(max-width: 820px) 100vw, 720px';
 
 const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
 
@@ -86,19 +91,24 @@ export default function EmptyState() {
     // page banner and gives the welcome text a landmark.
     <section className="empty-state-layer" aria-label="Welcome">
       <div className="empty-state__card">
-        <div className="empty-state__visual">
-          <div className="empty-state__hero">
-            <ConstellationSvg />
-          </div>
-          <div className="empty-state__visual-copy">
-            <p className="empty-state__visual-kicker">One map for both</p>
-            <p>
-              Clips connect by sound, tempo and key. Documents connect by topic,
-              citation and meaning.
-            </p>
-          </div>
-        </div>
-
+        <div className="empty-state__hero">
+          <picture className="empty-state__art">
+            <source
+              type="image/webp"
+              srcSet={`${heroWebp960} 960w, ${heroWebp1920} 1920w`}
+              sizes={HERO_SIZES}
+            />
+            <img
+              src={heroPng960}
+              srcSet={`${heroPng960} 960w, ${heroPng1920} 1920w`}
+              sizes={HERO_SIZES}
+              alt=""
+              width={1920}
+              height={1080}
+              decoding="async"
+            />
+          </picture>
+          <div className="empty-state__hero-scrim" aria-hidden="true" />
         <div className="empty-state__content">
           <header className="empty-state__header">
             <p className="empty-state__kicker">Local-first</p>
@@ -187,6 +197,7 @@ export default function EmptyState() {
               Graph legend, how clips are linked, and keyboard shortcuts.
             </p>
           </div>
+        </div>
         </div>
 
         <section className="empty-state__features" aria-labelledby="empty-features-title">

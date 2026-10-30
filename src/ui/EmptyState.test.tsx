@@ -56,12 +56,13 @@ describe('EmptyState', () => {
 
     expect(await screen.findByRole('button', { name: /Current corpus/ })).toBeVisible();
 
-    const mark = document.querySelector('.empty-state__constellation');
-    expect(mark).toHaveAttribute('aria-hidden', 'true');
-    expect(mark?.querySelector('polygon')).toBeTruthy();
-    expect(mark?.querySelectorAll('circle').length).toBeGreaterThan(4);
-    expect(mark?.querySelector('.empty-state__bridge')).toBeTruthy();
-    expect(document.querySelector('.empty-state__hero canvas')).toBeNull();
+    const art = document.querySelector('.empty-state__art img');
+    expect(art).toBeTruthy();
+    expect(art).toHaveAttribute('alt', '');
+    expect(art?.getAttribute('srcset')).toMatch(/960w/);
+    expect(art?.getAttribute('srcset')).toMatch(/1920w/);
+    expect(document.querySelector('.empty-state__art source')?.getAttribute('type')).toBe('image/webp');
+    expect(document.querySelector('.empty-state__constellation')).toBeNull();
   });
 
   it('opens the file pickers, demo, importer, settings and help', async () => {
