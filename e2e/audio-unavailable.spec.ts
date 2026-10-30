@@ -63,11 +63,12 @@ test('unavailable models stay explicit through correction, cancellation and rest
   await page.getByRole('button', { name: 'Reanalyze musical features' }).click();
   await page.getByRole('button', { name: 'Cancel analysis' }).click();
   await expect(page.getByRole('button', { name: 'Reanalyze musical features' })).toBeEnabled();
+  await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('Analysis cancelled.');
   await expect(page.locator('.music-features')).toContainText('synthesizer');
   await page.getByRole('button', { name: 'Reanalyze musical features' }).click();
-  // Wait for the new run to start before waiting for it to finish. Without this transition check,
-  // the still-enabled button from the cancelled run can satisfy the next assertion immediately.
-  await expect(page.getByRole('button', { name: 'Cancel analysis' })).toBeVisible();
+  // Completion feedback persists even if unavailable models finish before the first check.
+  // The previous run's cancellation feedback cannot satisfy this assertion.
+  await expect(page.getByRole('region', { name: 'Musical features' })).toContainText(/Analysis finished\.|Initial analysis ready\./, { timeout: 120_000 });
   await expect(page.getByRole('button', { name: 'Reanalyze musical features' })).toBeEnabled({ timeout: 120_000 });
   await page.getByText('Technical details', { exact: true }).click();
   await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('AST: failed');
