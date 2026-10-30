@@ -13,6 +13,10 @@ with the PR's base branch (main), not with the fixed 0.60 bar, so a tag that is 
   that later PRs compare with, so a PR normally analyses only itself. If main's numbers for the PR's
   base commit aren't cached (main's run still going or skipped, or the cache expired after 7 idle days), the PR
   analyses the base commit too.
+- Monday 06:15 UTC, and Actions → Accuracy gate → Run workflow on main: the same full set. That restores the
+  shared audio cache and the current commit's baseline inside the 7-day window even when no merge lands. The
+  manual run is what refills a cache that has already expired; the Monday schedule starts once this workflow is
+  on main.
 - A PR labelled `full-accuracy-check`: also the full set (`accuracy-gate-full.yml`, advisory).
 
 The fast slice is fixed by labels and ids only (`scripts/accuracy-gate/subset.mjs`): rarest class first, tracks in id
