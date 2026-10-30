@@ -53,6 +53,8 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // scoring that follows the summary's display rules, 60/30 on the fresh test sets; the one-shot model found none of them).
 // 131/132: the tagger decides synth lead, vocoder vocal, record stop, glitch effect and choir on clips up to 30 s (fresh test
 // sets 60/30 at its own cutoffs, choir at its fair half-split cutoff; the CLAP prompts and heads that showed them failed).
+// record stop (5 positives) and glitch effect (11 + 5) were too few for the half split to confirm: recheck them first when
+// more labelled clips arrive.
 export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 132 : 131;
 export interface InstrumentEstimate {
   label: string;
