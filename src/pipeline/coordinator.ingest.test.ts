@@ -1464,6 +1464,44 @@ describe('WAV music ingestion', () => {
     await vi.waitFor(()=>expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.stage).toBeUndefined());
     expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.confirmedDjTags?.source).toEqual(['piano']);
   });
+  it('lets a new Quick run replace a cancelled analysis instead of showing the cancelled run until background work finishes', async () => {
+    await ingestFiles([wav('after-cancel.wav')]);
+    const node=useGraphStore.getState().nodes.find(n=>n.fileType==='audio')!;
+    await setAudioDjTags(node.id,{source:['synthesizer'],production:[],character:[]});
+    // What a cancelled reanalysis leaves behind: a finished-stage result whose ledger is cancelled.
+    const cancelled=createRecognition(node.audio!.durationSeconds,'fast');cancelled.status='cancelled';
+    for(const job of cancelled.jobs)job.status='cancelled';
+    const current=useGraphStore.getState().nodes.find(n=>n.id===node.id)!;
+    useGraphStore.getState().patchNodes(new Map([[node.id,{audio:{...current.audio!,recognition:cancelled}}]]));
+    persistence.getOriginal.mockResolvedValue({blob:new Blob(['RIFF']),name:'after-cancel.wav'});
+    vi.useFakeTimers();
+    useSettingsStore.getState().setMusicAnalysisMode('fast');
+    const original=music.analyzeMusic.getMockImplementation()!;
+    let finish!: (value: Awaited<ReturnType<typeof original>>)=>void;
+    let final!: Awaited<ReturnType<typeof original>>;
+    const failed=createRecognition(node.audio!.durationSeconds,'fast');failed.status='running';
+    failed.jobs.find(job=>job.modelId==='ast')!.status='failed';
+    music.analyzeMusic.mockImplementation(async (...args)=>{
+      final=await original(...args);
+      args[2].onPreview({...final,stage:'preview',recognition:failed});
+      // The background pass is still running when Quick's deadline releases the run.
+      return new Promise(resolve=>{finish=resolve;});
+    });
+    const run=analyzeAudioCorpus([node.id]);
+    await vi.waitFor(()=>expect(finish).toBeTypeOf('function'));
+    await vi.advanceTimersByTimeAsync(14000);
+    await run;
+    vi.useRealTimers();
+    expect(useMusicJobs.getState().jobs[node.id]).toBeDefined();
+    const shown=useGraphStore.getState().nodes.find(n=>n.id===node.id)!.audio!;
+    expect(shown.stage).toBe('preview');
+    expect(shown.recognition?.runId).toBe(failed.runId);
+    expect(shown.recognition?.jobs.find(job=>job.modelId==='ast')?.status).toBe('failed');
+    expect(shown.confirmedDjTags?.source).toEqual(['synthesizer']);
+    cancelMusicJob(node.id);
+    finish(final);
+    await enqueueRun(async()=>undefined);
+  });
 });
 
 describe('remembered library', () => {

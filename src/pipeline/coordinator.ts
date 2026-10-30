@@ -342,6 +342,13 @@ function ownsAudioAnalysis(id: string, owner: symbol, epoch: number): boolean {
   return corpusEpoch === epoch && audioAnalysisOwners.get(id) === owner;
 }
 
+/** A preview must not overwrite a finished analysis. A cancelled run is not
+ * finished: it carries no new evidence, so the next run's preview replaces it
+ * instead of leaving "Analysis: cancelled" up while that run is in progress. */
+function previewMayReplace(audio: DocNode['audio']): boolean {
+  return !audio || audio.stage === 'preview' || audio.recognition?.status === 'cancelled';
+}
+
 let modelProgressWired = false;
 function wireModelProgress(): void {
   if (modelProgressWired) return;
@@ -2021,7 +2028,7 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
             preview(result);
             const applyPreview=()=>{
               const current=store().nodes.find(n=>n.id===node.id);
-              if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!current||!isCurrentMusicJob(node.id,controller)||(current.audio&&current.audio.stage!=='preview'))return;
+              if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!current||!isCurrentMusicJob(node.id,controller)||!previewMayReplace(current.audio))return;
               store().patchNodes(new Map([[node.id,{audio:{...result,confirmedInstruments:current.audio?.confirmedInstruments,soundReviews:current.audio?.soundReviews,confirmedDjTags:current.audio?.confirmedDjTags,copilotProperties:current.audio?.copilotProperties},warning:undefined}]]));
               markDocsDirty([node.id]);
             };
@@ -2067,13 +2074,13 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
         } else {
           cancelMusicJob(node.id);
           audio=await load(preview=>{
-            if(!queuedScopeActive||signal?.aborted||!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||(node.audio&&node.audio.stage!=='preview'))return;
+            if(!queuedScopeActive||signal?.aborted||!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!previewMayReplace(node.audio))return;
             store().patchNodes(new Map([[node.id,{audio:{...preview,confirmedInstruments:node.audio?.confirmedInstruments,soundReviews:node.audio?.soundReviews,confirmedDjTags:node.audio?.confirmedDjTags,copilotProperties:node.audio?.copilotProperties},warning:undefined}]]));markDocsDirty([node.id]);
           });
         }
         throwIfAborted(signal);
         if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch))return;
-        if(audio.stage === 'preview' && node.audio && node.audio.stage !== 'preview')audio={...node.audio};
+        if(audio.stage === 'preview' && !previewMayReplace(node.audio))audio={...node.audio!};
         audio.confirmedInstruments = node.audio?.confirmedInstruments;
         audio.soundReviews = store().nodes.find(n => n.id === node.id)?.audio?.soundReviews;
         audio.confirmedDjTags = node.audio?.confirmedDjTags;
