@@ -70,7 +70,8 @@
     "cat:record stop": 0.006815,
     "cat:glitch effect": 0.145739,
     "cat:choir": 0.00484,
-    "cat:staccato": 6e-06
+    "cat:staccato": 6e-06,
+    "cat:reese bass": 2e-06
    }
   },
   {
@@ -141,7 +142,8 @@
     "cat:record stop": 0.003376,
     "cat:glitch effect": 0.344564,
     "cat:choir": 0.009904,
-    "cat:staccato": 5.6e-05
+    "cat:staccato": 5.6e-05,
+    "cat:reese bass": 0.000166
    }
   },
   {
@@ -213,7 +215,8 @@
     "cat:record stop": 0.003376,
     "cat:glitch effect": 0.344564,
     "cat:choir": 0.009904,
-    "cat:staccato": 0.000398
+    "cat:staccato": 0.000398,
+    "cat:reese bass": 0.000198
    }
   },
   {
@@ -286,7 +289,8 @@
     "cat:record stop": 0.003493,
     "cat:glitch effect": 0.386851,
     "cat:choir": 0.009183,
-    "cat:staccato": 0.000499
+    "cat:staccato": 0.000499,
+    "cat:reese bass": 0.000199
    }
   }
  ]
