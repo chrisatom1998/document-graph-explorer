@@ -447,26 +447,30 @@ textarea {
   padding: 24px;
 }
 
+/* Crash screen: 14px body copy, a 13px label over the title, and the two
+   actions at the shared 44px / 10px-radius button size. */
 .app-error-panel {
   width: min(560px, 92vw);
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  background: rgb(10, 15, 31);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .app-error-panel__eyebrow {
   margin: 0;
   color: var(--accent-strong);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .app-error-panel__title {
   margin: 0;
   font-size: 22px;
+  font-weight: 600;
   line-height: 1.2;
 }
 
@@ -480,6 +484,17 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.app-error-panel .btn-pill {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+.app-error-panel .btn-pill:disabled {
+  color: var(--text-faint);
+  cursor: default;
 }
 
 .nebula-canvas {
@@ -741,13 +756,15 @@ textarea {
   margin: 14px 0;
 }
 
+/* One close-button size for every panel and dialog: 32px on the shared
+   button radius (the reader and search overlay already use this size). */
 .icon-btn-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-secondary);
@@ -1419,6 +1436,70 @@ textarea {
   line-height: 1.45;
 }
 
+/* Top-bar corpus menu (the welcome-screen variant keeps its own styling):
+   14px heading, 13px body text, and every control 36px tall on the shared
+   button radius. */
+.corpus-switcher--toolbar .corpus-switcher__menu {
+  font-size: 13px;
+}
+.corpus-switcher--toolbar .corpus-switcher__header strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.corpus-switcher--toolbar .corpus-switcher__header > div > span,
+.corpus-switcher--toolbar .corpus-switcher__watch-label,
+.corpus-switcher--toolbar .corpus-switcher__unsupported {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.corpus-switcher--toolbar .corpus-switcher__corpus {
+  min-height: 36px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+}
+.corpus-switcher--toolbar .corpus-switcher__corpus small {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.corpus-switcher--toolbar .corpus-switcher__delete {
+  min-width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+}
+.corpus-switcher--toolbar .corpus-switcher__delete.is-confirming {
+  min-width: 72px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.corpus-switcher--toolbar .corpus-switcher__create {
+  gap: 8px;
+}
+.corpus-switcher--toolbar .corpus-switcher__create input {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+.corpus-switcher--toolbar .corpus-switcher__create button {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+}
+.corpus-switcher--toolbar .corpus-switcher__section {
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.corpus-switcher--toolbar .corpus-switcher__action {
+  min-height: 36px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+
 .toolbar {
   /* Top-center: the right edge belongs to the node side panel, and the
      other corners are taken (filter bar top-left, quality toast bottom-left,
@@ -1609,14 +1690,15 @@ textarea {
   border-color: var(--border-glass-strong);
   color: var(--accent-strong);
 }
+/* Disabled items dim to a colour that still reads instead of fading out. */
 .toolbar__menu-item:disabled {
-  opacity: 0.45;
+  color: var(--text-faint);
   cursor: default;
 }
 .toolbar__menu-item:disabled:hover {
   background: transparent;
   border-color: transparent;
-  color: var(--text-primary);
+  color: var(--text-faint);
 }
 .toolbar__menu-item.is-active {
   background: var(--accent-soft);
@@ -2808,13 +2890,16 @@ mark.passage-mark {
   padding: 0 8px 4px;
 }
 
+/* Row actions ("Show both", "Compare", "Tag both duplicate") are 28px
+   outline buttons on the shared radius, in legible 12px secondary text. */
 .insights__action {
-  padding: 2px 8px;
-  border-radius: 999px;
+  min-height: 28px;
+  padding: 2px 10px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-glass);
   background: transparent;
-  color: var(--text-faint);
-  font-size: 11px;
+  color: var(--text-secondary);
+  font-size: 12px;
   line-height: 1.4;
   cursor: pointer;
   text-align: left;
@@ -2824,17 +2909,19 @@ mark.passage-mark {
 
 .insights__action:hover:not(:disabled) {
   border-color: var(--border-glass-strong);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   background: rgba(140, 150, 255, 0.06);
 }
 
 .insights__action:disabled {
   cursor: default;
-  opacity: 0.7;
+  color: var(--text-faint);
 }
 
+/* The drawer is an opaque surface: the glass tint let the sidebar's filter
+   chips show through behind the section text on phones. */
 .insights {
-  /* clears the filter bar pinned at top: 18px */ background: rgba(9, 14, 30, 0.75);
+  background: rgb(10, 15, 31);
   pointer-events: auto;
   width: min(360px, 88vw);
   margin: 76px 0 24px 18px;
@@ -2842,22 +2929,44 @@ mark.passage-mark {
   flex-direction: column;
   animation: kn-slide-in-down 280ms var(--ease-out) both;
   overflow: hidden;
+  font-size: 13px;
 }
 
-.insights__header {
+/* Title and close button share one 18px/600 header row, like every modal.
+   (Scoped under .insights so the phone-width .side-panel__header rule, which
+   reserves 132px for the old toolbar, cannot push the title down.) */
+.insights .insights__header {
   flex: none;
-  padding: 16px 18px 12px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px 14px;
   border-bottom: 1px solid var(--border-glass);
+  background: transparent;
+}
+.insights__header .side-panel__title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+.insights__header .icon-btn-close {
+  min-width: 0;
+  min-height: 0;
 }
 
 .insights__scroll {
   flex: 1 1 auto;
   overflow-y: auto;
-  padding: 0 18px 20px;
+  padding: 0 20px 20px;
+}
+.insights .hairline {
+  margin: 16px 0;
+  border-top-color: var(--border-glass);
 }
 
 .insights__section {
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 .insights__section-head {
@@ -2865,18 +2974,21 @@ mark.passage-mark {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  min-height: 28px;
 }
 .insights__section-head .side-panel__section-label {
   margin: 0;
 }
 
 .insights__highlight-btn {
-  padding: 3px 12px;
-  border-radius: 999px;
+  min-height: 28px;
+  padding: 2px 12px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-glass);
   background: rgba(140, 150, 255, 0.06);
   color: var(--text-secondary);
-  font-size: 11px;
+  font: inherit;
+  font-size: 12px;
   cursor: pointer;
   pointer-events: auto;
   transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease;
@@ -2893,19 +3005,21 @@ mark.passage-mark {
 
 .insights__hint {
   margin: 8px 0;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }
 
 .insights__row {
   display: block;
   width: 100%;
+  min-height: 32px;
   padding: 6px 8px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-primary);
+  font: inherit;
   font-size: 13px;
   text-align: left;
   cursor: pointer;
@@ -2921,7 +3035,7 @@ mark.passage-mark {
 
 .insights__pair {
   padding: 6px 0;
-  border-bottom: 1px solid rgba(140, 150, 255, 0.08);
+  border-bottom: 1px solid var(--border-glass);
 }
 .insights__pair:last-child {
   border-bottom: none;
@@ -2930,7 +3044,7 @@ mark.passage-mark {
 .insights__pair-sim {
   display: block;
   padding: 0 8px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--warning);
 }
 
@@ -3010,8 +3124,8 @@ mark.passage-mark {
 .insights__cluster-meta {
   display: block;
   padding: 0 8px 0 14px;
-  font-size: 11px;
-  color: var(--text-faint);
+  font-size: 12px;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -3565,12 +3679,17 @@ mark.passage-mark {
   animation: kn-fade-in 140ms ease both;
 }
 
+/* Help modal: an opaque surface (page content bled through the glass), one
+   18px/600 header row shared with Settings and Snapshots, 13px body text and
+   13px/600 normal-case section headings. */
 .help-popover {
   width: min(560px, calc(100vw - 24px));
   max-height: min(720px, calc(100vh - 24px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: rgb(10, 15, 31);
+  font-size: 13px;
   animation: kn-pop-in 200ms var(--ease-spring) both;
 }
 
@@ -3579,28 +3698,24 @@ mark.passage-mark {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 18px 20px 14px;
+  padding: 16px 20px 14px;
   border-bottom: 1px solid var(--border-glass);
 }
+.help-popover__header .icon-btn-close {
+  min-width: 0;
+  min-height: 0;
+}
 
-.help-popover__eyebrow,
 .help-popover__title,
 .help-popover__section h3,
 .help-popover__hint {
   margin: 0;
 }
 
-.help-popover__eyebrow {
-  color: var(--accent-strong);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .help-popover__title {
-  margin-top: 3px;
   font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
 }
 
 .help-popover__scroll {
@@ -3609,7 +3724,7 @@ mark.passage-mark {
 }
 
 .help-popover__section {
-  margin-top: 18px;
+  margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--border-glass);
 }
@@ -3617,9 +3732,8 @@ mark.passage-mark {
 .help-popover__section h3 {
   margin-bottom: 10px;
   color: var(--text-primary);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .help-popover__legend-grid {
@@ -3628,7 +3742,8 @@ mark.passage-mark {
   align-items: center;
   gap: 10px 12px;
   color: var(--text-secondary);
-  font-size: 12.5px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .help-node-shape {
@@ -3653,8 +3768,9 @@ mark.passage-mark {
   display: flex;
   align-items: center;
   gap: 9px;
+  min-height: 24px;
   color: var(--text-secondary);
-  font-size: 12.5px;
+  font-size: 13px;
   text-transform: capitalize;
 }
 
@@ -3667,9 +3783,12 @@ mark.passage-mark {
 
 .help-popover__hint {
   margin-top: 12px;
-  color: var(--text-faint);
-  font-size: 11.5px;
-  line-height: 1.5;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.help-popover__scroll > .help-popover__hint:first-child {
+  margin-top: 0;
 }
 
 .help-popover__shortcuts,
@@ -3693,65 +3812,104 @@ mark.passage-mark {
 
 .help-popover__shortcuts dd {
   color: var(--text-secondary);
-  font-size: 12.5px;
+  font-size: 13px;
 }
 
+/* Settings and Snapshots: opaque surface, 13px body text, section headings
+   14px/600 in normal case, helper copy 13px secondary, and every control on
+   the shared 10px radius (inputs 40px, inline buttons 36px). */
 .settings-panel,
 .snapshot-drawer {
-  background: var(--bg-glass-strong);
+  background: rgb(10, 15, 31);
   width: min(460px, 92vw);
   max-height: 82vh;
   overflow-y: auto;
   padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
+  font-size: 13px;
+  line-height: 1.5;
   animation: kn-pop-in 200ms var(--ease-spring) both;
 }
 
+/* The header spans the panel edge to edge so its rule lines up with the
+   panel border rather than sitting inset from the content. */
 .settings-panel__header {
   border-bottom: 1px solid var(--border-glass);
   position: sticky;
   top: -20px;
   z-index: 1;
-  margin-top: -20px;
-  padding: 20px 0 12px;
-  background: var(--bg-glass-strong);
+  margin: -20px -22px 0;
+  padding: 20px 22px 14px;
+  background: inherit;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+.settings-panel__header .icon-btn-close {
+  min-width: 0;
+  min-height: 0;
 }
 
 .settings-panel__title {
   margin: 0;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
-  letter-spacing: 0.3px;
+  letter-spacing: -0.2px;
 }
 
 .settings-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .settings-section__heading {
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
+}
+summary.settings-section__heading {
+  cursor: pointer;
+  user-select: none;
+}
+details.settings-section > summary {
+  margin-bottom: 2px;
 }
 
-.settings-field {
+.settings-field,
+.settings-label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   font-size: 13px;
+  font-weight: 600;
+}
+.settings-label {
+  margin-bottom: -6px;
+}
+
+.settings-hint,
+.settings-help,
+.music-analysis-mode > p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.settings-section .music-analysis-mode {
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .settings-input,
+.settings-select,
 .settings-panel select,
 .settings-panel input[type='text'],
 .settings-panel input[type='password'],
@@ -3759,39 +3917,62 @@ mark.passage-mark {
   min-height: 40px;
   width: 100%;
   box-sizing: border-box;
-  padding: 7px 9px;
-  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-glass);
   background: rgba(255, 255, 255, 0.06);
   color: inherit;
   font: inherit;
   font-size: 13px;
+  font-weight: 400;
+}
+.settings-panel select:disabled,
+.settings-panel input:disabled {
+  color: var(--text-faint);
+  cursor: default;
 }
 
 .settings-check {
   line-height: 1.5;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 13px;
   cursor: pointer;
+}
+.settings-check input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.settings-check:has(input:disabled) {
+  color: var(--text-faint);
+  cursor: default;
 }
 
 .settings-btn {
   min-height: 36px;
   align-self: flex-start;
-  padding: 7px 14px;
-  border-radius: 8px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-glass-strong);
   background: var(--accent-soft);
   color: inherit;
   font: inherit;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.settings-btn:hover {
+.settings-btn:hover:not(:disabled) {
   border-color: var(--accent);
+}
+.settings-btn:disabled {
+  color: var(--text-faint);
+  border-color: var(--border-glass);
+  cursor: default;
 }
 
 .settings-btn--danger {
@@ -3800,27 +3981,21 @@ mark.passage-mark {
   color: #ff9a9a;
 }
 
-.settings-help {
-  line-height: 1.55;
-  font-size: 11.5px;
-  color: var(--text-faint);
-  margin: 0;
-}
-
 .settings-note {
-  font-size: 12.5px;
+  font-size: 13px;
+  line-height: 1.5;
   margin: 0;
 }
 
 .settings-details {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 5px 10px;
-  font-size: 12.5px;
+  gap: 6px 12px;
+  font-size: 13px;
 }
 
 .settings-details dt {
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }
 
 .settings-details dd,
@@ -3831,11 +4006,12 @@ mark.passage-mark {
 }
 
 .settings-details__label {
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }
 
 .settings-confirm {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-self: flex-start;
 }
@@ -4160,11 +4336,14 @@ mark.passage-mark {
 }
 
 .settings-advanced {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 12px;
+  border-top: 1px solid var(--border-glass);
+  padding-top: 16px;
 }
 .settings-advanced summary {
   user-select: none;
+}
+.settings-advanced > .settings-section > .settings-section__heading {
+  margin-top: 4px;
 }
 
 /* ==========================================================================
@@ -4454,17 +4633,21 @@ mark.passage-mark {
 .snapshot-save-row .save-prompt__input {
   flex: 1 1 auto;
   width: auto;
+  min-width: 0;
 }
 
+/* Save row: a 40px input and button on the shared radius, like the
+   Settings fields. */
 .save-prompt__input {
   width: 220px;
-  padding: 5px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
   background: rgba(255, 255, 255, 0.06);
   color: inherit;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   outline: none;
 }
 .save-prompt__input:focus {
@@ -4473,13 +4656,15 @@ mark.passage-mark {
 }
 
 .save-prompt__btn {
-  padding: 5px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(120, 140, 255, 0.3);
-  background: rgba(120, 140, 255, 0.18);
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass-strong);
+  background: var(--accent-soft);
   color: inherit;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
 }
@@ -4488,7 +4673,8 @@ mark.passage-mark {
   border-color: rgba(120, 140, 255, 0.5);
 }
 .save-prompt__btn:disabled {
-  opacity: 0.55;
+  color: var(--text-faint);
+  border-color: var(--border-glass);
   cursor: default;
 }
 
@@ -4519,20 +4705,19 @@ mark.passage-mark {
   text-align: center;
 }
 
+/* Empty state keeps full-opacity text so it clears 4.5:1. */
 .snapshot-empty__text {
   color: var(--text-primary);
   margin: 0;
   font-size: 14px;
-  font-weight: 500;
-  opacity: 0.7;
+  font-weight: 600;
 }
 
 .snapshot-empty__hint {
   color: var(--text-secondary);
-  line-height: 1.55;
+  line-height: 1.5;
   margin: 0;
-  font-size: 12px;
-  opacity: 0.5;
+  font-size: 13px;
   max-width: 280px;
 }
 
@@ -4542,7 +4727,7 @@ mark.passage-mark {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .snapshot-item {
@@ -4551,8 +4736,8 @@ mark.passage-mark {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(140, 150, 255, 0.1);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
   background: rgba(140, 150, 255, 0.04);
   transition:
     background-color 140ms var(--ease-out),
@@ -4579,13 +4764,13 @@ mark.passage-mark {
   gap: 10px 16px;
   padding: 10px 14px;
   max-width: min(720px, 92vw);
-  font-size: 12px;
+  font-size: 13px;
 }
 .snapshot-diff-banner__legend {
   display: flex;
   align-items: center;
   gap: 8px;
-  opacity: 0.85;
+  color: var(--text-secondary);
 }
 .snapshot-diff-banner__swatch {
   width: 10px;
@@ -4596,16 +4781,18 @@ mark.passage-mark {
 .snapshot-diff-banner__swatch--added { background: #59f28c; }
 .snapshot-diff-banner__swatch--updated { background: #ffc747; }
 .snapshot-diff-banner__summary { margin: 0; font-weight: 500; }
-.snapshot-diff-banner__removed { margin: 0; opacity: 0.7; }
+.snapshot-diff-banner__removed { margin: 0; color: var(--text-secondary); }
 .snapshot-diff-banner__clear {
   margin-left: auto;
+  min-height: 32px;
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid var(--border-glass-strong);
   color: inherit;
-  border-radius: 6px;
-  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  padding: 0 12px;
   cursor: pointer;
   font: inherit;
+  font-size: 13px;
 }
 .snapshot-item__info {
   display: flex;
@@ -4623,9 +4810,9 @@ mark.passage-mark {
 }
 
 .snapshot-item__meta {
-  color: var(--text-faint);
-  font-size: 11px;
-  opacity: 0.55;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .snapshot-item__actions {
@@ -4635,45 +4822,125 @@ mark.passage-mark {
   flex: none;
 }
 
+/* Row actions are 32px compact buttons; the Load/primary one carries the
+   accent tint. Dialog footers reuse these at 40px (see .confirm-dialog). */
 .snapshot-btn {
-  padding: 4px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass-strong);
   background: rgba(255, 255, 255, 0.06);
   color: inherit;
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
 }
 .snapshot-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.24);
+  border-color: var(--accent);
 }
 .snapshot-btn:disabled {
-  opacity: 0.55;
+  color: var(--text-faint);
+  border-color: var(--border-glass);
   cursor: default;
 }
 
 .snapshot-btn--load {
-  border-color: rgba(120, 140, 255, 0.3);
-  background: rgba(120, 140, 255, 0.15);
+  background: var(--accent-soft);
+  font-weight: 600;
 }
 .snapshot-btn--load:hover:not(:disabled) {
   background: rgba(120, 140, 255, 0.28);
-  border-color: rgba(120, 140, 255, 0.5);
+  border-color: var(--accent);
 }
 
 .snapshot-btn--delete {
-  padding: 4px 8px;
-  font-size: 13px;
-  opacity: 0.6;
+  min-width: 32px;
+  padding: 0 8px;
+  color: var(--text-secondary);
 }
 .snapshot-btn--delete:hover:not(:disabled) {
-  opacity: 1;
   color: #ff6b6b;
   border-color: rgba(255, 107, 107, 0.3);
   background: rgba(255, 107, 107, 0.1);
+}
+
+/* Confirm dialogs (Replace graph?, Share?, Rekordbox export): the same
+   opaque surface and header metrics as the other modals, 13px body copy in
+   secondary text, and a right-aligned 40px action row. */
+.confirm-dialog {
+  width: min(420px, 92vw);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: rgb(10, 15, 31);
+  font-size: 13px;
+  line-height: 1.5;
+  animation: kn-pop-in 200ms var(--ease-spring) both;
+}
+.confirm-dialog--wide {
+  width: min(480px, 92vw);
+}
+.confirm-dialog__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+.confirm-dialog__text {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.confirm-dialog__text strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.confirm-dialog__text--error {
+  color: var(--danger);
+}
+.confirm-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.confirm-dialog__field input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+}
+.confirm-dialog__field input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+.confirm-dialog__field-error {
+  display: block;
+  color: var(--danger);
+  font-weight: 400;
+}
+.confirm-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.confirm-dialog__actions .snapshot-btn {
+  min-height: 40px;
+  padding: 0 16px;
 }
 
 /* ==========================================================================

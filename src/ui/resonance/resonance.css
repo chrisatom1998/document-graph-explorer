@@ -236,7 +236,22 @@
 .rs-import--folder { padding: 8px 16px; }
 .rs-import--folder strong { font-size: 13px; font-weight: 500; }
 .rs-import--folder .rs-import__plus { font-size: 18px; }
-.rs-export .toolbar__menu-label { margin: 10px 12px 4px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--rs-faint); }
+/* Export tab: a raised card of 44px rows in 14px text; the "Backup" group
+   label matches the sidebar's 13px/600 headings. */
+.rs-export .toolbar__menu {
+  padding: 8px; gap: 2px;
+  background: var(--rs-raised); border: 1px solid var(--rs-line-strong); border-radius: var(--radius-lg);
+  box-shadow: 0 16px 40px #0009; backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+.rs-export .toolbar__menu::before { display: none; }
+.rs-export .toolbar__menu-item {
+  min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--radius-md);
+  color: var(--rs-text); font-size: 14px; white-space: normal;
+}
+.rs-export .toolbar__menu-item svg { width: 18px; height: 18px; color: var(--rs-muted); }
+.rs-export .toolbar__menu-item:hover:not(:disabled) { background: var(--rs-line); color: var(--rs-text); }
+.rs-export .toolbar__menu-item:disabled, .rs-export .toolbar__menu-item:disabled svg { color: var(--rs-disabled); }
+.rs-export .toolbar__menu-label { margin: 8px 4px 2px; padding: 12px 8px 0; border-top: 1px solid var(--rs-line-strong); color: var(--rs-muted); font-size: 13px; font-weight: 600; }
 .rs-collapse {
   align-self: flex-end; width: 30px; height: 30px; margin: -8px -8px 8px 0; flex: none;
   display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--rs-muted); cursor: pointer;
@@ -305,7 +320,7 @@
 .rs-library .graph-navigator__option.is-active { background: color-mix(in srgb, var(--rs-lime) 10%, transparent); box-shadow: inset 3px 0 0 var(--rs-lime); }
 .rs-library .graph-navigator__name { font-size: 14px; font-weight: 500; line-height: 1.4; color: var(--rs-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rs-library .graph-navigator__meta { font-size: 13px; line-height: 1.4; color: var(--rs-muted); }
-.rs-export .toolbar__menu { position: static; width: min(420px, 100%); margin: 0 auto; max-height: none; }
+.rs-export .toolbar__menu { position: static; width: min(420px, 100%); margin: 0 auto; max-height: none; animation: none; }
 
 /* ---- Inspector ---------------------------------------------------------- */
 .rs-inspector {
@@ -513,6 +528,75 @@
 .app-root:has(.rs-root) .search-overlay__show-all { background: color-mix(in srgb, var(--rs-lime) 14%, transparent); border-color: var(--rs-lime); }
 .app-root:has(.rs-root) .search-overlay__show-all:hover { background: color-mix(in srgb, var(--rs-lime) 22%, transparent); }
 
+/* Modals and dialogs (Settings, Snapshots, Help, Insights, the corpus menu
+   and the import/share/Rekordbox confirms) take the Resonance palette the
+   same way the full-details panel does: the legacy theme variables are
+   re-pointed, so the surface becomes the solid raised tone (nothing bleeds
+   through), dividers use the panel line colour and the accent is lime. The
+   confirms are portaled to <body>, hence the body-level selector. */
+.app-root:has(.rs-root) :is(.settings-panel, .snapshot-drawer, .help-popover, .insights, .corpus-switcher__menu),
+body:has(.rs-root) .confirm-dialog {
+  --bg-glass: var(--rs-raised);
+  --bg-glass-strong: var(--rs-raised);
+  --bg-glass-soft: var(--rs-panel);
+  --panel-bg: var(--rs-raised);
+  --surface: var(--rs-raised);
+  --surface-raised: var(--rs-raised);
+  --surface-inset: var(--rs-bg);
+  --border-glass: var(--rs-line);
+  --border-glass-strong: var(--rs-line-strong);
+  --text-primary: var(--rs-text);
+  --text-secondary: var(--rs-muted);
+  --text-faint: var(--rs-faint);
+  --text: var(--rs-text);
+  --text-muted: var(--rs-muted);
+  --accent: var(--rs-lime);
+  --accent-strong: var(--rs-lime);
+  --accent-soft: color-mix(in srgb, var(--rs-lime) 14%, transparent);
+  --accent-fill: var(--rs-lime);
+  --accent-fill-hover: #d6ff7a;
+  --accent-foreground: var(--rs-lime-ink);
+  --control-hover: var(--rs-line);
+  --focus: var(--rs-lime);
+  background: var(--rs-raised);
+  border-color: var(--rs-line-strong);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  box-shadow: 0 16px 40px #0009;
+}
+.app-root:has(.rs-root) :is(.settings-panel, .snapshot-drawer, .help-popover, .insights, .corpus-switcher__menu)::before,
+body:has(.rs-root) .confirm-dialog::before { display: none; }
+/* Inputs sit on the darker base tone so they read as fields on the card. */
+.app-root:has(.rs-root) :is(.settings-panel, .snapshot-drawer) :is(select, input[type='text'], input[type='password'], input[type='url']),
+.app-root:has(.rs-root) .corpus-switcher__create input,
+body:has(.rs-root) .confirm-dialog__field input { background: var(--rs-bg); border-color: var(--rs-line-strong); }
+.app-root:has(.rs-root) .settings-panel select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%239a99a8' stroke-width='1.6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; appearance: none; -webkit-appearance: none; padding-right: 32px; }
+/* Buttons: outline on the line colour, lime on hover, like the inspector. */
+.app-root:has(.rs-root) :is(.settings-btn, .snapshot-btn, .save-prompt__btn, .corpus-switcher__create button),
+body:has(.rs-root) .confirm-dialog .snapshot-btn { background: none; border-color: var(--rs-line-strong); color: var(--rs-text); }
+.app-root:has(.rs-root) :is(.settings-btn, .snapshot-btn, .save-prompt__btn, .corpus-switcher__create button):hover:not(:disabled),
+body:has(.rs-root) .confirm-dialog .snapshot-btn:hover:not(:disabled) { background: var(--rs-line); border-color: var(--rs-lime); }
+.app-root:has(.rs-root) :is(.snapshot-btn--load, .save-prompt__btn, .corpus-switcher__create button),
+body:has(.rs-root) .confirm-dialog .snapshot-btn--load { background: color-mix(in srgb, var(--rs-lime) 14%, transparent); border-color: var(--rs-lime); }
+.app-root:has(.rs-root) :is(.settings-btn, .snapshot-btn, .save-prompt__btn):disabled,
+body:has(.rs-root) .confirm-dialog .snapshot-btn:disabled { background: none; border-color: var(--rs-line); color: var(--rs-disabled); }
+.app-root:has(.rs-root) .settings-btn--danger { border-color: rgba(255, 128, 128, 0.35); color: #ff9a9a; }
+.app-root:has(.rs-root) .settings-btn--danger:hover:not(:disabled) { background: rgba(255, 128, 128, 0.12); border-color: #ff9a9a; }
+.app-root:has(.rs-root) .settings-check input { accent-color: var(--rs-lime); }
+.app-root:has(.rs-root) :is(.settings-panel, .snapshot-drawer, .help-popover, .insights) .icon-btn-close { color: var(--rs-muted); }
+.app-root:has(.rs-root) :is(.settings-panel, .snapshot-drawer, .help-popover, .insights) .icon-btn-close:hover { background: var(--rs-line); color: var(--rs-text); }
+.app-root:has(.rs-root) .snapshot-item { background: var(--rs-bg); border-color: var(--rs-line); }
+.app-root:has(.rs-root) .snapshot-item:hover { background: var(--rs-bg); border-color: var(--rs-line-strong); transform: none; box-shadow: none; }
+.app-root:has(.rs-root) .insights__row:hover { background: var(--rs-line); color: var(--rs-text); }
+.app-root:has(.rs-root) .insights__highlight-btn, .app-root:has(.rs-root) .insights__action { background: none; border-color: var(--rs-line-strong); }
+.app-root:has(.rs-root) :is(.insights__highlight-btn, .insights__action):hover:not(:disabled) { background: var(--rs-line); border-color: var(--rs-lime); color: var(--rs-text); }
+.app-root:has(.rs-root) .insights__highlight-btn.is-active { background: color-mix(in srgb, var(--rs-lime) 14%, transparent); border-color: var(--rs-lime); color: var(--rs-text); }
+.app-root:has(.rs-root) .corpus-switcher__corpus[aria-current='true'],
+.app-root:has(.rs-root) .corpus-switcher__corpus:hover:not(:disabled) { background: var(--rs-line); border-color: var(--rs-line-strong); }
+.app-root:has(.rs-root) .corpus-switcher__action:hover:not(:disabled) { background: var(--rs-line); }
+/* The drawer opens on the stage, aligned with the digest card's 16px inset,
+   instead of 76px down and over the filter sidebar. */
+.app-root:has(.rs-root) .insights { margin: 16px 0 16px calc(var(--rs-left) + 16px); }
+
 /* The tagline only shows before a graph exists; let the brand cell grow to
    fit it rather than truncating it to "Find how so…" at desktop widths. */
 @media (min-width: 1101px) {
@@ -581,8 +665,8 @@
 }
 @media (max-width: 600px) {
   .rs-sidebar .rs-import strong, .rs-sidebar .rs-assistant__text strong { font-size: 12px; }
-  /* Phone Library: the list keeps a 16px gutter instead of the desktop 28px. */
-  .rs-library { padding: 16px; }
+  /* Phone Library and Export: a 16px gutter instead of the desktop 28px. */
+  .rs-library, .rs-export { padding: 16px; }
   /* Phone top bar: five actions plus the 2D/3D switch leave little room, so the icons tighten and the pill keeps whatever is left. */
   .rs-top { padding: 8px 8px 0; }
   .rs-top .rs-icon { width: 32px; height: 32px; }
