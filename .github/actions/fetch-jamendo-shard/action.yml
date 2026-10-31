@@ -8,9 +8,6 @@ inputs:
   shard:
     description: Shard index, 0-19
     required: true
-  mode:
-    description: fast or full, used only in the artifact name
-    required: true
   pass:
     description: 1 on the first attempt, 2 on the retry. Each pass writes its own partial cache key.
     required: true
@@ -98,14 +95,3 @@ runs:
         path: gate-audio/jamendo
         # A new key every attempt: a cache cannot be updated, and the next run's restore-keys prefix takes the newest.
         key: ${{ inputs.audio-cache }}-jamendo-partial-${{ inputs.shard }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.pass }}
-    - name: Upload this shard's tracks for the combined cache
-      # Pass 1 always uploads, including a shard restored from a finished cache, so the combined cache can be
-      # rebuilt. Pass 2 uploads only a shard it had to fetch: a shard pass 1 already finished has an artifact,
-      # and uploading that name again would collide.
-      if: success() && (inputs.pass == '1' || steps.part.outputs.cache-hit != 'true')
-      uses: actions/upload-artifact@v6
-      with:
-        name: gate-audio-jamendo-${{ inputs.mode }}-${{ inputs.shard }}
-        path: gate-audio/jamendo
-        retention-days: 3
-        overwrite: true
