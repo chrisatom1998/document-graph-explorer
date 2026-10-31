@@ -14,6 +14,8 @@ permissions:
   contents: write
 
 env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
   ONNXRUNTIME_NODE_INSTALL: skip
   BASE_REF: d1b7b05928804975802348288f29384ce5a40245
   OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
