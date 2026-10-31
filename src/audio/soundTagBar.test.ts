@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { confidentSoundSummary, SOUND_TAG_BAR } from './confidentSoundSummary';
+import { sanitizeLearnedDjModel } from './learnedDjModel';
 import type { MusicAnalysis } from './musicTypes';
 import { TAGGER_POLICY, TAGGER_REVISION } from './tagger';
 
@@ -42,6 +43,8 @@ const PROMOTED: [label: string, threshold: number, precision: number, recall: nu
  * checksum are in docs/evaluations/clean-retrain-2026-10-11/report.json. */
 // Crash cymbal, vocal laugh, whisper and whoosh were swapped too, then reverted: they failed on the app's own (q8) fingerprints.
 const CLEAN_RETRAINED = ['crowd ambience', 'finger snap', 'harmonica', 'harp', 'snare', 'tabla', 'trumpet', 'vinyl scratch'];
+/** Trumpet was in that retrain, then replaced by the RWC refit. The report still lists it; the shipped weights no longer match it. */
+const CLEAN_STILL_SHIPPED = CLEAN_RETRAINED.filter(label => label !== 'trumpet');
 type CleanSet = { p: number; r: number; positives: number; negatives: number; fp: number };
 type CleanHead = { label: string; threshold: number; coefficientDigest: string; fairPass60_30: boolean; countedSets: string[]; sets: Record<string, CleanSet> };
 const cleanReport = () => JSON.parse(readFileSync('docs/evaluations/clean-retrain-2026-10-11/report.json', 'utf8')) as {
@@ -112,7 +115,21 @@ describe('the 50/50 shipping bar', () => {
     expect(coefficientDigest(h)).toBe(r.coefficientDigest);
   });
 
-  it.each(CLEAN_RETRAINED)('ships %s as a clean-retrained head that passes 60/30 on every fresh test set', label => {
+  it('ships the RWC trumpet refit in place of the clean-retrain head', () => {
+    const h = head('trumpet');
+    const previous = cleanHeads().find(r => r.label === 'trumpet')!;
+    expect(h.maybe).toBeUndefined();
+    expect(h.threshold).toBeCloseTo(0.863, 6);
+    expect(h.bias).toBeCloseTo(-4.108752, 6);
+    expect(h.weights).toHaveLength(512);
+    expect(h.weights[0]).toBeCloseTo(0.926403, 6);
+    expect(h.weights.at(-1)).toBeCloseTo(0.144107, 6);
+    expect(coefficientDigest(h)).not.toBe(previous.coefficientDigest);
+    const loaded = sanitizeLearnedDjModel(JSON.parse(readFileSync('public/sound-model/learned.json', 'utf8')));
+    expect(loaded?.heads?.find(x => x.label === 'trumpet')).toMatchObject({ threshold: 0.863, bias: -4.108752 });
+  });
+
+  it.each(CLEAN_STILL_SHIPPED)('ships %s as a clean-retrained head that passes 60/30 on every fresh test set', label => {
     const h = head(label);
     const c = cleanHeads().find(r => r.label === label)!;
     expect(h.maybe).toBeUndefined();

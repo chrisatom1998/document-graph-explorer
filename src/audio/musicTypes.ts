@@ -51,7 +51,13 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // under the fair half-split rule; the CLAP heads that showed acid synth and vocal phrase found none, whistle missed precision).
 // 129/130: the clave, drum fill, spoken phrase, tom and vocal laugh heads also run on clips of 2.25 s or less (app-path
 // scoring that follows the summary's display rules, 60/30 on the fresh test sets; the one-shot model found none of them).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 130 : 129;
+// 131/132: the tagger decides synth lead, vocoder vocal, record stop, glitch effect and choir on clips up to 30 s (fresh test
+// sets 60/30 at its own cutoffs, choir at its fair half-split cutoff; the CLAP prompts and heads that showed them failed).
+// record stop (5 positives) and glitch effect (11 + 5) were too few for the half split to confirm: recheck them first when
+// more labelled clips arrive.
+// 133/134: on recordings shorter than 10 s the electric-guitar head must outscore the acoustic-guitar head,
+// and between 2.25 s and 10 s the CLAP piano head must also clear the tagger's piano cutoff (NSynth test notes).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 134 : 133;
 export interface InstrumentEstimate {
   label: string;
   score: number;
