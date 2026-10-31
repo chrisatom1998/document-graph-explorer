@@ -20,8 +20,9 @@ env:
   # api.nuget.org in its postinstall on every run. CI only uses the CPU build, and that
   # host has timed out npm ci on hosted runners more than once.
   ONNXRUNTIME_NODE_INSTALL: skip
-  # Gitignored, checksum-verified weights fetched by scripts/download-music-model.mjs.
+  # Gitignored, checksum-verified optional weights fetched by `npm run models:audio`.
   MUSIC_MODEL_PATHS: |
+    public/audio-model-pack.json
     public/music-model/**/*.onnx
     public/sound-model/**/*.onnx
     public/jamendo-model/*.onnx
@@ -275,10 +276,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # The image build runs `npm run build`, whose prebuild step fetches any
-      # weight that is missing from the build context. Restoring the cached
-      # weights first (same key as the jobs above) keeps the build off the
-      # upstream hosts, which time out on hosted runners now and then.
+      # CI exercises the optional audio-enabled image. Restoring the cached
+      # weights first (same key as the jobs above) keeps setup off the upstream
+      # hosts, which time out on hosted runners now and then.
       - name: Set up Node
         uses: actions/setup-node@v6
         with:

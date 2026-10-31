@@ -78,14 +78,22 @@ discovered safely.
 
 ## Model weights
 
-The decoder runtime is staged during dev startup and builds. First-time
-`npm run dev` or `npm run build` downloads roughly 632 MB of checksum-verified
-model weights from Hugging Face (347 MB of it is the full-precision AudioSet AST
-that runs on the graphics card, 91.4 MB the trained tagger, licensed CC BY-NC-SA
-4.0 for non-commercial use). Later runs reuse the verified local files, and
-`npm run setup:music` prepares the assets before an offline build. Model
-binaries and private audio samples are not stored in Git. Build checks verify
-weights, configuration and local description-vector checksums.
+The decoder runtime is staged during dev startup and builds, but the roughly
+632 MB audio-model pack is optional. A clean `npm run dev` or `npm run build`
+uses only the checked-in core/document pack. `npm run models:audio` downloads
+and checksum-verifies the audio weights (including the 347 MB full-precision
+AudioSet AST used on the graphics card and the 91.4 MB trained tagger, licensed
+CC BY-NC-SA 4.0 for non-commercial use); `DGE_MODELS=full npm run build` and
+`npm run models:full` prepare all capabilities. `npm run build:airgap` always
+does the same before sealing and verifying its artifact. `setup:music` remains
+an alias for `models:audio`.
+
+A complete build serves every inference file from its own origin. On the first
+audio import, the app reads the verified pack marker, displays its exact byte
+count, and asks before the browser fetches the weights. A core-only build
+instead explains that its distributor must run `npm run models:audio` and
+rebuild. Model binaries and private audio samples are not stored in Git. Build
+checks verify weights, configuration and local description-vector checksums.
 
 ## Tempo, key and pitch
 

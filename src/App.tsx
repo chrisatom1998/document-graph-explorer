@@ -14,6 +14,7 @@ import { initPersistence } from './persistence/session';
 import { initChatHistorySync } from './persistence/chatHistorySync';
 import { useSettingsStore } from './store/settingsStore';
 import { audioAnalysisUsedBefore } from './audio/speculativePreload';
+import { audioModelPackPreviouslyAuthorized } from './audio/modelPack';
 import './styles.css';
 
 /** Fetch and warm the audio models once a restored graph that contains audio has
@@ -41,8 +42,13 @@ function preloadAudioModelsWhenIdle(): void {
     // model workers on every launch for nothing; their first audio drop still
     // preloads while the files are hashed and parsed (coordinator.ts).
     if (!audioAnalysisUsedBefore() && !useGraphStore.getState().nodes.some(n => n.kind === 'document' && n.fileType === 'audio')) return;
+    // Never let a restored workspace pull the optional weights before the
+    // first import has shown and accepted the exact-size consent prompt.
     const mode = useSettingsStore.getState().musicAnalysisMode;
-    void import('./audio/analyzeMusic').then(m => m.preloadMusicModels(mode, { speculative: true })).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
+    void audioModelPackPreviouslyAuthorized().then(authorized => {
+      if (!authorized) return;
+      return import('./audio/analyzeMusic').then(m => m.preloadMusicModels(mode, { speculative: true }));
+    }).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
   };
   if (typeof globalThis.requestIdleCallback === 'function') globalThis.requestIdleCallback(start, { timeout: 3000 });
   else setTimeout(start, 1500);
