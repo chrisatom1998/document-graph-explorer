@@ -29,7 +29,7 @@ listed at the end.
 | foley | Tried the cutoff. On dev it is close to flat (see below). On the judge set it is not the fix; see "Got worse". | `cat:foley` cutoff 0.2941 → 0.15 (dev, F1 fallback). |
 | drums | **Labels.** Chris (11:35 AM PT): "drums" means ANY drum sound, single kick or snare one-shots included. The eval labels only counted FSD50K `Drum_kit`. | Eval labels now count `Drum`, `Drum_kit`, `Bass_drum` (kick), `Snare_drum` and `Tabla` as drums (`EVAL_LABELS` in `scripts/tag-baseline/build_set.py`). FSD50K has no tom or kick class. `Percussion` on its own (cymbals, shakers, bells) is not a drum. **No threshold or model change.** Clip selection still uses the training map, so the judge set keeps the same 681 clips: 29 clips gain a drums label. `scripts/audio-model/labelmap.py` (training) is unchanged. |
 
-`INSTRUMENT_ANALYSIS_REVISION` → 139/140 (137/138 is staccato, #267, on main), so saved sounds are analysed again.
+`INSTRUMENT_ANALYSIS_REVISION` → 141/142 (137/138 is staccato, #267, and 139/140 is reese bass, #275, both on main), so saved sounds are analysed again.
 
 ## Dev set (tuning), check half, before → after
 

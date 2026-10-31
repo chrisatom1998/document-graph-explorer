@@ -244,6 +244,13 @@ describe('trained tagger display', () => {
     expect(shown.map(s => `${s.dimension}:${s.label}`)).toEqual(['character:staccato']);
     expect(shown[0].scores).toMatchObject([{ model: TAGGER_SCORE }]);
   });
+  it('decides reese bass at its fresh-clip cutoff on clips', () => {
+    expect(threshold('cat:reese bass')).toBe(.1219);
+    expect(confidentSoundSummary(track(4, { 'cat:reese bass': .1 })).map(s => s.label)).not.toContain('reese bass');
+    const shown = confidentSoundSummary(track(4, { 'cat:reese bass': .1219 })).filter(s => s.label === 'reese bass');
+    expect(shown.map(s => `${s.dimension}:${s.label}`)).toEqual(['effect:reese bass']);
+    expect(shown[0].scores).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
   it('shows whistle only from 0.90 (fresh test sets: the 0.4791 cutoff missed precision)', () => {
     expect(threshold('cat:whistle')).toBe(.9);
     expect(sources(track(4, { 'cat:whistle': .85 }))).toEqual([]);
@@ -318,7 +325,7 @@ describe('trained tagger long-recording rules', () => {
       'cat:record stop': { rule: 'detectors', afterSeconds: 30 }, 'cat:glitch effect': { rule: 'detectors', afterSeconds: 30 },
       'cat:choir': { rule: 'detectors', afterSeconds: 30 }, 'cat:wind ambience': { rule: 'detectors', afterSeconds: 30 },
       'cat:vocal shout': { rule: 'detectors', afterSeconds: 30 },
-      'cat:staccato': { rule: 'detectors', afterSeconds: 30 } });
+      'cat:staccato': { rule: 'detectors', afterSeconds: 30 }, 'cat:reese bass': { rule: 'detectors', afterSeconds: 30 } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
   it('needs the higher full-song drums threshold on long recordings only', () => {
@@ -338,7 +345,8 @@ describe('trained tagger long-recording rules', () => {
   it.each(['cat:environmental sound', 'cat:foley', 'cat:turntable', 'cat:finger snap', 'cat:water ambience', 'cat:guitar', 'cat:violin / fiddle', 'cat:siren',
     'cat:flute', 'cat:marimba', 'cat:vibraphone', 'cat:crash cymbal', 'cat:whisper', 'cat:voice', 'cat:kick', 'cat:clap',
     'cat:organ', 'cat:gong', 'cat:laser', 'cat:riser', 'cat:reverberant', 'cat:conga', 'cat:vocal chant', 'cat:static noise', 'cat:acid synth', 'cat:vocal phrase',
-    'cat:synth lead', 'cat:vocoder vocal', 'cat:record stop', 'cat:glitch effect', 'cat:choir', 'cymbals', 'cat:hi-hat', 'cat:wind ambience', 'cat:vocal shout', 'cat:staccato'])(
+    'cat:synth lead', 'cat:vocoder vocal', 'cat:record stop', 'cat:glitch effect', 'cat:choir', 'cymbals', 'cat:hi-hat', 'cat:wind ambience', 'cat:vocal shout',
+    'cat:staccato', 'cat:reese bass'])(
     'keeps the tagger deciding %s up to 30 s, as the held-out scorer did, and defers on longer recordings', output => {
       const at = (duration: number, windows: number) => taggerDecisions({ revision: TAGGER_REVISION, windows, scores: { [output]: threshold(output) } }, duration)!
         .find(d => d.tag.output === output);
