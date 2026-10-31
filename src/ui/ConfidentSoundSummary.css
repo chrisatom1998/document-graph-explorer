@@ -86,7 +86,7 @@
 .model-scores__bar > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
 .model-scores__value { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 .model-scores__item--untested { opacity: .55; }
-.model-scores__item--untested .model-scores__bar > span { background: var(--text-faint); }
+.model-scores__item--untested .model-scores__bar > span { background: #5b6288; }
 .model-scores__flag { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; }
 .model-scores__note { margin: 6px 0 0; font-size: 11px; color: var(--text-faint); }
 .model-scores h5 small { text-transform: none; letter-spacing: 0; }

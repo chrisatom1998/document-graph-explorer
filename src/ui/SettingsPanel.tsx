@@ -528,10 +528,6 @@ export default function SettingsPanel() {
             disabled={enriching || enrichBlocked || offlineMode}
             title={enrichHint}
             className="settings-btn"
-            style={{
-              opacity: enriching || enrichBlocked || offlineMode ? 0.55 : 1,
-              cursor: enriching || enrichBlocked || offlineMode ? 'default' : 'pointer',
-            }}
           >
             {enriching ? 'Enriching…' : 'Enrich now'}
           </button>
@@ -714,7 +710,7 @@ export default function SettingsPanel() {
                   onClick={onClearAll}
                   disabled={clearing}
                   title="Permanently clear everything"
-                  className="settings-btn settings-btn--danger" style={{ opacity: clearing ? 0.6 : 1 }}
+                  className="settings-btn settings-btn--danger"
                 >
                   {clearing ? 'Clearing…' : 'Yes, clear everything'}
                 </button>
