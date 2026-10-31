@@ -12,6 +12,9 @@ let audioCtx = null;
 let playing = null; // the sound currently playing, if any
 let current = null; // { name, samples, sampleRate, analysis, fullSeconds }
 const sampleCache = new Map();
+// Bumped on every new pick (file or built-in sound). A file that finishes decoding
+// after a newer pick must not overwrite what the person chose last.
+let selection = 0;
 
 function context() {
   audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
@@ -211,6 +214,11 @@ function renderResult() {
     }
     drawWave(samples.subarray(0, Math.min(samples.length, Math.floor(sampleRate * MAX_SECONDS))), m.peak);
     drawSpectrum(m.spectrum);
+  } else {
+    // A silent clip has nothing to draw. Wipe the pictures so the previous sound's
+    // waveform and spectrum don't sit next to the new file's results.
+    prepareCanvas($('wave'));
+    prepareCanvas($('spec'));
   }
   $('bars').hidden = analysis.results.length === 0;
   $('fine').hidden = analysis.results.length === 0;
@@ -237,18 +245,21 @@ function clearError() {
 async function handleFile(file) {
   clearError();
   if (!file) return;
+  const mine = ++selection;
   if (file.size > MAX_BYTES) {
     showError('That file is over 25 MB. Try a shorter clip.');
     return;
   }
   try {
     const decoded = await context().decodeAudioData(await file.arrayBuffer());
+    if (mine !== selection) return; // the person picked something else meanwhile
     const keep = Math.floor(decoded.sampleRate * MAX_SECONDS);
     const channels = [];
     for (let c = 0; c < decoded.numberOfChannels; c++) channels.push(decoded.getChannelData(c).subarray(0, keep));
     document.querySelectorAll('.sample[aria-pressed="true"]').forEach((b) => b.setAttribute('aria-pressed', 'false'));
     showClip({ name: file.name, samples: toMono(channels), sampleRate: decoded.sampleRate, fullSeconds: decoded.duration });
   } catch {
+    if (mine !== selection) return;
     showError("Couldn't read that file as audio. Try a WAV, MP3, M4A or OGG file.");
   }
 }
@@ -266,6 +277,7 @@ function buildSampleButtons() {
     blurb.textContent = sample.blurb;
     button.append(title, blurb);
     button.addEventListener('click', () => {
+      selection++;
       clearError();
       grid.querySelectorAll('.sample').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
       showClip({ name: `${sample.name} (built-in)`, samples: sampleAudio(sample), sampleRate: SAMPLE_RATE });

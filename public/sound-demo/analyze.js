@@ -98,9 +98,12 @@ export function measure(samples, sampleRate) {
   const frames = Math.max(1, Math.floor(x.length / hop));
   const env = new Float64Array(frames);
   for (let f = 0; f < frames; f++) {
+    // Clips shorter than one step (10 ms) still get one frame; never read past the end.
+    const from = f * hop;
+    const to = Math.min(x.length, from + hop);
     let s = 0;
-    for (let i = f * hop; i < (f + 1) * hop; i++) s += x[i] * x[i];
-    env[f] = Math.sqrt(s / hop);
+    for (let i = from; i < to; i++) s += x[i] * x[i];
+    env[f] = Math.sqrt(s / Math.max(1, to - from));
   }
   let envPeak = 0;
   let peakIdx = 0;

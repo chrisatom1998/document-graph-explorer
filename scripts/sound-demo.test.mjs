@@ -71,6 +71,24 @@ test('a clip that matches nothing well says "unclear" instead of forcing a label
   assert.notEqual(result.results[0]?.label, 'hi-hat');
 });
 
+test('clips shorter than 10 ms are measured properly, not turned into NaN or a fake kick', () => {
+  for (const length of [1, 2, 10, 100, 300, 440, 441, 442]) {
+    const tone = new Float32Array(length);
+    // +1 radian so the very first sample isn't exactly zero (a lone zero is rightly "silent").
+    for (let i = 0; i < length; i++) tone[i] = 0.8 * Math.sin((2 * Math.PI * 440 * i) / SAMPLE_RATE + 1);
+    const { measurements: m } = analyze(tone, SAMPLE_RATE);
+    for (const key of ['attack', 'activeSeconds', 'centroid', 'lowShare', 'highShare', 'tonality', 'dominantHz']) {
+      assert.ok(Number.isFinite(m[key]), `length ${length}: ${key} is ${m[key]}`);
+    }
+  }
+  // 100 samples (about 2 ms) of a 440 Hz tone: the energy is up around 440 Hz, not at zero.
+  const tone = new Float32Array(100);
+  for (let i = 0; i < tone.length; i++) tone[i] = 0.8 * Math.sin((2 * Math.PI * 440 * i) / SAMPLE_RATE);
+  const result = analyze(tone, SAMPLE_RATE);
+  assert.ok(result.measurements.centroid > 200, `centroid ${result.measurements.centroid}`);
+  assert.notEqual(result.results[0]?.label, 'kick');
+});
+
 test('only the first ten seconds are analysed', () => {
   const long = new Float32Array(SAMPLE_RATE * 12);
   long.set(SAMPLES[0].make(), 0);
