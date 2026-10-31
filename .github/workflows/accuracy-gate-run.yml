@@ -207,116 +207,148 @@ jobs:
     # shard must not become that key, or the next run would treat a short set as complete and skip the fetch.
     # The shards are merged from their own caches, not from run artifacts: the repository is public, and an
     # artifact can be downloaded by anyone signed in to GitHub. Restoring several caches into one path adds files.
+    # The shared key may already exist (main's run saved it while this one was fetching); then there is nothing to
+    # merge, and a part cache evicted since its shard finished cannot fail the run. A part missing while the shared
+    # key is missing too means the cache ran out of room: re-run all jobs, and the shard fetches it again.
     needs: [fetch-jamendo, fetch-jamendo-retry]
     if: ${{ !cancelled() && (needs.fetch-jamendo.result == 'success' || needs.fetch-jamendo-retry.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
+      - name: Look for the shared key
+        id: shared
+        uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo
+          lookup-only: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-0-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-1-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-2-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-3-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-4-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-5-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-6-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-7-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-8-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-9-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-10-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-11-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-12-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-13-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-14-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-15-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-16-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-17-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-18-of-20
           fail-on-cache-miss: true
       - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-19-of-20
           fail-on-cache-miss: true
       - uses: actions/checkout@v7
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           sparse-checkout: ${{ env.DOCS }}/jamendo-manifest.json
           sparse-checkout-cone-mode: false
           path: src
       - name: Check every track is here before writing the shared key
+        if: steps.shared.outputs.cache-hit != 'true'
         # If the shard count and the restores above ever drift apart, a short set must not become the shared key:
         # plan would then report it as cached and stop refetching.
         run: |
@@ -325,6 +357,7 @@ jobs:
             console.log(`all ${m.items.length} tracks present`)' \
             "src/$DOCS/jamendo-manifest.json" gate-audio/jamendo
       - uses: actions/cache/save@v6
+        if: steps.shared.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo
