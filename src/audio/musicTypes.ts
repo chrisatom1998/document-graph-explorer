@@ -51,7 +51,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // under the fair half-split rule; the CLAP heads that showed acid synth and vocal phrase found none, whistle missed precision).
 // 129/130: the clave, drum fill, spoken phrase, tom and vocal laugh heads also run on clips of 2.25 s or less (app-path
 // scoring that follows the summary's display rules, 60/30 on the fresh test sets; the one-shot model found none of them).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 130 : 129;
+// 131/132: a trained rimshot head (also on short clips) replaces the raw-CLAP prompt that never showed it (app-path 60/30 on
+// the fresh test sets, docs/evaluations/rimshot-supersaw-heads-2026-10-31).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 132 : 131;
 export interface InstrumentEstimate {
   label: string;
   score: number;

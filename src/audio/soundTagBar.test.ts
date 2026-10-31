@@ -68,6 +68,8 @@ const ONE_SHOT_2026_10_29: [label: string, threshold: number][] = [
 ];
 /** Below 50/50 on those clips: viola and marimba stay maybe; conga, gliding and tambourine (precision < 0.45) do not ship. */
 const RUNTIME_MAYBE = ['viola', 'marimba'];
+/** coefficientDigest of the shipped rimshot head (2026-10-31). */
+const RIMSHOT_DIGEST = 'd5d324125fabc9c5f5b4bdc875bfe55294ba45959173b3e6e015edc7e17a2e34';
 const RUNTIME_DROPPED = ['conga', 'gliding', 'tambourine'];
 /** Held back: their 50/50 was measured only on NSynth (incl. code-made effect renders), with no real held-out clips that
  * confirm the shipped head; glassy is a timbre rule word. They keep their current tier. */
@@ -152,6 +154,15 @@ describe('the 50/50 shipping bar', () => {
   it.each(ONE_SHOT_2026_10_29)('runs %s on short clips at its unchanged cutoff', (label, threshold) => {
     expect(head(label).oneShot).toBe(true);
     expect(head(label).threshold).toBeCloseTo(threshold, 4);
+  });
+
+  // Trained from training-only mirror clips (filtered against the private exclude list) and judged once on the fresh test
+  // sets with the app-path scorer. docs/evaluations/rimshot-supersaw-heads-2026-10-31.
+  it('ships the rimshot head on short clips at its out-of-fold cutoff', () => {
+    expect(head('rimshot')).toMatchObject({ group: 'production', oneShot: true });
+    expect(head('rimshot').maybe).toBeUndefined();
+    expect(head('rimshot').threshold).toBeCloseTo(.8187, 4);
+    expect(coefficientDigest(head('rimshot'))).toBe(RIMSHOT_DIGEST);
   });
 
   it('keeps the one-shot safeguard on promoted one-shot heads', () => {
