@@ -59,7 +59,11 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // and between 2.25 s and 10 s the CLAP piano head must also clear the tagger's piano cutoff (NSynth test notes).
 // 135/136: a trained rimshot head (also on short clips) replaces the raw-CLAP prompt that never showed it (app-path 60/30 on
 // the fresh test sets, docs/evaluations/rimshot-supersaw-heads-2026-10-31).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 136 : 135;
+// 139/140 (137/138 is staccato, #267, on main): the tagger decides cymbal on clips of any length up to 30 s (the old 10 s
+// minimum and the window rule left every shorter clip and most longer ones with no decision), plus wind ambience and
+// vocal shout from its own outputs; foley and hi-hat cutoffs move. Cutoffs picked on an FSD50K dev-val tuning set that
+// shares no uploader with the tag-baseline judge set (docs/evaluations/tag-fix-2026-10-31).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 140 : 139;
 export interface InstrumentEstimate {
   label: string;
   score: number;
