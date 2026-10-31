@@ -49,7 +49,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // cutoffs; the CLAP head or prompt that showed them found none).
 // 127/128: the tagger decides acid synth and vocal phrase on clips up to 30 s, and whistle needs 0.90 (fresh test sets 60/30
 // under the fair half-split rule; the CLAP heads that showed acid synth and vocal phrase found none, whistle missed precision).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 128 : 127;
+// 129/130: the clave, drum fill, spoken phrase, tom and vocal laugh heads also run on clips of 2.25 s or less (app-path
+// scoring that follows the summary's display rules, 60/30 on the fresh test sets; the one-shot model found none of them).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 130 : 129;
 export interface InstrumentEstimate {
   label: string;
   score: number;

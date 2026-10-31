@@ -87,8 +87,14 @@ export default function MusicFeatures({ node, onSeek, onMessage, status }: { nod
     recognition: analysis.recognition, fusion: analysis.fusion, duration: analysis.durationSeconds, onSeek,
     reviews: analysis.soundReviews, confirmedInstruments: confirmed ?? []
   } : undefined;
+  // A model that has already failed is a partial analysis even while the quick
+  // pass is still open. The trained tagger can keep that pass open for half a
+  // minute; the status line should not hide the failure behind "still checking".
+  const modelFailed = !!analysis?.recognition?.jobs.some(entry => entry.status === 'failed');
   const analysisState = analysis?.stage === 'preview'
-    ? job || phase === 'parsing' ? 'Quick estimate — still checking in the background.' : <>Quick estimate only{analysis.recognition && analysis.recognition.status !== 'complete' ? `; analysis ${analysis.recognition.status}` : ''}. Reanalyze to finish. <button type="button" className="music-status__action" disabled={phase !== 'ready' || !!controller} onClick={() => void run()}>Finish analysis</button></>
+    ? job || phase === 'parsing'
+      ? modelFailed ? 'Analysis: partial. Quick estimate — still checking in the background.' : 'Quick estimate — still checking in the background.'
+      : <>Quick estimate only{analysis.recognition && analysis.recognition.status !== 'complete' ? `; analysis ${analysis.recognition.status}` : ''}. Reanalyze to finish. <button type="button" className="music-status__action" disabled={phase !== 'ready' || !!controller} onClick={() => void run()}>Finish analysis</button></>
     : analysis && (analysis.instrumentScan && !analysis.instrumentScan.complete || analysis.recognition && analysis.recognition.status !== 'complete')
       ? <>Analysis: {analysis.recognition && analysis.recognition.status !== 'complete' ? analysis.recognition.status : 'incomplete'}. <button type="button" className="music-status__action" disabled={phase !== 'ready' || !!controller} onClick={() => void run()}>{controller ? 'Analyzing…' : 'Finish analysis'}</button></>
       : null;

@@ -395,7 +395,10 @@ describe('graph accuracy on the generated demo corpus', () => {
     expect(after.linkedApart).toBeLessThanOrEqual(before.linkedApart);
   });
 
-  it('keeps the hand-labelled topics of 61 real Python PEPs together', { timeout: 600_000 }, async () => {
+  // The 2026-10-25 GitHub image (Node 24.22) embeds this corpus about twice as
+  // slowly as the 2026-10-17 run: 320s then, about 620s now, same onnxruntime
+  // 1.30 and the same accuracy. 15 minutes covers that pass with some room.
+  it('keeps the hand-labelled topics of 61 real Python PEPs together', { timeout: 900_000 }, async () => {
     const docs = loadPepCorpus();
     expect(docs).toHaveLength(Object.values(PEP_GROUPS).flat().length);
     const { edges, clusters } = await runPipeline(docs);
