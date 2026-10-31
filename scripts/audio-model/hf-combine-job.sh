@@ -3,7 +3,8 @@
 # held-out audio), score the result on the same held-out sets, write the browser parity reference, and publish it to the
 # public model repo $PUBLIC_REPO under $LICENSE. Launched by .github/workflows/tagger-combine.yml through hf-launch.py
 # (JOB_SCRIPT=hf-combine-job.sh). Env: REPO_SHA, HF_REPO (private runs), RUNS (folders of HF_REPO, the shipped run
-# first), KEEP, PUBLIC_REPO, LICENSE, HF_TOKEN (secret).
+# first), KEEP, ONLY (optional: RUN=output,output entries separated by ';', the only outputs each named run may take), PIN (same format: outputs forced to a named run),
+# PUBLIC_REPO, LICENSE, HF_TOKEN (secret).
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q && apt-get install -yq --no-install-recommends git ca-certificates > /dev/null
@@ -14,7 +15,7 @@ git clone -q https://github.com/fschmid56/EfficientAT.git && git -C EfficientAT 
 export EFFICIENTAT=$W/EfficientAT
 S=$W/dge/scripts/audio-model
 # The held-out sets come from the training jobs' prep cache (same key as hf-job.sh with ALL_TAGS=1).
-KEY=$( (ls $S/prepare*.py | grep -v prepare-rawstems.py | xargs cat; cat $S/labelmap.py; echo "prep prepj holdout fsdprep nsprep fsprep xprep") | sha256sum | cut -c1-12)
+KEY=$( (ls $S/prepare*.py | grep -v -e prepare-rawstems.py -e prepare-iowa.py -e prepare-chrisdrive.py -e prepare-vcsl.py -e prepare-slakh-more.py -e prepare-sao.py -e prepare-fsnew.py -e prepare-run9.py -e prepare-round10.py | xargs cat; cat $S/labelmap.py; echo "prep prepj holdout fsdprep nsprep fsprep xprep") | sha256sum | cut -c1-12)
 python3 - "$KEY" $RUNS <<'PY'
 import os, sys
 from huggingface_hub import HfApi, snapshot_download
@@ -25,10 +26,16 @@ snapshot_download(data, repo_type='dataset', local_dir='cache', max_workers=16,
 snapshot_download(os.environ['HF_REPO'], local_dir='runs', allow_patterns=[f'{r}/{f}' for r in runs for f in ('model.pt', 'log.json', 'thresholds.json', 'eval.json')])
 PY
 C=cache/prep-cache/$KEY
+# Re-score every input with the same FSD50K labels before comparing old and new runs.
+# Keep each run's frozen thresholds and all other benchmark rows.
+python3 $S/refresh-fsd50k-eval.py $C/fsdprep/eval-fsd50k $(for r in $RUNS; do echo runs/$r; done)
 mkdir -p out
-python3 $S/combine.py out $W/dge/src/audio/taggerPolicy.json $(for r in $RUNS; do echo runs/$r; done) --keep "${KEEP:-}" | tee out/combine.txt
+ONLY_ARGS=()
+if [ -n "${ONLY:-}" ]; then IFS=';' read -ra ONLY_PARTS <<< "$ONLY"; for o in "${ONLY_PARTS[@]}"; do ONLY_ARGS+=(--only "$o"); done; fi
+if [ -n "${PIN:-}" ]; then IFS=';' read -ra PIN_PARTS <<< "$PIN"; for o in "${PIN_PARTS[@]}"; do ONLY_ARGS+=(--pin "$o"); done; fi
+python3 $S/combine.py out $W/dge/src/audio/taggerPolicy.json $(for r in $RUNS; do echo runs/$r; done) --keep "${KEEP:-}" "${ONLY_ARGS[@]}" | tee out/combine.txt
 python3 $S/evaluate.py out/model.onnx out/thresholds.json out/eval.json $C/prep/eval-round1 $C/prep/eval-round2 $C/holdout/holdout-r3 \
-  $C/fsdprep/eval-fsd50k $C/nsprep/eval-nsynth-test $C/nsprep/eval-nsynth-test-fx $C/fsprep/eval-freesound > out/eval.txt
+  $C/fsdprep/eval-fsd50k $C/nsprep/eval-nsynth-test $C/nsprep/eval-nsynth-test-fx $C/fsprep/eval-freesound | tee out/eval.txt
 mkdir -p pub/onnx && mv out/model.onnx out/model.json pub/onnx/ && cp out/thresholds.json out/picks.json out/eval.json out/eval.txt out/combine.txt pub/
 python3 $S/parity.py pub/onnx/model.onnx pub/parity.json
 python3 - <<'PY'

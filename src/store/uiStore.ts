@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import type { ClipShape } from '../audio/clipShape';
+import type { StemRole } from '../audio/stemRole';
 import type { EdgeKind, FileType } from '../model/types';
 
 export type QualityTier = 0 | 1 | 2 | 3 | 4; // 0 = ultra … 4 = suggest 2D
@@ -74,6 +76,10 @@ export interface GraphFilter {
   style: string | null;
   /** Clips whose Sounds tags include any of these labels (voice OR synth); null = any sound. */
   sounds: string[] | null;
+  /** Only loops or only one-shots (see clipShape); null = both. Optional for snapshots saved before it existed. */
+  clipShape?: ClipShape | null;
+  /** Clips whose sounds cover this stem (drums, bass, vocals, melody; see stemRole); null = any. */
+  stem?: StemRole | null;
 }
 
 /**
@@ -81,8 +87,8 @@ export interface GraphFilter {
  * snapshots). Only keys that are present and valid are returned, so callers
  * can tell "absent" from "explicitly cleared" (null).
  */
-export function sanitizeAudioFacets(source: Record<string, unknown>): Partial<Pick<GraphFilter, 'bpmRange' | 'musicKey' | 'style' | 'sounds'>> {
-  const out: Partial<Pick<GraphFilter, 'bpmRange' | 'musicKey' | 'style' | 'sounds'>> = {};
+export function sanitizeAudioFacets(source: Record<string, unknown>): Partial<Pick<GraphFilter, 'bpmRange' | 'musicKey' | 'style' | 'sounds' | 'clipShape' | 'stem'>> {
+  const out: Partial<Pick<GraphFilter, 'bpmRange' | 'musicKey' | 'style' | 'sounds' | 'clipShape' | 'stem'>> = {};
   if (Object.hasOwn(source, 'bpmRange')) {
     const r = source.bpmRange;
     if (r === null) out.bpmRange = null;
@@ -99,6 +105,16 @@ export function sanitizeAudioFacets(source: Record<string, unknown>): Partial<Pi
     if (v === null) out.sounds = null;
     else if (Array.isArray(v) && v.length > 0 && v.length <= 64 && v.every(x => typeof x === 'string' && x.length > 0 && x.length <= 64)) out.sounds = [...new Set(v as string[])];
   }
+  if (Object.hasOwn(source, 'clipShape')) {
+    const v = source.clipShape;
+    if (v === null) out.clipShape = null;
+    else if (v === 'loop' || v === 'one-shot') out.clipShape = v;
+  }
+  if (Object.hasOwn(source, 'stem')) {
+    const v = source.stem;
+    if (v === null) out.stem = null;
+    else if (v === 'drums' || v === 'bass' || v === 'vocals' || v === 'melody') out.stem = v;
+  }
   return out;
 }
 
@@ -113,6 +129,8 @@ export const DEFAULT_FILTER: GraphFilter = {
   musicKey: null,
   style: null,
   sounds: null,
+  clipShape: null,
+  stem: null,
 };
 
 export interface SnapshotOverlay {

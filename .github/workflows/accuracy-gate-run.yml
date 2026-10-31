@@ -8,8 +8,16 @@ name: Accuracy gate (shared steps)
 # Base numbers come from the graph exports main's own run cached for that commit; when they're missing (main's run
 # hasn't finished, or the cache expired) the base commit is analysed in this run too. Scorers, manifests and the
 # subset rule come from the base commit, so a change can't edit how it's judged (the change's own copy is used only
-# until the gate is on the base branch). Audio is fetched from the datasets on a cache miss and cached; never committed.
+# until the gate is on the base branch). Audio is fetched from the datasets on a cache miss and kept in the Actions
+# cache; it is never committed or uploaded as a run artifact (the repository is public).
 # Only aggregate numbers are reported.
+#
+# accuracy-gate.yml runs this on a Monday schedule and on workflow_dispatch. The schedule cannot be added here: a
+# reusable workflow is only started by workflow_call. A scheduled or manual run is report-only, like a push to main,
+# and it re-saves the shared audio cache and this commit's baseline. accuracy-gate-cache.yml restores that audio
+# cache every day so a missed Monday does not let it age out at 7 days. The Jamendo downloader is the copy in this
+# workflow, not the base harness: it only reads ranges and checks the published SHA-256, and finished tracks stay
+# on disk when a later folder gets a 503.
 on:
   workflow_call:
     inputs:
@@ -49,7 +57,7 @@ jobs:
       mtgkey_cached: ${{ steps.mtgkey-cache.outputs.cache-hit }}
       matrix: ${{ steps.m.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
       - name: Decide what to analyse
@@ -78,7 +86,7 @@ jobs:
       - name: Look for main's numbers for the base commit
         id: base-cache
         if: steps.p.outputs.base != ''
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: baseline
           key: ${{ env.EXPORTS_CACHE }}-${{ inputs.mode }}-${{ steps.p.outputs.base }}
@@ -87,13 +95,13 @@ jobs:
           lookup-only: true
       - name: Look for cached audio
         id: jamendo-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo
           lookup-only: true
       - id: mtgkey-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: gate-audio/mtgkey
           key: ${{ env.AUDIO_CACHE }}-mtgkey
@@ -109,12 +117,14 @@ jobs:
           EVENT: ${{ github.event_name }}
         run: |
           # Jamendo tracks are 30 s (three analysis windows), about 30 s each to analyse; MTG key excerpts are 10 s.
+          # About 15 Jamendo tracks or 40 MTG key excerpts per job (8-15 min each, plus ~1.5 min setup). A PR whose base
+          # numbers are cached runs 18 jobs, one round on the account's 40 runners; analysing the base too doubles that.
           node -e '
             const { MODE, HEAD_SHA, BASE, BASE_CACHED, EVENT } = process.env;
             const sides = [["head", HEAD_SHA]];
             // On a PR without cached base numbers, analyse the base too. A push to main is report-only, so it never does.
             if (EVENT === "pull_request" && BASE && BASE_CACHED !== "true") sides.push(["base", BASE]);
-            const sets = [["jamendo", MODE === "full" ? 10 : 5], ["mtgkey", 4]];
+            const sets = [["jamendo", MODE === "full" ? 20 : 10], ["mtgkey", 8]];
             const jobs = sides.flatMap(([side, sha]) => sets.flatMap(([set, of]) => Array.from({ length: of }, (_, shard) => ({ side, sha, set, shard, of }))));
             require("fs").appendFileSync(process.env.GITHUB_OUTPUT, `matrix=${JSON.stringify(jobs)}\nbase_cached=${BASE_CACHED}\n`);
             console.log(jobs.length, "analysis jobs:", JSON.stringify(jobs.map(j => `${j.side}/${j.set}/${j.shard}`)));'
@@ -123,49 +133,51 @@ jobs:
     needs: plan
     if: needs.plan.outputs.run == 'true' && needs.plan.outputs.jamendo_cached != 'true'
     runs-on: ubuntu-latest
-    # Streaming a shard's MTG-Jamendo archives can take well over an hour; each shard caches its own tracks, so a
-    # re-run only fetches the shards that didn't finish.
-    timeout-minutes: 240
+    # One shard reads a few small ranges per folder, then waits up to 10 minutes on a 503. A finished folder is
+    # cached even when a later one fails, so the retry job (and a re-run) does not download it again.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
-      max-parallel: 6   # leave most of the account's runners to everything else
+      max-parallel: 2   # six parallel full-archive streams were drawing HTTP 503s from cdn.freesound.org
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     steps:
-      - uses: actions/checkout@v4
+      # A local action is loaded from the runner's workspace. Without this checkout the job dies on
+      # "Can't find action.yml" before the action's own checkout can run. The action then checks out the harness.
+      - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.plan.outputs.harness }}
-      - name: Restore this shard's tracks from an earlier run
-        id: part
-        uses: actions/cache/restore@v4
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/fetch-jamendo-shard
         with:
-          path: gate-audio/jamendo
-          key: ${{ env.AUDIO_CACHE }}-jamendo-part-${{ matrix.shard }}-of-20
-      - name: Check the frozen selection against the pinned dataset metadata
-        if: steps.part.outputs.cache-hit != 'true'
-        run: |
-          M="$RUNNER_TEMP/mj"
-          for f in data/splits/split-0/autotagging_instrument-test.tsv data/raw_30s_cleantags.tsv \
-                   derived/music-classification-annotations/music-classification-annotations-clean.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
-            mkdir -p "$M/$(dirname $f)"; curl -fsSL --retry 6 -o "$M/$f" "$JAMENDO_META/$f"
-          done
-          python3 scripts/holdout-r3/select-jamendo.py "$M"
-      - name: Fetch and cut this shard's tracks
-        if: steps.part.outputs.cache-hit != 'true'
-        run: |
-          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
-          python3 scripts/holdout-r3/fetch-jamendo.py "$DOCS/jamendo-manifest.json" \
-            "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ matrix.shard }}/20 gate-audio/jamendo
-      - uses: actions/cache/save@v4
-        if: steps.part.outputs.cache-hit != 'true'
+          harness: ${{ needs.plan.outputs.harness }}
+          shard: ${{ matrix.shard }}
+          pass: '1'
+          audio-cache: ${{ env.AUDIO_CACHE }}
+
+  fetch-jamendo-retry:
+    # The first pass keeps whatever it finished. This pass runs only when a shard failed, restores that partial
+    # cache, and fetches the folders still missing. Shards that already completed hit their cache and return.
+    needs: [plan, fetch-jamendo]
+    # !cancelled() is a status check, so GitHub does not also require success(). Without it this job is
+    # skipped whenever fetch-jamendo fails, which is the only time it should run.
+    if: ${{ !cancelled() && needs.plan.outputs.run == 'true' && needs.plan.outputs.jamendo_cached != 'true' && needs.fetch-jamendo.result == 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    steps:
+      - uses: actions/checkout@v7
         with:
-          path: gate-audio/jamendo
-          key: ${{ env.AUDIO_CACHE }}-jamendo-part-${{ matrix.shard }}-of-20
-      - uses: actions/upload-artifact@v4
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/fetch-jamendo-shard
         with:
-          name: gate-audio-jamendo-${{ inputs.mode }}-${{ matrix.shard }}
-          path: gate-audio/jamendo
-          retention-days: 3
+          harness: ${{ needs.plan.outputs.harness }}
+          shard: ${{ matrix.shard }}
+          pass: '2'
+          audio-cache: ${{ env.AUDIO_CACHE }}
 
   fetch-mtgkey:
     needs: plan
@@ -173,7 +185,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.plan.outputs.harness }}
       - name: Fetch and cut the held-out MTG key excerpts
@@ -183,75 +195,206 @@ jobs:
           # Refuses to continue if the frozen manifest can't be rebuilt exactly.
           python3 scripts/holdout-r3/select-mtg-key.py "$RUNNER_TEMP/mk" "$DOCS/round2-mtg-key-tracks.txt" gate-audio/mtgkey
           git diff --exit-code "$DOCS/mtg-key-manifest.json"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: gate-audio-mtgkey-${{ inputs.mode }}
-          path: gate-audio/mtgkey
-          retention-days: 3
-
-  cache-audio:
-    # Caches written on main are shared with every PR; a PR's own caches only help its re-runs.
-    needs: [fetch-jamendo, fetch-mtgkey]
-    if: ${{ !cancelled() && (needs.fetch-jamendo.result == 'success' || needs.fetch-mtgkey.result == 'success') }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        if: needs.fetch-jamendo.result == 'success'
-        with:
-          pattern: gate-audio-jamendo-${{ inputs.mode }}-*
-          path: gate-audio/jamendo
-          merge-multiple: true
-      - uses: actions/cache/save@v4
-        if: needs.fetch-jamendo.result == 'success'
-        with:
-          path: gate-audio/jamendo
-          key: ${{ env.AUDIO_CACHE }}-jamendo
-      - uses: actions/download-artifact@v4
-        if: needs.fetch-mtgkey.result == 'success'
-        with:
-          name: gate-audio-mtgkey-${{ inputs.mode }}
-          path: gate-audio/mtgkey
-      - uses: actions/cache/save@v4
-        if: needs.fetch-mtgkey.result == 'success'
+      # Straight into the shared cache: the repository is public, so the audio never becomes a run artifact.
+      - uses: actions/cache/save@v6
         with:
           path: gate-audio/mtgkey
           key: ${{ env.AUDIO_CACHE }}-mtgkey
 
+  cache-audio:
+    # Caches written on main are shared with every PR; a PR's own caches only help its re-runs.
+    # The combined Jamendo key is written only when every shard finished (first pass, or the retry). A partial
+    # shard must not become that key, or the next run would treat a short set as complete and skip the fetch.
+    # The shards are merged from their own caches, not from run artifacts: the repository is public, and an
+    # artifact can be downloaded by anyone signed in to GitHub. Restoring several caches into one path adds files.
+    # The shared key may already exist (main's run saved it while this one was fetching); then there is nothing to
+    # merge, and a part cache evicted since its shard finished cannot fail the run. A part missing while the shared
+    # key is missing too means the cache ran out of room: re-run all jobs, and the shard fetches it again.
+    needs: [fetch-jamendo, fetch-jamendo-retry]
+    if: ${{ !cancelled() && (needs.fetch-jamendo.result == 'success' || needs.fetch-jamendo-retry.result == 'success') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Look for the shared key
+        id: shared
+        uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo
+          lookup-only: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-0-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-1-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-2-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-3-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-4-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-5-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-6-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-7-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-8-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-9-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-10-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-11-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-12-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-13-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-14-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-15-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-16-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-17-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-18-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-19-of-20
+          fail-on-cache-miss: true
+      - uses: actions/checkout@v7
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          sparse-checkout: ${{ env.DOCS }}/jamendo-manifest.json
+          sparse-checkout-cone-mode: false
+          path: src
+      - name: Check every track is here before writing the shared key
+        if: steps.shared.outputs.cache-hit != 'true'
+        # If the shard count and the restores above ever drift apart, a short set must not become the shared key:
+        # plan would then report it as cached and stop refetching.
+        run: |
+          node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync(process.argv[1])),gone=m.items.filter(i=>!fs.existsSync(`${process.argv[2]}/${i.id}.wav`));
+            if(gone.length){console.error(`${gone.length} of ${m.items.length} tracks have no audio, e.g. ${gone[0].id}`);process.exit(1)}
+            console.log(`all ${m.items.length} tracks present`)' \
+            "src/$DOCS/jamendo-manifest.json" gate-audio/jamendo
+      - uses: actions/cache/save@v6
+        if: steps.shared.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo
+
   analyse:
-    needs: [plan, fetch-jamendo, fetch-mtgkey]
+    needs: [plan, fetch-jamendo, fetch-jamendo-retry, fetch-mtgkey, cache-audio]
     if: >-
       ${{ !cancelled() && needs.plan.outputs.run == 'true'
-      && contains(fromJSON('["success","skipped"]'), needs.fetch-jamendo.result)
-      && contains(fromJSON('["success","skipped"]'), needs.fetch-mtgkey.result) }}
+      && (needs.fetch-jamendo.result == 'success' || needs.fetch-jamendo-retry.result == 'success' || (needs.fetch-jamendo.result == 'skipped' && needs.fetch-jamendo-retry.result == 'skipped'))
+      && contains(fromJSON('["success","skipped"]'), needs.fetch-mtgkey.result)
+      && contains(fromJSON('["success","skipped"]'), needs.cache-audio.result) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      max-parallel: 6   # leave most of the account's runners to everything else
+      # A PR slice with cached base numbers (18 jobs) runs all at once, one round; with the base analysed too (36) it
+      # takes two. Main's full set (28 jobs, report only) and labelled full runs take 14 at a time, leaving the rest
+      # of the account's 40 runners to PRs and CI.
+      max-parallel: ${{ inputs.mode == 'fast' && 18 || 14 }}
       matrix:
         include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     name: analyse (${{ matrix.side }} ${{ matrix.set }} ${{ matrix.shard }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ matrix.sha }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.plan.outputs.harness }}
           path: harness
+      # Either main's shared cache, or the one fetch-mtgkey / cache-audio wrote earlier in this run.
       - name: Restore the audio
-        id: audio
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: gate-audio/${{ matrix.set }}
           key: ${{ env.AUDIO_CACHE }}-${{ matrix.set }}
-      - name: Use the audio fetched in this run
-        if: steps.audio.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v4
-        with:
-          pattern: gate-audio-${{ matrix.set }}-${{ inputs.mode }}*
-          path: gate-audio/${{ matrix.set }}
-          merge-multiple: true
+          fail-on-cache-miss: true
       - name: Write the manifests
         run: |
           node harness/scripts/accuracy-gate/subset.mjs ${{ inputs.mode }} gate-manifests
@@ -264,13 +407,13 @@ jobs:
           node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync(process.argv[1])),gone=m.items.filter(i=>!fs.existsSync(`${process.argv[2]}/${i.id}.wav`));
             if(gone.length){console.error(`${gone.length} of ${m.items.length} tracks have no audio, e.g. ${gone[0].id}`);process.exit(1)}' \
             gate-manifests/${{ matrix.set }}.json gate-audio/${{ matrix.set }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
@@ -289,7 +432,7 @@ jobs:
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
           AUDIO_DIR=gate-audio/${{ matrix.set }} AUDIO_EXT=wav MANIFEST=gate-manifests/${{ matrix.set }}.json \
             SHARD=${{ matrix.shard }}/${{ matrix.of }} node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: gate-${{ inputs.mode }}-${{ matrix.side }}-${{ matrix.set }}-${{ matrix.shard }}
           path: out/run/graph-export.json
@@ -308,34 +451,34 @@ jobs:
         run: |
           echo "::error::An analysis job failed or was skipped, so the gate can't judge this change. Re-run the failed jobs."
           exit 1
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: needs.plan.outputs.run == 'true'
         with:
           ref: ${{ needs.plan.outputs.harness }}
           path: harness
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: needs.plan.outputs.run == 'true'
         with:
           path: app-head
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: needs.plan.outputs.run == 'true' && needs.plan.outputs.base != ''
         with:
           ref: ${{ needs.plan.outputs.base }}
           path: app-base
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         if: needs.plan.outputs.run == 'true'
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: app-head/package-lock.json
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         if: needs.plan.outputs.run == 'true'
         with:
           pattern: gate-${{ inputs.mode }}-*
           path: exports
       - name: Restore main's numbers for the base commit
         if: needs.plan.outputs.run == 'true' && needs.plan.outputs.base_cached == 'true'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: baseline
           key: ${{ env.EXPORTS_CACHE }}-${{ inputs.mode }}-${{ needs.plan.outputs.base }}
@@ -368,7 +511,7 @@ jobs:
       - name: Show the verdict
         if: always() && needs.plan.outputs.run == 'true'
         run: '[ -f summary.md ] && cat summary.md >> "$GITHUB_STEP_SUMMARY" || true'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always() && needs.plan.outputs.run == 'true'
         with:
           name: gate-${{ inputs.mode }}-reports
@@ -376,11 +519,13 @@ jobs:
             summary.md
             reports
           retention-days: 30
+      # A push, the Monday schedule, and a manual run on main all record this commit's numbers. The schedule
+      # is what keeps that baseline (and, via the analyse jobs' restore, the audio cache) inside the 7-day window.
       - name: Keep main's exports as the baseline for later PRs
-        if: github.event_name == 'push' && needs.plan.outputs.run == 'true'
+        if: contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) && needs.plan.outputs.run == 'true'
         run: rm -rf baseline && mkdir baseline && cp exports-by-side/head/*.json baseline/
-      - uses: actions/cache/save@v4
-        if: github.event_name == 'push' && needs.plan.outputs.run == 'true'
+      - uses: actions/cache/save@v6
+        if: contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) && needs.plan.outputs.run == 'true'
         with:
           path: baseline
           key: ${{ env.EXPORTS_CACHE }}-${{ inputs.mode }}-${{ github.sha }}

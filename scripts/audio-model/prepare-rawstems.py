@@ -17,14 +17,21 @@ prepare-slakh.py --source stems: a stem is audible when its RMS over the window 
 the mix. A label is 1 when an audible stem is that instrument, 0 when no audible stem is or might be (labels a stem
 leaves unknown, e.g. 'brass' for a horn-section track, stay out of the window's labels so train.py gives them no weight).
 Reference mixes some song folders carry are left out of the sum.
+
+--fx SHARE (run 7) also re-renders that share of the windows with one effect from render.MUSIC_FX (picked by hash), written
+as a separate source rsfx-mel.npy / rsfx.json: real music under bitcrush, flanger, chorus, saturation, filter, reverb,
+delay, pitch rises and falls etc. A render is labelled with its effect, and render.CLEAR_FX effects it did not get are weak
+absences; its instrument labels are left out. With --fx, dry windows also count as weak absences of render.CLEAR_FX
+(raw multitrack stems are unprocessed). Renders sit on the same side of the validation split as their song.
 """
 import argparse, hashlib, json, os, re, shutil, subprocess, sys, time, warnings
-from collections import defaultdict
+from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 warnings.filterwarnings('ignore')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from labelmap import CAT  # noqa: E402
+from render import CLEAR_FX, MUSIC_FX, apply  # noqa: E402
 
 REPO = ('kwatcharasupat/mixing-secrets-rawstems', 'b482eb2e31aa15ff10489b3b23871a1e7a109198')
 RATE, SECS = 32000, 10
@@ -195,9 +202,20 @@ def song(args, folder, files):
             if rms_db(x) < -50: continue
             mx = rms_db(x)
             on = {s: (lambda y: rms_db(y) > -60 and rms_db(y) >= mx - 30)(audio[s][a:a + SECS * RATE] * scale) if len(audio[s]) > a else False for s in stems}
-            out.append(({'id': f'rawstems:{folder.split("/")[1]}@{a / RATE:.1f}', 'artist': f'rawstems:{artist}',
-                         'val': int(h('dge-rawstems-val', artist)[:8], 16) % 8 == 0, 'labels': window_labels(on, stems), 'weakAbsent': []},
+            wid, val = f'rawstems:{folder.split("/")[1]}@{a / RATE:.1f}', int(h('dge-rawstems-val', artist)[:8], 16) % 8 == 0
+            lab, weak = window_labels(on, stems), []
+            if args.fx:
+                lab.update({f'cat:{e}': 0.0 for e in CLEAR_FX}); weak = [f'cat:{e}' for e in CLEAR_FX]
+            out.append(({'id': wid, 'artist': f'rawstems:{artist}', 'val': val, 'labels': lab, 'weakAbsent': weak},
                         np.clip(x * 32767, -32768, 32767).astype(np.int16)))
+            if args.fx and int(h('dge-rsfx-on', wid)[:8], 16) % 1000 < args.fx * 1000:
+                e = MUSIC_FX[int(h('dge-rsfx-pick', wid)[:8], 16) % len(MUSIC_FX)]
+                y = apply(e, x.astype(np.float64), f'rsfx|{wid}|{e}')
+                if y is not None:
+                    flab = {f'cat:{e}': 1.0, **{f'cat:{c}': 0.0 for c in CLEAR_FX if c != e}}
+                    out.append(({'id': f'{wid}#{e}', 'artist': f'rawstems:{artist}', 'val': val, 'labels': flab,
+                                 'weakAbsent': [f'cat:{c}' for c in CLEAR_FX if c != e], 'fx': e},
+                                np.clip(y * 32767, -32768, 32767).astype(np.int16)))
         return out, time.time() - t0
     except Exception as e:
         print(f'  skip {folder}: {type(e).__name__}: {e}', flush=True); return [], time.time() - t0
@@ -233,6 +251,7 @@ def summary(items):
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--windows', type=int, default=6); ap.add_argument('--limit', type=int, default=0)
     ap.add_argument('--workers', type=int, default=4); ap.add_argument('--shard', default=''); ap.add_argument('--merge', type=int, default=0)
+    ap.add_argument('--fx', type=float, default=0.0, help='share of windows also re-rendered with one effect (rsfx source)')
     args = ap.parse_args(); os.makedirs(args.out, exist_ok=True)
     if args.merge: return merge(args.out, args.merge)
     args.cache = os.path.join(args.out, 'rawstems-download')
@@ -254,27 +273,38 @@ def main():
     from models.preprocess import AugmentMelSTFT
     mel = AugmentMelSTFT(n_mels=128, sr=32000, win_length=800, hopsize=320, n_fft=1024, freqm=0, timem=0, fmin=0, fmax=None).eval()
     raw_path = os.path.join(args.out, f'rawstems{tag}-mel.raw'); raw = open(raw_path, 'wb'); items, batch = [], []
-    def flush():
+    fx_path = os.path.join(args.out, f'rsfx{tag}-mel.raw'); fx_raw = open(fx_path, 'wb') if args.fx else None; fx_items, fx_batch = [], []
+    def flush(batch=batch, raw=raw, items=items):
+        if not batch: return
         with torch.no_grad(): m = mel(torch.from_numpy(np.stack([x for _, x in batch]).astype(np.float32) / 32768))[:, :, :1000].numpy().astype(np.float16)
         for (it, _), v in zip(batch, m):
             raw.write(v.tobytes()); it['row'] = len(items); items.append(it)
         batch.clear()
+    flush_fx = lambda: flush(fx_batch, fx_raw, fx_items)
     t0 = time.time()
     with ThreadPoolExecutor(args.workers) as pool:
         for k, (got, s) in enumerate(pool.map(lambda f: song(args, f, by[f]), folders)):
             for it, x in got:
+                if it.get('fx'):
+                    fx_batch.append((it, x))
+                    if len(fx_batch) == 64: flush_fx()
+                    continue
                 batch.append((it, x))
                 if len(batch) == 64: flush()
             if k % 10 == 0: print(f'  song {k}/{len(folders)}  {len(items) + len(batch)} windows  {time.time() - t0:.0f} s', flush=True)
-    if batch: flush()
-    raw.close(); shutil.rmtree(args.cache, ignore_errors=True)
-    src = np.memmap(raw_path, dtype=np.float16, mode='r', shape=(len(items), 128, 1000))
-    dst = np.lib.format.open_memmap(os.path.join(args.out, f'rawstems{tag}-mel.npy'), mode='w+', dtype=np.float16, shape=src.shape)
-    for k in range(0, len(items), 2048): dst[k:k + 2048] = src[k:k + 2048]
-    dst.flush(); del dst, src; os.remove(raw_path)
-    json.dump({'source': f'Mixing Secrets raw stems (RawStems, Zang et al. 2025; non-commercial research only): hf://datasets/{REPO[0]}@{REPO[1][:7]} dev/, '
-                         'summed stems, presence from stem RMS', 'items': items}, open(os.path.join(args.out, f'rawstems{tag}.json'), 'w'))
+    flush(); raw.close(); shutil.rmtree(args.cache, ignore_errors=True)
+    if fx_raw: flush_fx(); fx_raw.close()
+    src_note = f'Mixing Secrets raw stems (RawStems, Zang et al. 2025; non-commercial research only): hf://datasets/{REPO[0]}@{REPO[1][:7]} dev/'
+    for name, path, its, note in (('rawstems', raw_path, items, 'summed stems, presence from stem RMS'),
+                                  ('rsfx', fx_path, fx_items, 'summed stems re-rendered with one effect (render.MUSIC_FX)')):
+        if name == 'rsfx' and not args.fx: continue
+        src = np.memmap(path, dtype=np.float16, mode='r', shape=(len(its), 128, 1000)) if its else np.zeros((0, 128, 1000), np.float16)
+        dst = np.lib.format.open_memmap(os.path.join(args.out, f'{name}{tag}-mel.npy'), mode='w+', dtype=np.float16, shape=src.shape)
+        for k in range(0, len(its), 2048): dst[k:k + 2048] = src[k:k + 2048]
+        dst.flush(); del dst, src; os.remove(path)
+        json.dump({'source': f'{src_note}, {note}', 'items': its}, open(os.path.join(args.out, f'{name}{tag}.json'), 'w'))
     summary(items)
+    if args.fx: print('rsfx: ' + ', '.join(f'{k} {v}' for k, v in Counter(it['fx'] for it in fx_items).most_common()), flush=True)
 
 if __name__ == '__main__':
     main()

@@ -52,6 +52,11 @@ export function corpusCount(page: Page): Locator {
   return page.locator('.rs-count');
 }
 
+/** Wait for the shell's ready-only node/link summary, not an earlier usable-search milestone. */
+export async function waitForGraphReady(page: Page, timeout = 30_000): Promise<void> {
+  await expect(page.locator('.rs-top__status')).toHaveText(/\d+ nodes · \d+ links/, { timeout });
+}
+
 /** The expanded "Full details" panel — the inline replacement for the modal side panel. */
 export function details(page: Page): Locator {
   return page.locator('.rs-details .side-panel');

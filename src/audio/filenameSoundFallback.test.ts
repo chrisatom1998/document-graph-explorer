@@ -13,7 +13,7 @@ it('uses explicit glass hit semantics with provenance and no invented score',()=
 });
 it('reuses instrument names and catalog aliases, with token boundaries',()=>{
   expect(labels('piano_bright.wav').map(x=>x.label)).toEqual(['piano','bright']);
-  expect(labels('reverse_impact.wav').map(x=>x.label)).toEqual(['reverse impact']);
+  expect(labels('reverse_impact.wav').map(x=>x.label)).toEqual(['reverse effect']);
   expect(labels('whitespace_glasshouse_123.wav')).toEqual([]);
 });
 it('ignores folders and numeric IDs, without deriving tempo or key',()=>{
@@ -68,4 +68,12 @@ it('preserves unrelated filename source and character hints after an effect-alia
     {dimension:'source',label:'piano',origin:'From filename'},
     {dimension:'character',label:'bright',origin:'From filename'},
   ]);
+});
+it('names merged look-alike tags by their surviving label and group',()=>{
+  expect(labels('big_downlifter.wav')).toEqual([{dimension:'character',label:'falling',origin:'From filename'}]);
+  expect(labels('synth_stab_01.wav').filter(x=>x.dimension!=='source')).toEqual([{dimension:'effect',label:'synth hit',origin:'From filename'}]);
+  expect(soundMatchLabels({title:'downlifter.wav',audio:audio()}).map(t=>t.label)).toEqual(['falling']);
+  expect(labels('turntable.wav')).toEqual([{dimension:'effect',label:'vinyl scratch',origin:'From filename'}]);
+  expect(labels('harmony_vocals.wav').filter(x=>x.dimension==='effect')).toEqual([{dimension:'effect',label:'choir',origin:'From filename'}]);
+  expect(labels('acid_bass_loop.wav').filter(x=>x.dimension==='effect')).toEqual([{dimension:'effect',label:'acid synth',origin:'From filename'}]);
 });

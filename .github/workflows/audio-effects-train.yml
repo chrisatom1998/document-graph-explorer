@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Train on Hugging Face Jobs
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
         run: |

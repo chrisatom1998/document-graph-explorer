@@ -1,0 +1,47 @@
+{
+  "about": "Licensed-audio pilot (2026-10-10): every source family considered from DGE-training-sound-discovery.zip, with the decision made for this pilot. Accepted families are the only ones build_manifest.py reads audio from.",
+  "accepted": {
+    "karoryfer-big-little-bass": {
+      "creator": "Karoryfer Samples (Washburn AB95 hollowbody bass)",
+      "source_url": "https://github.com/sfzinstruments/karoryfer.big-little-bass",
+      "pin": "git 4e92bdf54dcd2d6cfad968cc90542d5461c9b9fc",
+      "download": "git clone https://github.com/sfzinstruments/karoryfer.big-little-bass.git && git checkout 4e92bdf54dcd2d6cfad968cc90542d5461c9b9fc",
+      "license": "CC0-1.0",
+      "license_evidence": "readme.txt at the pinned commit: 'Royalty-free for all commercial and non-commercial use. CC-0 license.'; https://shop.karoryfer.com/pages/free-samples",
+      "family_note": "One instrument, one session: 52 pitches x 2 dynamics x 5 round robins. All files of one pitch stay in one fold."
+    },
+    "kenney": {
+      "creator": "Kenney (kenney.nl)",
+      "source_url": "https://kenney.nl/assets/impact-sounds ; https://kenney.nl/assets/sci-fi-sounds",
+      "download": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip (sha256 029d734af1582474edf3a694d1b0cebc97c1c152f2f39fa34d4c2bafc5de77f8) ; https://opengameart.org/sites/default/files/sci-fi_sounds.zip (sha256 119340f351a5098ad814f78719438c0da355a9ce8a4c8a3af6a8d48aa3d49e04)",
+      "license": "CC0-1.0",
+      "license_evidence": "License.txt inside both archives: 'License: (Creative Commons Zero, CC0)'",
+      "family_note": "Both packs are one creator, so they form one family. Sub-groups are the name stems (impactWood, laserSmall, ...), which keep a sound's five variations together."
+    },
+    "rubberduck": {
+      "creator": "rubberduck (OpenGameArt)",
+      "source_url": "https://opengameart.org/content/100-cc0-sfx-2 ; https://opengameart.org/node/87895",
+      "download": "https://opengameart.org/sites/default/files/sfx_100_v2.zip (sha256 0fc61b4494e2e893c0c015ced4877b3f689c7d84a48cb61daecd7ddb52db797b) ; https://opengameart.org/sites/default/files/50-CC0-retro-synth-SFX.zip (sha256 db9370bfbe228d1fc3912ec455ad358129eeec593169fc02701ff48d888db9cb)",
+      "license": "CC0-1.0",
+      "license_evidence": "OpenGameArt pages list CC0 as the only licence; the 50-sound pack says the patches were made from scratch in LMMS/ZynAddSubFX (no factory presets). The .xpf patch files were not executed.",
+      "family_note": "Both packs are one creator, so they form one family."
+    }
+  },
+  "not_used": [
+    {"family": "VCSL (Versilian Community Sample Library)", "decision": "rejected for this pilot", "reason": "Already being consumed by tagger run 7 (scripts/audio-model/prepare-vcsl.py on claude/raise-tag-accuracy-6ifnkl-run7), which holds out whole VCSL folders as its test set. Not new to DGE; reusing it here would blur run 7's held-out test."},
+    {"family": "VSCO-2-CE", "decision": "deferred", "reason": "CC0 and useful, but VCSL incorporates VSCO recordings, so it is the same recording family as run 7's VCSL training and held-out folders. Needs a recording-level VCSL/VSCO match before any split can be called source-disjoint."},
+    {"family": "Publicsamples / modularsamples GitHub libraries (2,133 paths)", "decision": "quarantined", "reason": "Creator self-identifies as Freesound uploader modularsamples, a reserved evaluation uploader."},
+    {"family": "EGFxSet, NSynth, TinySOL, Surge, FSD50K", "decision": "rejected as new data", "reason": "Already represented in DGE training recipes or protected evaluation partitions; no file-level audit shows unused, unreserved files."},
+    {"family": "Freesound seed sounds 842684, 349026, 669760", "decision": "rejected for this pilot", "reason": "Only lossy MP3 previews are available without sign-in (a codec confound for bitcrush and saturation); 669760 needs upstream patch review; one recording per label cannot support a head or a source-disjoint test."},
+    {"family": "17 other Freesound effect leads", "decision": "excluded", "reason": "Known prior IDs or reserved uploader families (exclusion manifest)."},
+    {"family": "Older effects corpus rows (1,037 CC BY-NC, 269 Sampling+)", "decision": "excluded", "reason": "Non-commercial and Sampling+ licences."},
+    {"family": "Freesound rewind/turntable recordings", "decision": "excluded", "reason": "Underlying record music has unknown rights."},
+    {"family": "OpenGameArt Vinrax finger snaps", "decision": "excluded", "reason": "Creator handle matches the prior Freesound inventory; cross-site identity unresolved."},
+    {"family": "OpenGameArt park, birds, static (5 files)", "decision": "deferred", "reason": "CC0 but 1-3 files per label from one session each: too few for a head or a holdout."},
+    {"family": "VocalSet 1.1 (CC BY 4.0)", "decision": "deferred to the next pilot", "reason": "Strong singer-disjoint source for vocal vowel, but there are no independent vocal vowel positives in any judge set, so a gain could not be shown; ~2 GB download."},
+    {"family": "DX7-clone timbre corpus (CC BY 4.0)", "decision": "deferred", "reason": "Every render is A440; an FM head trained on it alone would learn pitch, not FM."},
+    {"family": "MechSounds (CC0)", "decision": "deferred", "reason": "Archive returned 403 from this environment; not acquired."},
+    {"family": "Wikimedia wobble-bass example", "decision": "deferred", "reason": "One 8.6 s file."},
+    {"family": "Splice downloads, Sonniss, BBC, SampleRadar", "decision": "test only", "reason": "Licences do not permit model training. Never trained on."}
+  ]
+}

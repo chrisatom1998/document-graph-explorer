@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Fetch the packs
         run: |
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
@@ -47,7 +47,7 @@ jobs:
             for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
               && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: sample-pack-audio
           path: |
@@ -65,18 +65,18 @@ jobs:
         names: [file, originalName]
         shard: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v7
         with:
           name: sample-pack-audio
           path: clips
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
@@ -90,7 +90,7 @@ jobs:
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
           AUDIO_DIR=clips/packs/audio${{ matrix.names == 'originalName' && '-named' || '' }} FILE_FIELD=${{ matrix.names }} \
             MANIFEST=clips/$DOCS/manifest.json SHARD=${{ matrix.shard }}/8 node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: sample-pack-export-${{ matrix.names }}-${{ matrix.shard }}
@@ -104,17 +104,17 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: sample-pack-export-*
           path: exports
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: sample-pack-audio
           path: clips

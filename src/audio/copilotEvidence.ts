@@ -3,8 +3,9 @@ import { resolvedNonSourceLabels } from './soundReviewPolicy';
 import type { DocNode } from '../model/types';
 import { sanitizeMusicAnalysis, keyName } from './musicTypes';
 import { musicNameHints } from './nameHints';
-import { DJ_CATALOG } from './djTags';
+import { DJ_CATALOG, MERGED_DJ_LABELS, mergedDjLabel, outranksDjTag, type DjTag } from './djTags';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
+import { latestSoundReview } from './soundReviewIdentity';
 import { confirmedInstrumentList } from './instrumentEvidence';
 
 export const MAX_COPILOT_SAMPLES = 5;
@@ -30,14 +31,40 @@ export function copilotEvidence(node: DocNode, index: number): CopilotSample | n
   if (node.fileType !== 'audio' || !a) return null;
   const hints = musicNameHints(node);
   const nonSource = resolvedNonSourceLabels(a);
-  const confirmed = nonSource.filter(t=>t.source==='confirmed').map(t=>t.label);
+  const projected = nonSource.map(t => ({ ...t, ...mergedDjLabel(t.group, t.label) }));
+  const confirmed = projected.filter(t=>t.source==='confirmed').map(t=>t.label);
+  const savedInstruments = confirmedInstrumentList(a)?.filter(label=>mergedDjLabel('source',label).group==='source');
+  const movedConfirmations = projected.filter(t=>t.group==='source'&&t.source==='confirmed').map(t=>t.label);
+  const instruments = savedInstruments === undefined && !movedConfirmations.length ? undefined
+    : [...new Set([...(savedInstruments??[]), ...movedConfirmations])];
+  // Cross-dimension merges keep their stored identity in the review projection. Route them into the source
+  // evidence here, retaining detector provenance when both cached names exist.
+  const movedSources = new Set(Object.values(MERGED_DJ_LABELS).filter(t=>t.group==='source').map(t=>t.label));
+  const sourceSuppressed = (label: string) => movedSources.has(label)
+    && (instruments !== undefined || Boolean(latestSoundReview(a.soundReviews,'source',label)));
+  const sources = new Map<string,DjTag>();
+  for (const raw of a.soundProfile?.djTags ?? []) {
+    const tag = { ...raw, ...mergedDjLabel(raw.group, raw.label) };
+    if (tag.group !== 'source') continue;
+    if (raw.group !== 'source' && !nonSource.some(t=>t.group===raw.group&&t.label===raw.label&&t.source==='estimated')) continue;
+    if (sourceSuppressed(tag.label)) continue;
+    if (outranksDjTag(tag,sources.get(tag.label))) sources.set(tag.label,tag);
+  }
+  const otherInstruments = a.instruments.filter(raw => {
+    const merged = mergedDjLabel('production',raw.label);
+    const label = merged.group === 'source' ? merged.label : raw.label;
+    if (!movedSources.has(label)) return true;
+    const tag: DjTag = { group: 'source', label, score: raw.score };
+    if (!sourceSuppressed(label) && outranksDjTag(tag,sources.get(label))) sources.set(label,tag);
+    return false;
+  });
   return {
     ref: `Sample ${index + 1}`, durationSeconds: a.durationSeconds, analyzedSeconds: a.analyzedSeconds,
     preview: a.stage === 'preview', tempo: a.tempo ? { bpm: a.tempo.bpm, confidence: a.tempo.confidence } : null,
     key: a.key ? { name: keyName(a.key), strength: a.key.strength } : null,
-    confirmedTags: a.confirmedDjTags === undefined && !confirmed.length ? null : [...(confirmedInstrumentList(a)??[]),...confirmed],
-    confirmedInstruments: confirmedInstrumentList(a) ?? null,
-    estimates: [...(a.soundProfile?.djTags ?? []).filter(t=>t.group==='source'), ...a.instruments, ...nonSource.filter((t): t is typeof t & {score:number}=>t.source==='estimated'&&t.score!==undefined)].filter(t => labels.has(t.label)).slice(0, 30).map(t => ({ label: t.label, score: t.score })),
+    confirmedTags: a.confirmedDjTags === undefined && !confirmed.length ? null : [...new Set([...(instruments??[]),...confirmed])],
+    confirmedInstruments: instruments ?? null,
+    estimates: [...sources.values(), ...otherInstruments, ...projected.filter((t): t is typeof t & {score:number}=>t.group!=='source'&&t.source==='estimated'&&t.score!==undefined)].filter(t => labels.has(t.label)).slice(0, 30).map(t => ({ label: t.label, score: t.score })),
     filenameHints: { bpm: hints.tempo?.value ?? null, key: hints.key?.displayName ?? null },
   };
 }

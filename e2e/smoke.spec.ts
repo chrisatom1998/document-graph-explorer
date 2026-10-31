@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { advancedFilters, closeDetails, corpusCount, details, fitAll, openFiles, showFilters, startIn3D } from './resonance';
+import { advancedFilters, closeDetails, corpusCount, details, fitAll, openFiles, showFilters, startIn3D, waitForGraphReady } from './resonance';
 
 test.beforeEach(async ({ page }) => { page.setDefaultTimeout(30_000); });
 
@@ -66,7 +66,7 @@ test('first run renders the empty state with a working WebGL scene', async ({ pa
   const errors = collectErrors(page);
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Find how sounds relate.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'See how sounds and documents relate.' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Load demo corpus' })).toBeVisible();
 
   // If WebGL context creation failed, the scene mounts a fallback section
@@ -83,14 +83,12 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await expect(page.locator('.webgl-fallback')).toHaveCount(0);
   await page.getByRole('button', { name: 'Load demo corpus' }).click();
 
-  // Pin the full demo count, then require the ready-only search action to
-  // be enabled before testing navigation and persistence.
+  // Pin the full demo count, then require the ready-only node/link summary
+  // before testing navigation and persistence.
   await expect(corpusCount(page)).toContainText('100 files', {
     timeout: 270_000,
   });
-  // Parsed nodes appear before embedding finishes. Apply the existing ingest
-  // budget to readiness too, rather than a 30-second UI-action budget.
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled({ timeout: 270_000 });
+  await waitForGraphReady(page, 270_000);
   await expect(page.locator('.nebula-canvas canvas')).toBeVisible();
 
   // The getting-started tour reopens after a demo load; dismiss it so
@@ -168,13 +166,38 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await page.locator('.rs-sidebar').getByRole('button', { name: /^Import(?: (?:Clips|Files),|$)/ }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/persistence.txt');
   await expect(corpusCount(page)).toContainText('101 files');
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
+  await waitForGraphReady(page, 150_000);
   await page.reload();
   await expect(corpusCount(page)).toContainText('101 files');
 
   // Hygiene: no console errors, no uncaught page errors, no error toasts.
-  await expect(page.locator('.toast--error')).toHaveCount(0);
+  await expect(page.locator('.app-toast--error')).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test('search opens the demo reader as soon as the lexical graph is usable', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Load demo corpus' }).click();
+
+  // Search unlocks once titles, references and keywords are committed, before
+  // embeddings and semantic links finish. A fast machine may finish refining
+  // before the check, so the test only logs whether the search ran mid-ingest.
+  const status = page.locator('.rs-top__status');
+  const searchButton = page.getByRole('button', { name: 'Search documents' });
+  await expect(searchButton).toBeEnabled({ timeout: 270_000 });
+  const refiningAtMilestone = (await status.textContent()) === 'Refining connections…';
+
+  await searchButton.click();
+  const search = page.getByRole('dialog', { name: 'Search documents' });
+  await search.getByRole('combobox').fill('Postgres Performance Tuning Guide');
+  const result = search.getByRole('option', { name: /^Postgres Performance Tuning Guide/ });
+  await expect(result).toBeVisible();
+  const stillRefining = (await status.textContent()) === 'Refining connections…';
+  await result.click();
+  await expect(details(page)).toContainText('Postgres Performance Tuning Guide', { timeout: 150_000 });
+  console.log(JSON.stringify({ refiningAtMilestone, searchResultWhileRefining: stillRefining }));
+
+  await waitForGraphReady(page, 270_000);
 });
 
 test('normal-motion navigation and title-only Unicode search work after import', async ({ page }, testInfo) => {
@@ -304,7 +327,7 @@ test('renderer grows past 4,096 nodes and can frame the first node beyond the ol
   await expect(sidePanel).toBeVisible({ timeout: 180_000 });
   await expect(sidePanel).toContainText('Boundary node 4097');
 
-  await expect(page.locator('.toast--error')).toHaveCount(0);
+  await expect(page.locator('.app-toast--error')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

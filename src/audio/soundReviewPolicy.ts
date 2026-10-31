@@ -1,6 +1,6 @@
 import { confirmedInstrumentList } from './instrumentEvidence';
 import { CHARACTER_LABELS } from './soundProfile';
-import { canonicalDjLabel, DJ_CATALOG, type DjGroup } from './djTags';
+import { canonicalDjLabel, DJ_CATALOG, mergedDjLabel, outranksDjTag, type DjGroup, type DjTag } from './djTags';
 import type { MusicAnalysis } from './musicTypes';
 import type { Dimension } from './recognition';
 import { canonicalReviewLabel, latestSoundReview, sharedSoundReviewIdentity } from './soundReviewIdentity';
@@ -26,30 +26,45 @@ export interface ResolvedDjLabel {
 export function resolvedNonSourceLabels(analysis: MusicAnalysis, includeSuggestions = false): ResolvedDjLabel[] {
   const labels = new Map<string,ResolvedDjLabel>();
   const priority = { suggested: 0, estimated: 1, confirmed: 2 };
-  const add = (group: ResolvedDjLabel['group'], raw: string, source: ResolvedDjLabel['source'], score?: number) => {
-    const label = canonicalDjLabel(group, raw) ?? raw;
+  const evidence = new Map<string,DjTag>();
+  const add = (rawGroup: DjGroup, raw: string, source: ResolvedDjLabel['source'], score?: number, model?: DjTag['model']) => {
+    // Route old cached labels before choosing their consumer policy; turntable is now an effect and vocal harmony is
+    // choir. A non-source label merged into a source (vocal breath) keeps its group here; source consumers own it.
+    const canonical = canonicalDjLabel(rawGroup, raw) ?? raw;
+    const merged = mergedDjLabel(rawGroup, canonical);
+    const {group,label} = rawGroup === 'source' || merged.group !== 'source' ? merged : {group:rawGroup,label:canonical};
+    if (group === 'source') return;
     const dimension = djReviewDimension(group, label);
     const review = dimension && latestSoundReview(analysis.soundReviews, dimension, label);
     if (review && review.decision !== 'confirmed') return;
-    // A source confirmation is shown under its saved source name, not repeated as an effect.
-    if (review && dimension && review.dimension !== dimension && sharedSoundReviewIdentity(dimension, label)) return;
+    // Shared source/effect aliases keep their saved dimension, except explicit display-name merges.
+    if (review && dimension && review.dimension !== dimension && sharedSoundReviewIdentity(dimension, label)) {
+      const reviewGroup = review.dimension === 'source' ? 'source' : review.dimension === 'effect' ? 'production' : review.dimension === 'character' ? 'character' : undefined;
+      const merged = reviewGroup && mergedDjLabel(reviewGroup, canonicalDjLabel(reviewGroup, review.labelId) ?? review.labelId);
+      if (!merged || merged.group !== group || merged.label !== label) return;
+    }
     const origin = review ? 'confirmed' : source;
     // warm, airy, metallic… are described by DSP rules (timbreDescriptions.ts); only your confirmation keeps one as a label.
     if (group === 'character' && origin !== 'confirmed' && isRuleDescribedLabel(label)) return;
     const key = `${group}:${label}`;
     const previous = labels.get(key);
-    if (!previous || priority[origin] > priority[previous.source]) labels.set(key,{group,label,source:origin,...(origin === 'estimated' && score !== undefined ? {score} : {})});
+    const tag = score !== undefined ? {group,label,score,model} : undefined;
+    if (!previous || priority[origin] > priority[previous.source]
+      || origin === 'estimated' && previous.source === 'estimated' && tag && outranksDjTag(tag, evidence.get(key))) {
+      labels.set(key,{group,label,source:origin,...(origin === 'estimated' && score !== undefined ? {score} : {})});
+      if (origin === 'estimated' && tag) evidence.set(key,tag);
+    }
   };
   if (analysis.confirmedDjTags !== undefined) {
-    for (const group of ['production','character'] as const) for (const label of analysis.confirmedDjTags[group]) add(group,label,'confirmed');
+    for (const group of ['source','production','character'] as const) for (const label of analysis.confirmedDjTags[group]) add(group,label,'confirmed');
   } else {
-    for (const tag of analysis.soundProfile?.djTags ?? []) if (tag.group !== 'source') add(tag.group,tag.label,'estimated',tag.score);
+    for (const tag of analysis.soundProfile?.djTags ?? []) add(tag.group,tag.label,'estimated',tag.score,tag.model);
     for (const label of analysis.soundProfile?.character ?? []) add('character',label,'estimated');
-    if (includeSuggestions) for (const group of ['production','character'] as const) for (const label of analysis.copilotProperties?.tags[group] ?? []) add(group,label,'suggested');
+    if (includeSuggestions) for (const group of ['source','production','character'] as const) for (const label of analysis.copilotProperties?.tags[group] ?? []) add(group,label,'suggested');
   }
   for (const review of analysis.soundReviews ?? []) {
     if (review.decision !== 'confirmed') continue;
-    const group = review.dimension === 'character' ? 'character' : review.dimension === 'effect' ? 'production' : undefined;
+    const group = review.dimension === 'character' ? 'character' : review.dimension === 'effect' ? 'production' : review.dimension === 'source' ? 'source' : undefined;
     if (group) add(group,review.labelId,'confirmed');
   }
   return [...labels.values()];
@@ -94,15 +109,17 @@ export function projectedCopilotProperties(analysis: MusicAnalysis) {
   const current: {group:DjGroup;label:string}[]=[];
   const historical: {group:DjGroup;label:string;reason:string}[]=[];
   const nonSource=resolvedNonSourceLabels(analysis,true);
-  for(const group of ['source','production','character'] as const) for(const raw of analysis.copilotProperties?.tags[group]??[]) {
-    const label=canonicalDjLabel(group,raw)??raw;
+  for(const rawGroup of ['source','production','character'] as const) for(const raw of analysis.copilotProperties?.tags[rawGroup]??[]) {
+    const canonical=canonicalDjLabel(rawGroup,raw)??raw;
+    const merged=mergedDjLabel(rawGroup,canonical);
+    const {group,label}=rawGroup==='source'||merged.group!=='source'?merged:{group:rawGroup,label:canonical};
     const dimension=djReviewDimension(group,label);
     const review=dimension&&latestSoundReview(analysis.soundReviews,dimension,label);
     const projected=group==='source'?undefined:nonSource.find(t=>t.group===group&&t.label===label);
     if(review) historical.push({group,label:raw,reason:`${review.decision} by you`});
     else if(analysis.confirmedDjTags!==undefined||(group==='source'&&confirmedInstrumentList(analysis)!==undefined)) historical.push({group,label:raw,reason:'superseded by your saved corrections'});
     else if(group!=='source'&&projected?.source!=='suggested') historical.push({group,label:raw,reason:projected?.source==='confirmed'?'confirmed by you':'superseded by current audio evidence'});
-    else current.push({group,label});
+    else if(!current.some(t=>t.group===group&&t.label===label)) current.push({group,label});
   }
   return {current,historical};
 }

@@ -1,12 +1,85 @@
 {
   "runs": [
     "all-tags",
-    "all-tags-run5"
+    "all-tags-run5",
+    "all-tags-run7",
+    "all-tags-run8",
+    "all-tags-run9",
+    "all-tags-run11",
+    "all-tags-run10",
+    "all-tags-recall2"
   ],
+  "only": {
+    "all-tags-run7": [
+      "cat:animal sound",
+      "cat:percussion",
+      "cat:rain ambience",
+      "cat:tambourine",
+      "cat:vocal scream",
+      "synthesizer"
+    ],
+    "all-tags-run8": [
+      "cat:glockenspiel",
+      "cat:whistle"
+    ],
+    "all-tags-run9": [
+      "cat:bell",
+      "cat:water ambience",
+      "cat:fm synth"
+    ],
+    "all-tags-run11": [
+      "cat:bass guitar",
+      "cat:machine ambience"
+    ],
+    "all-tags-recall2": [
+      "cat:guitar",
+      "cat:drums",
+      "cat:finger snap",
+      "cat:violin / fiddle",
+      "cat:siren",
+      "cat:atmospheric pad",
+      "cat:flute",
+      "cat:marimba",
+      "cat:vibraphone",
+      "cat:kick",
+      "cat:clap",
+      "cat:organ",
+      "cat:gong"
+    ]
+  },
+  "pin": {
+    "all-tags": [
+      "cat:foley",
+      "cat:turntable",
+      "cat:voice",
+      "cat:whisper"
+    ],
+    "all-tags-run9": [
+      "cat:fm synth"
+    ],
+    "all-tags-run10": [
+      "cat:pitched vocal"
+    ],
+    "all-tags-recall2": [
+      "cat:guitar",
+      "cat:drums",
+      "cat:finger snap",
+      "cat:violin / fiddle",
+      "cat:siren",
+      "cat:atmospheric pad",
+      "cat:flute",
+      "cat:marimba",
+      "cat:vibraphone",
+      "cat:kick",
+      "cat:clap",
+      "cat:organ",
+      "cat:gong"
+    ]
+  },
   "keep": "drums",
   "public_repo": "dge-all-tags-tagger-nc",
   "license": "cc-by-nc-sa-4.0",
-  "flavor": "cpu-upgrade",
-  "timeout": "2h",
-  "attempt": 2
+  "flavor": "cpu-xl",
+  "timeout": "3h",
+  "attempt": 16
 }

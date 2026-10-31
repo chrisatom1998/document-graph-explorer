@@ -41,7 +41,19 @@
    "recall": 0.2765957446808511,
    "f1": 0.3132530120481928,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 46,
+    "negatives": 1926,
+    "unknownDurations": 0,
+    "tp": 13,
+    "fp": 23,
+    "fn": 33,
+    "precision": 0.3611111111111111,
+    "recall": 0.2826086956521739,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "saturated": {
    "group": "character",
@@ -76,7 +88,19 @@
    "recall": 0.2711864406779661,
    "f1": 0.25396825396825395,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 39,
+    "negatives": 1818,
+    "unknownDurations": 0,
+    "tp": 13,
+    "fp": 40,
+    "fn": 26,
+    "precision": 0.24528301886792453,
+    "recall": 0.3333333333333333,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "distorted": {
    "group": "character",
@@ -96,7 +120,19 @@
      "fp": 106,
      "fn": 91,
      "precision": 0.39080459770114945,
-     "recall": 0.4276729559748428
+     "recall": 0.4276729559748428,
+     "heldOutLongClip": {
+      "positives": 130,
+      "negatives": 1818,
+      "unknownDurations": 0,
+      "tp": 58,
+      "fp": 72,
+      "fn": 72,
+      "precision": 0.4461538461538462,
+      "recall": 0.4461538461538462,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -123,7 +159,19 @@
    "recall": 0.610062893081761,
    "f1": 0.5329670329670328,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 130,
+    "negatives": 1818,
+    "unknownDurations": 0,
+    "tp": 76,
+    "fp": 83,
+    "fn": 54,
+    "precision": 0.4779874213836478,
+    "recall": 0.5846153846153846,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "filtered": {
    "group": "character",
@@ -158,7 +206,19 @@
    "recall": 0.08196721311475409,
    "f1": 0.07518796992481203,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 46,
+    "negatives": 1926,
+    "unknownDurations": 0,
+    "tp": 3,
+    "fp": 53,
+    "fn": 43,
+    "precision": 0.05357142857142857,
+    "recall": 0.06521739130434782,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "reverberant": {
    "group": "character",
@@ -193,7 +253,19 @@
    "recall": 0.3716216216216216,
    "f1": 0.3151862464183381,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 130,
+    "negatives": 1719,
+    "unknownDurations": 0,
+    "tp": 53,
+    "fp": 139,
+    "fn": 77,
+    "precision": 0.2760416666666667,
+    "recall": 0.4076923076923077,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "echoing": {
    "group": "character",
@@ -228,7 +300,19 @@
    "recall": 0.26865671641791045,
    "f1": 0.23920265780730895,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 114,
+    "negatives": 1719,
+    "unknownDurations": 0,
+    "tp": 35,
+    "fp": 129,
+    "fn": 79,
+    "precision": 0.21341463414634146,
+    "recall": 0.30701754385964913,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "dry": {
    "group": "character",
@@ -263,7 +347,19 @@
    "recall": 0.029850746268656716,
    "f1": 0.03125,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 47,
+    "negatives": 1719,
+    "unknownDurations": 0,
+    "tp": 2,
+    "fp": 48,
+    "fn": 45,
+    "precision": 0.04,
+    "recall": 0.0425531914893617,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "rising": {
    "group": "character",
@@ -298,7 +394,19 @@
    "recall": 0.32967032967032966,
    "f1": 0.34682080924855485,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 84,
+    "negatives": 1676,
+    "unknownDurations": 0,
+    "tp": 27,
+    "fp": 49,
+    "fn": 57,
+    "precision": 0.35526315789473684,
+    "recall": 0.32142857142857145,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "falling": {
    "group": "character",
@@ -318,7 +426,19 @@
      "fp": 8,
      "fn": 111,
      "precision": 0.8367346938775511,
-     "recall": 0.26973684210526316
+     "recall": 0.26973684210526316,
+     "heldOutLongClip": {
+      "positives": 115,
+      "negatives": 1676,
+      "unknownDurations": 0,
+      "tp": 32,
+      "fp": 6,
+      "fn": 83,
+      "precision": 0.8421052631578947,
+      "recall": 0.2782608695652174,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -345,7 +465,19 @@
    "recall": 0.631578947368421,
    "f1": 0.6193548387096774,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 115,
+    "negatives": 1676,
+    "unknownDurations": 0,
+    "tp": 75,
+    "fp": 47,
+    "fn": 40,
+    "precision": 0.6147540983606558,
+    "recall": 0.6521739130434783,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "gliding": {
    "group": "character",
@@ -380,7 +512,19 @@
    "recall": 0.5138888888888888,
    "f1": 0.5034013605442176,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 100,
+    "negatives": 1676,
+    "unknownDurations": 0,
+    "tp": 42,
+    "fp": 52,
+    "fn": 58,
+    "precision": 0.44680851063829785,
+    "recall": 0.42,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "sitar": {
    "group": "source",
@@ -415,7 +559,19 @@
    "recall": 0.45454545454545453,
    "f1": 0.41666666666666663,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 11,
+    "negatives": 1948,
+    "unknownDurations": 0,
+    "tp": 5,
+    "fp": 8,
+    "fn": 6,
+    "precision": 0.38461538461538464,
+    "recall": 0.45454545454545453,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "kalimba": {
    "group": "source",
@@ -435,7 +591,19 @@
      "fp": 2,
      "fn": 16,
      "precision": 0.9444444444444444,
-     "recall": 0.68
+     "recall": 0.68,
+     "heldOutLongClip": {
+      "positives": 49,
+      "negatives": 1796,
+      "unknownDurations": 0,
+      "tp": 33,
+      "fp": 2,
+      "fn": 16,
+      "precision": 0.9428571428571428,
+      "recall": 0.673469387755102,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -462,7 +630,19 @@
    "recall": 0.86,
    "f1": 0.7818181818181817,
    "passes70": true,
-   "verdict": "PASS 70/70"
+   "verdict": "PASS 70/70",
+   "heldOutLongClip": {
+    "positives": 49,
+    "negatives": 1796,
+    "unknownDurations": 0,
+    "tp": 42,
+    "fp": 15,
+    "fn": 7,
+    "precision": 0.7368421052631579,
+    "recall": 0.8571428571428571,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "banjo": {
    "group": "source",
@@ -501,7 +681,19 @@
      "fp": 6,
      "fn": 7,
      "precision": 0.3333333333333333,
-     "recall": 0.3
+     "recall": 0.3,
+     "heldOutLongClip": {
+      "positives": 9,
+      "negatives": 1833,
+      "unknownDurations": 0,
+      "tp": 3,
+      "fp": 6,
+      "fn": 6,
+      "precision": 0.3333333333333333,
+      "recall": 0.3333333333333333,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -528,7 +720,19 @@
    "recall": 0.5,
    "f1": 0.2173913043478261,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 9,
+    "negatives": 1833,
+    "unknownDurations": 0,
+    "tp": 5,
+    "fp": 28,
+    "fn": 4,
+    "precision": 0.15151515151515152,
+    "recall": 0.5555555555555556,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "steel drum": {
    "group": "source",
@@ -563,7 +767,19 @@
    "recall": 0.38461538461538464,
    "f1": 0.33333333333333337,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 13,
+    "negatives": 1796,
+    "unknownDurations": 0,
+    "tp": 5,
+    "fp": 12,
+    "fn": 8,
+    "precision": 0.29411764705882354,
+    "recall": 0.38461538461538464,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "mandolin": {
    "group": "source",
@@ -583,7 +799,19 @@
      "fp": 14,
      "fn": 2,
      "precision": 0.2222222222222222,
-     "recall": 0.6666666666666666
+     "recall": 0.6666666666666666,
+     "heldOutLongClip": {
+      "positives": 6,
+      "negatives": 1948,
+      "unknownDurations": 0,
+      "tp": 4,
+      "fp": 14,
+      "fn": 2,
+      "precision": 0.2222222222222222,
+      "recall": 0.6666666666666666,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -614,7 +842,19 @@
      "fp": 9,
      "fn": 5,
      "precision": 0.4,
-     "recall": 0.5454545454545454
+     "recall": 0.5454545454545454,
+     "heldOutLongClip": {
+      "positives": 6,
+      "negatives": 1950,
+      "unknownDurations": 0,
+      "tp": 4,
+      "fp": 8,
+      "fn": 2,
+      "precision": 0.3333333333333333,
+      "recall": 0.6666666666666666,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -641,7 +881,19 @@
    "recall": 0.2727272727272727,
    "f1": 0.2608695652173913,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 6,
+    "negatives": 1950,
+    "unknownDurations": 0,
+    "tp": 3,
+    "fp": 9,
+    "fn": 3,
+    "precision": 0.25,
+    "recall": 0.5,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "bassoon": {
    "group": "source",
@@ -661,7 +913,19 @@
      "fp": 11,
      "fn": 15,
      "precision": 0.42105263157894735,
-     "recall": 0.34782608695652173
+     "recall": 0.34782608695652173,
+     "heldOutLongClip": {
+      "positives": 16,
+      "negatives": 1950,
+      "unknownDurations": 0,
+      "tp": 6,
+      "fp": 11,
+      "fn": 10,
+      "precision": 0.35294117647058826,
+      "recall": 0.375,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "verdict": "too few training clips"
@@ -699,7 +963,19 @@
    "recall": 0.46153846153846156,
    "f1": 0.3157894736842105,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 8,
+    "negatives": 1944,
+    "unknownDurations": 0,
+    "tp": 2,
+    "fp": 17,
+    "fn": 6,
+    "precision": 0.10526315789473684,
+    "recall": 0.25,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "trombone": {
    "group": "source",
@@ -719,7 +995,19 @@
      "fp": 2,
      "fn": 12,
      "precision": 0.8181818181818182,
-     "recall": 0.42857142857142855
+     "recall": 0.42857142857142855,
+     "heldOutLongClip": {
+      "positives": 18,
+      "negatives": 1944,
+      "unknownDurations": 0,
+      "tp": 7,
+      "fp": 2,
+      "fn": 11,
+      "precision": 0.7777777777777778,
+      "recall": 0.3888888888888889,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -746,7 +1034,19 @@
    "recall": 0.3333333333333333,
    "f1": 0.43749999999999994,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 18,
+    "negatives": 1944,
+    "unknownDurations": 0,
+    "tp": 7,
+    "fp": 4,
+    "fn": 11,
+    "precision": 0.6363636363636364,
+    "recall": 0.3888888888888889,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "horn": {
    "group": "source",
@@ -766,7 +1066,19 @@
      "fp": 32,
      "fn": 2,
      "precision": 0.058823529411764705,
-     "recall": 0.5
+     "recall": 0.5,
+     "heldOutLongClip": {
+      "positives": 3,
+      "negatives": 1944,
+      "unknownDurations": 0,
+      "tp": 2,
+      "fp": 30,
+      "fn": 1,
+      "precision": 0.0625,
+      "recall": 0.6666666666666666,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -812,7 +1124,19 @@
    "recall": 0.5263157894736842,
    "f1": 0.5194805194805194,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 34,
+    "negatives": 1918,
+    "unknownDurations": 0,
+    "tp": 18,
+    "fp": 19,
+    "fn": 16,
+    "precision": 0.4864864864864865,
+    "recall": 0.5294117647058824,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "double bass": {
    "group": "source",
@@ -847,7 +1171,19 @@
    "recall": 0.75,
    "f1": 0.4556962025316456,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 22,
+    "negatives": 1918,
+    "unknownDurations": 0,
+    "tp": 16,
+    "fp": 37,
+    "fn": 6,
+    "precision": 0.3018867924528302,
+    "recall": 0.7272727272727273,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "glockenspiel": {
    "group": "source",
@@ -882,7 +1218,19 @@
    "recall": 0.8260869565217391,
    "f1": 0.5066666666666666,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 22,
+    "negatives": 1796,
+    "unknownDurations": 0,
+    "tp": 19,
+    "fp": 28,
+    "fn": 3,
+    "precision": 0.40425531914893614,
+    "recall": 0.8636363636363636,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "marimba": {
    "group": "source",
@@ -902,7 +1250,19 @@
      "fp": 12,
      "fn": 19,
      "precision": 0.5384615384615384,
-     "recall": 0.42424242424242425
+     "recall": 0.42424242424242425,
+     "heldOutLongClip": {
+      "positives": 32,
+      "negatives": 1796,
+      "unknownDurations": 0,
+      "tp": 13,
+      "fp": 7,
+      "fn": 19,
+      "precision": 0.65,
+      "recall": 0.40625,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -929,7 +1289,19 @@
    "recall": 0.6060606060606061,
    "f1": 0.5333333333333333,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 32,
+    "negatives": 1796,
+    "unknownDurations": 0,
+    "tp": 19,
+    "fp": 21,
+    "fn": 13,
+    "precision": 0.475,
+    "recall": 0.59375,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "xylophone": {
    "group": "source",
@@ -949,7 +1321,19 @@
      "fp": 15,
      "fn": 21,
      "precision": 0.6666666666666666,
-     "recall": 0.5882352941176471
+     "recall": 0.5882352941176471,
+     "heldOutLongClip": {
+      "positives": 44,
+      "negatives": 1796,
+      "unknownDurations": 0,
+      "tp": 24,
+      "fp": 8,
+      "fn": 20,
+      "precision": 0.75,
+      "recall": 0.5454545454545454,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -976,7 +1360,19 @@
    "recall": 0.6666666666666666,
    "f1": 0.5811965811965812,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 44,
+    "negatives": 1796,
+    "unknownDurations": 0,
+    "tp": 28,
+    "fp": 27,
+    "fn": 16,
+    "precision": 0.509090909090909,
+    "recall": 0.6363636363636364,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "vibraphone": {
    "group": "source",
@@ -996,7 +1392,19 @@
      "fp": 1,
      "fn": 19,
      "precision": 0.8888888888888888,
-     "recall": 0.2962962962962963
+     "recall": 0.2962962962962963,
+     "heldOutLongClip": {
+      "positives": 21,
+      "negatives": 1796,
+      "unknownDurations": 0,
+      "tp": 7,
+      "fp": 1,
+      "fn": 14,
+      "precision": 0.875,
+      "recall": 0.3333333333333333,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -1023,7 +1431,19 @@
    "recall": 0.4444444444444444,
    "f1": 0.4285714285714286,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 21,
+    "negatives": 1796,
+    "unknownDurations": 0,
+    "tp": 12,
+    "fp": 16,
+    "fn": 9,
+    "precision": 0.42857142857142855,
+    "recall": 0.5714285714285714,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "djembe": {
    "group": "source",
@@ -1043,7 +1463,19 @@
      "fp": 22,
      "fn": 10,
      "precision": 0.6071428571428571,
-     "recall": 0.7727272727272727
+     "recall": 0.7727272727272727,
+     "heldOutLongClip": {
+      "positives": 23,
+      "negatives": 1833,
+      "unknownDurations": 0,
+      "tp": 15,
+      "fp": 22,
+      "fn": 8,
+      "precision": 0.40540540540540543,
+      "recall": 0.6521739130434783,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -1070,7 +1502,19 @@
    "recall": 0.7954545454545454,
    "f1": 0.7692307692307692,
    "passes70": true,
-   "verdict": "PASS 70/70"
+   "verdict": "PASS 70/70",
+   "heldOutLongClip": {
+    "positives": 23,
+    "negatives": 1833,
+    "unknownDurations": 0,
+    "tp": 16,
+    "fp": 10,
+    "fn": 7,
+    "precision": 0.6153846153846154,
+    "recall": 0.6956521739130435,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "cajon": {
    "group": "source",
@@ -1105,7 +1549,19 @@
    "recall": 0.2857142857142857,
    "f1": 0.3333333333333333,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 10,
+    "negatives": 1833,
+    "unknownDurations": 0,
+    "tp": 0,
+    "fp": 5,
+    "fn": 10,
+    "precision": 0.0,
+    "recall": 0.0,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "triangle": {
    "group": "source",
@@ -1125,7 +1581,19 @@
      "fp": 27,
      "fn": 28,
      "precision": 0.2702702702702703,
-     "recall": 0.2631578947368421
+     "recall": 0.2631578947368421,
+     "heldOutLongClip": {
+      "positives": 23,
+      "negatives": 1949,
+      "unknownDurations": 0,
+      "tp": 9,
+      "fp": 23,
+      "fn": 14,
+      "precision": 0.28125,
+      "recall": 0.391304347826087,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -1152,7 +1620,19 @@
    "recall": 0.39473684210526316,
    "f1": 0.30303030303030304,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 23,
+    "negatives": 1949,
+    "unknownDurations": 0,
+    "tp": 11,
+    "fp": 29,
+    "fn": 12,
+    "precision": 0.275,
+    "recall": 0.4782608695652174,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "whistle": {
    "group": "source",
@@ -1172,7 +1652,19 @@
      "fp": 20,
      "fn": 73,
      "precision": 0.797979797979798,
-     "recall": 0.5197368421052632
+     "recall": 0.5197368421052632,
+     "heldOutLongClip": {
+      "positives": 125,
+      "negatives": 1847,
+      "unknownDurations": 0,
+      "tp": 61,
+      "fp": 20,
+      "fn": 64,
+      "precision": 0.7530864197530864,
+      "recall": 0.488,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -1199,7 +1691,19 @@
    "recall": 0.6381578947368421,
    "f1": 0.6445182724252492,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 125,
+    "negatives": 1847,
+    "unknownDurations": 0,
+    "tp": 77,
+    "fp": 47,
+    "fn": 48,
+    "precision": 0.6209677419354839,
+    "recall": 0.616,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "steel guitar": {
    "group": "source",
@@ -1267,7 +1771,19 @@
    "recall": 0.7209302325581395,
    "f1": 0.6595744680851063,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 22,
+    "negatives": 1833,
+    "unknownDurations": 0,
+    "tp": 13,
+    "fp": 19,
+    "fn": 9,
+    "precision": 0.40625,
+    "recall": 0.5909090909090909,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "bongo": {
    "group": "production",
@@ -1302,7 +1818,19 @@
    "recall": 0.6,
    "f1": 0.6060606060606062,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 32,
+    "negatives": 1833,
+    "unknownDurations": 0,
+    "tp": 20,
+    "fp": 17,
+    "fn": 12,
+    "precision": 0.5405405405405406,
+    "recall": 0.625,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "clave": {
    "group": "production",
@@ -1322,7 +1850,19 @@
      "fp": 3,
      "fn": 7,
      "precision": 0.0,
-     "recall": 0.0
+     "recall": 0.0,
+     "heldOutLongClip": {
+      "positives": 7,
+      "negatives": 1949,
+      "unknownDurations": 0,
+      "tp": 0,
+      "fp": 2,
+      "fn": 7,
+      "precision": 0.0,
+      "recall": 0.0,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "verdict": "too few training clips"
@@ -1360,7 +1900,19 @@
    "recall": 0.3076923076923077,
    "f1": 0.2807017543859649,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 11,
+    "negatives": 1949,
+    "unknownDurations": 0,
+    "tp": 4,
+    "fp": 14,
+    "fn": 7,
+    "precision": 0.2222222222222222,
+    "recall": 0.36363636363636365,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "tom": {
    "group": "production",
@@ -1380,7 +1932,19 @@
      "fp": 33,
      "fn": 45,
      "precision": 0.6597938144329897,
-     "recall": 0.5871559633027523
+     "recall": 0.5871559633027523,
+     "heldOutLongClip": {
+      "positives": 54,
+      "negatives": 1833,
+      "unknownDurations": 0,
+      "tp": 22,
+      "fp": 25,
+      "fn": 32,
+      "precision": 0.46808510638297873,
+      "recall": 0.4074074074074074,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     }
    ],
    "variant": "real",
@@ -1407,7 +1971,19 @@
    "recall": 0.7339449541284404,
    "f1": 0.6611570247933884,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 54,
+    "negatives": 1833,
+    "unknownDurations": 0,
+    "tp": 37,
+    "fp": 21,
+    "fn": 17,
+    "precision": 0.6379310344827587,
+    "recall": 0.6851851851851852,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "tambourine": {
    "group": "production",
@@ -1455,7 +2031,19 @@
    "recall": 0.45,
    "f1": 0.5142857142857143,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 12,
+    "negatives": 1960,
+    "unknownDurations": 0,
+    "tp": 1,
+    "fp": 5,
+    "fn": 11,
+    "precision": 0.16666666666666666,
+    "recall": 0.08333333333333333,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   },
   "finger snap": {
    "group": "production",
@@ -1475,7 +2063,19 @@
      "fp": 7,
      "fn": 27,
      "precision": 0.78125,
-     "recall": 0.4807692307692308
+     "recall": 0.4807692307692308,
+     "heldOutLongClip": {
+      "positives": 25,
+      "negatives": 1947,
+      "unknownDurations": 0,
+      "tp": 14,
+      "fp": 2,
+      "fn": 11,
+      "precision": 0.875,
+      "recall": 0.56,
+      "maxSeconds": 2.25,
+      "subset": "held-out clips > 2.25 s"
+     }
     },
     {
      "file": "short-clip.json",
@@ -1513,7 +2113,106 @@
    "recall": 0.46153846153846156,
    "f1": 0.42857142857142855,
    "passes70": false,
-   "verdict": "below 70/70"
+   "verdict": "below 70/70",
+   "heldOutLongClip": {
+    "positives": 25,
+    "negatives": 1947,
+    "unknownDurations": 0,
+    "tp": 13,
+    "fp": 21,
+    "fn": 12,
+    "precision": 0.38235294117647056,
+    "recall": 0.52,
+    "maxSeconds": 2.25,
+    "subset": "held-out clips > 2.25 s"
+   }
   }
+ },
+ "rescoring": {
+  "kind": "exported-head-route-rescore-v1",
+  "model": "heads.json (exported rounded weights and bias)",
+  "recordedReportSha256": "41e8c85e36855cb3f04295e6247a326a867c4ff9030d8f000838ad8c1969efeb",
+  "headsSha256": "53d7cb66c180ba2d445173d3e4b44751825d2912a666febc3e83936ccf828b20",
+  "baselineLearnedSha256": "2bcb98250b1ea4f96a1db1673526a05c5ae5e3621867c0a3ad9ad2a89893b1d3",
+  "shortClipSha256": "a90881c0e7768a56d7f3d26ef62f0d66d38730198a0645a904ee4fb37b0b6df8",
+  "labelsSha256": "a9dcc9a85b0a4fb35a021d35d3fca995e71191dc41ab2dd36864d9b87590a24a",
+  "clipsSha256": "6fdb5b225dddab50981ad4888254d6bc9d802d514e71c31592b87ddfbaaa77f9",
+  "primaryRound": 1000000,
+  "maxSeconds": 2.25,
+  "heldOutShortClips": 561,
+  "heldOutLongClips": 1972,
+  "heldOutUnknownDurations": 0,
+  "recordedUnroundedComparisons": 66,
+  "verifiedCurrentComparisons": 20,
+  "roundingDifferences": [],
+  "sourceFileSha256": {
+   "shard-0/manifest-0.json": "27eb4d558c5b8e9d1fd14d3736dd6af8ec43c17f60e05607a9b8e1714061a31f",
+   "shard-1/manifest-1.json": "c22e53c9c440540e60b47a363096e905278f2ed4f7d9f449a178ac2cadcc2677",
+   "shard-2/manifest-2.json": "77701de1af3f34b8a4c9c64904467ee36477940997ff348dcda58cbd28e8b1b0",
+   "shard-3/manifest-3.json": "9684c3e35c1d0f26a7c5173fa7faa450da7ee23d586b976752e3fdda45006f76",
+   "shard-4/manifest-4.json": "9cb83957c4221d13c7dc543d42d2dcb39afe5d43f9ffa38f1883a96bc9822185",
+   "shard-5/manifest-5.json": "a707904e675bde507e0383a58cfa135fdb30b6c586b6a431fa009cdad83214e1",
+   "shard-0/renders-0.json": "b156e3b3fae076173412e5aef5231f05cb42522045deb474eeb1890562f2bb5b",
+   "shard-1/renders-1.json": "172d5dfbbe692601e238cc450f19b30f9e524c7f1dcff5b86c1939dd9ec36d08",
+   "shard-2/renders-2.json": "d5122d000028962b5ff5d2d0f19f9bb6cb1659054153aa9520357b3c1eb0d470",
+   "shard-3/renders-3.json": "43918d4ddc1fe45e0b10e412cb835713b25c8f34ddbf3d052c460f66047c5ec4",
+   "shard-4/renders-4.json": "7bc76fd2256c83fb2578f109fd5aaf80865e8f1c6d67c9e72721ff72d2e37d4d",
+   "shard-5/renders-5.json": "1fdd621f77829de7b1d9dc0aaa6a7bd857a700bbd8a985eafb7a8601210caf7f",
+   "shard-0/durations-0.json": "be8af2835d2dee5f01bb2000bf18a110919b328495b87ab05e41ab3c67d7f9d2",
+   "shard-1/durations-1.json": "6327ec60416fc99c58b61d930813c19d3767049594c95c6bc1ae2d52af8af6ce",
+   "shard-2/durations-2.json": "97c442614b92e78828892a48ef5b71583111f3be8b21b55c0afa9c6fd93b334f",
+   "shard-3/durations-3.json": "c362df867a4a76b56710477a20a09477bdd841daf2b69ecbfc9604afd80f3f99",
+   "shard-4/durations-4.json": "bc84c7998d4849bc777da5de5aa1f536eee8eef627490a5efc402a5c7272179f",
+   "shard-5/durations-5.json": "fcc129039b04feeb865a488d3df915236629209be440d14b84f7849475c4cf86",
+   "shard-0/emb-0-0.jsonl": "93b9df660c65a408fe757986c7c2988be77b586d9631557415c2b7cf61adcc80",
+   "shard-0/emb-0-1.jsonl": "b084b505487043de0a33105921d8c5932ac7ce9639e00ba71914fec8051614c6",
+   "shard-0/emb-0-2.jsonl": "b4c68be51b196561d5b2b53ed3b546038c18714c0c50a06b61893489548d07eb",
+   "shard-0/emb-0-3.jsonl": "1c073a655f9f95df662eec6dea0f6500ce6c47f4255fd32ab66c5139906d99eb",
+   "shard-1/emb-1-0.jsonl": "8eef6b1296ed56d2cf4310ca1c273bd1daf8d68ef7a9ff6cb0cc6b80f9315d73",
+   "shard-1/emb-1-1.jsonl": "492fa01296ba9e632b5a0be901ab7ee9c438f19645d6e611f1c11504bbc60d22",
+   "shard-1/emb-1-2.jsonl": "3206acf0976f1bbe03e94df97e3db03ce4ec88c68196d97936c1e314dcecb11e",
+   "shard-1/emb-1-3.jsonl": "13549ad2879e3c136c454aaf8cc6b78ac86aa014692bdc3b36adae0dd90ffea3",
+   "shard-2/emb-2-0.jsonl": "497b647bd18e4260111a60be01733d3eb95d6107b6d7c0cce31cd0c7fb740d6b",
+   "shard-2/emb-2-1.jsonl": "ff4409c74c37a1b74e747c9a425787fccf7afefb060f725c7586db57f0764ba8",
+   "shard-2/emb-2-2.jsonl": "7df7c95415a54f35022701036af1e47878769e6a88cb95c4d2af8629344e01fe",
+   "shard-2/emb-2-3.jsonl": "7c4ff78f050489539085c1ec2510c6afd73db4b72a7aeedca01ff6faecb3f3d4",
+   "shard-3/emb-3-0.jsonl": "430b52a8a44bd5bed699f0a456d519279d7aaaa6f3eab895d7ee2f6da73ba420",
+   "shard-3/emb-3-1.jsonl": "abd4106b90d92e828e36f296b23d0f8cd941e8f2fc303a2c1e6d5f424af97c96",
+   "shard-3/emb-3-2.jsonl": "2b9b75c4020aa655e58f3e0d2066005a899ee1b45690deecf9740542714c1cd2",
+   "shard-3/emb-3-3.jsonl": "89b9450f1f131af328fb05d86c06dbdf11ba61e42d95dcc349bd5dc27b170543",
+   "shard-4/emb-4-0.jsonl": "f35ac882b8ce64e1e5b578e57da94a1751113a94e19f85959c0ed394f4cd50fd",
+   "shard-4/emb-4-1.jsonl": "ed254180a6cc3b8a9a8944c1640727447fa6397a3ef2c9774cb44335c1687064",
+   "shard-4/emb-4-2.jsonl": "d46da3e53607f694927adfa18c133b7be2ac47f83583cb90e6bdaf4b1689ad03",
+   "shard-4/emb-4-3.jsonl": "509455f618adc335d5645bd605318112cbab7866fc4e2db759611bd1f3fc7621",
+   "shard-5/emb-5-0.jsonl": "502c3a786dfd612e37a09e90bfeab9f6d8dea8a51633824921d970d60d2ce026",
+   "shard-5/emb-5-1.jsonl": "f9e7c011ecf0c33c945c0cfcf6426f698ccf999773f4538ccd7ca86719bd0fdb",
+   "shard-5/emb-5-2.jsonl": "4facf91e3368521994ce3eeac55e1ff2bf45d030358e1d4879d9099ad3064cb4",
+   "shard-5/emb-5-3.jsonl": "80d2871d1e4fb252fa93f642e7c54db0a73d1363f48a12df3d17276f5a6c1113",
+   "shard-0/emb-r0-0.jsonl": "c62c38c44334a625f7df629af9019a37fb6b0d6b404290bbe2876523121a5666",
+   "shard-0/emb-r0-1.jsonl": "d6e893d80d899526c992a3baaeaf90467c077008179ce9a8ed58a5755bbdffab",
+   "shard-0/emb-r0-2.jsonl": "809939fbf770192590d2879799e664624b59adaea5ed2d040d6e568e05ac962e",
+   "shard-0/emb-r0-3.jsonl": "6e771436c24f486d66ad9baf306eb23997ac7ae9f94b97fe39704c0e5360c994",
+   "shard-1/emb-r1-0.jsonl": "391ea1c6c68751f192aa29eaec01a5a107c84ba8c44d2dcf4c6b2711367576e7",
+   "shard-1/emb-r1-1.jsonl": "4e6aee569c67893a6e2bb0251a7b1d1d33e4824505ae142cb6f64bff5526057b",
+   "shard-1/emb-r1-2.jsonl": "420961e0780d25161836e97149ffbbe78659f578c19c5a9ae378f2ffc0f76bf2",
+   "shard-1/emb-r1-3.jsonl": "027385ef8c9b29efb299aaeecc5307469731870d70d1dad3c74ad54be8813f61",
+   "shard-2/emb-r2-0.jsonl": "1d7e4acd75891f6eac522374c7f1f069a89d24aaeebfe3408fbf69ccbcbcbb69",
+   "shard-2/emb-r2-1.jsonl": "0877dd7c61afebe5c33b61e9112ee58f58e628ce15dbc231dd388519eee22773",
+   "shard-2/emb-r2-2.jsonl": "d1f063e57f23a91babb41bf426e833504b1071b3b1a68977233130c90e0bd7de",
+   "shard-2/emb-r2-3.jsonl": "cc207623e80a674fc54f2e34a2299ccdc2171253778b1f011eb6fe7cb95b1025",
+   "shard-3/emb-r3-0.jsonl": "8a5f042e5a08452009504e70a0fcea43c3753f757cae5229dbc4cfad6677c446",
+   "shard-3/emb-r3-1.jsonl": "616eb44b76c02dfcd558c59cf9fbb6fab998e1f11907b3e6c5b7e527419b95b1",
+   "shard-3/emb-r3-2.jsonl": "8500c529cd2cb324f140420829057284d1c5e03bdfb724be734b0e16e1e061f8",
+   "shard-3/emb-r3-3.jsonl": "74b62f670bec47769f537976ad9416a2f7943954f3ddd4229cedb38c103605db",
+   "shard-4/emb-r4-0.jsonl": "64f78e98fe0edc5a59f2004d53b4c827d893c7e99e13fe705eee5facad2dee27",
+   "shard-4/emb-r4-1.jsonl": "8ac66beed67e035377b29a15f42558fc909eade6c4d39d219e1769a48f4dbc47",
+   "shard-4/emb-r4-2.jsonl": "e7d121312728da2b4550034ca8e2472f20bc584099b5e27193800dd88ca479e7",
+   "shard-4/emb-r4-3.jsonl": "789c9abbf1f424beb1bf6a585da3644ae75e415b732790e566669ad950fcddda",
+   "shard-5/emb-r5-0.jsonl": "249a2b0cee9d74e462a29a8d6c93dbb9bad0be760c3cc67bffdefaa30a3d835f",
+   "shard-5/emb-r5-1.jsonl": "7bf52656ea467f6923880ac075f87885e1c417f789eaf16f5eb1aa8f6833f32b",
+   "shard-5/emb-r5-2.jsonl": "cec81422dd6292e067e2ff651eb5c48cc875af3e01a4c61688118fc179831f78",
+   "shard-5/emb-r5-3.jsonl": "69f919f8d721f9af612316dcb2991098b6a0154a1883c58feaa2e0756fb18c50"
+  },
+  "note": "No retraining, threshold selection, or split changes. Recorded unrounded confusion counts are compared with exported-head counts; any differences are preserved above. Full-precision coefficients were not exported, so unrounded predictions are not reconstructed."
  }
 }

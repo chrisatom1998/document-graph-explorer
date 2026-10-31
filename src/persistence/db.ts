@@ -131,6 +131,8 @@ export interface SavedViewRecord {
     musicKey?: string | null;
     style?: string | null;
     sounds?: string[] | null;
+    clipShape?: 'loop' | 'one-shot' | null;
+    stem?: 'drums' | 'bass' | 'vocals' | 'melody' | null;
   };
 }
 

@@ -12,6 +12,7 @@ describe('ProgressStrip accessibility', () => {
     useGraphStore.getState().reset();
     useGraphStore.setState({
       phase: 'embedding',
+      graphUsable: true,
       fileStatuses: {
         first: { fileId: 'first', name: 'first.md', stage: 'placed' },
         second: { fileId: 'second', name: 'second.md', stage: 'embedding' },
@@ -25,15 +26,30 @@ describe('ProgressStrip accessibility', () => {
   it('announces the active phase and exposes determinate pipeline progress', () => {
     render(<ProgressStrip />);
 
-    expect(screen.getByRole('status')).toHaveTextContent('Embedding meaning');
-    expect(screen.getByRole('progressbar', { name: 'Embedding meaning…' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Refining connections');
+    expect(screen.getByRole('progressbar', { name: 'Refining connections…' }))
       .toHaveAttribute('aria-valuetext', '1 of 2');
     expect(screen.getByRole('progressbar', { name: 'Loading embedding model' }))
       .toHaveAttribute('aria-valuetext', '0.0 of 0.0 MB');
   });
 
+  it('keeps second-drop parsing and model loading as separate statuses', () => {
+    useGraphStore.setState({ phase: 'parsing', graphUsable: true });
+    render(<ProgressStrip />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Parsing…');
+    expect(screen.getByRole('status')).not.toHaveTextContent('Refining connections…');
+    expect(screen.getByText(/Loading embedding model/)).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Loading embedding model' }))
+      .toBeInTheDocument();
+  });
+
   it('shows music progress instead of an already completed file counter', () => {
-    useGraphStore.setState({ phase: 'parsing', modelProgress: { kind: 'music-analysis', loaded: 0, total: 2, note: 'Listening to one.wav' } });
+    useGraphStore.setState({
+      phase: 'parsing',
+      graphUsable: false,
+      modelProgress: { kind: 'music-analysis', loaded: 0, total: 2, note: 'Listening to one.wav' },
+    });
     render(<ProgressStrip />);
     expect(screen.getByRole('progressbar', { name: 'Analyzing music…' })).toHaveAttribute('aria-valuetext', '0 of 2');
   });

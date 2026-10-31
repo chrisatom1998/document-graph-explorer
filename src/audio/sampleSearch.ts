@@ -1,6 +1,6 @@
 import { djReviewAllows, resolvedNonSourceLabels } from './soundReviewPolicy';
 import type { DocNode } from '../model/types';
-import { DJ_CATALOG } from './djTags';
+import { DJ_CATALOG, MERGED_DJ_LABELS, mergedDjLabel } from './djTags';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { keyName, type MusicAnalysis } from './musicTypes';
 import { energyFromScore, genreFromScores, genreFamily, genreText } from './genreEnergy';
@@ -12,9 +12,12 @@ export { EMPTY_SAMPLE_QUERY, parseSampleQuery, type SampleQuery } from './sample
 function normalize(s: string): string {
   return s.toLowerCase().replace(/[_-]/g, ' ').replace(/♯/g, '#').replace(/♭/g, 'b').replace(/\s+/g, ' ').trim();
 }
+// Merged look-alike tags search as one: "breath" finds vocal breath, "static noise" finds noise.
+const MERGED = new Map(Object.entries(MERGED_DJ_LABELS).map(([key, to]) => [key.slice(key.indexOf(':') + 1), to.label]));
 function canonical(s: string): string {
   const v = normalize(s);
-  return normalize(DJ_CATALOG.find(c => [c.label, ...c.aliases].some(a => normalize(a) === v))?.label ?? v);
+  const label = normalize(DJ_CATALOG.find(c => [c.label, ...c.aliases].some(a => normalize(a) === v))?.label ?? v);
+  return MERGED.get(label) ?? label;
 }
 const ENERGY_TERMS: Record<string, 'low' | 'medium' | 'high'> = { 'high energy': 'high', energetic: 'high', 'peak time': 'high', 'banger': 'high',
   'medium energy': 'medium', 'mid energy': 'medium', 'low energy': 'low', chill: 'low', calm: 'low', mellow: 'low' };
@@ -35,7 +38,7 @@ export function sampleLabels(node: DocNode): Evidence[] {
   if (!a) return [];
   const confirmedInstruments = confirmedInstrumentList(a);
   const tags: Evidence[] = resolvedNonSourceLabels(a, true).map(({label,source})=>({label,source}));
-  if (a.confirmedDjTags === undefined && confirmedInstruments === undefined) tags.push(...(a.soundProfile?.djTags ?? []).filter(t=>t.group==='source'&&sourceReviewAllows(a,t.label)).map(t=>({label:t.label,source:'estimated' as const})));
+  if (a.confirmedDjTags === undefined && confirmedInstruments === undefined) tags.push(...(a.soundProfile?.djTags ?? []).filter(t=>t.group==='source'&&mergedDjLabel(t.group,t.label).group==='source'&&sourceReviewAllows(a,t.label)).map(t=>({label:t.label,source:'estimated' as const})));
   // Confirmed DJ labels supersede inconsistent automatic instrument names too.
   if (confirmedInstruments !== undefined) tags.push(...confirmedInstruments.map(label => ({ label, source: 'confirmed' as const })));
   else if (a.confirmedDjTags === undefined) tags.push(...reliableInstruments(a).map(t => ({ label: t.label, source: 'estimated' as const })));
@@ -44,7 +47,14 @@ export function sampleLabels(node: DocNode): Evidence[] {
     tags.push(...proposed.source.filter(label=>sourceReviewAllows(a,label))
       .map(label => ({ label, source: 'suggested' as const })));
   }
-  return tags;
+  // Merged names count once for retrieval/similarity, retaining the strongest provenance.
+  const unique = new Map<string,Evidence>();
+  const priority = { suggested: 0, estimated: 1, confirmed: 2 };
+  for (const tag of tags) {
+    const label = MERGED.get(tag.label) ?? tag.label, previous = unique.get(label);
+    if (!previous || priority[tag.source] > priority[previous.source]) unique.set(label,{...tag,label});
+  }
+  return [...unique.values()];
 }
 export interface SampleMatch { node: DocNode; reasons: string[]; score: number }
 export function searchSamples(nodes: DocNode[], query: SampleQuery, referenceId?: string): SampleMatch[] {

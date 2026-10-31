@@ -25,6 +25,20 @@ def gm_label(p):
     if 80 <= p <= 95: return 'synthesizer'
     return None
 
+# Run 9: finer app tags for GM programs (training-data-all-tags-2026-10-10 report). A program gets its gm_label (if any)
+# plus these; programs with no gm_label are kept under their first finer tag. prepare-slakh-more.py notes that banjo,
+# sitar, steel drum and kalimba programs never occur among rendered stems and whistle / square lead are played by
+# generic patches, so those rows may stay empty.
+GM_EXTRA = {9: ['glockenspiel'], 11: ['vibraphone'], 12: ['marimba'], 13: ['xylophone'], 14: ['bell'],
+            38: ['synth bass'], 39: ['synth bass'], 40: ['violin / fiddle'], 41: ['viola'], 42: ['cello'], 43: ['double bass'],
+            46: ['harp'], 50: ['string synth'], 51: ['string synth'], 52: ['choir'], 53: ['choir'], 58: ['tuba'],
+            60: ['horn'], 62: ['brass synth'], 63: ['brass synth'], 68: ['oboe'], 70: ['bassoon'], 78: ['whistle'],
+            80: ['chiptune synth'], 85: ['vocal-like synth'], 104: ['sitar'], 105: ['banjo'], 108: ['kalimba'], 114: ['steel drum'],
+            **{k: ['atmospheric pad'] for k in range(88, 96)}}
+
+def gm_labels(p):
+    return [l for l in [gm_label(p)] if l] + [l for l in GM_EXTRA.get(p, []) if l != gm_label(p)]
+
 def pick(meta_root, out, cap):
     rows = collections.defaultdict(list)
     for f in glob.glob(f'{meta_root}/**/metadata.yaml', recursive=True):
@@ -32,10 +46,11 @@ def pick(meta_root, out, cap):
         for sid, body in re.findall(r'\n  (S\d+):\n((?:    .*\n?)+)', text):
             kv = dict(re.findall(r'    (\w+): (.*)', body))
             if kv.get('audio_rendered') != 'true': continue
-            label = 'drums' if kv.get('is_drum') == 'true' else gm_label(int(kv.get('program_num', -1)))
-            if not label: continue
+            labels = ['drums'] if kv.get('is_drum') == 'true' else gm_labels(int(kv.get('program_num', -1)))
+            if not labels: continue
+            label = labels[0]
             rows[label].append({'id': f'slakh:{track}/{sid}', 'member': f'{track}/stems/{sid}.flac',
-                                'labels': [label], 'group': f"slakh:{kv.get('plugin_name', 'unknown')}"})
+                                'labels': labels, 'group': f"slakh:{kv.get('plugin_name', 'unknown')}"})
     random.seed(20261004); clips = []
     for label, items in sorted(rows.items()):
         # Spread the cap across presets so no single preset defines the instrument.
