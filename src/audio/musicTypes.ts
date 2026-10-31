@@ -57,7 +57,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // more labelled clips arrive.
 // 133/134: on recordings shorter than 10 s the electric-guitar head must outscore the acoustic-guitar head,
 // and between 2.25 s and 10 s the CLAP piano head must also clear the tagger's piano cutoff (NSynth test notes).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 134 : 133;
+// 135/136: a trained rimshot head (also on short clips) replaces the raw-CLAP prompt that never showed it (app-path 60/30 on
+// the fresh test sets, docs/evaluations/rimshot-supersaw-heads-2026-10-31).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 136 : 135;
 export interface InstrumentEstimate {
   label: string;
   score: number;
