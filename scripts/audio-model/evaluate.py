@@ -6,7 +6,8 @@ Each <eval-dir>/<name> is a pair written by prepare.py, prepare-holdout.py, prep
 {class: 'present'|'absent'}, weak?: [class...]}]}) and <name>.npy (int16 32 kHz mono [N, samples], or one flat array cut by the json's `offsets`). Sets labelled with OpenMIC's names are
 scored on the 12 classes DGE's DJ clip reports use; sets labelled with app names ('cat:<label>') on every one they label. A clip longer than
 10 s is cut into whole 10 s windows, and a tag counts as shown when any window passes its threshold, the app's rule for
-fused tags (fusionPresentation.ts). Only explicit present/absent pairs are scored; a label listed in `weak` (untagged
+fused tags (fusionPresentation.ts). DRUMS_ANY=1 scores drums with the 2026-10-31 meaning (any drum sound, drum_sounds.py)
+on sets that label drums; the default keeps the kit-only labels the sets were built with, so old reports stay comparable. Only explicit present/absent pairs are scored; a label listed in `weak` (untagged
 by the uploader) only counts in the weak view. Thresholds were chosen on validation artists only (calibrate.py).
 """
 import json, os, sys
@@ -14,6 +15,8 @@ import numpy as np
 import onnxruntime as ort
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import fsd50k_extra  # noqa: E402
+import drum_sounds  # noqa: E402
+DRUMS_ANY = os.environ.get('DRUMS_ANY') == '1'
 
 model, thresholds, out_path, *sets = sys.argv[1:]
 th = json.load(open(thresholds))
@@ -49,7 +52,9 @@ report = {}
 for base in sets:
     name = os.path.basename(base)
     meta = json.load(open(base + '.json')); items = meta['items']
-    if name == 'eval-fsd50k': print(f'{name}: {fsd50k_extra.relabel(items, "eval", strings=True)} labels added (fsd50k_extra.py)', flush=True)
+    if name == 'eval-fsd50k': print(f'{name}: {fsd50k_extra.relabel(items, "eval", strings=True, drums_any=DRUMS_ANY)} labels added (fsd50k_extra.py)', flush=True)
+    if DRUMS_ANY and any('cat:drums' in it['labels'] for it in items):
+        print(f'{name}: {drum_sounds.apply_items(items)} clips now drums present (any drum sound, drum_sounds.py)', flush=True)
     wav = np.load(base + '.npy', mmap_mode='r'); s = scores(Ragged(wav, meta['offsets']) if 'offsets' in meta else wav)
     named = sorted({c for it in items for c in it['labels']} & set(classes) & set(th))
     score_these = [c for c in MAP if c in named] if any(c in MAP for c in named) else named
