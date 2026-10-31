@@ -122,6 +122,11 @@ describe('trained tagger display', () => {
     const older = track(4, { piano: 0 }, head);
     older.tagger = { revision: 'older', windows: 1, scores: { piano: 0 } };
     expect(sources(older)).toEqual(['piano']);
+    // Only the trained head's piano is vetoed: tested piano evidence from another model (here the baseline
+    // fallback) keeps its own rules.
+    const fallback = [{ group: 'source' as const, label: 'piano', score: .9, model: 'Baseline fallback score' as 'Trained head' }];
+    expect(sources(track(4, { piano: 0 }, fallback))).toEqual(['piano']);
+    expect(sources(track(4, { piano: 0 }, [...head, ...fallback]))).toEqual(['piano']);
   });
   it('decides its sound-type and effect tags at any length, and leaves other tags alone', () => {
     const a = track(4, { 'cat:percussive': .99, 'cat:dark': .01 }, [

@@ -8,7 +8,8 @@
  * Needs ffmpeg, the CLAP weights at public/sound-model/onnx/audio_model_quantized.onnx and
  * public/tagger-model/model.onnx (npm run setup:music). Safe to resume. Audio is not committed.
  */
-import { createWriteStream, existsSync, readFileSync } from 'node:fs';
+import { appendFileSync, createWriteStream, existsSync, readFileSync, truncateSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { performance } from 'node:perf_hooks';
 
@@ -27,9 +28,19 @@ if (!examplesPath || !audioDir) {
 const examples = JSON.parse(readFileSync(examplesPath, 'utf8'));
 const done = new Set();
 if (existsSync(outPath)) {
-  for (const line of readFileSync(outPath, 'utf8').split('\n')) {
+  const text = readFileSync(outPath, 'utf8');
+  for (const line of text.split('\n')) {
     if (!line) continue;
     try { done.add(JSON.parse(line).id); } catch { /* a torn last line is skipped; that id is scored again */ }
+  }
+  // Cut a torn last record so the appended rescore starts on a clean line and report.py can parse the file.
+  // A whole record that only lost its newline is kept and closed.
+  const end = text.lastIndexOf('\n') + 1;
+  if (end < text.length) {
+    let whole = false;
+    try { JSON.parse(text.slice(end)); whole = true; } catch { /* torn */ }
+    if (whole) appendFileSync(outPath, '\n');
+    else truncateSync(outPath, Buffer.byteLength(text.slice(0, end)));
   }
 }
 const ids = Object.keys(examples).filter(id => !done.has(id));
@@ -39,11 +50,11 @@ if (!ids.length) process.exit(0);
 const tf = await import('@huggingface/transformers');
 tf.env.allowRemoteModels = false;
 tf.env.allowLocalModels = true;
-tf.env.localModelPath = new URL('../../public/', import.meta.url).pathname;
+tf.env.localModelPath = fileURLToPath(new URL('../../public/', import.meta.url));
 const clap = await tf.ClapAudioModelWithProjection.from_pretrained('sound-model', { dtype: 'q8', device: 'cpu', local_files_only: true, session_options: { intraOpNumThreads: 4, interOpNumThreads: 1 } });
 const processor = await tf.AutoProcessor.from_pretrained('sound-model', { local_files_only: true });
 const ort = await import('onnxruntime-node');
-const tagger = await ort.InferenceSession.create(new URL('../../public/tagger-model/model.onnx', import.meta.url).pathname, { executionProviders: ['cpu'], intraOpNumThreads: 4, interOpNumThreads: 1 });
+const tagger = await ort.InferenceSession.create(fileURLToPath(new URL('../../public/tagger-model/model.onnx', import.meta.url)), { executionProviders: ['cpu'], intraOpNumThreads: 4, interOpNumThreads: 1 });
 const classes = JSON.parse(readFileSync(new URL('../../public/tagger-model/model.json', import.meta.url), 'utf8')).classes;
 const keep = classes.map((name, i) => ({ name, i })).filter(({ name }) => /guitar|mallet|marimba|xylophone|vibraphone|glockenspiel|piano|organ|flute|string|keyboard|synth|bass|brass|reed|vocal|bell|drum/i.test(name));
 

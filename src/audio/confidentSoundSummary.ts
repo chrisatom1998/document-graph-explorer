@@ -51,6 +51,7 @@ const profileNames:Record<string,string>={'AudioSet AST':'AST score','MTG-Jamend
 /** Only these scores come from detectors that passed held-out testing; other models still show under Model scores. */
 export const TESTED_SCORES=new Set(['Trained head score','Baseline fallback score']);
 const MAYBE_SCORES=new Set(['Trained head score (maybe)',TAGGER_MAYBE_SCORE]);
+const TRAINED_HEAD_SCORES=new Set(['Trained head score','Trained head score (maybe)']);
 /** The trained tagger (src/audio/tagger.ts) passed held-out testing on the tags it decides; below SOUND_TAG_BAR it shows as "maybe". */
 TESTED_SCORES.add(TAGGER_SCORE);
 /** Jamendo (music-trained) window scores that passed a held-out full-mix check: thresholds were picked on half the
@@ -239,7 +240,8 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
 }
 /** Between a one-shot and the tagger's 10 s piano handoff, the CLAP piano head is the only decider and it fires on
  *  keyboards that are not pianos (NSynth test: precision 0.37). The tagger's existing piano cutoff, already used
- *  from 10 s up, has to agree. A missing or older tagger result leaves the head alone. */
+ *  from 10 s up, has to agree. A missing or older tagger result leaves the head alone. Piano backed by any other
+ *  evidence (reviewed examples, baseline fallback) is not touched. */
 function shortPianoVeto(sounds: DisplaySound[], audio: MusicAnalysis): DisplaySound[] {
   const piano = TAGGER_POLICY.tags.find(tag => tag.output === 'piano');
   const min = piano?.minSeconds;
@@ -248,7 +250,9 @@ function shortPianoVeto(sounds: DisplaySound[], audio: MusicAnalysis): DisplaySo
   if (!tagger || tagger.revision !== TAGGER_REVISION) return sounds;
   const score = tagger.scores.piano;
   if (typeof score !== 'number' || score >= piano.threshold) return sounds;
-  return sounds.filter(s => s.origin === 'confirmed by you' || s.dimension !== 'source' || s.label !== 'piano');
+  // Only the trained head's piano is vetoed. Piano from reviewed examples or any other model keeps its own rules.
+  const headOnly = (s: DisplaySound) => !!s.scores?.length && s.scores.every(x => TRAINED_HEAD_SCORES.has(x.model));
+  return sounds.filter(s => s.origin === 'confirmed by you' || s.dimension !== 'source' || s.label !== 'piano' || !headOnly(s));
 }
 const GROUP_OF:Partial<Record<Dimension,DjGroup>>={source:'source',effect:'production',character:'character'};
 const DIMENSION_OF:Record<DjGroup,Dimension>={source:'source',production:'effect',character:'character'};
