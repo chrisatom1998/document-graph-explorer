@@ -10,7 +10,11 @@ MIXTEST=manifest.json@dir also scores each sound on held-out layered mixtures (b
 target level; EXCLUDE=manifest.json drops that manifest's `excludeIds` (the mixture-test targets) from every
 extra dataset, so no test sound is heard in training. Use both in every round being compared.
 Usage: train-with-extras.py <out.json> [name=manifest.json@fingerprint_dir ...]
-Every manifest clip needs: id, labels (app label names), group (independence unit)."""
+Every manifest clip needs: id, labels (app label names), group (independence unit); `testOnly: true` rows are scored, never trained.
+Fair-fit options (docs/evaluations/rwc-woodwind-heads-2026-10-30): DEDUP=1 drops a test clip's cross-source Freesound twin from
+training; HALF_TEST=<group prefix> holds out half of that source's groups (sha256) as a second judge; SAVE_DIR=dir writes the
+weights fit on training rows only (the ones that were scored); SHIPPED=learned.json also scores the shipped head on the same rows."""
+import functools; print = functools.partial(print, flush=True)
 import json, sys, glob, hashlib, os, datetime, re
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -20,7 +24,7 @@ import importlib.util
 _spec = importlib.util.spec_from_file_location('labeler', 'scripts/label-sample-library.py')
 labeler = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(labeler)
 
-FP = '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints'
+FP = os.environ.get('FP', '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints')
 OUT = sys.argv[1]; EXTRAS = [a.split('=', 1) for a in sys.argv[2:]]
 BAR, MIN_TEST = float(os.environ.get("BAR", 0.65)), int(os.environ.get("MIN_TEST", 15))
 catalog = {c['label']: c for c in json.load(open('src/audio/djCatalog.json'))['categories']}
@@ -28,6 +32,8 @@ FAMILY = {'drum-hit': 'drum hit', 'drum-pattern': 'drum loop', 'vocal': 'vocal',
           'transition': 'fx', 'bass': 'bass', 'synth': 'synth', 'texture': 'texture'}
 
 EXCLUDED = set(json.load(open(os.environ['EXCLUDE']))['excludeIds']) if os.environ.get('EXCLUDE') else set()
+# EXCL_TRAIN=ids.json: ids that may be scored but never trained on (held-out / judge lists).
+EXCL_TRAIN = set(json.load(open(os.environ['EXCL_TRAIN']))['excludeIds']) if os.environ.get('EXCL_TRAIN') else set()
 # Frozen test sets: their recordings and whole families (uploaders, NSynth instruments) never reach training.
 RES_IDS, RES_FAMILIES = set(), set()
 for _f in ('docs/evaluations/short-clips-2026-10-04/reserved-test-families.json', 'docs/evaluations/synth-clips-2026-10-05/reserved-test-families.json'):
@@ -47,6 +53,7 @@ def load(manifest, folder, source):
             r = json.loads(line)
             if r['id'] in meta and r['id'] not in got: got[r['id']] = r['embedding']
     rows = [meta[i] for i in got]
+    EXCL_TRAIN.update(r['id'] for r in rows if r.get('testOnly'))   # cleaned manifests: held-out/judge rows may be scored, never trained
     X = np.asarray([got[r['id']] for r in rows], dtype=np.float32); X /= np.linalg.norm(X, axis=1, keepdims=True)
     labels = [set(r['labels'] if 'labels' in r else [r['label']]) for r in rows]
     if source == 'vault':   # re-check library labels so song titles no longer count as sounds
@@ -67,6 +74,8 @@ REAL = tuple(n for n in ('fsd50k:', 'fsl10k:', 'fsm:') if any(i.startswith(n) fo
 # Real (not rendered or edited) audio from other extras; usable for label tests, not for instrument tests.
 REAL_LABEL = REAL + tuple(n for n in ('fs:', 'ep:', 'hh:', 'fsperc:') if any(i.startswith(n) for i in IDS))
 FAM = np.array([(lambda f: f.pop() if len(f) == 1 else None)({FAMILY.get(catalog.get(l, {}).get('family')) for l in s} - {None}) for s in LAB], dtype=object)
+FSTAIL = np.array([i.rsplit(':', 1)[-1] if i.startswith(('fsd50k:', 'fsm:', 'fsl10k:', 'fsperc:', 'fs:', 'fslbb:')) else '' for i in IDS])
+EXMASK = np.array([i in EXCL_TRAIN for i in IDS]); print(f'train-excluded ids present: {int(EXMASK.sum())}')
 print(f'total {len(LAB)} clips ({IS_VAULT.sum()} library, {(~IS_VAULT).sum()} extra)')
 if os.environ.get('MIXTEST'):
     MX, ML, _, _, MROWS = load(*os.environ['MIXTEST'].split('@'), 'mixtest'); MLEVEL = np.array([r['levelDb'] for r in MROWS])
@@ -149,7 +158,18 @@ def run(kind, name):
         t2 = use & real_pool & np.isin(G, sorted(held_out(f'{kind}:{name}:real', G[real_pool & use], pos[real_pool & use])))
         if pos[t2].sum() > pos[test].sum() and pos[t2].sum() >= MIN_TEST: test, where = t2, 'real recordings'
     train = use & ~test & (IS_VAULT | (pos | ~IS_VAULT))
-    r = {'kind': kind, 'name': name, 'testedOn': where, 'trainPositive': int(pos[train].sum()), 'testPositive': int(pos[test].sum())}
+    if EXCL_TRAIN: train &= ~EXMASK
+    # Cross-source duplicates: the same Freesound recording under two sources (fsm:X and fsd50k:X) has two
+    # different group names, so a by-group test does not keep its twin out of training.
+    _tt = set(FSTAIL[test]) - {''}; _dup = train & np.isin(FSTAIL, sorted(_tt)) if _tt else np.zeros(len(train), bool)
+    dup_n = int((_dup & pos).sum()), int(_dup.sum())
+    if os.environ.get('DEDUP') == '1': train &= ~_dup
+    half = np.zeros(len(train), bool)
+    if os.environ.get('HALF_TEST'):   # new held-out half of a dataset, by whole group (player)
+        _pre = os.environ['HALF_TEST']
+        half = use & np.array([g is not None and str(g).startswith(_pre) and int(hashlib.sha256(('half|'+str(g)).encode()).hexdigest()[:8],16) % 2 == 0 for g in G])
+        train &= ~half
+    r = {'testTwinsInTrain': {'positive': dup_n[0], 'all': dup_n[1]}, 'kind': kind, 'name': name, 'testedOn': where, 'trainPositive': int(pos[train].sum()), 'testPositive': int(pos[test].sum())}
     if pos[test].sum() < MIN_TEST or pos[train].sum() < 30 or len(set(G[train & pos])) < 3: return {**r, 'verdict': 'not enough data'}
     def oof_for(rows, C=1.0):
         oof = np.full(len(rows), np.nan)
@@ -196,8 +216,29 @@ def run(kind, name):
     if th is None: return {**r, 'verdict': 'no usable threshold'}
     model = fit(X[a], pos[a], C)
     b = np.where(test)[0]; pr = model.predict_proba(X[b])[:, 1] >= th; t = pos[b]
+    if os.environ.get('SAVE_DIR'):   # weights fit on training rows only (no test, test-only, judge or held-out rows); never the app
+        json.dump({'kind': kind, 'label': name, 'weights': [round(float(w), 6) for w in model.coef_[0]], 'bias': round(float(model.intercept_[0]), 6),
+                   'threshold': th, 'C': C, 'trainRows': int(len(a)), 'trainPositive': int(pos[a].sum()), 'uses': [EXTRAS[i - 1][0] for i in chosen],
+                   'fitOn': 'training rows only; test rows, their cross-source twins, testOnly rows and HALF_TEST rows excluded',
+                   'note': 'candidate; the app only changes when a PR copies it into learned.json'},
+                  open(os.path.join(os.environ['SAVE_DIR'], name.replace(' ', '-').replace('/', '-') + '.json'), 'w'))
+    if os.environ.get('SHIPPED'):   # the shipped head's own weights and threshold, on this exact test set
+        _sh = {h['label']: h for h in json.load(open(os.environ['SHIPPED']))['heads']}.get(name)
+        if _sh:
+            _p = 1 / (1 + np.exp(-(X[b] @ np.asarray(_sh['weights'], np.float32) + _sh['bias']))) >= _sh['threshold']
+            _tp, _fp = int((_p & t).sum()), int((_p & ~t).sum())
+            r['shipped'] = {'precision': _tp / (_tp + _fp) if _tp + _fp else 0.0, 'recall': _tp / t.sum(), 'tp': _tp, 'fp': _fp}
+            if half.any():
+                _q = 1 / (1 + np.exp(-(X[half] @ np.asarray(_sh['weights'], np.float32) + _sh['bias']))) >= _sh['threshold']; _t = pos[half]
+                _tp, _fp, _fn = int((_q & _t).sum()), int((_q & ~_t).sum()), int((~_q & _t).sum())
+                r['shipped']['halfTest'] = {'tp': _tp, 'fp': _fp, 'fn': _fn, 'precision': _tp / (_tp + _fp) if _tp + _fp else 0.0, 'recall': _tp / (_tp + _fn) if _tp + _fn else 0.0}
     tp, fp, fn = int((pr & t).sum()), int((pr & ~t).sum()), int((~pr & t).sum())
     P = tp / (tp + fp) if tp + fp else 0.0; R = tp / (tp + fn)
+    if half.any():
+        hb = np.where(half)[0]; hp = model.predict_proba(X[hb])[:, 1] >= th; ht = pos[hb]
+        htp, hfp, hfn = int((hp & ht).sum()), int((hp & ~ht).sum()), int((~hp & ht).sum())
+        r['halfTest'] = {'prefix': _pre, 'testPositive': int(ht.sum()), 'negatives': int((~ht).sum()), 'tp': htp, 'fp': hfp, 'fn': hfn,
+                         'precision': htp / (htp + hfp) if htp + hfp else 0.0, 'recall': htp / (htp + hfn) if htp + hfn else 0.0}
     if EXPORT is not None and min(P, R) >= EXPORT:      # refit on every row it may use, same threshold
         m = fit(X[np.where(use & (IS_VAULT | np.isin(SRC, chosen)))[0]], pos[np.where(use & (IS_VAULT | np.isin(SRC, chosen)))[0]], C)
         r['head'] = {'weights': [round(float(w), 6) for w in m.coef_[0]], 'bias': round(float(m.intercept_[0]), 6)}
