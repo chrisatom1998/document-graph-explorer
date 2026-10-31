@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { corpusCount, details, openChat, openFiles, openTab, toolMenu } from './resonance';
+import { corpusCount, details, openChat, openFiles, openTab, toolMenu, waitForGraphReady } from './resonance';
 
 function tone(frequency: number) {
   const wav = Buffer.alloc(44 + 16000 * 2);
@@ -57,10 +57,11 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     await page.getByRole('button', { name: 'Show processing details' }).click(sceneBuild);
     await expect(page.getByRole('button', { name: 'Minimize processing details' })).toBeVisible(sceneBuild);
     await page.getByRole('button', { name: 'Minimize processing details' }).click(sceneBuild);
-    await expect(page.getByRole('button', { name: 'Search documents' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
+    await expect(page.locator('.rs-top__status')).toHaveText('Refining connections…');
     releaseEmbedding();
     await expect(corpusCount(page)).toContainText('3 clips', { timeout: 120000 });
-    await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
+    await waitForGraphReady(page, 120_000);
     await openChat(page);
     const copilot = page.getByRole('dialog', { name: 'Music copilot', exact: true });
     await expect(copilot).toBeVisible();
@@ -69,7 +70,7 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     await expect(copilot.getByText(/Your collection contains/)).toBeVisible();
     await copilot.getByRole('button', { name: 'Close chat', exact: true }).click();
     releaseEmbedding();
-    await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
+    await waitForGraphReady(page, 120_000);
     const minimizeAnalysis = page.getByRole('button', { name: 'Minimize audio analysis' });
     // The analysis card unmounts by itself when analysis finishes, which can happen
     // between the visibility check and the click; either way it must end up gone.
@@ -97,7 +98,7 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     await page.locator('.rs-sidebar').getByRole('button', { name: /^Import a folder/ }).click();
     await (await again).setFiles(folder);
     await expect(corpusCount(page)).toContainText('4 clips',{ timeout: 120000 });
-    await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
+    await waitForGraphReady(page, 120_000);
     // A restored workspace with audio warms every audio model at open (#131).
     // On a CPU-rendered CI runner those four model workers starve SwiftShader
     // and the screenshots below time out waiting for a frame. This scenario

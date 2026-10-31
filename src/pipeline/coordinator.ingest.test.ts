@@ -470,6 +470,75 @@ describe('coordinator ingest', () => {
     expect(docVectorStore.size).toBe(0);
   });
 
+  it('becomes usable after lexical commit and preserves nodes and selection through refinement', async () => {
+    let releaseEmbedding: (() => void) | undefined;
+    let embeddingStarted = false;
+    poolState.requestImpl = async (msg, options) => {
+      if (msg.type !== 'embedBatch') return defaultPoolRequest(msg, options);
+      embeddingStarted = true;
+      await new Promise<void>((resolve) => { releaseEmbedding = resolve; });
+      return defaultPoolRequest(msg, options);
+    };
+
+    const run = ingestFiles([
+      textFile('progressive-one.txt', 'Kafka progressive ingestion one.'),
+      textFile('progressive-two.txt', 'Kafka progressive ingestion two.'),
+    ]);
+    await vi.waitFor(() => {
+      expect(embeddingStarted).toBe(true);
+      expect(useGraphStore.getState().graphUsable).toBe(true);
+    });
+
+    const duringRefinement = useGraphStore.getState();
+    const ids = documentIds();
+    expect(duringRefinement.phase).toBe('embedding');
+    expect(duringRefinement.edges.some((edge) => edge.kind === 'keyword')).toBe(true);
+    expect(duringRefinement.nodes.filter((node) => node.kind === 'document')
+      .every((node) => node.cluster >= 0)).toBe(true);
+    expect(Object.keys(duringRefinement.localClusterNames)).not.toHaveLength(0);
+    expect(aggState.requests.some((request) => request.type === 'cluster')).toBe(true);
+    expect(layout.layoutSetClusters).toHaveBeenCalled();
+    expect(aggState.requests.some((request) => request.type === 'semantic')).toBe(false);
+    expect(docVectorStore.size).toBe(0);
+    useUiStore.getState().setSelected(ids[0]);
+
+    releaseEmbedding?.();
+    await run;
+
+    expect(documentIds()).toEqual(ids);
+    expect(useUiStore.getState().selectedId).toBe(ids[0]);
+    expect(useGraphStore.getState().graphUsable).toBe(true);
+    expect(useGraphStore.getState().phase).toBe('ready');
+    expect(useGraphStore.getState().edges.some((edge) => edge.kind === 'semantic')).toBe(true);
+  });
+
+  it('skips preliminary lexical clustering when the graph already has clusters', async () => {
+    await ingestFiles([textFile('existing-cluster.txt', 'Kafka existing clustered document.')]);
+    expect(useGraphStore.getState().nodes[0]?.cluster).toBeGreaterThanOrEqual(0);
+    aggState.requests = [];
+
+    let releaseEmbedding: (() => void) | undefined;
+    let embeddingStarted = false;
+    poolState.requestImpl = async (msg, options) => {
+      if (msg.type !== 'embedBatch') return defaultPoolRequest(msg, options);
+      embeddingStarted = true;
+      await new Promise<void>((resolve) => { releaseEmbedding = resolve; });
+      return defaultPoolRequest(msg, options);
+    };
+
+    const run = ingestFiles([
+      textFile('added-to-clusters.txt', 'Kafka document added to an existing graph.'),
+    ]);
+    await vi.waitFor(() => expect(embeddingStarted).toBe(true));
+
+    expect(aggState.requests.map((request) => request.type)).toEqual(['lexical']);
+    expect(useGraphStore.getState().nodes.find((node) => node.title === 'added-to-clusters')?.cluster)
+      .toBe(-1);
+
+    releaseEmbedding?.();
+    await run;
+  });
+
   it('settles a mid-parse cancel without rejecting', async () => {
     poolState.hangParse = true;
     const run = ingestFiles([textFile('slow.txt', 'Will hang in parse until cancelled.')]);
@@ -541,11 +610,17 @@ describe('coordinator ingest', () => {
     };
     const run = ingestFiles([file]);
     await vi.waitFor(() => expect(embedStarted).toBe(true));
+    expect(useGraphStore.getState().graphUsable).toBe(true);
+    const [selectedId] = documentIds();
+    useUiStore.getState().setSelected(selectedId);
     cancelIngest();
     await run;
     const [id] = documentIds();
     expect(id).toBeDefined();
     expect(docVectorStore.has(id)).toBe(false);
+    expect(useGraphStore.getState().phase).toBe('ready');
+    expect(useGraphStore.getState().graphUsable).toBe(true);
+    expect(useUiStore.getState().selectedId).toBe(id);
 
     poolState.requestImpl = undefined;
     await ingestFiles([file]);
@@ -573,6 +648,7 @@ describe('coordinator ingest', () => {
     async (passType) => {
       if (passType === 'cluster') {
         await ingestFiles([textFile('existing.txt', 'Kafka existing document.')]);
+        aggState.requests = [];
       }
       const files = [
         textFile('late-cancel-one.txt', 'Kafka late cancellation one.'),
@@ -774,6 +850,11 @@ describe('coordinator remove and watch reconcile', () => {
     expect(persistence.deleteDocsFromCache).toHaveBeenCalledWith([drop.id]);
     expect(persistence.deleteOriginals).toHaveBeenCalledWith([drop.id]);
     expect(useGraphStore.getState().phase).toBe('ready');
+
+    await removeDocuments([keep.id]);
+    expect(documentIds()).toEqual([]);
+    expect(useGraphStore.getState().phase).toBe('idle');
+    expect(useGraphStore.getState().graphUsable).toBe(false);
   });
 
   it('reconcileWatchedFiles ingests the new revision before dropping the old id', async () => {

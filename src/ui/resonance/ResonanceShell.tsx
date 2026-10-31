@@ -37,6 +37,7 @@ function LogoMark() {
  */
 export default function ResonanceShell({ children }: { children: ReactNode }) {
   const phase = useGraphStore(s => s.phase);
+  const graphUsable = useGraphStore(s => s.graphUsable);
   const docCount = useGraphStore(s => s.nodes.filter(n => n.kind === 'document').length);
   const hasAudio = useGraphStore(s => s.nodes.some(n => n.fileType === 'audio'));
   const edgeCount = useGraphStore(s => s.edges.length);
@@ -58,6 +59,8 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('keydown', onKey, true);
   }, [moreOpen]);
   const ready = phase === 'ready';
+  const usable = graphUsable || ready;
+  const refining = graphUsable && (phase === 'embedding' || phase === 'connecting');
 
   // Full details follow how a clip was selected. Search, chat citations,
   // insights, paths and the library go through focusNode → commitPendingFocus
@@ -93,9 +96,9 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="rs-top__actions">
-          <span className="rs-top__status" aria-live="polite">{ready ? `${docCount} nodes · ${edgeCount} links` : docCount ? 'Building your graph…' : ''}</span>
+          <span className="rs-top__status" role="status" aria-live="polite">{ready ? `${docCount} nodes · ${edgeCount} links` : refining ? 'Refining connections…' : docCount ? 'Building your graph…' : ''}</span>
           <span className="rs-top__rule" />
-          <button type="button" className="rs-icon" aria-label="Search documents" disabled={!ready} onClick={() => { ui().setSearchResults(null); ui().setSearchOpen(true); }}><IconSearch /></button>
+          <button type="button" className="rs-icon" aria-label="Search documents" disabled={!usable} onClick={() => { ui().setSearchResults(null); ui().setSearchOpen(true); }}><IconSearch /></button>
           <DimsToggleButton />
           {hasAudio && <button type="button" className="rs-icon" aria-label="Sample assistant" title="Sample assistant: search, tag and build crates" aria-haspopup="dialog" onClick={() => openSampleAssistant()}><IconNote /></button>}
           <button type="button" className="rs-icon" aria-label="Ask about your library" disabled={docCount === 0} onClick={() => useChatStore.getState().setIsOpen(true)}><IconChat /></button>

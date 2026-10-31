@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { closeDetails, corpusCount, details } from './resonance';
+import { closeDetails, corpusCount, details, waitForGraphReady } from './resonance';
 
 test('competing tabs retain committed notes and deletion versions when an older save retries', async ({ page, context }) => {
   // This checks persistence across two active tabs; software-rendering two
@@ -9,6 +9,7 @@ test('competing tabs retain committed notes and deletion versions when an older 
   await page.goto('/');
   await page.getByRole('button', { name: 'Load demo corpus' }).click();
   await expect(corpusCount(page)).toContainText('100 files', { timeout: 270_000 });
+  await waitForGraphReady(page, 270_000);
   const restoredCount = async (tab: Page) => {
     await expect(corpusCount(tab)).toContainText('100 files', { timeout: 150_000 });
     await closeDetails(tab);

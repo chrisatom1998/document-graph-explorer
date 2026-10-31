@@ -28,6 +28,7 @@ export default function SearchOverlay() {
   const nodes = useGraphStore((s) => s.nodes);
   const edges = useGraphStore((s) => s.edges);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
+  const phase = useGraphStore((s) => s.phase);
   const filter = useUiStore((s) => s.filter);
   const allowed = useMemo(() => nodesMatchingFilter(nodes, edges, filter), [nodes, edges, filter]);
 
@@ -93,7 +94,10 @@ export default function SearchOverlay() {
       void (async () => {
         try {
           applyResults(await searchCorpusLexical(query, allowed ?? undefined));
-          applyResults(await searchCorpus(query, allowed ?? undefined));
+          // During progressive ingest some vectors may already exist while
+          // others do not. Keep results consistently lexical until the final
+          // semantic graph commits; reaching ready retriggers this effect.
+          if (phase === 'ready') applyResults(await searchCorpus(query, allowed ?? undefined));
           if (seq === requestSeq.current) setSearching(false);
         } catch (err) {
           console.warn('search failed', err);
@@ -121,7 +125,7 @@ export default function SearchOverlay() {
       requestSeq.current += 1;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, searchOpen, allowed]);
+  }, [query, searchOpen, allowed, phase]);
 
   const browsing = query.trim().length === 0;
   const displayedResults: ResultRow[] = (browsing
@@ -231,10 +235,16 @@ export default function SearchOverlay() {
             aria-activedescendant={activeOptionId}
             aria-autocomplete="list"
             aria-keyshortcuts="Alt+Enter"
-            aria-label="Search your documents by meaning, not just keywords"
+            aria-label={phase === 'ready'
+              ? 'Search your documents by meaning, not just keywords'
+              : 'Search your documents by title or keyword while connections refine'}
             value={query}
-            title="Search your documents by meaning, not just keywords"
-            placeholder="Search documents… (meaning + title)"
+            title={phase === 'ready'
+              ? 'Search your documents by meaning, not just keywords'
+              : 'Search by title or keyword while connections refine'}
+            placeholder={phase === 'ready'
+              ? 'Search documents… (meaning + title)'
+              : 'Search documents… (title + keyword)'}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
           />
