@@ -96,13 +96,16 @@
   display: block;
   margin-bottom: 0;
   color: var(--accent-strong);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
+}
+.first-run-guide > strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
 }
 .first-run-guide p {
-  margin: 7px 0 12px;
+  margin: 6px 0 14px;
   color: var(--text-secondary);
   line-height: 1.5;
 }
@@ -111,26 +114,32 @@
   justify-content: flex-end;
   gap: 8px;
 }
+/* Back and Next share one size; Back is outlined, Next is tinted. */
 .first-run-guide__back,
 .first-run-guide__done {
   min-height: 36px;
-  padding: 7px 12px;
+  padding: 0 14px;
   border: 1px solid var(--border-glass-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--accent-soft);
   color: var(--accent-strong);
   cursor: pointer;
   font: inherit;
+  font-size: 13px;
+  font-weight: 600;
 }
 .first-run-guide__back {
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
-.first-run-guide__back:disabled {
-  opacity: 0.35;
+/* Disabled Back keeps a legible tone (≈5.9:1) instead of fading to a ghost. */
+.first-run-guide__back:disabled,
+.first-run-guide__back[data-disabled] {
+  opacity: 1;
+  border-color: var(--border-glass);
+  color: var(--text-faint);
   cursor: default;
 }
-.first-run-guide__done { font-weight: 700; }
 .first-run-guide__close {
   position: absolute;
   top: 6px;
@@ -187,7 +196,10 @@
 
   --text-primary: #dfe4f4;
   --text-secondary: #8b93b8;
-  --text-faint: #5b6288;
+  /* Faint text clears 4.5:1 on every panel surface (≈4.8:1 on --surface-raised,
+     ≈5.9:1 on the glass panels). Decorative uses that wanted the old dimmer
+     tone (status dot, toast rule, untested score bar) keep #5b6288 inline. */
+  --text-faint: #848bb1;
   --text: var(--text-primary);
   --text-muted: var(--text-secondary);
   --panel-bg: var(--bg-glass-strong);
@@ -1188,7 +1200,7 @@ textarea {
   height: 7px;
   flex: none;
   border-radius: 50%;
-  background: var(--text-faint);
+  background: #5b6288;
   box-shadow: 0 0 0 3px rgba(145, 150, 190, 0.08);
 }
 
@@ -2730,7 +2742,7 @@ mark.passage-mark {
   padding: 14px 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   animation: kn-slide-in-down 280ms var(--ease-out) both;
 }
 
@@ -2741,34 +2753,40 @@ mark.passage-mark {
   gap: 10px;
 }
 
+/* The heading reads as a heading; the summary is the caption under it and the
+   jump buttons carry the counts as actions, so the repeated numbers read as
+   "here is where to go" rather than the same line twice. */
 .insights-digest__eyebrow {
   margin: 0;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .insights-digest__summary {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 13px;
   line-height: 1.45;
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
 .insights-digest__jumps {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .insights-digest__jump {
-  padding: 4px 10px;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-glass);
   background: rgba(140, 150, 255, 0.06);
-  color: var(--text-secondary);
-  font-size: 11px;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
   cursor: pointer;
   pointer-events: auto;
   transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease;
@@ -2776,7 +2794,7 @@ mark.passage-mark {
 
 .insights-digest__jump:hover {
   border-color: var(--border-glass-strong);
-  color: var(--text-primary);
+  background: rgba(140, 150, 255, 0.12);
 }
 
 .insights-digest__jump--primary {
@@ -3138,6 +3156,7 @@ mark.passage-mark {
   gap: 8px;
 }
 
+/* Minimize and Cancel are one control size: 32px tall on the shared radius. */
 .progress-strip__minimize {
   display: inline-flex;
   align-items: center;
@@ -3145,13 +3164,13 @@ mark.passage-mark {
   gap: 6px;
   flex: none;
   min-height: 32px;
-  padding: 5px 9px;
+  padding: 0 10px;
   border: 1px solid var(--border-glass-strong);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   background: rgba(140, 150, 255, 0.06);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 18px;
   white-space: nowrap;
   cursor: pointer;
@@ -3224,9 +3243,11 @@ mark.passage-mark {
   flex: none;
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 12px;
   background: rgba(255, 128, 128, 0.08);
   border: 1px solid rgba(255, 128, 128, 0.28);
   color: var(--danger);
@@ -3243,7 +3264,7 @@ mark.passage-mark {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
   min-width: 0;
@@ -3273,8 +3294,8 @@ mark.passage-mark {
 
 .progress-strip__count {
   flex: none;
-  font-size: 11.5px;
-  color: var(--text-faint);
+  font-size: 12px;
+  color: var(--text-secondary);
   min-width: 0;
   grid-column: 2;
   grid-row: 1;
@@ -3285,7 +3306,7 @@ mark.passage-mark {
 .progress-strip__more-files {
   align-self: center;
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -3313,13 +3334,14 @@ mark.passage-mark {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 9px;
+  min-height: 28px;
+  padding: 3px 10px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   background: rgba(140, 150, 255, 0.06);
   border: 1px solid var(--border-glass);
   color: var(--text-secondary);
-  max-width: 168px;
+  max-width: 100%;
 }
 .file-chip__name {
   overflow: hidden;
@@ -3353,7 +3375,8 @@ mark.passage-mark {
 }
 
 .model-progress__label {
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--text-secondary);
   overflow-wrap: anywhere;
 }
@@ -3388,9 +3411,11 @@ mark.passage-mark {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 12px;
   background: rgba(255, 207, 107, 0.08);
   border: 1px solid rgba(255, 207, 107, 0.28);
   color: var(--warning);
@@ -3413,7 +3438,7 @@ mark.passage-mark {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
 }
 .ignored-tray__row-reason {
@@ -3464,7 +3489,7 @@ mark.passage-mark {
   align-items: flex-start;
   gap: 10px;
   padding: 12px 12px 12px 14px;
-  border-left: 3px solid var(--text-faint);
+  border-left: 3px solid #5b6288;
   animation: kn-slide-in-up 220ms var(--ease-out) both;
 }
 
@@ -3482,7 +3507,7 @@ mark.passage-mark {
   min-width: 0;
   overflow-wrap: anywhere;
   flex: 1 1 auto;
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.45;
   color: var(--text-primary);
 }
@@ -3491,7 +3516,9 @@ mark.passage-mark {
   pointer-events: auto;
   flex: none;
   align-self: center;
-  padding: 5px 12px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
   font-size: 12px;
   white-space: nowrap;
 }
@@ -4072,15 +4099,11 @@ mark.passage-mark {
 }
 
 .filter-bar__group-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
   margin-right: 2px;
   cursor: help;
-  text-decoration: underline dotted rgba(255, 255, 255, 0.2);
-  text-underline-offset: 3px;
 }
 
 .filter-bar__degree {
@@ -4095,7 +4118,7 @@ mark.passage-mark {
 }
 
 .filter-bar__degree-value {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
   min-width: 16px;
   text-align: center;
@@ -4106,9 +4129,10 @@ mark.passage-mark {
   min-height: 32px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-glass);
-  border-radius: 999px;
-  padding: 3px 12px;
-  font-size: 11px;
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  font: inherit;
+  font-size: 12px;
   color: var(--text-secondary);
   cursor: pointer;
   pointer-events: auto;
@@ -4117,9 +4141,10 @@ mark.passage-mark {
   min-height: 32px;
   background: rgba(255, 255, 255, 0.015);
   border: 1px dashed var(--border-glass);
-  border-radius: 999px;
-  padding: 3px 12px;
-  font-size: 11px;
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  font: inherit;
+  font-size: 12px;
   color: var(--text-secondary);
   cursor: pointer;
   pointer-events: auto;
@@ -4406,6 +4431,7 @@ mark.passage-mark {
   .filter-bar__clear,
   .filter-bar__more,
   .ignored-tray__toggle,
+  .progress-strip__minimize,
   .progress-strip__cancel { min-height: 40px; }
   .chat-bubble-btn { width: 58px; height: 58px; }
 }
