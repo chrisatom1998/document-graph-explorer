@@ -894,6 +894,7 @@ async function runIngestBodyInner(
   // (e) lexical aggregation over the WHOLE corpus (idf + title mentions
   // are corpus-wide, so every drop rebuilds them)
   const { lexEdges, boilerplate, complete: lexicalComplete } = await runLexicalPass(pool, signal);
+  if (lexicalComplete) await runPreliminaryLexicalClusters(lexEdges, signal);
 
   // (f) embeddings for docs that still need a vector. hasDocTextSync counts
   // evicted-but-persisted text as readable (runLexicalPass just rehydrated it).
@@ -1186,6 +1187,10 @@ async function runLexicalPass(
     store().setEdges(lexEdges);
     layoutSetLinks(toLinkInput(lexEdges));
     layoutReheat(0.8);
+    // This is the first complete, internally consistent graph state: titles,
+    // explicit references, keywords and lexical edges are all committed.
+    // Embedding and semantic clustering refine these same nodes in place.
+    store().setGraphUsable(true);
     complete = true;
   } catch (err) {
     // cancellation must propagate, not degrade into a "linking failed" toast
@@ -1197,6 +1202,38 @@ async function runLexicalPass(
       .pushToast('Keyword linking failed — connections may be incomplete.', 'warning');
   }
   return { lexEdges, boilerplate, complete };
+}
+
+/** Give a fresh graph stable groups immediately; the semantic pass replaces them later. */
+async function runPreliminaryLexicalClusters(
+  lexEdges: Edge[],
+  signal?: AbortSignal,
+): Promise<void> {
+  const store = useGraphStore.getState;
+  const docs = documentNodes();
+  if (docs.length === 0 || docs.some((node) => node.cluster >= 0)) return;
+  try {
+    throwIfAborted(signal);
+    const result = await aggRequest<ClusterDone>(
+      {
+        requestId: 0,
+        type: 'cluster',
+        ids: docs.map((node) => node.id),
+        edges: toLinkInput(lexEdges),
+      },
+      undefined,
+      { signal },
+    );
+    throwIfAborted(signal);
+    store().patchNodes(new Map(
+      Object.entries(result.clusters).map(([id, cluster]) => [id, { cluster }]),
+    ));
+    store().setLocalClusterNames(computeLocalClusterNames(store().nodes));
+    layoutSetClusters(result.clusters);
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    console.warn('preliminary lexical clustering failed', error);
+  }
 }
 
 // ---------------------------------------------------------------------------
