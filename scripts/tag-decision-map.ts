@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { DJ_CATALOG, DJ_HIDDEN_LABELS, DJ_PICKER_LABELS, MERGED_DJ_LABELS, soundLabelText, type DjGroup } from '../src/audio/djTags';
 import { TAGGER_POLICY } from '../src/audio/tagger';
 import { CALIBRATED_LABELS, HIDDEN_UNTIL_TESTED, UNVERIFIED_BLOCKED } from '../src/audio/confidentSoundSummary';
+import { SHORT_RECORDING_HEAD_GATES } from '../src/audio/learnedDjModel';
 import { SHORT_CLIP_MAX_SECONDS } from '../src/audio/shortClipModel';
 import { isRuleDescribedLabel } from '../src/audio/timbreDescriptions';
 
@@ -108,6 +109,7 @@ out.push(`- **Tagger beats CLAP inside its windows.** For a tag with both (drums
 - **synth bass** on clips longer than ${SHORT_CLIP_MAX_SECONDS} s: no head, prompt blocked. It cannot show today except through a listener's own confirmation.
 - **downlifter** on screen is the tagger's \`cat:falling\` output (merged from \`production:downlifter\`); the CLAP \`falling\` head only applies outside the tagger's windows.
 - **Clip length changes the brain**: a 2 s kick is decided by the one-shot head, a 4 s kick by the learned head, a 40 s drum loop also by the learned head (no tagger entry). Any measurement must therefore use clips of the lengths users upload.
+- **Short recordings (under 10 s).** ${SHORT_RECORDING_HEAD_GATES.length ? SHORT_RECORDING_HEAD_GATES.map(g => `**${g.label}** is kept only when its CLAP probability is strictly above **${g.sibling}** (\`SHORT_RECORDING_HEAD_GATES\` in \`learnedDjScores\`)`).join('; ') + '. A full 10 s window is not gated, so a mix can still carry both.' : 'No CLAP sibling gates are installed.'} Between ${SHORT_CLIP_MAX_SECONDS} s and piano's ${TAGGER_POLICY.tags.find(t => t.output === 'piano')?.minSeconds ?? 10} s handoff, the CLAP piano head also has to clear the tagger's piano cutoff (\`shortPianoVeto\` in \`confidentSoundSummary\`).
 `);
 out.push('## The map\n');
 out.push('Columns: *Decided by today* is the detector whose score the app actually shows. *Tagger* gives the policy output and cutoff (and the long-recording rule). *CLAP head* and *One-shot head* give cutoffs from `learned.json` / `short-clip.json`; "via merged x" means the detector is trained for label x and shown under this name. *Raw prompt* says whether the prompt fallback can ever show the tag.\n');
