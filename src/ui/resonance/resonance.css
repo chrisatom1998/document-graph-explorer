@@ -13,7 +13,8 @@
   --rs-muted: #9a99a8;
   /* Faint text still clears 4.5:1 on the panel surfaces (≈5.6:1 on #0b0b11). */
   --rs-faint: #8a8998;
-  --rs-disabled: #7d7c8a;
+  /* Disabled text clears 4.5:1 on the raised surface (#15151e) as well. */
+  --rs-disabled: #7f7e8c;
   --rs-lime: #c8f55a;
   --rs-lime-ink: #10140a;
   --rs-violet: #a89bff;
@@ -103,14 +104,14 @@
 }
 .rs-menu button {
   display: flex; align-items: center; gap: 10px;
-  min-height: 40px; padding: 8px 10px; border: 0; border-radius: 8px; background: none;
+  min-height: 36px; padding: 8px 10px; border: 0; border-radius: 8px; background: none;
   color: var(--rs-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer;
 }
 .rs-menu__label { margin: 6px 10px 2px; color: var(--rs-muted); font-size: 13px; font-weight: 600; }
 .rs-menu__rule { margin: 4px 6px; border: 0; border-top: 1px solid var(--rs-line-strong); }
 .rs-menu button[aria-checked='true'] { color: var(--rs-lime); }
 .rs-menu .saved-views, .rs-menu .saved-views__list { display: flex; flex-direction: column; gap: 2px; }
-.rs-menu .saved-views button, .rs-menu .toolbar__menu-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: var(--rs-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.rs-menu .saved-views button, .rs-menu .toolbar__menu-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 36px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: var(--rs-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
 .rs-menu .saved-views button:hover, .rs-menu .toolbar__menu-item:hover { background: var(--rs-line); }
 .rs-corpus { margin-left: 12px; min-width: 0; }
 .rs-corpus .corpus-switcher__trigger { background: none; border: 1px solid var(--rs-line-strong); border-radius: 999px; color: var(--rs-muted); }
@@ -414,12 +415,13 @@
 .rs-details .audio-preview select, .rs-details .audio-preview input { background: var(--rs-bg); }
 .rs-details .workspace-file-path { color: var(--rs-muted); font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; margin: 0; }
 /* Header: a 13px label, then the title row where Open and the close button
-   share the panel's 32px compact-control size. */
+   share the panel's 32px compact-control size (the 640px/touch media rules in
+   styles.css still lift the close button to 44px, so no min-* reset here). */
 .rs-details .workspace-eyebrow { margin: 0; color: var(--rs-muted); font-size: 13px; font-weight: 600; }
 .rs-details .side-panel__header { gap: 8px; }
 .rs-details .side-panel__header-top { align-items: center; }
 .rs-details .side-panel__header .icon-btn-close {
-  width: 32px; height: 32px; min-width: 0; min-height: 0;
+  width: 32px; height: 32px;
   border: 1px solid var(--rs-line-strong); border-radius: var(--radius-md); color: var(--rs-text);
 }
 .rs-details .side-panel__header .icon-btn-close:hover { background: var(--rs-line); border-color: var(--rs-lime); color: var(--rs-text); }
@@ -516,7 +518,7 @@
 .app-root:has(.rs-root) .search-overlay::before { display: none; }
 .app-root:has(.rs-root) .search-overlay__input-row { background: var(--rs-raised); border-bottom-color: var(--rs-line); }
 .app-root:has(.rs-root) .search-overlay__input::placeholder { color: var(--rs-muted); }
-.app-root:has(.rs-root) .search-overlay .icon-btn-close { width: 32px; height: 32px; min-width: 0; min-height: 0; border-radius: var(--radius-md); color: var(--rs-muted); }
+.app-root:has(.rs-root) .search-overlay .icon-btn-close { width: 32px; height: 32px; border-radius: var(--radius-md); color: var(--rs-muted); }
 .app-root:has(.rs-root) .search-overlay .icon-btn-close:hover { background: var(--rs-line); color: var(--rs-text); }
 .app-root:has(.rs-root) .search-result-row { border-radius: var(--radius-md); }
 .app-root:has(.rs-root) .search-result-row:hover { background: var(--rs-line); border-color: var(--rs-line-strong); transform: none; box-shadow: none; }

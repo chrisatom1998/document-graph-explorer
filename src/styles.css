@@ -198,7 +198,8 @@
   --text-secondary: #8b93b8;
   /* Faint text clears 4.5:1 on every panel surface (≈4.8:1 on --surface-raised,
      ≈5.9:1 on the glass panels). Decorative uses that wanted the old dimmer
-     tone (status dot, toast rule, untested score bar) keep #5b6288 inline. */
+     tone (status dot, toast rule, untested score bar) keep #5b6288 inline, and
+     the welcome screen's corpus switcher keeps it too (see .corpus-switcher--empty). */
   --text-faint: #848bb1;
   --text: var(--text-primary);
   --text-muted: var(--text-secondary);
@@ -1171,6 +1172,14 @@ textarea {
 
 .corpus-switcher--empty {
   align-self: center;
+}
+
+/* The welcome screen is styled separately and keeps its original faint tone:
+   the switcher there, and its menu (portaled to <body>, so outside any
+   workspace scope), pin the pre-cleanup token value. */
+.corpus-switcher--empty,
+.corpus-switcher__menu--floating {
+  --text-faint: #5b6288;
 }
 
 .corpus-switcher__trigger {
@@ -2950,11 +2959,6 @@ mark.passage-mark {
   font-weight: 600;
   letter-spacing: -0.2px;
 }
-.insights__header .icon-btn-close {
-  min-width: 0;
-  min-height: 0;
-}
-
 .insights__scroll {
   flex: 1 1 auto;
   overflow-y: auto;
@@ -3701,11 +3705,6 @@ mark.passage-mark {
   padding: 16px 20px 14px;
   border-bottom: 1px solid var(--border-glass);
 }
-.help-popover__header .icon-btn-close {
-  min-width: 0;
-  min-height: 0;
-}
-
 .help-popover__title,
 .help-popover__section h3,
 .help-popover__hint {
@@ -3848,11 +3847,6 @@ mark.passage-mark {
   justify-content: space-between;
   gap: 12px;
 }
-.settings-panel__header .icon-btn-close {
-  min-width: 0;
-  min-height: 0;
-}
-
 .settings-panel__title {
   margin: 0;
   font-size: 18px;
@@ -4636,11 +4630,11 @@ details.settings-section > summary {
   min-width: 0;
 }
 
-/* Save row: a 40px input and button on the shared radius, like the
-   Settings fields. */
+/* Save row: a 36px input and button on the shared radius (the drawer's
+   compact-control size). */
 .save-prompt__input {
   width: 220px;
-  min-height: 40px;
+  min-height: 36px;
   padding: 0 12px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-glass);
@@ -4656,7 +4650,7 @@ details.settings-section > summary {
 }
 
 .save-prompt__btn {
-  min-height: 40px;
+  min-height: 36px;
   padding: 0 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-glass-strong);
@@ -4823,7 +4817,7 @@ details.settings-section > summary {
 }
 
 /* Row actions are 32px compact buttons; the Load/primary one carries the
-   accent tint. Dialog footers reuse these at 40px (see .confirm-dialog). */
+   accent tint. Dialog footers reuse these at 44px (see .confirm-dialog). */
 .snapshot-btn {
   min-height: 32px;
   padding: 0 12px;
@@ -4868,7 +4862,7 @@ details.settings-section > summary {
 
 /* Confirm dialogs (Replace graph?, Share?, Rekordbox export): the same
    opaque surface and header metrics as the other modals, 13px body copy in
-   secondary text, and a right-aligned 40px action row. */
+   secondary text, and a right-aligned 44px action row. */
 .confirm-dialog {
   width: min(420px, 92vw);
   max-height: calc(100dvh - 24px);
@@ -4939,7 +4933,7 @@ details.settings-section > summary {
   justify-content: flex-end;
 }
 .confirm-dialog__actions .snapshot-btn {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 16px;
 }
 
