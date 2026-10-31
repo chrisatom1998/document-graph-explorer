@@ -857,6 +857,20 @@
     "rule": "detectors",
     "afterSeconds": 30
    }
+  },
+  {
+   "output": "cat:reese bass",
+   "label": "reese bass",
+   "dimension": "effect",
+   "threshold": 0.1219,
+   "decides": [
+    "reese bass"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
   }
  ]
 }
