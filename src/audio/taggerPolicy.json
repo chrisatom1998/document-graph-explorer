@@ -871,6 +871,20 @@
     "rule": "detectors",
     "afterSeconds": 30
    }
+  },
+  {
+   "output": "cat:staccato",
+   "label": "staccato",
+   "dimension": "character",
+   "threshold": 0.4305,
+   "decides": [
+    "staccato"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
   }
  ]
 }

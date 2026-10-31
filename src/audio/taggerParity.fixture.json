@@ -71,7 +71,8 @@
     "cat:glitch effect": 0.145739,
     "cat:choir": 0.00484,
     "cat:wind ambience": 0.00138,
-    "cat:vocal shout": 4.5e-05
+    "cat:vocal shout": 4.5e-05,
+    "cat:staccato": 6e-06
    }
   },
   {
@@ -143,7 +144,8 @@
     "cat:glitch effect": 0.344564,
     "cat:choir": 0.009904,
     "cat:wind ambience": 0.00077,
-    "cat:vocal shout": 5e-06
+    "cat:vocal shout": 5e-06,
+    "cat:staccato": 5.6e-05
    }
   },
   {
@@ -216,7 +218,8 @@
     "cat:glitch effect": 0.344564,
     "cat:choir": 0.009904,
     "cat:wind ambience": 0.006305,
-    "cat:vocal shout": 5e-06
+    "cat:vocal shout": 5e-06,
+    "cat:staccato": 0.000398
    }
   },
   {
@@ -290,7 +293,8 @@
     "cat:glitch effect": 0.386851,
     "cat:choir": 0.009183,
     "cat:wind ambience": 0.016604,
-    "cat:vocal shout": 1e-05
+    "cat:vocal shout": 1e-05,
+    "cat:staccato": 0.000499
    }
   }
  ]
