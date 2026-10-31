@@ -55,7 +55,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // sets 60/30 at its own cutoffs, choir at its fair half-split cutoff; the CLAP prompts and heads that showed them failed).
 // record stop (5 positives) and glitch effect (11 + 5) were too few for the half split to confirm: recheck them first when
 // more labelled clips arrive.
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 132 : 131;
+// 133/134: on recordings shorter than 10 s the electric-guitar head must outscore the acoustic-guitar head,
+// and between 2.25 s and 10 s the CLAP piano head must also clear the tagger's piano cutoff (NSynth test notes).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 134 : 133;
 export interface InstrumentEstimate {
   label: string;
   score: number;

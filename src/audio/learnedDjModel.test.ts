@@ -60,6 +60,29 @@ it('adds a trained-head tag under its own name without overriding a reviewed exa
   // A head that stays under its threshold says nothing.
   expect(learnedDjScores(vector.map(v => -v), model)).toEqual([]);
 });
+it('on a short recording keeps electric guitar only when it outscores acoustic guitar', () => {
+  const electric = Array.from({ length: 512 }, (_, i) => (i === 0 ? 2 : 0));
+  const acoustic = Array.from({ length: 512 }, (_, i) => (i === 0 ? 4 : 0));
+  const model = sanitizeLearnedDjModel({ version: 1, encoder: 'e', revision: 'r', examples: [], heads: [
+    { group: 'source', label: 'electric guitar', weights: electric, bias: 0, threshold: .5 },
+    { group: 'source', label: 'acoustic guitar', weights: acoustic, bias: 0, threshold: .5 },
+  ] })!;
+  const clip = Array.from({ length: 512 }, (_, i) => (i === 0 ? 1 : 0));
+  // Acoustic wins the embedding. A 10 s window still reports both heads that clear their cutoffs.
+  expect(learnedDjScores(clip, model).map(s => s.label).sort()).toEqual(['acoustic guitar', 'electric guitar']);
+  // The short-recording gate drops electric guitar and leaves acoustic guitar, which has no sibling gate.
+  expect(learnedDjScores(clip, model, { shortRecording: true }).map(s => s.label)).toEqual(['acoustic guitar']);
+  const flipped = sanitizeLearnedDjModel({ version: 1, encoder: 'e', revision: 'r', examples: [], heads: [
+    { group: 'source', label: 'electric guitar', weights: acoustic, bias: 0, threshold: .5 },
+    { group: 'source', label: 'acoustic guitar', weights: electric, bias: 0, threshold: .5 },
+  ] })!;
+  expect(learnedDjScores(clip, flipped, { shortRecording: true }).map(s => s.label).sort()).toEqual(['acoustic guitar', 'electric guitar']);
+  // No acoustic head in the model: the cutoff stands on its own.
+  const alone = sanitizeLearnedDjModel({ version: 1, encoder: 'e', revision: 'r', examples: [], heads: [
+    { group: 'source', label: 'electric guitar', weights: electric, bias: 0, threshold: .5 },
+  ] })!;
+  expect(learnedDjScores(clip, alone, { shortRecording: true }).map(s => s.label)).toEqual(['electric guitar']);
+});
 it('carries a maybe-level head through to a maybe tag, and rejects a malformed maybe flag', async () => {
   const { applyReviewedDecisions } = await import('./djTags');
   const vector = Array.from({ length: 512 }, (_, i) => (i === 0 ? 1 : 0));

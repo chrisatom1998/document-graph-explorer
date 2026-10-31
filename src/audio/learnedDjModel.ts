@@ -146,10 +146,18 @@ export function sanitizeLearnedDjModel(raw: unknown): LearnedDjModel | undefined
   if (neighbours === null) return;
   return {version:1,encoder:model.encoder,revision:model.revision,examples,...(model.heads ? {heads:model.heads} : {}),...(neighbours ? {neighbours} : {})};
 }
+/** On a recording shorter than the 10 s CLAP window, these heads stay quiet unless they outscore the sibling
+ *  they are regularly confused with. A 10 s mix window can contain both, so it is not gated. Measured on the
+ *  NSynth test notes (instruments held out of training): electric guitar kept every true positive that already
+ *  cleared its cutoff and dropped the acoustic-guitar notes it had been claiming. */
+export const SHORT_RECORDING_HEAD_GATES: { group: ReviewedGroup; label: string; sibling: string }[] = [
+  { group: 'source', label: 'electric guitar', sibling: 'acoustic guitar' },
+];
+
 /** Conservative exemplar classifier over frozen CLAP features; not base-model fine-tuning.
  * Positive and negative evidence compete independently for each reviewed label.
- */
-export function learnedDjScores(embedding: ArrayLike<number>, model: LearnedDjModel): DescriptionScore[] {
+ * `shortRecording` applies SHORT_RECORDING_HEAD_GATES. Omit it for a 10 s window. */
+export function learnedDjScores(embedding: ArrayLike<number>, model: LearnedDjModel, options?: { shortRecording?: boolean }): DescriptionScore[] {
   if (embedding.length !== 512) return [];
   const vector = Array.from(embedding); const norm = Math.hypot(...vector);
   if (!norm || !Number.isFinite(norm)) return [];
@@ -175,11 +183,22 @@ export function learnedDjScores(embedding: ArrayLike<number>, model: LearnedDjMo
   }
   // Validated supervised heads generalize beyond nearest-example matches.
   // Direct reviewed evidence wins; heads only add a positive classification.
+  const pending: { head: LearnedDjHead; score: number }[] = [];
   for (const head of model.heads ?? []) {
     if (results.some(r => r.learnedGroup === head.group && r.label === head.label)) continue;
     const logit = head.bias + head.weights.reduce((sum,w,i) => sum + w * vector[i] / norm, 0);
     const score = 1 / (1 + Math.exp(-Math.max(-35,Math.min(35,logit))));
-    if (score >= head.threshold) results.push({group:'dj-learned',label:head.label,score,learnedGroup:head.group,decision:'include',basis:'head',...(head.maybe ? {maybe:true} : {})});
+    pending.push({ head, score });
+  }
+  const raw = new Map(pending.map(p => [`${p.head.group}:${p.head.label}`, p.score]));
+  const gates = options?.shortRecording ? SHORT_RECORDING_HEAD_GATES : [];
+  for (const { head, score } of pending) {
+    if (score < head.threshold) continue;
+    const gate = gates.find(g => g.group === head.group && g.label === head.label);
+    const sibling = gate ? raw.get(`${gate.group}:${gate.sibling}`) : undefined;
+    // Missing sibling means that head is not in this model: nothing to compare, so the cutoff stands.
+    if (sibling !== undefined && !(score > sibling)) continue;
+    results.push({group:'dj-learned',label:head.label,score,learnedGroup:head.group,decision:'include',basis:'head',...(head.maybe ? {maybe:true} : {})});
   }
   // Neighbour heads were checked like trained heads (held-out precision >= 0.60, recall >= 0.30) and add their tag
   // the same way. The score is a 0-1 squash of the margin over the cutoff (0.5 at the cutoff), not a probability.
