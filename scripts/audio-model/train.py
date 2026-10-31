@@ -39,6 +39,7 @@ OPENMIC = list(CLASSES)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from labelmap import CAT, FREESOUND, FSLD_ROLES, SAME  # noqa: E402
 import fsd50k_extra  # noqa: E402
+import drum_sounds  # noqa: E402
 import absent_fix  # noqa: E402
 import charts  # noqa: E402
 # Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth, the effect renders and Freesound, plus the music
@@ -60,6 +61,7 @@ SOFT = {}   # round 11 (--soft): item id -> {app tag: teacher probability, shift
 SOFT_MIX = 0.5   # where the item has a strong label of its own, the target is this share of it plus the rest from the teacher
 DROP = set()   # round 13 (--drop): training ids left out entirely (train-side near-duplicates of test clips)
 MERGE = {}   # round 12 (--merge): merged-away tag -> the tag it is shown as; a clip with the child present counts the parent present
+DRUMS_ANY = True   # 2026-10-31 (drum_sounds.py): any drum sound present counts drums present; --drums-kit-only turns it off
 
 def load_source(name, mel_path, items, weak):
     if DROP: items = [dict(it, row=it.get('row', i)) for i, it in enumerate(items) if it['id'] not in DROP]   # keep each window's own row
@@ -75,6 +77,7 @@ def load_source(name, mel_path, items, weak):
             if labels.get(f'cat:{c}', 0) >= 0.5: labels[f'cat:{p}'] = 1.0; weak_set.discard(f'cat:{p}')
         for c, l in ALIAS.items():   # the same sound under the app's name, unless the source labels that name itself
             if c in labels and f'cat:{l}' not in labels: labels[f'cat:{l}'] = labels[c]; weak_set |= {f'cat:{l}'} if c in weak_set else set()
+        if DRUMS_ANY: drum_sounds.apply(labels, weak_set)
         for c, r in labels.items():
             j = col[c]; y[i, j] = float(r >= 0.5); w[i, j] = weak if c in weak_set else 1.0
         yv[i] = y[i]; wv[i] = w[i]   # validation scores the clip's own labels and weights, never the teacher's soft targets
@@ -123,10 +126,13 @@ def main():
     ap.add_argument('--repeat', default='', help='name=k,...: times each training window of that source is seen per epoch (e.g. iowa=2,chrisdrive=4)')
     ap.add_argument('--merge', help="round 12: JSON whose 'merge' maps a merged-away tag to the tag it is shown as (round12/round12.json)")
     ap.add_argument('--drop', help='round 13: JSON list of training item ids to leave out')
+    ap.add_argument('--drums-kit-only', action='store_true', help='the old kit-only drums labels (before 2026-10-31); default: any drum sound counts as drums (drum_sounds.py)')
     ap.add_argument('--soft', help="round 11 teacher soft labels (round11/build-soft.py JSON: {'items': {id: {tag: p}}})")
     ap.add_argument('--absent-fix', help="coverage #2: JSON {'drop': {id: [tag]}, 'add': {id: [tag]}, 'absent': {id: [tag]}} (coverage/labelfix/build-absent-fix.py, coverage/merge-absent.py); "
                     'drop sets a likely-present weak absence to weight 0, add makes it a full-weight positive. Default off')
     args = ap.parse_args()
+    global DRUMS_ANY
+    DRUMS_ANY = not args.drums_kit_only; print(f'drums labels: {"any drum sound (drum_sounds.py)" if DRUMS_ANY else "kit only (old)"}', flush=True)
     if args.merge:
         MERGE.update(json.load(open(args.merge)).get('merge', {})); print(f'merged tags: {MERGE or "none"}', flush=True)
     if args.absent_fix:
@@ -150,7 +156,7 @@ def main():
         sources.append(load_source('soundcloud', os.path.join(args.soundcloud, 'soundcloud-mel.npy'), json.load(open(os.path.join(args.soundcloud, 'soundcloud.json')))['items'], args.weak))
     if args.fsd50k:
         fsd_items = json.load(open(os.path.join(args.fsd50k, 'fsd50k.json')))['items']
-        print(f'FSD50K: {fsd50k_extra.relabel(fsd_items, "dev")} labels added from FSD50K classes the prep leaves out (fsd50k_extra.py)', flush=True)
+        print(f'FSD50K: {fsd50k_extra.relabel(fsd_items, "dev", drums_any=DRUMS_ANY)} labels added from FSD50K classes the prep leaves out (fsd50k_extra.py)', flush=True)
         sources.append(load_source('fsd50k', os.path.join(args.fsd50k, 'fsd50k-mel.npy'), fsd_items, args.weak))
     if args.nsynth:
         sources.append(load_source('nsynth', os.path.join(args.nsynth, 'nsynth-mel.npy'), json.load(open(os.path.join(args.nsynth, 'nsynth.json')))['items'], args.weak))

@@ -26,11 +26,12 @@ log = json.load(open(os.path.join(run, 'log.json'))); classes = log['classes']
 assert classes == train.CLASSES, 'run was trained with a different class list'
 if log.get('args', {}).get('merge'):   # the same child -> parent label promotion train.py trained with (round 12 / MERGE_ONLY)
     train.MERGE.update(json.load(open(log['args']['merge'])).get('merge', {}))
+train.DRUMS_ANY = 'drums_kit_only' in log.get('args', {}) and not log['args']['drums_kit_only']   # runs before 2026-10-31 trained kit-only drums
 val = {}
 for name, ids in log['val'].items():
     if name not in preps: continue
     mel, js = FILES.get(name, (f'{name}-mel.npy', f'{name}.json')); items = {it['id']: it for it in json.load(open(os.path.join(preps[name], js)))['items']}
-    if name == 'fsd50k': fsd50k_extra.relabel(list(items.values()), 'dev')   # the labels train.py trained on
+    if name == 'fsd50k': fsd50k_extra.relabel(list(items.values()), 'dev', drums_any=train.DRUMS_ANY)   # the labels train.py trained on
     src = train.load_source(name, os.path.join(preps[name], mel), [items[i] for i in ids], 1.0)
     val[name] = (src['y'], src['w'], np.load(os.path.join(run, f'val-{name}.npy')))
 
