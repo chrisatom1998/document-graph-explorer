@@ -773,6 +773,76 @@
     "rule": "detectors",
     "afterSeconds": 30
    }
+  },
+  {
+   "output": "cat:synth lead",
+   "label": "synth lead",
+   "dimension": "effect",
+   "threshold": 0.6567,
+   "decides": [
+    "synth lead"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:vocoder vocal",
+   "label": "vocoder vocal",
+   "dimension": "effect",
+   "threshold": 0.3067,
+   "decides": [
+    "vocoder vocal"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:record stop",
+   "label": "record stop",
+   "dimension": "effect",
+   "threshold": 0.5435,
+   "decides": [
+    "record stop"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:glitch effect",
+   "label": "glitch effect",
+   "dimension": "effect",
+   "threshold": 0.401,
+   "decides": [
+    "glitch effect"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:choir",
+   "label": "choir",
+   "dimension": "effect",
+   "threshold": 0.905,
+   "decides": [
+    "choir"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
   }
  ]
 }
