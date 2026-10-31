@@ -14,7 +14,7 @@ prompt comparison, which needs a raw similarity of 0.50 on clips longer than 2.2
 - Heads: logistic regression (`scripts/train_heads.py`). C and the hard-negative weight are chosen on 5-fold out-of-fold
   scores of the real clips, folds by uploader. Cutoff: lowest out-of-fold score with precision >= 0.70, never below 0.5.
   Supersaw renders (`scripts/synth_saw.py`, 160 detuned saw stacks, 640 other synths) were tried and lost out of fold, so
-  the trained supersaw head (not shipped in this PR; it follows in its own PR) is real clips only. Rimshot was trained
+  the supersaw head is real clips only (shipped in its own PR after rimshot, #262). Rimshot was trained
   with `--one-shot` (78 of its 88 training positives are 2.25 s or shorter).
 
 | head | real clips (positives, uploaders) | hard negatives | choice | out-of-fold at cutoff |
@@ -33,7 +33,7 @@ cutoff was fitted on these clips.
 | rimshot | 3 of 5, 2 false alarms (P 0.60, R 0.60) | 2 of 4, 0 false alarms | FSD50K eval 0.25%, NSynth test 0.95%, SASS-E 0 | pass |
 | supersaw | 2 of 5, 1 false alarm (P 0.67, R 0.40) | no positives, 0 of 219 false alarms | none | pass |
 
-No other tag changed with either head. Both pass close to the line (rimshot precision exactly 0.60, NSynth false alarms
+No other tag changed with either head. Supersaw was re-scored on main after #262 merged: same numbers, only supersaw changes. Both pass close to the line (rimshot precision exactly 0.60, NSynth false alarms
 just under the 1% cap), so a relabel of one test clip could flip them.
 
 Test clips, their scores and the exclude list stay private and are not in this folder.

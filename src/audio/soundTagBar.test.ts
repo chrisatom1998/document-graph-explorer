@@ -73,6 +73,8 @@ const ONE_SHOT_2026_10_29: [label: string, threshold: number][] = [
 const RUNTIME_MAYBE = ['viola', 'marimba'];
 /** coefficientDigest of the shipped rimshot head (2026-10-31). */
 const RIMSHOT_DIGEST = 'd5d324125fabc9c5f5b4bdc875bfe55294ba45959173b3e6e015edc7e17a2e34';
+/** coefficientDigest of the shipped supersaw head (2026-10-31). */
+const SUPERSAW_DIGEST = 'c897085d054edfc627c9de0eaeaf139752db689a896091782161251c22eed3cc';
 const RUNTIME_DROPPED = ['conga', 'gliding', 'tambourine'];
 /** Held back: their 50/50 was measured only on NSynth (incl. code-made effect renders), with no real held-out clips that
  * confirm the shipped head; glassy is a timbre rule word. They keep their current tier. */
@@ -180,6 +182,14 @@ describe('the 50/50 shipping bar', () => {
     expect(head('rimshot').maybe).toBeUndefined();
     expect(head('rimshot').threshold).toBeCloseTo(.8187, 4);
     expect(coefficientDigest(head('rimshot'))).toBe(RIMSHOT_DIGEST);
+  });
+
+  it('ships the supersaw head on longer clips only at its out-of-fold cutoff', () => {
+    expect(head('supersaw')).toMatchObject({ group: 'production' });
+    expect(head('supersaw').maybe).toBeUndefined();
+    expect(head('supersaw').oneShot).toBeUndefined();
+    expect(head('supersaw').threshold).toBeCloseTo(.8981, 4);
+    expect(coefficientDigest(head('supersaw'))).toBe(SUPERSAW_DIGEST);
   });
 
   it('keeps the one-shot safeguard on promoted one-shot heads', () => {
