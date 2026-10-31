@@ -12,6 +12,7 @@
   --rs-text: #f1f0f6;
   --rs-muted: #9a99a8;
   --rs-faint: #6b6a78;
+  --rs-disabled: #7d7c8a;
   --rs-lime: #c8f55a;
   --rs-lime-ink: #10140a;
   --rs-violet: #a89bff;
@@ -61,7 +62,8 @@
 .rs-tabs button[aria-current='page'] { color: var(--rs-text); }
 .rs-tabs button[aria-current='page']::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px; background: var(--rs-lime); border-radius: 2px; }
 .rs-tabs button i { width: 6px; height: 6px; border-radius: 50%; background: var(--rs-lime); }
-.rs-tabs button:disabled { opacity: 0.4; cursor: default; }
+/* Disabled tabs stay legible while reading as inactive. */
+.rs-tabs button:disabled { color: var(--rs-disabled); cursor: default; }
 .rs-top__actions { display: flex; align-items: center; gap: 10px; }
 .rs-top__status { color: var(--rs-faint); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .rs-top__rule { width: 1px; height: 28px; background: var(--rs-line-strong); margin: 0 8px; }
@@ -401,6 +403,11 @@
 .app-root:has(.rs-root) .progress-strip-layer { left: var(--rs-left); right: var(--rs-right); }
 .app-root:has(.rs-root) .first-run-guide { right: calc(var(--rs-right) + 18px); }
 
+/* The tagline only shows before a graph exists; let the brand cell grow to
+   fit it rather than truncating it to "Find how so…" at desktop widths. */
+@media (min-width: 1101px) {
+  .rs-top:has(.rs-tagline) { grid-template-columns: minmax(var(--rs-brand), max-content) 1fr auto; }
+}
 @media (max-width: 1100px) {
   :root { --rs-left: 230px; --rs-brand: 230px; --rs-right: 320px; }
   .rs-tagline { display: none; }

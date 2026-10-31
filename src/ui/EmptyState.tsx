@@ -112,7 +112,6 @@ export default function EmptyState() {
           <div className="empty-state__hero-scrim" aria-hidden="true" />
         <div className="empty-state__content">
           <header className="empty-state__header">
-            <p className="empty-state__kicker">Local-first</p>
             <h1 className="empty-state__title">See how sounds and documents relate.</h1>
             <p className="empty-state__tagline">
               Add clips, sample packs, notes, PDFs or a source folder. No account.
