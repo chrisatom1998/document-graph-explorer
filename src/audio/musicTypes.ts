@@ -62,7 +62,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 137/138: the tagger decides staccato on clips up to 30 s (fresh test sets 60/30 at its own cutoff 0.4305, Listen set 2/1;
 // the maybe CLAP head that showed it fired on 73 of 415 negatives). Only 5 positives judge it, so one miss flips it: recheck
 // first when more labelled clips arrive.
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 138 : 137;
+// 139/140: a reference-sound (neighbour) head for bitcrushed, cutoff set from training clips only (1% false alarms on
+// held-out training negatives); fresh test sets 0/0 -> 1.00/0.80 on the free-tag-set (docs/evaluations/ref-blend-2026-10-31).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 140 : 139;
 export interface InstrumentEstimate {
   label: string;
   score: number;
