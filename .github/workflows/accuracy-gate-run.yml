@@ -8,7 +8,7 @@ name: Accuracy gate (shared steps)
 # Base numbers come from the graph exports main's own run cached for that commit; when they're missing (main's run
 # hasn't finished, or the cache expired) the base commit is analysed in this run too. Scorers, manifests and the
 # subset rule come from the base commit, so a change can't edit how it's judged (the change's own copy is used only
-# until the gate is on the base branch). Audio is fetched from the datasets on a cache miss and kept only in the Actions
+# until the gate is on the base branch). Audio is fetched from the datasets on a cache miss and kept in the Actions
 # cache; it is never committed or uploaded as a run artifact (the repository is public).
 # Only aggregate numbers are reported.
 #
@@ -311,6 +311,19 @@ jobs:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-19-of-20
           fail-on-cache-miss: true
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: ${{ env.DOCS }}/jamendo-manifest.json
+          sparse-checkout-cone-mode: false
+          path: src
+      - name: Check every track is here before writing the shared key
+        # If the shard count and the restores above ever drift apart, a short set must not become the shared key:
+        # plan would then report it as cached and stop refetching.
+        run: |
+          node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync(process.argv[1])),gone=m.items.filter(i=>!fs.existsSync(`${process.argv[2]}/${i.id}.wav`));
+            if(gone.length){console.error(`${gone.length} of ${m.items.length} tracks have no audio, e.g. ${gone[0].id}`);process.exit(1)}
+            console.log(`all ${m.items.length} tracks present`)' \
+            "src/$DOCS/jamendo-manifest.json" gate-audio/jamendo
       - uses: actions/cache/save@v6
         with:
           path: gate-audio/jamendo

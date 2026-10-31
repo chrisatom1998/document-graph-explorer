@@ -27,9 +27,10 @@ with the PR's base branch (main), not with the fixed 0.60 bar, so a tag that is 
   failed jobs continues from those tracks. The workflow's downloader is used only while the base commit
   still streams whole archives; once the base has the range downloader, that copy is what runs. The selector
   and the scorers always come from the base.
-- The held-out audio lives only in the Actions cache, which only workflows can read. It is never committed and
-  never uploaded as a run artifact: the repository is public, and anyone signed in to GitHub can download an
-  artifact. Jobs in one run hand the audio to each other through the cache (each shard's own key, merged into
+- The held-out audio lives in the Actions cache. It is never committed and never uploaded as a run artifact:
+  the repository is public, and anyone signed in to GitHub can download an artifact. The cache is not a vault:
+  a PR's own workflow and build scripts run with the audio restored on disk, so outside contributors' workflow
+  runs should need approval (Settings → Actions → General). Jobs in one run hand the audio to each other through the cache (each shard's own key, merged into
   the shared key), not through artifacts.
 - A PR labelled `full-accuracy-check`: also the full set (`accuracy-gate-full.yml`, advisory).
 
