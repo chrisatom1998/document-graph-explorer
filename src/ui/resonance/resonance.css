@@ -26,7 +26,7 @@
 }
 
 .rs-root {
-  position: fixed;
+  position: absolute;
   inset: 0;
   display: grid;
   grid-template-rows: var(--rs-top) 1fr;
@@ -626,7 +626,8 @@ body:has(.rs-root) .confirm-dialog .snapshot-btn:disabled { background: none; bo
   .rs-sidebar { min-width: 0; overflow: hidden; }
   .rs-sidebar.is-collapsed .rs-import, .rs-sidebar.is-collapsed .rs-assistant { width: auto; height: auto; padding: 8px 10px; }
   .rs-sidebar.rs-sidebar.is-narrow-open {
-    position: relative; z-index: var(--z-floating); flex-wrap: wrap; align-content: flex-start;
+    /* Above the insights card (z 9), below app-level Insights/Compare panels (z 20). */
+    position: relative; z-index: calc(var(--z-panel) - 1); flex-wrap: wrap; align-content: flex-start;
     max-height: 60vh; overflow-y: auto;
   }
   .rs-sidebar.is-narrow-open > .rs-narrow-filters { order: -1; flex: 1 1 100%; justify-content: center; padding: 8px; border-color: var(--rs-lime); }
