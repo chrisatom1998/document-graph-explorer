@@ -70,7 +70,7 @@ Columns: *Decided by today* is the detector whose score the app actually shows. 
 | **strings** | CLAP head | — | 0.924<br>0.899 maybe (via merged viola) | — | 2 prompts, never shown (tested detector exists) | also shows: viola |
 | **violin / fiddle** | tagger + CLAP head (maybe) ; tagger wins inside its windows | `cat:violin / fiddle` cutoff 0.6363 ; long: detectors >30s | 0.500 maybe | — | 1 prompts, never shown (tested detector exists) |  |
 | **cello** | CLAP head (maybe) | — | 0.976 maybe | — | 1 prompts, never shown (tested detector exists) | hidden from picker list (searchable) |
-| **trumpet** | tagger + CLAP head ; tagger wins inside its windows | `trumpet` cutoff 0.9486 ; min 10s ; long: max | 0.957 | — | 1 prompts, never shown (tested detector exists) |  |
+| **trumpet** | tagger + CLAP head ; tagger wins inside its windows | `trumpet` cutoff 0.9486 ; min 10s ; long: max | 0.863 | — | 1 prompts, never shown (tested detector exists) |  |
 | **saxophone** | tagger + CLAP head ; tagger wins inside its windows | `saxophone` cutoff 0.5096 ; min 10s ; long: detectors | 0.963 | — | 1 prompts, never shown (tested detector exists) |  |
 | **flute** | tagger + CLAP head (maybe) ; tagger wins inside its windows | `cat:flute` cutoff 0.7538 ; long: detectors >30s | 0.955 maybe | — | 1 prompts, never shown (tested detector exists) |  |
 | **clarinet** | CLAP head (maybe) | — | 0.990 maybe | — | 1 prompts, never shown (tested detector exists) | hidden from picker list (searchable) |
