@@ -8,7 +8,8 @@ name: Accuracy gate (shared steps)
 # Base numbers come from the graph exports main's own run cached for that commit; when they're missing (main's run
 # hasn't finished, or the cache expired) the base commit is analysed in this run too. Scorers, manifests and the
 # subset rule come from the base commit, so a change can't edit how it's judged (the change's own copy is used only
-# until the gate is on the base branch). Audio is fetched from the datasets on a cache miss and cached; never committed.
+# until the gate is on the base branch). Audio is fetched from the datasets on a cache miss and kept only in the Actions
+# cache; it is never committed or uploaded as a run artifact (the repository is public).
 # Only aggregate numbers are reported.
 #
 # accuracy-gate.yml runs this on a Monday schedule and on workflow_dispatch. The schedule cannot be added here: a
@@ -150,7 +151,6 @@ jobs:
         with:
           harness: ${{ needs.plan.outputs.harness }}
           shard: ${{ matrix.shard }}
-          mode: ${{ inputs.mode }}
           pass: '1'
           audio-cache: ${{ env.AUDIO_CACHE }}
 
@@ -176,7 +176,6 @@ jobs:
         with:
           harness: ${{ needs.plan.outputs.harness }}
           shard: ${{ matrix.shard }}
-          mode: ${{ inputs.mode }}
           pass: '2'
           audio-cache: ${{ env.AUDIO_CACHE }}
 
@@ -196,48 +195,134 @@ jobs:
           # Refuses to continue if the frozen manifest can't be rebuilt exactly.
           python3 scripts/holdout-r3/select-mtg-key.py "$RUNNER_TEMP/mk" "$DOCS/round2-mtg-key-tracks.txt" gate-audio/mtgkey
           git diff --exit-code "$DOCS/mtg-key-manifest.json"
-      - uses: actions/upload-artifact@v6
+      # Straight into the shared cache: the repository is public, so the audio never becomes a run artifact.
+      - uses: actions/cache/save@v6
         with:
-          name: gate-audio-mtgkey-${{ inputs.mode }}
           path: gate-audio/mtgkey
-          retention-days: 3
+          key: ${{ env.AUDIO_CACHE }}-mtgkey
 
   cache-audio:
     # Caches written on main are shared with every PR; a PR's own caches only help its re-runs.
     # The combined Jamendo key is written only when every shard finished (first pass, or the retry). A partial
     # shard must not become that key, or the next run would treat a short set as complete and skip the fetch.
-    needs: [fetch-jamendo, fetch-jamendo-retry, fetch-mtgkey]
-    if: ${{ !cancelled() && (needs.fetch-jamendo.result == 'success' || needs.fetch-jamendo-retry.result == 'success' || needs.fetch-mtgkey.result == 'success') }}
+    # The shards are merged from their own caches, not from run artifacts: the repository is public, and an
+    # artifact can be downloaded by anyone signed in to GitHub. Restoring several caches into one path adds files.
+    needs: [fetch-jamendo, fetch-jamendo-retry]
+    if: ${{ !cancelled() && (needs.fetch-jamendo.result == 'success' || needs.fetch-jamendo-retry.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v7
-        if: needs.fetch-jamendo.result == 'success' || needs.fetch-jamendo-retry.result == 'success'
+      - uses: actions/cache/restore@v6
         with:
-          pattern: gate-audio-jamendo-${{ inputs.mode }}-*
           path: gate-audio/jamendo
-          merge-multiple: true
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-0-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-1-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-2-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-3-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-4-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-5-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-6-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-7-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-8-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-9-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-10-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-11-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-12-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-13-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-14-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-15-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-16-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-17-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-18-of-20
+          fail-on-cache-miss: true
+      - uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-19-of-20
+          fail-on-cache-miss: true
       - uses: actions/cache/save@v6
-        if: needs.fetch-jamendo.result == 'success' || needs.fetch-jamendo-retry.result == 'success'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo
-      - uses: actions/download-artifact@v7
-        if: needs.fetch-mtgkey.result == 'success'
-        with:
-          name: gate-audio-mtgkey-${{ inputs.mode }}
-          path: gate-audio/mtgkey
-      - uses: actions/cache/save@v6
-        if: needs.fetch-mtgkey.result == 'success'
-        with:
-          path: gate-audio/mtgkey
-          key: ${{ env.AUDIO_CACHE }}-mtgkey
 
   analyse:
-    needs: [plan, fetch-jamendo, fetch-jamendo-retry, fetch-mtgkey]
+    needs: [plan, fetch-jamendo, fetch-jamendo-retry, fetch-mtgkey, cache-audio]
     if: >-
       ${{ !cancelled() && needs.plan.outputs.run == 'true'
       && (needs.fetch-jamendo.result == 'success' || needs.fetch-jamendo-retry.result == 'success' || (needs.fetch-jamendo.result == 'skipped' && needs.fetch-jamendo-retry.result == 'skipped'))
-      && contains(fromJSON('["success","skipped"]'), needs.fetch-mtgkey.result) }}
+      && contains(fromJSON('["success","skipped"]'), needs.fetch-mtgkey.result)
+      && contains(fromJSON('["success","skipped"]'), needs.cache-audio.result) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
@@ -257,19 +342,13 @@ jobs:
         with:
           ref: ${{ needs.plan.outputs.harness }}
           path: harness
+      # Either main's shared cache, or the one fetch-mtgkey / cache-audio wrote earlier in this run.
       - name: Restore the audio
-        id: audio
         uses: actions/cache/restore@v6
         with:
           path: gate-audio/${{ matrix.set }}
           key: ${{ env.AUDIO_CACHE }}-${{ matrix.set }}
-      - name: Use the audio fetched in this run
-        if: steps.audio.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v7
-        with:
-          pattern: gate-audio-${{ matrix.set }}-${{ inputs.mode }}*
-          path: gate-audio/${{ matrix.set }}
-          merge-multiple: true
+          fail-on-cache-miss: true
       - name: Write the manifests
         run: |
           node harness/scripts/accuracy-gate/subset.mjs ${{ inputs.mode }} gate-manifests
