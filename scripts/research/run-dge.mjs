@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { installObserver, importBatch, savedGraph } from '../benchmarks/browser.mjs';
 import { confidentSoundSummary } from '../../src/audio/confidentSoundSummary';
-import { digest, loadManifest } from './core.mjs';
+import { digest, loadManifest, isCompleteRun } from './core.mjs';
 
 const [file, output] = process.argv.slice(2);
 if (!file || !output) throw new Error('Usage: vite-node scripts/research/run-dge.mjs manifest.json new-output-directory');
@@ -79,4 +79,4 @@ try {
   await browser?.close(); server.kill();
   writeFileSync(join(output, 'run.json'), JSON.stringify(report, null, 2));
 }
-if (report.rows.some(r => r.status !== 'complete')) process.exitCode = 1;
+if (!isCompleteRun(report, manifest.clips.length)) process.exitCode = 1;
