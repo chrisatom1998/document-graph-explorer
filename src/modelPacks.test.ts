@@ -1,10 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 // The pack selector is shared with Node's .mjs build hooks.
 // @ts-expect-error Build scripts intentionally live outside the app TypeScript project.
 import { selectModelCapabilities } from '../scripts/model-packs.mjs';
 
 describe('model capability selection', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('uses the bundled core pack by default', () => {
+    vi.stubEnv('DGE_MODELS', '');
     expect(selectModelCapabilities(undefined)).toEqual({ requested: 'core', core: true, audio: false });
   });
 
