@@ -849,9 +849,14 @@ textarea {
 }
 
 .empty-state__card {
+  /* One rule colour for every divider on the card, and one width for the
+     action grid so the secondary row lines up with the primary row's edges. */
+  --empty-state-rule: rgba(158, 176, 255, 0.14);
+  --empty-state-actions-width: 440px;
+  position: relative;
   pointer-events: auto;
   display: grid;
-  grid-template-columns: minmax(280px, 0.88fr) minmax(390px, 1.12fr);
+  grid-template-columns: minmax(280px, 0.86fr) minmax(390px, 1.14fr);
   grid-template-areas:
     'visual content';
   column-gap: clamp(32px, 4vw, 56px);
@@ -859,7 +864,7 @@ textarea {
   width: min(1080px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
   overflow: auto;
-  padding: clamp(30px, 4vw, 52px);
+  padding: clamp(32px, 4vw, 52px);
   text-align: left;
   animation: kn-pop-in 520ms var(--ease-out) both;
   border-color: rgba(141, 168, 255, 0.22);
@@ -869,42 +874,31 @@ textarea {
   color: var(--text-primary);
 }
 
+/* The hero and the privacy line sit together, centred against the copy column. */
 .empty-state__visual {
   grid-area: visual;
   display: flex;
   min-width: 0;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 24px;
   padding-right: clamp(24px, 3vw, 42px);
-  border-right: 1px solid rgba(158, 176, 255, 0.14);
-}
-
-.empty-state__visual-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  color: var(--text-faint);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  border-right: 1px solid var(--empty-state-rule);
 }
 
 /* The vector stage holds its composition at every size and pixel density. */
 .empty-state__hero {
   position: relative;
-  width: min(100%, 340px);
-  margin: 12px auto 8px;
+  width: min(100%, 360px);
+  margin: 0 auto;
   aspect-ratio: 360 / 272;
   min-width: 0;
 }
 
 .empty-state__constellation {
   display: block;
+  width: 100%;
   height: 100%;
-  width: min(100%, 330px);
   overflow: visible;
 }
 
@@ -915,49 +909,28 @@ textarea {
   50% { opacity: 1; }
 }
 
-.empty-state__visual-copy {
-  max-width: 320px;
-  margin-top: 4px;
-}
-
-.empty-state__visual-copy p {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.55;
-}
-
-.empty-state__visual-copy .empty-state__visual-kicker {
-  margin-bottom: 5px;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 650;
-}
-
 .empty-state__trust-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 7px;
-  margin: 18px 0 0;
-  padding: 16px 0 0;
-  border-top: 1px solid rgba(158, 176, 255, 0.12);
+  margin: 0;
+  padding: 20px 0 0;
+  border-top: 1px solid var(--empty-state-rule);
   list-style: none;
 }
 
 .empty-state__trust-list li {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
   color: var(--text-secondary);
-  font-size: 10px;
-  font-weight: 550;
-  letter-spacing: 0.025em;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.55;
 }
 
 .empty-state__trust-list li > span {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   flex: none;
+  margin-top: 7px;
   border-radius: 50%;
   background: var(--success);
   box-shadow: 0 0 8px rgba(126, 232, 196, 0.55);
@@ -976,119 +949,87 @@ textarea {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 9px;
-}
-
-.empty-state__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  color: #bceeff;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
-.empty-state__orb {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--edge-blue);
-  box-shadow: 0 0 12px rgba(119, 229, 255, 0.85);
-}
-
-.empty-state__kicker {
-  margin: 0;
-  color: var(--text-faint);
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  gap: 14px;
 }
 
 .empty-state__title {
   margin: 0;
   max-width: 560px;
-  font-size: clamp(38px, 4.2vw, 56px);
+  font-size: clamp(36px, 4.2vw, 54px);
   font-weight: 700;
-  letter-spacing: -0.045em;
-  line-height: 1.02;
+  letter-spacing: -0.04em;
+  line-height: 1.04;
   color: #f1f4ff;
 }
 
 .empty-state__tagline {
   margin: 0;
-  font-size: 14px;
+  max-width: 54ch;
+  font-size: 15px;
   color: var(--text-secondary);
-  max-width: 550px;
-  line-height: 1.58;
+  line-height: 1.6;
 }
 
 .empty-state__start {
   width: 100%;
-  margin-top: 25px;
+  margin-top: 30px;
 }
 
 .empty-state__section-label {
-  margin: 0 0 8px;
-  color: var(--text-faint);
-  font-size: 9px;
-  font-weight: 750;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  margin: 0 0 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .empty-state__actions {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-start;
+  width: min(100%, var(--empty-state-actions-width));
 }
 
+.empty-state__actions + .empty-state__actions {
+  margin-top: 10px;
+}
+
+/* One control size for every action; fill, tint and outline carry the rank. */
 .empty-state__actions .button {
-  border-radius: 9px;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding-inline: 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
   color: #edf2ff;
+  font-size: 14px;
+  font-weight: 600;
 }
 
-.empty-state__actions--primary .button {
-  min-width: 132px;
+.empty-state__actions .button--secondary {
+  --button-bg: rgba(160, 179, 255, 0.1);
+  --button-bg-hover: rgba(160, 179, 255, 0.16);
+  --button-bg-pressed: rgba(160, 179, 255, 0.2);
+  border-color: var(--border-glass);
 }
 
-.empty-state__actions--secondary {
-  gap: 6px;
-  margin-top: 7px;
-}
-
-.empty-state__actions--secondary .button {
-  min-height: 32px;
-  padding-inline: 10px;
-  color: var(--text-secondary);
-  font-size: 11px;
+.empty-state__actions .button--tertiary {
+  --button-bg: transparent;
+  --button-bg-hover: rgba(160, 179, 255, 0.1);
+  --button-bg-pressed: rgba(160, 179, 255, 0.14);
+  border-color: var(--border-glass);
 }
 
 .empty-state__primary-action {
-  box-shadow: 0 12px 34px rgba(112, 93, 250, 0.32), 0 0 24px rgba(119, 229, 255, 0.08);
+  box-shadow: 0 10px 28px rgba(112, 93, 250, 0.3);
 }
 
 .empty-state__hint {
-  max-width: 520px;
-  margin: 9px 0 0;
-  font-size: 10px;
-  color: var(--text-faint);
-  line-height: 1.45;
-}
-
-.empty-state__privacy {
-  margin: 16px 0 0;
-  padding-left: 12px;
-  border-left: 2px solid var(--success);
+  max-width: 54ch;
+  margin: 12px 0 0;
+  font-size: 13px;
   color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.6;
-  text-align: left;
+  line-height: 1.55;
 }
 
 .empty-state__workspace {
@@ -1097,83 +1038,28 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  margin-top: 19px;
-  padding-top: 15px;
-  border-top: 1px solid rgba(158, 176, 255, 0.12);
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid var(--empty-state-rule);
 }
 
 .empty-state__workspace .empty-state__section-label {
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 
 .empty-state__workspace-copy {
   margin: 0;
-  color: var(--text-faint);
-  font-size: 10px;
-}
-
-.empty-state__workflow {
-  grid-area: workflow;
-  display: grid;
-  grid-template-columns: minmax(150px, 0.72fr) repeat(3, 1fr);
-  width: 100%;
-  overflow: hidden;
-  border: 1px solid var(--border-glass);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.018);
-}
-
-.empty-state__workflow-heading {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 15px 16px;
-  color: var(--text-primary);
-  font-size: 11px;
-  font-weight: 650;
-}
-
-.empty-state__workflow-heading span:last-child {
-  color: var(--text-faint);
-  font-family: var(--font-mono);
-  font-size: 8px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.empty-state__step {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: flex-start;
-  gap: 10px;
-  min-height: 88px;
-  padding: 15px 16px;
-  border-left: 1px solid var(--border-glass);
   color: var(--text-secondary);
-  font-size: 10px;
-  line-height: 1.4;
-  text-align: left;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
-.empty-state__step + .empty-state__step {
-  border-left: 1px solid var(--border-glass);
-}
-
-.empty-state__step strong {
-  display: block;
-  margin-bottom: 4px;
-  color: var(--text-primary);
-  font-size: 11px;
-}
-
-.empty-state__step-number {
-  color: var(--accent-strong);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+/* The corpus picker matches the action buttons' height and corner radius. */
+.empty-state__workspace .corpus-switcher__trigger {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
 }
 
 /* ===========================================================================
@@ -4263,9 +4149,6 @@ mark.passage-mark {
   .empty-state-layer {
     padding: 10px;
   }
-  .empty-state__title {
-    font-size: 32px;
-  }
   .empty-state__card {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -4274,83 +4157,55 @@ mark.passage-mark {
     width: 100%;
     max-height: calc(100vh - 20px);
     overflow: auto;
-    row-gap: 20px;
-    padding: 24px 20px;
+    row-gap: 24px;
+    padding: 26px 20px 24px;
   }
   .empty-state__visual {
-    min-height: 0;
+    gap: 18px;
     padding-right: 0;
-    padding-bottom: 18px;
+    padding-bottom: 24px;
     border-right: 0;
-    border-bottom: 1px solid rgba(158, 176, 255, 0.14);
+    border-bottom: 1px solid var(--empty-state-rule);
   }
-  .empty-state__visual-label,
-  .empty-state__visual-copy { display: none; }
   .empty-state__hero {
-    width: min(100%, 220px);
-    margin-block: 0;
+    width: min(100%, 260px);
   }
   .empty-state__trust-list {
-    grid-template-columns: repeat(3, auto);
-    justify-content: center;
-    gap: 12px;
-    margin-top: 2px;
-    padding-top: 12px;
+    padding-top: 16px;
   }
+  /* Wraps inside the card instead of running off the right edge. */
   .empty-state__trust-list li {
-    gap: 5px;
-    font-size: 8px;
+    width: fit-content;
+    max-width: min(44ch, 100%);
+    margin: 0 auto;
+    font-size: 12.5px;
   }
   .empty-state__content,
   .empty-state__header { align-items: center; text-align: center; }
-  .empty-state__start { margin-top: 20px; }
-  .empty-state__actions { justify-content: center; }
-  .empty-state__actions .button { min-height: 42px; }
-  .empty-state__actions--secondary .button { min-height: 34px; }
+  .empty-state__title {
+    font-size: clamp(32px, 9vw, 40px);
+  }
+  .empty-state__start { margin-top: 24px; }
+  .empty-state__actions,
+  .empty-state__hint { margin-inline: auto; }
   .empty-state__workspace {
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
     text-align: center;
-  }
-  .empty-state__workflow {
-    grid-template-columns: 1fr;
-  }
-  .empty-state__workflow-heading {
-    flex-direction: row;
-    padding: 12px 14px;
-  }
-  .empty-state__step {
-    grid-template-columns: 28px 1fr;
-    min-height: 0;
-    padding: 12px 14px;
-    border-top: 1px solid var(--border-glass);
-    border-left: none;
-  }
-  .empty-state__step + .empty-state__step {
-    border-top: 1px solid var(--border-glass);
-    border-left: none;
-  }
-  .empty-state__hero,
-  .empty-state__constellation {
-    width: 190px;
-    margin-block: 0;
   }
 }
 
 @media (max-width: 420px) {
-  .empty-state__trust-list {
-    grid-template-columns: 1fr;
-    justify-items: start;
-    width: max-content;
-    margin-inline: auto;
-  }
   .empty-state__actions--primary {
-    display: grid;
     grid-template-columns: 1fr;
-    width: 100%;
   }
-  .empty-state__actions--primary .button {
-    width: 100%;
+  .empty-state__actions--secondary .button {
+    padding-inline: 10px;
+    font-size: 13px;
+    line-height: 1.2;
+    white-space: normal;
   }
   .empty-state__workspace .corpus-switcher,
   .empty-state__workspace .corpus-switcher__trigger {

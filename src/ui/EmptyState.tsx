@@ -1,6 +1,5 @@
 import { lazy, Suspense, useState } from 'react';
 import { Button } from '@heroui/react/button';
-import { Chip } from '@heroui/react/chip';
 import { EmptyState as HeroEmptyState } from '@heroui/react/empty-state';
 import { openFilePicker } from '../ingest/DropZone';
 import { openFolderPicker } from '../ingest/folderPicker';
@@ -62,31 +61,19 @@ export default function EmptyState() {
           <div className="empty-state__hero">
             <Suspense fallback={<ConstellationSvg />}><HeroConstellation /></Suspense>
           </div>
-          <div className="empty-state__visual-copy">
-            <p className="empty-state__visual-kicker">See how your sounds relate</p>
-            <p>
-              Clips become a map of what sounds alike, shares a tempo or key, and mixes well
-              together. Documents join by topic and citation.
-            </p>
-          </div>
+          {/* The one privacy statement on the screen; the tagline no longer repeats it. */}
           <ul className="empty-state__trust-list" aria-label="Privacy and access">
-            <li><span aria-hidden="true" />Runs in this browser with no account. Nothing is uploaded unless you turn on a cloud AI provider.</li>
+            <li><span aria-hidden="true" />Runs in this browser with no account. Nothing leaves this device unless you turn on a cloud AI provider or share an export.</li>
           </ul>
         </div>
         <div className="empty-state__content">
           <header className="empty-state__header">
-            <Chip className="empty-state__eyebrow" size="sm" variant="secondary">
-              <span className="empty-state__orb" aria-hidden="true" />
-              Private workspace
-            </Chip>
-            <p className="empty-state__kicker">Resonance</p>
             <h1 className="empty-state__title">
               Find how sounds relate.
             </h1>
             <p className="empty-state__tagline">
               Drop in clips, loops or whole sample packs and get a map of how they relate by
-              instrument, tempo, key and feel. Documents work too. Files stay on this device;
-              nothing leaves it unless you turn on a cloud AI provider or share an export.
+              instrument, tempo, key and feel. Documents work too, linked by topic and citation.
             </p>
           </header>
 
