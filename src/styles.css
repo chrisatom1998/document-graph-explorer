@@ -1770,10 +1770,10 @@ textarea {
 .side-panel__stats {
   flex-wrap: wrap;
   display: flex;
-  gap: 16px;
+  gap: 12px;
   margin-top: 10px;
-  font-size: 12px;
-  color: var(--text-faint);
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 .side-panel__section {
@@ -1795,8 +1795,9 @@ textarea {
 .side-panel__block:first-child {
   margin-top: 12px;
 }
+/* Section headings read as labels (13px, normal case), not tiny caps. */
 .side-panel__disclose {
-  min-height: 28px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1806,20 +1807,17 @@ textarea {
   padding: 0;
   margin: 0;
   font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
   cursor: pointer;
 }
 .side-panel__disclose:hover {
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 .side-panel__disclose-hint {
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
   color: var(--accent-strong);
 }
 .side-panel__disclose:hover .side-panel__disclose-hint {
@@ -1828,17 +1826,15 @@ textarea {
 
 .side-panel__section-label {
   margin: 0 0 8px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .side-panel__passage-banner {
   margin: 0 0 10px;
   padding: 8px 10px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
   color: var(--text-secondary);
   background: rgba(255, 214, 90, 0.1);
@@ -1858,7 +1854,7 @@ mark.passage-mark {
 
 .side-panel__summary {
   margin: 0;
-  font-size: 15.5px;
+  font-size: 14px;
   line-height: 1.6;
   color: var(--text-primary);
 }
@@ -1887,7 +1883,7 @@ mark.passage-mark {
   width: 100%;
   margin: 8px 0;
   padding: 8px 10px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-glass);
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-primary);
@@ -1992,22 +1988,21 @@ mark.passage-mark {
 .connection-row__kind {
   grid-column: 2;
   flex: none;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-faint);
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .connection-row__compare {
   grid-column: 3;
   grid-row: 1 / span 2;
-  padding: 5px 8px;
+  min-height: 28px;
+  padding: 0 10px;
   border: 1px solid var(--border-glass);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-secondary);
-  font-size: 11px;
-  letter-spacing: 0.02em;
+  font: inherit;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -2057,9 +2052,9 @@ mark.passage-mark {
 .connection-row__evidence {
   margin: 0;
   padding-left: 15px;
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.6;
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }
 .connection-row__evidence li {
   margin: 0;
@@ -2073,7 +2068,7 @@ mark.passage-mark {
   border: none;
   padding: 0;
   font: inherit;
-  font-size: 11.5px;
+  font-size: 13px;
   color: var(--accent-strong);
   cursor: pointer;
 }
@@ -2594,7 +2589,7 @@ mark.passage-mark {
 }
 .side-panel__remove-confirm-text {
   flex: 1 1 auto;
-  font-size: 11.5px;
+  font-size: 13px;
   line-height: 1.4;
   color: var(--text-secondary);
 }
@@ -2658,10 +2653,9 @@ mark.passage-mark {
 }
 .doc-ai__result-heading {
   margin: 0 0 6px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 .doc-ai__result-text {
   white-space: pre-wrap;
@@ -2671,8 +2665,8 @@ mark.passage-mark {
 }
 .doc-ai__disclosure {
   margin: 8px 0 0;
-  font-size: 11px;
-  color: var(--text-faint);
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 /* --- Streaming indicator --- */
@@ -2944,16 +2938,18 @@ mark.passage-mark {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 5px 8px;
-  font-size: 12.5px;
+  padding: 6px 8px;
+  font-size: 13px;
   min-width: 0;
 }
 
+/* The kind is a genuine badge, so it keeps its caps but at a legible size. */
 .ingest-report__kind {
   flex: none;
   padding: 1px 7px;
   border-radius: 999px;
-  font-size: 10.5px;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   border: 1px solid transparent;
@@ -2988,8 +2984,8 @@ mark.passage-mark {
 .ingest-report__reason {
   flex: 1 1 auto;
   min-width: 0;
-  color: var(--text-faint);
-  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3844,8 +3840,10 @@ mark.passage-mark {
   align-self: flex-start;
 }
 
+/* The results surface is opaque: the glass tint let the graph, digest card
+   and filter chips show through behind "No matches" on phones. */
 .search-overlay {
-  background: var(--bg-glass-strong);
+  background: rgb(10, 15, 31);
   width: min(560px, 92vw);
   max-height: 60vh;
   display: flex;
@@ -3919,7 +3917,7 @@ mark.passage-mark {
   min-width: 0;
   font-weight: 550;
   flex: 1 1 auto;
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3928,15 +3926,15 @@ mark.passage-mark {
 
 .search-result-row__similar {
   flex: none;
-  font-size: 10px;
+  min-height: 28px;
+  font: inherit;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  font-family: var(--font-ui);
   color: var(--text-secondary);
   background: none;
   border: 1px solid var(--border-glass);
-  border-radius: 999px;
-  padding: 2px 8px;
+  border-radius: var(--radius-md);
+  padding: 0 10px;
   cursor: pointer;
 }
 .search-result-row__similar:hover {
@@ -3946,7 +3944,7 @@ mark.passage-mark {
 
 .match-kind-badge {
   flex: none;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -3989,8 +3987,8 @@ mark.passage-mark {
   -webkit-box-orient: vertical;
   overflow-wrap: anywhere;
   margin: 0;
-  font-size: 11.5px;
-  color: var(--text-faint);
+  font-size: 12.5px;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4000,7 +3998,7 @@ mark.passage-mark {
   padding: 28px 20px;
   text-align: center;
   font-size: 13px;
-  color: var(--text-faint);
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
@@ -4010,16 +4008,18 @@ mark.passage-mark {
   border-top: 1px solid rgba(140, 150, 255, 0.12);
 }
 
+/* The one full-width action shares the 44px secondary-button size. */
 .search-overlay__show-all {
   width: 100%;
-  height: 34px;
+  height: 44px;
   border: 1px solid rgba(126, 232, 196, 0.38);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   background: rgba(126, 232, 196, 0.14);
   cursor: pointer;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .search-overlay__show-all:hover {
