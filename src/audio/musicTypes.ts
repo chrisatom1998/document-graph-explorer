@@ -65,7 +65,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 139/140: the tagger decides reese bass on clips up to 30 s at 0.1219, a cutoff set on 1,474 fresh non-test, non-training
 // Freesound clips (32 reese) with calibrate.py's own rule, before any test clip was scored (Listen set 2/0, free-tag-set 0 false
 // alarms of 219). Only 5 positives judge it: recheck first when more labelled clips arrive.
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 140 : 139;
+// 141/142: a reference-sound (neighbour) head for bitcrushed, cutoff set from training clips only (1% false alarms on
+// held-out training negatives); fresh test sets 0/0 -> 1.00/0.80 on the free-tag-set (docs/evaluations/ref-blend-2026-10-31).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 142 : 141;
 export interface InstrumentEstimate {
   label: string;
   score: number;
