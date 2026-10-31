@@ -22,7 +22,9 @@ export interface TaggerTag {
   decides: string[];
   /** Equivalent display labels stored under another dimension by a native detector. */
   alsoDecides?: { dimension: Extract<Dimension, 'source' | 'character' | 'effect'>; label: string }[];
-  /** Held-out precision and recall both reached 0.70 on every complete-label set; otherwise shown as a "maybe" tag. */
+  /** Passed the ship line on every fresh test set; otherwise shown as a "maybe" tag. Since 2026-10-11 (Chris) the line is 60/30:
+   * precision >= 0.60 and recall >= 0.30 on each set with 5+ positives, and at most 1% false alarms on sets with fewer. Before,
+   * precision and recall both reached SOUND_TAG_BAR (0.50 from 2026-10-10; 0.70 before). Not the display cutoff. */
   tested: boolean;
   /** Recordings shorter than this keep the existing detectors for this tag (the held-out sets had no shorter audio). */
   minSeconds?: number;
@@ -37,6 +39,9 @@ export interface TaggerTag {
 export interface TaggerLongRule {
   rule: 'max' | 'windows' | 'mean' | 'agree' | 'detectors';
   threshold?: number;
+  /** The rule covers only recordings longer than this; shorter multi-window clips keep the best window, as the held-out
+   * scorer read them (scripts/audio-model/evaluate.py). */
+  afterSeconds?: number;
   windows?: number;
 }
 export interface TaggerPolicy {
@@ -54,7 +59,7 @@ export const TAGGER_WINDOW_SECONDS = TAGGER_WINDOW_SAMPLES / TAGGER_SAMPLE_RATE;
 /** The held-out full songs were scored on their middle 30 s (scripts/audio-model/prepare-holdout.py): three windows. */
 export const TAGGER_MAX_WINDOWS = TAGGER_POLICY.input.maxWindows;
 export const TAGGER_UNAVAILABLE = 'The trained tagger was unavailable; the other detectors decided every tag. Reanalyze to retry.';
-/** Display names of the tagger's scores. "maybe" marks a tag whose held-out precision or recall is below 0.70. */
+/** Display names of the tagger's scores. "maybe" marks a tag whose held-out precision or recall is below the shipping bar. */
 export const TAGGER_SCORE = 'Trained tagger score';
 export const TAGGER_MAYBE_SCORE = 'Trained tagger score (maybe)';
 
@@ -161,10 +166,11 @@ export interface TaggerDisplay {
 }
 /** The recording-level score a tag's rule reads, and the threshold it is compared with. Undefined when the tagger does
  * not decide the tag on this recording (the 'detectors' rule, or per-window scores missing for a rule that needs them). */
-function ruleScore(tag: TaggerTag, tagger: TaggerAnalysis): { raw: number; threshold: number; agree: boolean } | undefined {
+function ruleScore(tag: TaggerTag, tagger: TaggerAnalysis, durationSeconds: number): { raw: number; threshold: number; agree: boolean } | undefined {
   const best = tagger.scores[tag.output];
   if (!finite(best) || best < 0 || best > 1) return;
-  const long = tagger.windows > 1 ? tag.long : undefined;
+  const after = tag.long?.afterSeconds;
+  const long = tagger.windows > 1 && (after === undefined || !(durationSeconds <= after + 1e-6)) ? tag.long : undefined;
   if (!long || long.rule === 'max') return { raw: best, threshold: long?.threshold ?? tag.threshold, agree: false };
   const threshold = long.threshold ?? tag.threshold;
   if (long.rule === 'detectors') return;
@@ -182,7 +188,7 @@ function ruleScore(tag: TaggerTag, tagger: TaggerAnalysis): { raw: number; thres
 export function taggerDecisions(tagger: TaggerAnalysis | undefined, durationSeconds: number): TaggerDisplay[] | undefined {
   if (!tagger || tagger.revision !== TAGGER_REVISION) return;
   return TAGGER_POLICY.tags.filter(tag => !tag.minSeconds || (Number.isFinite(durationSeconds) && durationSeconds >= tag.minSeconds - 1e-6)).flatMap(tag => {
-    const rule = ruleScore(tag, tagger);
+    const rule = ruleScore(tag, tagger, durationSeconds);
     if (!rule) return [];
     const { raw, threshold } = rule;
     const shown = raw >= threshold;

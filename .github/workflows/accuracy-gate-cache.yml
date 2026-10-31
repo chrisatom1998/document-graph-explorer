@@ -1,0 +1,74 @@
+name: Accuracy gate audio cache
+
+# GitHub deletes a cache that has not been restored for 7 days. The Accuracy gate only writes the shared Jamendo
+# audio from a run on main, and that run's Monday cron shares a queue with pushes, so it can be dropped. This
+# workflow restores the cache every day. It does not fetch and it does not score. A miss means the cache is already
+# gone: Actions → Accuracy gate → Run workflow, on main, is what fills it again.
+# Starts once this file is on main. Details: docs/evaluations/accuracy-gate.md.
+on:
+  schedule:
+    - cron: '30 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: accuracy-gate-audio-cache
+  cancel-in-progress: false
+
+jobs:
+  touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # AUDIO_CACHE and EXPORTS_CACHE live in accuracy-gate-run.yml. Reading them here keeps this restore on the
+      # same keys the gate writes; a copied literal would keep restoring a key the gate had stopped using.
+      - uses: actions/checkout@v7
+      - name: Read the cache key prefixes
+        id: keys
+        run: |
+          audio=$(awk '/^  AUDIO_CACHE: /{print $2; exit}' .github/workflows/accuracy-gate-run.yml)
+          exports=$(awk '/^  EXPORTS_CACHE: /{print $2; exit}' .github/workflows/accuracy-gate-run.yml)
+          test -n "$audio" && test -n "$exports"
+          echo "audio=$audio" >> "$GITHUB_OUTPUT"
+          echo "exports=$exports" >> "$GITHUB_OUTPUT"
+          echo "audio prefix $audio; exports prefix $exports"
+      - name: Restore the shared Jamendo audio
+        id: jamendo
+        continue-on-error: true
+        uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/jamendo
+          key: ${{ steps.keys.outputs.audio }}-jamendo
+          fail-on-cache-miss: true
+      - name: Restore the shared MTG key audio
+        id: mtgkey
+        continue-on-error: true
+        uses: actions/cache/restore@v6
+        with:
+          path: gate-audio/mtgkey
+          key: ${{ steps.keys.outputs.audio }}-mtgkey
+          fail-on-cache-miss: true
+      - name: Fail if the audio cache is gone
+        if: steps.jamendo.outcome != 'success' || steps.mtgkey.outcome != 'success'
+        run: |
+          echo "::error::The shared audio cache is missing. Actions → Accuracy gate → Run workflow, with the branch set to main, is what fills it again."
+          exit 1
+      - name: Find the newest full-set baseline
+        id: exports
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPORTS: ${{ steps.keys.outputs.exports }}
+        run: |
+          key=$(gh api "/repos/${GITHUB_REPOSITORY}/actions/caches?per_page=1&key=${EXPORTS}-full-&sort=created_at&direction=desc" --jq '.actions_caches[0].key // empty')
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+          if [ -z "$key" ]; then echo "::warning::no full-set baseline cache to refresh"; fi
+      - name: Restore that baseline
+        if: steps.exports.outputs.key != ''
+        uses: actions/cache/restore@v6
+        with:
+          path: baseline
+          key: ${{ steps.exports.outputs.key }}

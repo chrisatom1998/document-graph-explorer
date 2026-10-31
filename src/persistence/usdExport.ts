@@ -21,6 +21,7 @@
  * no local paths, no embeddings.
  */
 
+import { PRODUCT_NAME } from '../product/brand';
 import type { DocNode, Edge, EdgeKind } from '../model/types';
 import { clusterColor, EDGE_KIND_HEX } from '../scene/palette';
 import { getNodePosition } from '../scene/positionBuffer';
@@ -134,7 +135,7 @@ export function buildUsdaStage(input: UsdStageInput): string {
   out('    defaultPrim = "Corpus"');
   out('    upAxis = "Y"');
   out('    metersPerUnit = 1');
-  out(`    doc = "Document Graph Explorer corpus export (${input.nodes.length} nodes, ${input.edges.length} edges)"`);
+  out(`    doc = "${PRODUCT_NAME} corpus export (${input.nodes.length} nodes, ${input.edges.length} edges)"`);
   out('    customLayerData = {');
   out('        string generator = "document-graph-explorer"');
   out(`        string createdAt = ${usdString(input.createdAt)}`);

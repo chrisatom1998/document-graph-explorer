@@ -16,6 +16,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import train  # noqa: E402
 from labelmap import FREESOUND  # noqa: E402
+import fsd50k_extra  # noqa: E402
 
 run, *pairs = sys.argv[1:]
 preps = dict(p.split('=', 1) for p in pairs)
@@ -23,10 +24,13 @@ FILES = {'openmic': ('train-mel.npy', 'train.json'), 'jamendo': ('jamendo-mel.np
          'fsd50k': ('fsd50k-mel.npy', 'fsd50k.json'), 'nsynth': ('nsynth-mel.npy', 'nsynth.json'), 'freesound': ('freesound-mel.npy', 'freesound.json')}
 log = json.load(open(os.path.join(run, 'log.json'))); classes = log['classes']
 assert classes == train.CLASSES, 'run was trained with a different class list'
+if log.get('args', {}).get('merge'):   # the same child -> parent label promotion train.py trained with (round 12 / MERGE_ONLY)
+    train.MERGE.update(json.load(open(log['args']['merge'])).get('merge', {}))
 val = {}
 for name, ids in log['val'].items():
     if name not in preps: continue
     mel, js = FILES.get(name, (f'{name}-mel.npy', f'{name}.json')); items = {it['id']: it for it in json.load(open(os.path.join(preps[name], js)))['items']}
+    if name == 'fsd50k': fsd50k_extra.relabel(list(items.values()), 'dev')   # the labels train.py trained on
     src = train.load_source(name, os.path.join(preps[name], mel), [items[i] for i in ids], 1.0)
     val[name] = (src['y'], src['w'], np.load(os.path.join(run, f'val-{name}.npy')))
 
@@ -43,8 +47,12 @@ def pick(y, s):
         if best is None or key > best[0]: best = (key, float(t), p, r)
     return best[1:]
 
-def view(name, j, keep_weak):
-    y, w, s = val[name]; k = w[:, j] > 0 if keep_weak else w[:, j] >= 1
+# Freesound-only tags, and every tag of the run 7 Freesound sounds (fsnew, which has no outright absences), count
+# untagged sounds as absent.
+keep_weak = lambda n, c: (n == 'freesound' and c[4:] in FREESOUND) or n == 'fsnew'
+
+def view(name, j, use_weak):
+    y, w, s = val[name]; k = w[:, j] > 0 if use_weak else w[:, j] >= 1
     return y[k, j], s[k, j]
 
 out = {}
@@ -52,7 +60,7 @@ for j, c in enumerate(classes):
     if c.startswith('jamendo:'): fit = [('jamendo', True)] if 'jamendo' in val else []
     # Freesound-only tags have no outright absences (uploaders tag selectively): its untagged sounds count as absent,
     # so precision is a lower bound, as with Jamendo's tags.
-    elif c.startswith('cat:') or c.startswith('fsld:'): fit = [(n, n == 'freesound' and c[4:] in FREESOUND) for n in val]
+    elif c.startswith('cat:') or c.startswith('fsld:'): fit = [(n, keep_weak(n, c)) for n in val]
     else: fit = [('openmic', False)] if 'openmic' in val else []
     ys, ss = zip(*[view(n, j, kw) for n, kw in fit]) if fit else ((), ())
     y = np.concatenate(ys) if ys else np.zeros(0); s = np.concatenate(ss) if ss else np.zeros(0)
@@ -62,7 +70,7 @@ for j, c in enumerate(classes):
     row = {'enabled': True, 'threshold': round(t, 4), 'fitOn': [n for n, _ in fit], 'val': {'precision': round(p, 3), 'recall': round(r, 3), 'positives': pos, 'negatives': neg}}
     if any(kw for _, kw in fit): row['precisionIsLowerBound'] = True
     for n in val:   # each source's own view at the chosen threshold
-        yn, sn = view(n, j, n == 'jamendo' or (n == 'freesound' and c[4:] in FREESOUND))
+        yn, sn = view(n, j, n == 'jamendo' or keep_weak(n, c))
         if (yn == 1).sum() or (yn == 0).sum():
             pn, rn, posn, negn = pr(yn, sn, t)
             row[f'{n}Val'] = {'precision': None if pn is None or negn == 0 else round(pn, 3), 'recall': None if rn is None else round(rn, 3), 'positives': posn, 'negatives': negn}

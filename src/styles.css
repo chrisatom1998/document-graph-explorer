@@ -96,13 +96,16 @@
   display: block;
   margin-bottom: 0;
   color: var(--accent-strong);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
+}
+.first-run-guide > strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
 }
 .first-run-guide p {
-  margin: 7px 0 12px;
+  margin: 6px 0 14px;
   color: var(--text-secondary);
   line-height: 1.5;
 }
@@ -111,26 +114,32 @@
   justify-content: flex-end;
   gap: 8px;
 }
+/* Back and Next share one size; Back is outlined, Next is tinted. */
 .first-run-guide__back,
 .first-run-guide__done {
   min-height: 36px;
-  padding: 7px 12px;
+  padding: 0 14px;
   border: 1px solid var(--border-glass-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--accent-soft);
   color: var(--accent-strong);
   cursor: pointer;
   font: inherit;
+  font-size: 13px;
+  font-weight: 600;
 }
 .first-run-guide__back {
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
-.first-run-guide__back:disabled {
-  opacity: 0.35;
+/* Disabled Back keeps a legible tone (≈5.9:1) instead of fading to a ghost. */
+.first-run-guide__back:disabled,
+.first-run-guide__back[data-disabled] {
+  opacity: 1;
+  border-color: var(--border-glass);
+  color: var(--text-faint);
   cursor: default;
 }
-.first-run-guide__done { font-weight: 700; }
 .first-run-guide__close {
   position: absolute;
   top: 6px;
@@ -187,7 +196,11 @@
 
   --text-primary: #dfe4f4;
   --text-secondary: #8b93b8;
-  --text-faint: #5b6288;
+  /* Faint text clears 4.5:1 on every panel surface (≈4.8:1 on --surface-raised,
+     ≈5.9:1 on the glass panels). Decorative uses that wanted the old dimmer
+     tone (status dot, toast rule, untested score bar) keep #5b6288 inline, and
+     the welcome screen's corpus switcher keeps it too (see .corpus-switcher--empty). */
+  --text-faint: #848bb1;
   --text: var(--text-primary);
   --text-muted: var(--text-secondary);
   --panel-bg: var(--bg-glass-strong);
@@ -310,6 +323,7 @@ textarea {
   inset: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--bg-void);
 }
@@ -435,26 +449,30 @@ textarea {
   padding: 24px;
 }
 
+/* Crash screen: 14px body copy, a 13px label over the title, and the two
+   actions at the shared 44px / 10px-radius button size. */
 .app-error-panel {
   width: min(560px, 92vw);
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  background: rgb(10, 15, 31);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .app-error-panel__eyebrow {
   margin: 0;
   color: var(--accent-strong);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .app-error-panel__title {
   margin: 0;
   font-size: 22px;
+  font-weight: 600;
   line-height: 1.2;
 }
 
@@ -468,6 +486,17 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.app-error-panel .btn-pill {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+.app-error-panel .btn-pill:disabled {
+  color: var(--text-faint);
+  cursor: default;
 }
 
 .nebula-canvas {
@@ -729,13 +758,15 @@ textarea {
   margin: 14px 0;
 }
 
+/* One close-button size for every panel and dialog: 32px on the shared
+   button radius (the reader and search overlay already use this size). */
 .icon-btn-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-secondary);
@@ -851,244 +882,186 @@ textarea {
 .empty-state__card {
   pointer-events: auto;
   display: grid;
-  grid-template-columns: minmax(280px, 0.88fr) minmax(390px, 1.12fr);
+  grid-template-columns: 1fr;
   grid-template-areas:
-    'visual content';
-  column-gap: clamp(32px, 4vw, 56px);
-  row-gap: 28px;
+    'hero'
+    'features';
+  row-gap: 0;
+  align-items: start;
   width: min(1080px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
   overflow: auto;
-  padding: clamp(30px, 4vw, 52px);
+  padding: 0;
   text-align: left;
   animation: kn-pop-in 520ms var(--ease-out) both;
-  border-color: rgba(141, 168, 255, 0.22);
-  background:
-    radial-gradient(circle at 18% 28%, rgba(105, 92, 210, 0.12), transparent 34%),
-    rgba(8, 13, 28, 0.8);
-  color: var(--text-primary);
+  border: 1px solid var(--rs-line-strong, #2c2c3a);
+  border-radius: 16px;
+  background: var(--rs-bg, #0b0b11);
+  color: var(--rs-text, #f1f0f6);
+  /* Focus rings inside the card follow the workspace lime, not the older violet. */
+  --accent: var(--rs-lime, #c8f55a);
 }
 
-.empty-state__visual {
-  grid-area: visual;
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  justify-content: space-between;
-  padding-right: clamp(24px, 3vw, 42px);
-  border-right: 1px solid rgba(158, 176, 255, 0.14);
-}
-
-.empty-state__visual-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  color: var(--text-faint);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-/* The vector stage holds its composition at every size and pixel density. */
+/* The rendered network occupies the right half of the art. Copy stays in the
+   open left field, on the app background, so it never sits on a glow. */
 .empty-state__hero {
+  grid-area: hero;
   position: relative;
-  width: min(100%, 340px);
-  margin: 12px auto 8px;
-  aspect-ratio: 360 / 272;
-  min-width: 0;
-}
-
-.empty-state__constellation {
-  display: block;
-  height: 100%;
-  width: min(100%, 330px);
-  overflow: visible;
-}
-
-.empty-state__stellar-glow { animation: stellar-breathe 7s ease-in-out infinite; }
-
-@keyframes stellar-breathe {
-  0%, 100% { opacity: 0.65; }
-  50% { opacity: 1; }
-}
-
-.empty-state__visual-copy {
-  max-width: 320px;
-  margin-top: 4px;
-}
-
-.empty-state__visual-copy p {
+  width: auto;
   margin: 0;
-  color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.55;
+  aspect-ratio: auto;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--rs-bg, #0b0b11);
 }
 
-.empty-state__visual-copy .empty-state__visual-kicker {
-  margin-bottom: 5px;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 650;
+.empty-state__art {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  pointer-events: none;
 }
 
-.empty-state__trust-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 7px;
-  margin: 18px 0 0;
-  padding: 16px 0 0;
-  border-top: 1px solid rgba(158, 176, 255, 0.12);
-  list-style: none;
+.empty-state__art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: right center;
+  display: block;
 }
 
-.empty-state__trust-list li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--text-secondary);
-  font-size: 10px;
-  font-weight: 550;
-  letter-spacing: 0.025em;
-}
-
-.empty-state__trust-list li > span {
-  width: 5px;
-  height: 5px;
-  flex: none;
-  border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 8px rgba(126, 232, 196, 0.55);
+.empty-state__hero-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    var(--rs-bg, #0b0b11) 0%,
+    var(--rs-bg, #0b0b11) 54%,
+    color-mix(in srgb, var(--rs-bg, #0b0b11) 78%, transparent) 66%,
+    transparent 82%
+  );
 }
 
 .empty-state__content {
-  grid-area: content;
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
   min-width: 0;
+  max-width: min(36rem, 52%);
+  padding: clamp(18px, 2.4vw, 28px);
 }
 
 .empty-state__header {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 9px;
-}
-
-.empty-state__eyebrow {
-  display: inline-flex;
-  align-items: center;
   gap: 8px;
-  margin: 0;
-  color: #bceeff;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
 }
 
-.empty-state__orb {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--edge-blue);
-  box-shadow: 0 0 12px rgba(119, 229, 255, 0.85);
-}
-
-.empty-state__kicker {
-  margin: 0;
-  color: var(--text-faint);
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
 
 .empty-state__title {
   margin: 0;
-  max-width: 560px;
-  font-size: clamp(38px, 4.2vw, 56px);
-  font-weight: 700;
-  letter-spacing: -0.045em;
-  line-height: 1.02;
-  color: #f1f4ff;
+  max-width: 34rem;
+  font-size: clamp(28px, 3vw, 36px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  color: var(--rs-text, #f1f0f6);
 }
 
 .empty-state__tagline {
   margin: 0;
   font-size: 14px;
-  color: var(--text-secondary);
-  max-width: 550px;
-  line-height: 1.58;
+  color: var(--rs-muted, var(--text-secondary));
+  max-width: 40rem;
+  line-height: 1.5;
 }
 
 .empty-state__start {
   width: 100%;
-  margin-top: 25px;
+  margin-top: 10px;
 }
 
 .empty-state__section-label {
   margin: 0 0 8px;
-  color: var(--text-faint);
-  font-size: 9px;
-  font-weight: 750;
-  letter-spacing: 0.12em;
+  color: var(--rs-muted, var(--text-secondary));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .empty-state__actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-start;
 }
 
-.empty-state__actions .button {
-  border-radius: 9px;
-  color: #edf2ff;
+.empty-state__actions--start {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
-.empty-state__actions--primary .button {
-  min-width: 132px;
-}
-
-.empty-state__actions--secondary {
-  gap: 6px;
-  margin-top: 7px;
-}
-
-.empty-state__actions--secondary .button {
-  min-height: 32px;
-  padding-inline: 10px;
-  color: var(--text-secondary);
-  font-size: 11px;
+.empty-state__primary-action,
+.empty-state__secondary-action,
+.empty-state__ghost {
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .empty-state__primary-action {
-  box-shadow: 0 12px 34px rgba(112, 93, 250, 0.32), 0 0 24px rgba(119, 229, 255, 0.08);
+  border: 0;
+  background: var(--rs-lime, #c8f55a);
+  color: var(--rs-lime-ink, #10140a);
+}
+
+.empty-state__primary-action:hover {
+  filter: brightness(1.05);
+}
+
+.empty-state__secondary-action,
+.empty-state__ghost {
+  border: 1px solid var(--rs-line-strong, #2c2c3a);
+  background: var(--rs-raised, #15151e);
+  color: var(--rs-text, #f1f0f6);
+}
+
+.empty-state__secondary-action:hover:not(:disabled),
+.empty-state__ghost:hover {
+  border-color: var(--rs-lime, #c8f55a);
+}
+
+.empty-state__secondary-action:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.empty-state__ghost {
+  min-height: 36px;
+  font-weight: 500;
+  font-size: 13px;
 }
 
 .empty-state__hint {
-  max-width: 520px;
-  margin: 9px 0 0;
-  font-size: 10px;
-  color: var(--text-faint);
-  line-height: 1.45;
-}
-
-.empty-state__privacy {
-  margin: 16px 0 0;
-  padding-left: 12px;
-  border-left: 2px solid var(--success);
-  color: var(--text-secondary);
+  max-width: 42rem;
+  margin: 8px 0 0;
   font-size: 12px;
-  line-height: 1.6;
-  text-align: left;
+  color: var(--rs-muted, var(--text-secondary));
+  line-height: 1.45;
 }
 
 .empty-state__workspace {
@@ -1097,9 +1070,24 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  margin-top: 19px;
-  padding-top: 15px;
-  border-top: 1px solid rgba(158, 176, 255, 0.12);
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rs-line, #1f1f2b);
+}
+
+.empty-state__workspace > div:first-child {
+  min-width: 0;
+  flex: 1;
+}
+
+.empty-state__workspace-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 100%;
 }
 
 .empty-state__workspace .empty-state__section-label {
@@ -1108,72 +1096,68 @@ textarea {
 
 .empty-state__workspace-copy {
   margin: 0;
-  color: var(--text-faint);
-  font-size: 10px;
+  color: var(--rs-muted, var(--text-secondary));
+  font-size: 12px;
+  line-height: 1.45;
 }
 
-.empty-state__workflow {
-  grid-area: workflow;
-  display: grid;
-  grid-template-columns: minmax(150px, 0.72fr) repeat(3, 1fr);
-  width: 100%;
-  overflow: hidden;
-  border: 1px solid var(--border-glass);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.018);
+.empty-state__features {
+  grid-area: features;
+  min-width: 0;
+  padding: 12px clamp(18px, 2.4vw, 28px) 12px;
+  border-top: 1px solid var(--rs-line, #1f1f2b);
+  background: var(--rs-panel, #0e0e15);
 }
 
-.empty-state__workflow-heading {
+.empty-state__features-head {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
-  padding: 15px 16px;
-  color: var(--text-primary);
-  font-size: 11px;
-  font-weight: 650;
+  gap: 8px 20px;
 }
 
-.empty-state__workflow-heading span:last-child {
-  color: var(--text-faint);
-  font-family: var(--font-mono);
-  font-size: 8px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.empty-state__features-head p {
+  margin: 0;
+  flex: 1 1 280px;
+  color: var(--rs-muted, var(--text-secondary));
+  font-size: 12px;
+  line-height: 1.45;
 }
 
-.empty-state__step {
+.empty-state__features-head .empty-state__section-label {
+  margin-bottom: 0;
+}
+
+.empty-state__feature-list {
   display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: flex-start;
-  gap: 10px;
-  min-height: 88px;
-  padding: 15px 16px;
-  border-left: 1px solid var(--border-glass);
-  color: var(--text-secondary);
-  font-size: 10px;
-  line-height: 1.4;
-  text-align: left;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-.empty-state__step + .empty-state__step {
-  border-left: 1px solid var(--border-glass);
+.empty-state__feature-list li {
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--rs-line, #1f1f2b);
+  border-radius: 12px;
+  background: var(--rs-bg, #0b0b11);
 }
 
-.empty-state__step strong {
-  display: block;
-  margin-bottom: 4px;
-  color: var(--text-primary);
-  font-size: 11px;
+.empty-state__feature-list h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rs-text, #f1f0f6);
 }
 
-.empty-state__step-number {
-  color: var(--accent-strong);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+.empty-state__feature-list p {
+  margin: 0;
+  color: var(--rs-muted, var(--text-secondary));
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 /* ===========================================================================
@@ -1189,6 +1173,14 @@ textarea {
 
 .corpus-switcher--empty {
   align-self: center;
+}
+
+/* The welcome screen is styled separately and keeps its original faint tone:
+   the switcher there, and its menu (portaled to <body>, so outside any
+   workspace scope), pin the pre-cleanup token value. */
+.corpus-switcher--empty,
+.corpus-switcher__menu--floating {
+  --text-faint: #5b6288;
 }
 
 .corpus-switcher__trigger {
@@ -1211,8 +1203,10 @@ textarea {
 
 .corpus-switcher--empty .corpus-switcher__trigger {
   max-width: min(320px, 72vw);
-  border-color: var(--border-glass);
-  background: rgba(9, 12, 30, 0.38);
+  border-color: var(--rs-line-strong, var(--border-glass));
+  border-radius: 999px;
+  background: var(--rs-raised, rgba(9, 12, 30, 0.38));
+  color: var(--rs-text, var(--text-primary));
 }
 
 .corpus-switcher__trigger:hover,
@@ -1221,12 +1215,19 @@ textarea {
   background: var(--accent-soft);
 }
 
+.corpus-switcher--empty .corpus-switcher__trigger:hover,
+.corpus-switcher--empty .corpus-switcher__trigger[aria-expanded='true'] {
+  border-color: var(--rs-lime, #c8f55a);
+  background: var(--rs-raised, #15151e);
+  color: var(--rs-text, var(--text-primary));
+}
+
 .corpus-switcher__status {
   width: 7px;
   height: 7px;
   flex: none;
   border-radius: 50%;
-  background: var(--text-faint);
+  background: #5b6288;
   box-shadow: 0 0 0 3px rgba(145, 150, 190, 0.08);
 }
 
@@ -1445,6 +1446,70 @@ textarea {
   line-height: 1.45;
 }
 
+/* Top-bar corpus menu (the welcome-screen variant keeps its own styling):
+   14px heading, 13px body text, and every control 36px tall on the shared
+   button radius. */
+.corpus-switcher--toolbar .corpus-switcher__menu {
+  font-size: 13px;
+}
+.corpus-switcher--toolbar .corpus-switcher__header strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.corpus-switcher--toolbar .corpus-switcher__header > div > span,
+.corpus-switcher--toolbar .corpus-switcher__watch-label,
+.corpus-switcher--toolbar .corpus-switcher__unsupported {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.corpus-switcher--toolbar .corpus-switcher__corpus {
+  min-height: 36px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+}
+.corpus-switcher--toolbar .corpus-switcher__corpus small {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.corpus-switcher--toolbar .corpus-switcher__delete {
+  min-width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+}
+.corpus-switcher--toolbar .corpus-switcher__delete.is-confirming {
+  min-width: 72px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.corpus-switcher--toolbar .corpus-switcher__create {
+  gap: 8px;
+}
+.corpus-switcher--toolbar .corpus-switcher__create input {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+.corpus-switcher--toolbar .corpus-switcher__create button {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+}
+.corpus-switcher--toolbar .corpus-switcher__section {
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.corpus-switcher--toolbar .corpus-switcher__action {
+  min-height: 36px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+
 .toolbar {
   /* Top-center: the right edge belongs to the node side panel, and the
      other corners are taken (filter bar top-left, quality toast bottom-left,
@@ -1635,14 +1700,15 @@ textarea {
   border-color: var(--border-glass-strong);
   color: var(--accent-strong);
 }
+/* Disabled items dim to a colour that still reads instead of fading out. */
 .toolbar__menu-item:disabled {
-  opacity: 0.45;
+  color: var(--text-faint);
   cursor: default;
 }
 .toolbar__menu-item:disabled:hover {
   background: transparent;
   border-color: transparent;
-  color: var(--text-primary);
+  color: var(--text-faint);
 }
 .toolbar__menu-item.is-active {
   background: var(--accent-soft);
@@ -1796,10 +1862,10 @@ textarea {
 .side-panel__stats {
   flex-wrap: wrap;
   display: flex;
-  gap: 16px;
+  gap: 12px;
   margin-top: 10px;
-  font-size: 12px;
-  color: var(--text-faint);
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 .side-panel__section {
@@ -1821,8 +1887,9 @@ textarea {
 .side-panel__block:first-child {
   margin-top: 12px;
 }
+/* Section headings read as labels (13px, normal case), not tiny caps. */
 .side-panel__disclose {
-  min-height: 28px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1832,20 +1899,17 @@ textarea {
   padding: 0;
   margin: 0;
   font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
   cursor: pointer;
 }
 .side-panel__disclose:hover {
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 .side-panel__disclose-hint {
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
   color: var(--accent-strong);
 }
 .side-panel__disclose:hover .side-panel__disclose-hint {
@@ -1854,17 +1918,15 @@ textarea {
 
 .side-panel__section-label {
   margin: 0 0 8px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .side-panel__passage-banner {
   margin: 0 0 10px;
   padding: 8px 10px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
   color: var(--text-secondary);
   background: rgba(255, 214, 90, 0.1);
@@ -1884,7 +1946,7 @@ mark.passage-mark {
 
 .side-panel__summary {
   margin: 0;
-  font-size: 15.5px;
+  font-size: 14px;
   line-height: 1.6;
   color: var(--text-primary);
 }
@@ -1913,7 +1975,7 @@ mark.passage-mark {
   width: 100%;
   margin: 8px 0;
   padding: 8px 10px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-glass);
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-primary);
@@ -2018,22 +2080,21 @@ mark.passage-mark {
 .connection-row__kind {
   grid-column: 2;
   flex: none;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-faint);
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .connection-row__compare {
   grid-column: 3;
   grid-row: 1 / span 2;
-  padding: 5px 8px;
+  min-height: 28px;
+  padding: 0 10px;
   border: 1px solid var(--border-glass);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-secondary);
-  font-size: 11px;
-  letter-spacing: 0.02em;
+  font: inherit;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -2083,9 +2144,9 @@ mark.passage-mark {
 .connection-row__evidence {
   margin: 0;
   padding-left: 15px;
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.6;
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }
 .connection-row__evidence li {
   margin: 0;
@@ -2099,7 +2160,7 @@ mark.passage-mark {
   border: none;
   padding: 0;
   font: inherit;
-  font-size: 11.5px;
+  font-size: 13px;
   color: var(--accent-strong);
   cursor: pointer;
 }
@@ -2620,7 +2681,7 @@ mark.passage-mark {
 }
 .side-panel__remove-confirm-text {
   flex: 1 1 auto;
-  font-size: 11.5px;
+  font-size: 13px;
   line-height: 1.4;
   color: var(--text-secondary);
 }
@@ -2684,10 +2745,9 @@ mark.passage-mark {
 }
 .doc-ai__result-heading {
   margin: 0 0 6px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 .doc-ai__result-text {
   white-space: pre-wrap;
@@ -2697,8 +2757,8 @@ mark.passage-mark {
 }
 .doc-ai__disclosure {
   margin: 8px 0 0;
-  font-size: 11px;
-  color: var(--text-faint);
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 /* --- Streaming indicator --- */
@@ -2768,7 +2828,7 @@ mark.passage-mark {
   padding: 14px 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   animation: kn-slide-in-down 280ms var(--ease-out) both;
 }
 
@@ -2779,34 +2839,40 @@ mark.passage-mark {
   gap: 10px;
 }
 
+/* The heading reads as a heading; the summary is the caption under it and the
+   jump buttons carry the counts as actions, so the repeated numbers read as
+   "here is where to go" rather than the same line twice. */
 .insights-digest__eyebrow {
   margin: 0;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .insights-digest__summary {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 13px;
   line-height: 1.45;
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
 .insights-digest__jumps {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .insights-digest__jump {
-  padding: 4px 10px;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-glass);
   background: rgba(140, 150, 255, 0.06);
-  color: var(--text-secondary);
-  font-size: 11px;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
   cursor: pointer;
   pointer-events: auto;
   transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease;
@@ -2814,7 +2880,7 @@ mark.passage-mark {
 
 .insights-digest__jump:hover {
   border-color: var(--border-glass-strong);
-  color: var(--text-primary);
+  background: rgba(140, 150, 255, 0.12);
 }
 
 .insights-digest__jump--primary {
@@ -2834,13 +2900,16 @@ mark.passage-mark {
   padding: 0 8px 4px;
 }
 
+/* Row actions ("Show both", "Compare", "Tag both duplicate") are 28px
+   outline buttons on the shared radius, in legible 12px secondary text. */
 .insights__action {
-  padding: 2px 8px;
-  border-radius: 999px;
+  min-height: 28px;
+  padding: 2px 10px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-glass);
   background: transparent;
-  color: var(--text-faint);
-  font-size: 11px;
+  color: var(--text-secondary);
+  font-size: 12px;
   line-height: 1.4;
   cursor: pointer;
   text-align: left;
@@ -2850,17 +2919,19 @@ mark.passage-mark {
 
 .insights__action:hover:not(:disabled) {
   border-color: var(--border-glass-strong);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   background: rgba(140, 150, 255, 0.06);
 }
 
 .insights__action:disabled {
   cursor: default;
-  opacity: 0.7;
+  color: var(--text-faint);
 }
 
+/* The drawer is an opaque surface: the glass tint let the sidebar's filter
+   chips show through behind the section text on phones. */
 .insights {
-  /* clears the filter bar pinned at top: 18px */ background: rgba(9, 14, 30, 0.75);
+  background: rgb(10, 15, 31);
   pointer-events: auto;
   width: min(360px, 88vw);
   margin: 76px 0 24px 18px;
@@ -2868,22 +2939,39 @@ mark.passage-mark {
   flex-direction: column;
   animation: kn-slide-in-down 280ms var(--ease-out) both;
   overflow: hidden;
+  font-size: 13px;
 }
 
-.insights__header {
+/* Title and close button share one 18px/600 header row, like every modal.
+   (Scoped under .insights so the phone-width .side-panel__header rule, which
+   reserves 132px for the old toolbar, cannot push the title down.) */
+.insights .insights__header {
   flex: none;
-  padding: 16px 18px 12px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px 14px;
   border-bottom: 1px solid var(--border-glass);
+  background: transparent;
 }
-
+.insights__header .side-panel__title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
 .insights__scroll {
   flex: 1 1 auto;
   overflow-y: auto;
-  padding: 0 18px 20px;
+  padding: 0 20px 20px;
+}
+.insights .hairline {
+  margin: 16px 0;
+  border-top-color: var(--border-glass);
 }
 
 .insights__section {
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 .insights__section-head {
@@ -2891,18 +2979,21 @@ mark.passage-mark {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  min-height: 28px;
 }
 .insights__section-head .side-panel__section-label {
   margin: 0;
 }
 
 .insights__highlight-btn {
-  padding: 3px 12px;
-  border-radius: 999px;
+  min-height: 28px;
+  padding: 2px 12px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-glass);
   background: rgba(140, 150, 255, 0.06);
   color: var(--text-secondary);
-  font-size: 11px;
+  font: inherit;
+  font-size: 12px;
   cursor: pointer;
   pointer-events: auto;
   transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease;
@@ -2919,19 +3010,21 @@ mark.passage-mark {
 
 .insights__hint {
   margin: 8px 0;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }
 
 .insights__row {
   display: block;
   width: 100%;
+  min-height: 32px;
   padding: 6px 8px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-primary);
+  font: inherit;
   font-size: 13px;
   text-align: left;
   cursor: pointer;
@@ -2947,7 +3040,7 @@ mark.passage-mark {
 
 .insights__pair {
   padding: 6px 0;
-  border-bottom: 1px solid rgba(140, 150, 255, 0.08);
+  border-bottom: 1px solid var(--border-glass);
 }
 .insights__pair:last-child {
   border-bottom: none;
@@ -2956,7 +3049,7 @@ mark.passage-mark {
 .insights__pair-sim {
   display: block;
   padding: 0 8px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--warning);
 }
 
@@ -2964,16 +3057,18 @@ mark.passage-mark {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 5px 8px;
-  font-size: 12.5px;
+  padding: 6px 8px;
+  font-size: 13px;
   min-width: 0;
 }
 
+/* The kind is a genuine badge, so it keeps its caps but at a legible size. */
 .ingest-report__kind {
   flex: none;
   padding: 1px 7px;
   border-radius: 999px;
-  font-size: 10.5px;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   border: 1px solid transparent;
@@ -3008,8 +3103,8 @@ mark.passage-mark {
 .ingest-report__reason {
   flex: 1 1 auto;
   min-width: 0;
-  color: var(--text-faint);
-  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3034,8 +3129,8 @@ mark.passage-mark {
 .insights__cluster-meta {
   display: block;
   padding: 0 8px 0 14px;
-  font-size: 11px;
-  color: var(--text-faint);
+  font-size: 12px;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -3176,6 +3271,7 @@ mark.passage-mark {
   gap: 8px;
 }
 
+/* Minimize and Cancel are one control size: 32px tall on the shared radius. */
 .progress-strip__minimize {
   display: inline-flex;
   align-items: center;
@@ -3183,13 +3279,13 @@ mark.passage-mark {
   gap: 6px;
   flex: none;
   min-height: 32px;
-  padding: 5px 9px;
+  padding: 0 10px;
   border: 1px solid var(--border-glass-strong);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   background: rgba(140, 150, 255, 0.06);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 18px;
   white-space: nowrap;
   cursor: pointer;
@@ -3262,9 +3358,11 @@ mark.passage-mark {
   flex: none;
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 12px;
   background: rgba(255, 128, 128, 0.08);
   border: 1px solid rgba(255, 128, 128, 0.28);
   color: var(--danger);
@@ -3281,7 +3379,7 @@ mark.passage-mark {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
   min-width: 0;
@@ -3311,8 +3409,8 @@ mark.passage-mark {
 
 .progress-strip__count {
   flex: none;
-  font-size: 11.5px;
-  color: var(--text-faint);
+  font-size: 12px;
+  color: var(--text-secondary);
   min-width: 0;
   grid-column: 2;
   grid-row: 1;
@@ -3323,7 +3421,7 @@ mark.passage-mark {
 .progress-strip__more-files {
   align-self: center;
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -3351,13 +3449,14 @@ mark.passage-mark {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 9px;
+  min-height: 28px;
+  padding: 3px 10px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   background: rgba(140, 150, 255, 0.06);
   border: 1px solid var(--border-glass);
   color: var(--text-secondary);
-  max-width: 168px;
+  max-width: 100%;
 }
 .file-chip__name {
   overflow: hidden;
@@ -3391,7 +3490,8 @@ mark.passage-mark {
 }
 
 .model-progress__label {
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--text-secondary);
   overflow-wrap: anywhere;
 }
@@ -3426,9 +3526,11 @@ mark.passage-mark {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 12px;
   background: rgba(255, 207, 107, 0.08);
   border: 1px solid rgba(255, 207, 107, 0.28);
   color: var(--warning);
@@ -3451,7 +3553,7 @@ mark.passage-mark {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
 }
 .ignored-tray__row-reason {
@@ -3489,7 +3591,9 @@ mark.passage-mark {
   max-height: min(45dvh, calc(100dvh - 288px));
 }
 
-.toast {
+/* app- prefix: HeroUI (imported above) styles its own .toast, .toast--warning and
+   .toast__action, and from 3.2.6 collapses any .toast it does not manage to 0px. */
+.app-toast {
   /* Keep the scrollable notification stack and its controls interactive. */
   pointer-events: none;
   position: relative;
@@ -3500,51 +3604,53 @@ mark.passage-mark {
   align-items: flex-start;
   gap: 10px;
   padding: 12px 12px 12px 14px;
-  border-left: 3px solid var(--text-faint);
+  border-left: 3px solid #5b6288;
   animation: kn-slide-in-up 220ms var(--ease-out) both;
 }
 
-.toast--error {
+.app-toast--error {
   border-left-color: var(--danger);
 }
-.toast--warning {
+.app-toast--warning {
   border-left-color: var(--warning);
 }
-.toast--info {
+.app-toast--info {
   border-left-color: var(--accent);
 }
 
-.toast__text {
+.app-toast__text {
   min-width: 0;
   overflow-wrap: anywhere;
   flex: 1 1 auto;
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.45;
   color: var(--text-primary);
 }
 
-.toast__action {
+.app-toast__action {
   pointer-events: auto;
   flex: none;
   align-self: center;
-  padding: 5px 12px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
   font-size: 12px;
   white-space: nowrap;
 }
 
-.toast .icon-btn-close {
+.app-toast .icon-btn-close {
   flex: none;
   pointer-events: auto;
 }
 
 @media (max-width: 480px) {
-  .toast {
+  .app-toast {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
   }
-  .toast__text { grid-column: 1; grid-row: 1; }
-  .toast .icon-btn-close { grid-column: 2; grid-row: 1; }
-  .toast__action { grid-column: 1 / -1; justify-self: start; }
+  .app-toast__text { grid-column: 1; grid-row: 1; }
+  .app-toast .icon-btn-close { grid-column: 2; grid-row: 1; }
+  .app-toast__action { grid-column: 1 / -1; justify-self: start; }
 }
 
 /* ==========================================================================
@@ -3578,12 +3684,17 @@ mark.passage-mark {
   animation: kn-fade-in 140ms ease both;
 }
 
+/* Help modal: an opaque surface (page content bled through the glass), one
+   18px/600 header row shared with Settings and Snapshots, 13px body text and
+   13px/600 normal-case section headings. */
 .help-popover {
   width: min(560px, calc(100vw - 24px));
   max-height: min(720px, calc(100vh - 24px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: rgb(10, 15, 31);
+  font-size: 13px;
   animation: kn-pop-in 200ms var(--ease-spring) both;
 }
 
@@ -3592,28 +3703,19 @@ mark.passage-mark {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 18px 20px 14px;
+  padding: 16px 20px 14px;
   border-bottom: 1px solid var(--border-glass);
 }
-
-.help-popover__eyebrow,
 .help-popover__title,
 .help-popover__section h3,
 .help-popover__hint {
   margin: 0;
 }
 
-.help-popover__eyebrow {
-  color: var(--accent-strong);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .help-popover__title {
-  margin-top: 3px;
   font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
 }
 
 .help-popover__scroll {
@@ -3622,7 +3724,7 @@ mark.passage-mark {
 }
 
 .help-popover__section {
-  margin-top: 18px;
+  margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--border-glass);
 }
@@ -3630,9 +3732,8 @@ mark.passage-mark {
 .help-popover__section h3 {
   margin-bottom: 10px;
   color: var(--text-primary);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .help-popover__legend-grid {
@@ -3641,7 +3742,8 @@ mark.passage-mark {
   align-items: center;
   gap: 10px 12px;
   color: var(--text-secondary);
-  font-size: 12.5px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .help-node-shape {
@@ -3666,8 +3768,9 @@ mark.passage-mark {
   display: flex;
   align-items: center;
   gap: 9px;
+  min-height: 24px;
   color: var(--text-secondary);
-  font-size: 12.5px;
+  font-size: 13px;
   text-transform: capitalize;
 }
 
@@ -3680,9 +3783,12 @@ mark.passage-mark {
 
 .help-popover__hint {
   margin-top: 12px;
-  color: var(--text-faint);
-  font-size: 11.5px;
-  line-height: 1.5;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.help-popover__scroll > .help-popover__hint:first-child {
+  margin-top: 0;
 }
 
 .help-popover__shortcuts,
@@ -3706,65 +3812,99 @@ mark.passage-mark {
 
 .help-popover__shortcuts dd {
   color: var(--text-secondary);
-  font-size: 12.5px;
+  font-size: 13px;
 }
 
+/* Settings and Snapshots: opaque surface, 13px body text, section headings
+   14px/600 in normal case, helper copy 13px secondary, and every control on
+   the shared 10px radius (inputs 40px, inline buttons 36px). */
 .settings-panel,
 .snapshot-drawer {
-  background: var(--bg-glass-strong);
+  background: rgb(10, 15, 31);
   width: min(460px, 92vw);
   max-height: 82vh;
   overflow-y: auto;
   padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
+  font-size: 13px;
+  line-height: 1.5;
   animation: kn-pop-in 200ms var(--ease-spring) both;
 }
 
+/* The header spans the panel edge to edge so its rule lines up with the
+   panel border rather than sitting inset from the content. */
 .settings-panel__header {
   border-bottom: 1px solid var(--border-glass);
   position: sticky;
   top: -20px;
   z-index: 1;
-  margin-top: -20px;
-  padding: 20px 0 12px;
-  background: var(--bg-glass-strong);
+  margin: -20px -22px 0;
+  padding: 20px 22px 14px;
+  background: inherit;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
-
 .settings-panel__title {
   margin: 0;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
-  letter-spacing: 0.3px;
+  letter-spacing: -0.2px;
 }
 
 .settings-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .settings-section__heading {
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
+}
+summary.settings-section__heading {
+  cursor: pointer;
+  user-select: none;
+}
+details.settings-section > summary {
+  margin-bottom: 2px;
 }
 
-.settings-field {
+.settings-field,
+.settings-label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   font-size: 13px;
+  font-weight: 600;
+}
+.settings-label {
+  margin-bottom: -6px;
+}
+
+.settings-hint,
+.settings-help,
+.music-analysis-mode > p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.settings-section .music-analysis-mode {
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .settings-input,
+.settings-select,
 .settings-panel select,
 .settings-panel input[type='text'],
 .settings-panel input[type='password'],
@@ -3772,39 +3912,62 @@ mark.passage-mark {
   min-height: 40px;
   width: 100%;
   box-sizing: border-box;
-  padding: 7px 9px;
-  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-glass);
   background: rgba(255, 255, 255, 0.06);
   color: inherit;
   font: inherit;
   font-size: 13px;
+  font-weight: 400;
+}
+.settings-panel select:disabled,
+.settings-panel input:disabled {
+  color: var(--text-faint);
+  cursor: default;
 }
 
 .settings-check {
   line-height: 1.5;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 13px;
   cursor: pointer;
+}
+.settings-check input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.settings-check:has(input:disabled) {
+  color: var(--text-faint);
+  cursor: default;
 }
 
 .settings-btn {
   min-height: 36px;
   align-self: flex-start;
-  padding: 7px 14px;
-  border-radius: 8px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-glass-strong);
   background: var(--accent-soft);
   color: inherit;
   font: inherit;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.settings-btn:hover {
+.settings-btn:hover:not(:disabled) {
   border-color: var(--accent);
+}
+.settings-btn:disabled {
+  color: var(--text-faint);
+  border-color: var(--border-glass);
+  cursor: default;
 }
 
 .settings-btn--danger {
@@ -3813,27 +3976,21 @@ mark.passage-mark {
   color: #ff9a9a;
 }
 
-.settings-help {
-  line-height: 1.55;
-  font-size: 11.5px;
-  color: var(--text-faint);
-  margin: 0;
-}
-
 .settings-note {
-  font-size: 12.5px;
+  font-size: 13px;
+  line-height: 1.5;
   margin: 0;
 }
 
 .settings-details {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 5px 10px;
-  font-size: 12.5px;
+  gap: 6px 12px;
+  font-size: 13px;
 }
 
 .settings-details dt {
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }
 
 .settings-details dd,
@@ -3844,17 +4001,20 @@ mark.passage-mark {
 }
 
 .settings-details__label {
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }
 
 .settings-confirm {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-self: flex-start;
 }
 
+/* The results surface is opaque: the glass tint let the graph, digest card
+   and filter chips show through behind "No matches" on phones. */
 .search-overlay {
-  background: var(--bg-glass-strong);
+  background: rgb(10, 15, 31);
   width: min(560px, 92vw);
   max-height: 60vh;
   display: flex;
@@ -3928,7 +4088,7 @@ mark.passage-mark {
   min-width: 0;
   font-weight: 550;
   flex: 1 1 auto;
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3937,15 +4097,15 @@ mark.passage-mark {
 
 .search-result-row__similar {
   flex: none;
-  font-size: 10px;
+  min-height: 28px;
+  font: inherit;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  font-family: var(--font-ui);
   color: var(--text-secondary);
   background: none;
   border: 1px solid var(--border-glass);
-  border-radius: 999px;
-  padding: 2px 8px;
+  border-radius: var(--radius-md);
+  padding: 0 10px;
   cursor: pointer;
 }
 .search-result-row__similar:hover {
@@ -3955,7 +4115,7 @@ mark.passage-mark {
 
 .match-kind-badge {
   flex: none;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -3998,8 +4158,8 @@ mark.passage-mark {
   -webkit-box-orient: vertical;
   overflow-wrap: anywhere;
   margin: 0;
-  font-size: 11.5px;
-  color: var(--text-faint);
+  font-size: 12.5px;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4009,7 +4169,7 @@ mark.passage-mark {
   padding: 28px 20px;
   text-align: center;
   font-size: 13px;
-  color: var(--text-faint);
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
@@ -4019,16 +4179,18 @@ mark.passage-mark {
   border-top: 1px solid rgba(140, 150, 255, 0.12);
 }
 
+/* The one full-width action shares the 44px secondary-button size. */
 .search-overlay__show-all {
   width: 100%;
-  height: 34px;
+  height: 44px;
   border: 1px solid rgba(126, 232, 196, 0.38);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   background: rgba(126, 232, 196, 0.14);
   cursor: pointer;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .search-overlay__show-all:hover {
@@ -4108,15 +4270,11 @@ mark.passage-mark {
 }
 
 .filter-bar__group-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
   margin-right: 2px;
   cursor: help;
-  text-decoration: underline dotted rgba(255, 255, 255, 0.2);
-  text-underline-offset: 3px;
 }
 
 .filter-bar__degree {
@@ -4131,7 +4289,7 @@ mark.passage-mark {
 }
 
 .filter-bar__degree-value {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
   min-width: 16px;
   text-align: center;
@@ -4142,9 +4300,10 @@ mark.passage-mark {
   min-height: 32px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-glass);
-  border-radius: 999px;
-  padding: 3px 12px;
-  font-size: 11px;
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  font: inherit;
+  font-size: 12px;
   color: var(--text-secondary);
   cursor: pointer;
   pointer-events: auto;
@@ -4153,9 +4312,10 @@ mark.passage-mark {
   min-height: 32px;
   background: rgba(255, 255, 255, 0.015);
   border: 1px dashed var(--border-glass);
-  border-radius: 999px;
-  padding: 3px 12px;
-  font-size: 11px;
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  font: inherit;
+  font-size: 12px;
   color: var(--text-secondary);
   cursor: pointer;
   pointer-events: auto;
@@ -4171,11 +4331,14 @@ mark.passage-mark {
 }
 
 .settings-advanced {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 12px;
+  border-top: 1px solid var(--border-glass);
+  padding-top: 16px;
 }
 .settings-advanced summary {
   user-select: none;
+}
+.settings-advanced > .settings-section > .settings-section__heading {
+  margin-top: 4px;
 }
 
 /* ==========================================================================
@@ -4262,93 +4425,64 @@ mark.passage-mark {
     padding: 10px;
   }
   .empty-state__title {
-    font-size: 32px;
+    font-size: 28px;
   }
   .empty-state__card {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      'visual'
-      'content';
     width: 100%;
     max-height: calc(100vh - 20px);
-    overflow: auto;
-    row-gap: 20px;
-    padding: 24px 20px;
   }
-  .empty-state__visual {
-    min-height: 0;
-    padding-right: 0;
-    padding-bottom: 18px;
-    border-right: 0;
-    border-bottom: 1px solid rgba(158, 176, 255, 0.14);
+  /* A short band keeps the network in frame; copy sits on the solid field below it. */
+  .empty-state__art {
+    position: relative;
+    display: block;
+    height: 168px;
+    overflow: hidden;
   }
-  .empty-state__visual-label,
-  .empty-state__visual-copy { display: none; }
-  .empty-state__hero {
-    width: min(100%, 220px);
-    margin-block: 0;
+  .empty-state__art img {
+    width: 170%;
+    max-width: none;
+    left: auto;
+    right: 0;
+    object-position: right center;
   }
-  .empty-state__trust-list {
-    grid-template-columns: repeat(3, auto);
-    justify-content: center;
-    gap: 12px;
-    margin-top: 2px;
-    padding-top: 12px;
+  .empty-state__hero-scrim {
+    bottom: auto;
+    height: 168px;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      transparent 48%,
+      var(--rs-bg, #0b0b11) 100%
+    );
   }
-  .empty-state__trust-list li {
-    gap: 5px;
-    font-size: 8px;
+  .empty-state__content {
+    max-width: none;
+    padding: 2px 16px 16px;
   }
-  .empty-state__content,
-  .empty-state__header { align-items: center; text-align: center; }
-  .empty-state__start { margin-top: 20px; }
-  .empty-state__actions { justify-content: center; }
-  .empty-state__actions .button { min-height: 42px; }
-  .empty-state__actions--secondary .button { min-height: 34px; }
+  .empty-state__features {
+    padding: 14px 16px 18px;
+  }
+  .empty-state__start { margin-top: 14px; }
   .empty-state__workspace {
     flex-direction: column;
+    align-items: stretch;
     gap: 10px;
-    text-align: center;
   }
-  .empty-state__workflow {
-    grid-template-columns: 1fr;
+  .empty-state__workspace-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
-  .empty-state__workflow-heading {
-    flex-direction: row;
-    padding: 12px 14px;
-  }
-  .empty-state__step {
-    grid-template-columns: 28px 1fr;
-    min-height: 0;
-    padding: 12px 14px;
-    border-top: 1px solid var(--border-glass);
-    border-left: none;
-  }
-  .empty-state__step + .empty-state__step {
-    border-top: 1px solid var(--border-glass);
-    border-left: none;
-  }
-  .empty-state__hero,
-  .empty-state__constellation {
-    width: 190px;
-    margin-block: 0;
+  .empty-state__feature-list {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
 @media (max-width: 420px) {
-  .empty-state__trust-list {
+  .empty-state__actions--start {
     grid-template-columns: 1fr;
-    justify-items: start;
-    width: max-content;
-    margin-inline: auto;
   }
-  .empty-state__actions--primary {
-    display: grid;
+  .empty-state__feature-list {
     grid-template-columns: 1fr;
-    width: 100%;
-  }
-  .empty-state__actions--primary .button {
-    width: 100%;
   }
   .empty-state__workspace .corpus-switcher,
   .empty-state__workspace .corpus-switcher__trigger {
@@ -4356,7 +4490,7 @@ mark.passage-mark {
     max-width: none;
   }
   .empty-state__workspace .corpus-switcher__trigger {
-    justify-content: center;
+    justify-content: space-between;
   }
 }
 
@@ -4471,6 +4605,7 @@ mark.passage-mark {
   .filter-bar__clear,
   .filter-bar__more,
   .ignored-tray__toggle,
+  .progress-strip__minimize,
   .progress-strip__cancel { min-height: 40px; }
   .chat-bubble-btn { width: 58px; height: 58px; }
 }
@@ -4493,17 +4628,21 @@ mark.passage-mark {
 .snapshot-save-row .save-prompt__input {
   flex: 1 1 auto;
   width: auto;
+  min-width: 0;
 }
 
+/* Save row: a 36px input and button on the shared radius (the drawer's
+   compact-control size). */
 .save-prompt__input {
   width: 220px;
-  padding: 5px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
   background: rgba(255, 255, 255, 0.06);
   color: inherit;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   outline: none;
 }
 .save-prompt__input:focus {
@@ -4512,13 +4651,15 @@ mark.passage-mark {
 }
 
 .save-prompt__btn {
-  padding: 5px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(120, 140, 255, 0.3);
-  background: rgba(120, 140, 255, 0.18);
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass-strong);
+  background: var(--accent-soft);
   color: inherit;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
 }
@@ -4527,7 +4668,8 @@ mark.passage-mark {
   border-color: rgba(120, 140, 255, 0.5);
 }
 .save-prompt__btn:disabled {
-  opacity: 0.55;
+  color: var(--text-faint);
+  border-color: var(--border-glass);
   cursor: default;
 }
 
@@ -4558,20 +4700,19 @@ mark.passage-mark {
   text-align: center;
 }
 
+/* Empty state keeps full-opacity text so it clears 4.5:1. */
 .snapshot-empty__text {
   color: var(--text-primary);
   margin: 0;
   font-size: 14px;
-  font-weight: 500;
-  opacity: 0.7;
+  font-weight: 600;
 }
 
 .snapshot-empty__hint {
   color: var(--text-secondary);
-  line-height: 1.55;
+  line-height: 1.5;
   margin: 0;
-  font-size: 12px;
-  opacity: 0.5;
+  font-size: 13px;
   max-width: 280px;
 }
 
@@ -4581,7 +4722,7 @@ mark.passage-mark {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .snapshot-item {
@@ -4590,8 +4731,8 @@ mark.passage-mark {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(140, 150, 255, 0.1);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
   background: rgba(140, 150, 255, 0.04);
   transition:
     background-color 140ms var(--ease-out),
@@ -4618,13 +4759,13 @@ mark.passage-mark {
   gap: 10px 16px;
   padding: 10px 14px;
   max-width: min(720px, 92vw);
-  font-size: 12px;
+  font-size: 13px;
 }
 .snapshot-diff-banner__legend {
   display: flex;
   align-items: center;
   gap: 8px;
-  opacity: 0.85;
+  color: var(--text-secondary);
 }
 .snapshot-diff-banner__swatch {
   width: 10px;
@@ -4635,16 +4776,18 @@ mark.passage-mark {
 .snapshot-diff-banner__swatch--added { background: #59f28c; }
 .snapshot-diff-banner__swatch--updated { background: #ffc747; }
 .snapshot-diff-banner__summary { margin: 0; font-weight: 500; }
-.snapshot-diff-banner__removed { margin: 0; opacity: 0.7; }
+.snapshot-diff-banner__removed { margin: 0; color: var(--text-secondary); }
 .snapshot-diff-banner__clear {
   margin-left: auto;
+  min-height: 32px;
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid var(--border-glass-strong);
   color: inherit;
-  border-radius: 6px;
-  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  padding: 0 12px;
   cursor: pointer;
   font: inherit;
+  font-size: 13px;
 }
 .snapshot-item__info {
   display: flex;
@@ -4662,9 +4805,9 @@ mark.passage-mark {
 }
 
 .snapshot-item__meta {
-  color: var(--text-faint);
-  font-size: 11px;
-  opacity: 0.55;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .snapshot-item__actions {
@@ -4674,45 +4817,125 @@ mark.passage-mark {
   flex: none;
 }
 
+/* Row actions are 32px compact buttons; the Load/primary one carries the
+   accent tint. Dialog footers reuse these at 44px (see .confirm-dialog). */
 .snapshot-btn {
-  padding: 4px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass-strong);
   background: rgba(255, 255, 255, 0.06);
   color: inherit;
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
 }
 .snapshot-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.24);
+  border-color: var(--accent);
 }
 .snapshot-btn:disabled {
-  opacity: 0.55;
+  color: var(--text-faint);
+  border-color: var(--border-glass);
   cursor: default;
 }
 
 .snapshot-btn--load {
-  border-color: rgba(120, 140, 255, 0.3);
-  background: rgba(120, 140, 255, 0.15);
+  background: var(--accent-soft);
+  font-weight: 600;
 }
 .snapshot-btn--load:hover:not(:disabled) {
   background: rgba(120, 140, 255, 0.28);
-  border-color: rgba(120, 140, 255, 0.5);
+  border-color: var(--accent);
 }
 
 .snapshot-btn--delete {
-  padding: 4px 8px;
-  font-size: 13px;
-  opacity: 0.6;
+  min-width: 32px;
+  padding: 0 8px;
+  color: var(--text-secondary);
 }
 .snapshot-btn--delete:hover:not(:disabled) {
-  opacity: 1;
   color: #ff6b6b;
   border-color: rgba(255, 107, 107, 0.3);
   background: rgba(255, 107, 107, 0.1);
+}
+
+/* Confirm dialogs (Replace graph?, Share?, Rekordbox export): the same
+   opaque surface and header metrics as the other modals, 13px body copy in
+   secondary text, and a right-aligned 44px action row. */
+.confirm-dialog {
+  width: min(420px, 92vw);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: rgb(10, 15, 31);
+  font-size: 13px;
+  line-height: 1.5;
+  animation: kn-pop-in 200ms var(--ease-spring) both;
+}
+.confirm-dialog--wide {
+  width: min(480px, 92vw);
+}
+.confirm-dialog__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+.confirm-dialog__text {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.confirm-dialog__text strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.confirm-dialog__text--error {
+  color: var(--danger);
+}
+.confirm-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.confirm-dialog__field input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+}
+.confirm-dialog__field input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+.confirm-dialog__field-error {
+  display: block;
+  color: var(--danger);
+  font-weight: 400;
+}
+.confirm-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.confirm-dialog__actions .snapshot-btn {
+  min-height: 44px;
+  padding: 0 16px;
 }
 
 /* ==========================================================================
@@ -5800,20 +6023,6 @@ input {
   font-size: 11.5px;
   line-height: 1.45;
 }
-.empty-state__hero-canvas { width: 100%; height: 100%; }
-.empty-state__hero .empty-state__constellation { width: 100%; height: 100%; }
-.empty-state__orbit {
-  stroke: rgba(146, 132, 255, 0.28);
-  stroke-width: 1;
-}
-.empty-state__orbit--outer { stroke-dasharray: 3 7; }
-.empty-state__link {
-  stroke: rgba(119, 229, 255, 0.34);
-  stroke-width: 1.25;
-}
-.empty-state__node { fill: #b5a9ff; filter: drop-shadow(0 0 7px rgba(142, 125, 255, 0.65)); }
-.empty-state__node--core { fill: #e8e3ff; filter: drop-shadow(0 0 18px rgba(142, 125, 255, 0.9)); }
-.empty-state__node--cyan { fill: #8deaff; filter: drop-shadow(0 0 9px rgba(119, 229, 255, 0.85)); }
 .search-result-row:hover {
   transform: translateY(-1px);
   box-shadow: 0 3px 14px rgba(0, 0, 0, 0.35);
@@ -5909,7 +6118,7 @@ input {
 /* Short phone windows cannot fit two help surfaces at once. Let notices be
    dismissed first, then reveal the tour in its existing position. */
 @media (max-width: 640px) and (max-height: 640px) {
-  .app-root:has(.toast) .first-run-guide { visibility: hidden; }
+  .app-root:has(.app-toast) .first-run-guide { visibility: hidden; }
 }
 /* Untested model guesses: visible near the top, but visibly weaker than tested Sounds tags. */
 .sound-guesses { margin: 12px 0 0; }

@@ -19,7 +19,7 @@ today's rule (raw CLAP, 3 closest, 0.7) does on the same libraries, both for one
 benchmark clips are) and for whole-track means (as longer files are). Writes <out>/sound-projection.json (int8 weights,
 the layout src/audio/soundProjection.ts reads) and <out>/report.json.
 """
-import argparse, base64, glob, json, math, os, time
+import argparse, base64, glob, json, math, os, sys, time
 import numpy as np
 import torch
 
@@ -133,14 +133,18 @@ def val_loss():
             if len(idx) > 1: losses.append(float(objective(torch.from_numpy(mean_vec[idx]), idx)))
     return float(np.mean(losses))
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'audio-model'))
+import charts  # noqa: E402  live training chart; off without a Hugging Face token
+charts.start('sound-alike', vars(args), auto=True)
 t0 = time.time(); best, best_state, history = 1e9, None, []
 for epoch in range(args.epochs):
-    model.train(); order = rng.permutation(tr); total = 0
+    t_epoch = time.time(); model.train(); order = rng.permutation(tr); total = 0
     for b in range(0, len(order), args.batch):
         idx = order[b:b + args.batch]
         loss = objective(augmented(idx), idx)
         opt.zero_grad(); loss.backward(); opt.step(); sched.step(); total += float(loss.detach()) * len(idx)
     model.eval(); vl = val_loss(); history.append({'epoch': epoch + 1, 'train': total / len(tr), 'validation': vl})
+    charts.log({'epoch': epoch + 1, 'epoch loss': total / len(tr), 'validation loss': vl, 'minutes per epoch': (time.time() - t_epoch) / 60}, step=epoch + 1)
     if vl < best: best, best_state = vl, {k: v.clone() for k, v in model.state_dict().items()}
     if epoch % 5 == 4 or epoch == args.epochs - 1: print(f'epoch {epoch + 1}: train {total / len(tr):.4f}, validation {vl:.4f} ({time.time() - t0:.0f}s)', flush=True)
 model.load_state_dict(best_state); model.eval()
@@ -219,3 +223,4 @@ json.dump(projection, open(os.path.join(args.out, 'sound-projection.json'), 'w')
 json.dump({'args': vars(args), 'tracks': {'train': len(tr), 'validation': len(va)}, 'inputDim': D, 'history': history,
            'current': current, 'bestRaw': raw_best, 'chosen': chosen, 'grid': rows, 'meanGrid': mean_rows}, open(os.path.join(args.out, 'report.json'), 'w'), indent=1)
 print(f'wrote {args.out}/sound-projection.json ({os.path.getsize(os.path.join(args.out, "sound-projection.json")) / 1024:.0f} KB)')
+charts.finish()

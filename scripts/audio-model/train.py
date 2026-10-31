@@ -1,7 +1,7 @@
 """Fine-tune an AudioSet-pretrained EfficientAT MobileNet as DGE's own instrument tagger.
 
 Usage: python3 scripts/audio-model/train.py <run-dir> --openmic <prep-dir> [--jamendo <prep-dir>] [--soundcloud <prep-dir>]
-       [--model mn10_as] [--epochs 8] [--lr 1e-4] [--weak 0.2] [--resume]
+       [--model mn10_as] [--epochs 8] [--lr 1e-4] [--weak 0.2] [--rare-repeat 1] [--resume] [--absent-fix <json>]
 
 Inputs are the log-mel windows written by prepare.py (OpenMIC-2018 train, benchmark artists removed) and
 prepare-jamendo.py (MTG-Jamendo split-0 train/validation, round 3 held-out artists removed) and prepare-soundcloud.py
@@ -37,10 +37,15 @@ JAMENDO_TAGS = ['accordion', 'acousticbassguitar', 'acousticguitar', 'bass', 'be
                 'synthesizer', 'trombone', 'trumpet', 'viola', 'violin', 'voice']
 OPENMIC = list(CLASSES)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from labelmap import CAT, FREESOUND, FSLD_ROLES  # noqa: E402
+from labelmap import CAT, FREESOUND, FSLD_ROLES, SAME  # noqa: E402
+import fsd50k_extra  # noqa: E402
+import absent_fix  # noqa: E402
+import charts  # noqa: E402
 # Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth, the effect renders and Freesound, plus the music
 # sources' labels below wherever one names the same sound.
 CLASSES = OPENMIC + [f'jamendo:{t}' for t in JAMENDO_TAGS] + [f'cat:{l}' for l in CAT] + [f'fsld:{r}' for r in FSLD_ROLES]
+from labels_extra import EXTRA_CAT, RUN9_TAGS  # noqa: E402  (run 7: outputs only the uncached sources label)
+CLASSES += [f'cat:{l}' for l in EXTRA_CAT if l not in CAT]
 ALIAS = {'voice': 'voice', 'piano': 'piano', 'organ': 'organ', 'trumpet': 'trumpet', 'drums': 'drums', 'guitar': 'guitar', 'synthesizer': 'synthesizer',
          'mallet_percussion': 'mallet instrument', 'accordion': 'accordion', 'flute': 'flute', 'cymbals': 'cymbal',
          'jamendo:electricguitar': 'electric guitar', 'jamendo:acousticguitar': 'acoustic guitar', 'jamendo:electricpiano': 'electric piano',
@@ -51,17 +56,36 @@ FRAMES = 1000
 
 def is_val(artist): return int(hashlib.sha256(f'dge-audio-model|{artist}'.encode()).hexdigest()[:8], 16) % 10 == 0
 
+SOFT = {}   # round 11 (--soft): item id -> {app tag: teacher probability, shifted so the teacher's threshold sits at 0.5}
+SOFT_MIX = 0.5   # where the item has a strong label of its own, the target is this share of it plus the rest from the teacher
+DROP = set()   # round 13 (--drop): training ids left out entirely (train-side near-duplicates of test clips)
+MERGE = {}   # round 12 (--merge): merged-away tag -> the tag it is shown as; a clip with the child present counts the parent present
+
 def load_source(name, mel_path, items, weak):
-    y = np.zeros((len(items), len(CLASSES)), np.float32); w = np.zeros_like(y); col = {c: j for j, c in enumerate(CLASSES)}
+    if DROP: items = [dict(it, row=it.get('row', i)) for i, it in enumerate(items) if it['id'] not in DROP]   # keep each window's own row
+    y = np.zeros((len(items), len(CLASSES)), np.float32); w = np.zeros_like(y); yv = np.zeros_like(y); wv = np.zeros_like(y); col = {c: j for j, c in enumerate(CLASSES)}
     for i, it in enumerate(items):
         weak_set = set(it.get('weakAbsent', []))
         labels = dict(it['labels'])
+        if it.get('weakAll') == 'run9':   # run 9 (prepare-run9.py): every run 9 tag the item does not list is a weak absence
+            for l in RUN9_TAGS:
+                if f'cat:{l}' not in labels: labels[f'cat:{l}'] = 0.0; weak_set.add(f'cat:{l}')
+        for c, p in MERGE.items():
+            if labels.get(f'cat:{c}', 0) >= 0.5: labels[f'cat:{p}'] = 1.0; weak_set.discard(f'cat:{p}')
         for c, l in ALIAS.items():   # the same sound under the app's name, unless the source labels that name itself
             if c in labels and f'cat:{l}' not in labels: labels[f'cat:{l}'] = labels[c]; weak_set |= {f'cat:{l}'} if c in weak_set else set()
         for c, r in labels.items():
             j = col[c]; y[i, j] = float(r >= 0.5); w[i, j] = weak if c in weak_set else 1.0
+        yv[i] = y[i]; wv[i] = w[i]   # validation scores the clip's own labels and weights, never the teacher's soft targets
+        for l, p in SOFT.get(it['id'], {}).items():   # distillation: the teacher labels every listed tag, at full weight
+            j = col.get(f'cat:{l}')
+            if j is None: continue
+            y[i, j] = SOFT_MIX * y[i, j] + (1 - SOFT_MIX) * p if w[i, j] >= 1 else p; w[i, j] = 1.0
+        for c, (t, wt) in absent_fix.edits(it['id'], labels, weak_set).items():   # --absent-fix: weak absences only, training targets only, after --soft so it wins
+            j = col.get(c)
+            if j is not None: y[i, j] = t; w[i, j] = wt
     rows = np.array([it.get('row', i) for i, it in enumerate(items)])
-    return {'name': name, 'mel': np.load(mel_path, mmap_mode='r'), 'rows': rows, 'y': y, 'w': w,
+    return {'name': name, 'mel': np.load(mel_path, mmap_mode='r'), 'rows': rows, 'y': y, 'yv': yv, 'w': w, 'wv': wv,
             'val': np.array([bool(it['val']) if 'val' in it else is_val(it['artist']) for it in items]), 'ids': [it['id'] for it in items],
             'dj': np.array([bool(it.get('dj')) for it in items])}
 
@@ -80,6 +104,12 @@ def main():
     ap.add_argument('--lr', type=float, default=1e-4); ap.add_argument('--batch', type=int, default=32)
     ap.add_argument('--mixup', type=float, default=0.3); ap.add_argument('--weak', type=float, default=0.2)
     ap.add_argument('--dj-repeat', type=int, default=2, help='times each DJ/electronic-genre Jamendo window is seen per epoch')
+    ap.add_argument('--rare-repeat', type=int, default=1, help='times each window labelling a --rare-tags instrument as present is seen per epoch')
+    ap.add_argument('--rare-tags', default='bass,organ,cello,trumpet,violin,saxophone',
+                    help='OpenMIC classes whose positive windows --rare-repeat oversamples (outputs naming the same sound count too)')
+    ap.add_argument('--pos-weight', type=float, default=1.0, help='recall push: loss weight on a present label of a --pos-tags output (1 = off)')
+    ap.add_argument('--pos-tags', default='', help="outputs --pos-weight applies to, named like --rare-tags (app tag names match their cat: output); "
+                    "'tag:k' gives that tag its own weight k")
     ap.add_argument('--threads', type=int, default=os.cpu_count()); ap.add_argument('--resume', action='store_true')
     ap.add_argument('--limit', type=int, default=0, help='first N clips per source only (smoke test)')
     ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
@@ -87,7 +117,21 @@ def main():
     ap.add_argument('--extra', action='append', default=[], help='<name>=<dir> holding <name>-mel.npy + <name>.json (prepare-extra.py, Slakh)')
     ap.add_argument('--hours', type=float, default=0, help='training time budget: after epoch 1, cut the epoch count (and its cosine schedule) to fit')
     ap.add_argument('--init', help='start from this model.pt (an earlier run); classifier rows are matched by class name')
+    ap.add_argument('--repeat', default='', help='name=k,...: times each training window of that source is seen per epoch (e.g. iowa=2,chrisdrive=4)')
+    ap.add_argument('--merge', help="round 12: JSON whose 'merge' maps a merged-away tag to the tag it is shown as (round12/round12.json)")
+    ap.add_argument('--drop', help='round 13: JSON list of training item ids to leave out')
+    ap.add_argument('--soft', help="round 11 teacher soft labels (round11/build-soft.py JSON: {'items': {id: {tag: p}}})")
+    ap.add_argument('--absent-fix', help="coverage #2: JSON {'drop': {id: [tag]}, 'add': {id: [tag]}, 'absent': {id: [tag]}} (coverage/labelfix/build-absent-fix.py, coverage/merge-absent.py); "
+                    'drop sets a likely-present weak absence to weight 0, add makes it a full-weight positive. Default off')
     args = ap.parse_args()
+    if args.merge:
+        MERGE.update(json.load(open(args.merge)).get('merge', {})); print(f'merged tags: {MERGE or "none"}', flush=True)
+    if args.absent_fix:
+        nd, na = absent_fix.load(args.absent_fix); print(f'absent fix: weak absences dropped on {nd} items, positives added on {na} items, sure absences on {len(absent_fix.FIX["absent"])} items', flush=True)
+    if args.drop:
+        DROP.update(json.load(open(args.drop))); print(f'leaving out {len(DROP)} training ids', flush=True)
+    if args.soft:
+        SOFT.update(json.load(open(args.soft))['items']); print(f'teacher soft labels for {len(SOFT)} items', flush=True)
     dev = torch.device(args.device)
     torch.set_num_threads(args.threads); torch.manual_seed(0); rng = np.random.default_rng(0)
     os.makedirs(args.run, exist_ok=True)
@@ -100,7 +144,9 @@ def main():
     if args.soundcloud:
         sources.append(load_source('soundcloud', os.path.join(args.soundcloud, 'soundcloud-mel.npy'), json.load(open(os.path.join(args.soundcloud, 'soundcloud.json')))['items'], args.weak))
     if args.fsd50k:
-        sources.append(load_source('fsd50k', os.path.join(args.fsd50k, 'fsd50k-mel.npy'), json.load(open(os.path.join(args.fsd50k, 'fsd50k.json')))['items'], args.weak))
+        fsd_items = json.load(open(os.path.join(args.fsd50k, 'fsd50k.json')))['items']
+        print(f'FSD50K: {fsd50k_extra.relabel(fsd_items, "dev")} labels added from FSD50K classes the prep leaves out (fsd50k_extra.py)', flush=True)
+        sources.append(load_source('fsd50k', os.path.join(args.fsd50k, 'fsd50k-mel.npy'), fsd_items, args.weak))
     if args.nsynth:
         sources.append(load_source('nsynth', os.path.join(args.nsynth, 'nsynth-mel.npy'), json.load(open(os.path.join(args.nsynth, 'nsynth.json')))['items'], args.weak))
     if args.freesound:
@@ -108,10 +154,27 @@ def main():
     for pair in args.extra:
         name, d = pair.split('=', 1)
         sources.append(load_source(name, os.path.join(d, f'{name}-mel.npy'), json.load(open(os.path.join(d, f'{name}.json')))['items'], args.weak))
+    # Each rare OpenMIC class with every output naming the same sound (labelmap.SAME), plus the other basses.
+    names = {SAME.get(t, t) for t in args.rare_tags.split(',') if t}
+    names |= {'double bass', 'synth bass'} if 'bass guitar' in names else set()
+    rare = {c for c in CLASSES if c in args.rare_tags.split(',') or SAME.get(c) in names or c[4:] in names and c.startswith('cat:')}
+    rare_cols = np.array(sorted(CLASSES.index(c) for c in rare), int)
+    # Recall push (--pos-weight): a missed present label of these outputs costs more than a false alarm, so they fire more often.
+    pos_w = torch.ones(len(CLASSES)); pos = {}
+    for e in filter(None, args.pos_tags.split(',')):
+        t, _, k = e.rpartition(':')
+        if not t or not k.replace('.', '', 1).isdigit(): t, k = e, ''   # a weight is an optional numeric suffix (cat:kick, cat:kick:3)
+        for c in CLASSES:
+            if c == t or SAME.get(c) == SAME.get(t, t) or c.startswith('cat:') and c[4:] == SAME.get(t, t): pos[c] = float(k or args.pos_weight)
+    for c, k in pos.items(): pos_w[CLASSES.index(c)] = k
+    if pos: print(f'recall push, loss weight on present labels: {dict(sorted(pos.items()))}', flush=True)
+    for src in sources: src['rare'] = (src['y'][:, rare_cols] >= 0.5).any(1) if len(rare_cols) else np.zeros(len(src['y']), bool)
+    src_repeat = {k: int(v) for k, v in (p.split('=') for p in args.repeat.split(',') if p)}
     pool = [(s, i) for s, src in enumerate(sources) for i in np.flatnonzero(~src['val'])[:args.limit or None]
-            for _ in range(args.dj_repeat if src['dj'][i] else 1)]
+            for _ in range(max(args.dj_repeat if src['dj'][i] else 1, args.rare_repeat if src['rare'][i] else 1, src_repeat.get(src['name'], 1)))]
     vals = {src['name']: np.flatnonzero(src['val'])[:(args.limit // 8 + 8) if args.limit else None] for src in sources}
-    print(f'{len(pool)} train windows per epoch ({sum(int((s["dj"] & ~s["val"]).sum()) for s in sources)} DJ/electronic windows, seen {args.dj_repeat}x) ' + ', '.join(f'{s["name"]} {int((~s["val"]).sum())}' for s in sources) +
+    print(f'{len(pool)} train windows per epoch ({sum(int((s["dj"] & ~s["val"]).sum()) for s in sources)} DJ/electronic windows, seen {args.dj_repeat}x; '
+          f'{sum(int((s["rare"] & ~s["val"]).sum()) for s in sources)} windows with {sorted(rare)}, seen {args.rare_repeat}x) ' + ', '.join(f'{s["name"]} {int((~s["val"]).sum())}' for s in sources) +
           '; validation ' + ', '.join(f'{k} {len(v)}' for k, v in vals.items()), flush=True)
 
     model = get_model(width_mult=WIDTH[args.model], pretrained_name=args.model, num_classes=len(CLASSES)).to(dev)
@@ -157,6 +220,7 @@ def main():
                 out[src['name']] = np.concatenate(s_out) if s_out else np.zeros((0, len(CLASSES)))
         return out
 
+    charts.start(os.path.basename(os.path.abspath(args.run)), vars(args))
     for epoch in range(start, args.epochs):
         if epoch >= args.epochs: break       # --hours cut the run short
         model.train(); order = rng.permutation(len(pool)); t0 = time.time(); losses = []
@@ -176,16 +240,20 @@ def main():
                 yt = yt * lam.view(-1, 1) + yt[p2] * (1 - lam.view(-1, 1))
                 wt = wt * (wt[p2] > 0)                                          # score a pair only where both clips label it
             logits, _ = model(x); logits = logits.reshape(-1, len(CLASSES))
+            wt = wt * (1 + (pos_w.to(dev) - 1) * yt)                       # --pos-weight: present (or partly present) labels weigh more
             loss = (F.binary_cross_entropy_with_logits(logits, yt, reduction='none') * wt).sum() / wt.sum().clamp(min=1)
             opt.zero_grad(); loss.backward(); opt.step(); sched.step(); losses.append(loss.item())
             if len(losses) % 50 == 0:
+                charts.log({'loss': np.mean(losses[-50:]), 'lr': sched.get_last_lr()[0]}, step=epoch * steps_per_epoch + len(losses))
                 print(f'epoch {epoch + 1} step {len(losses)}/{steps_per_epoch} loss {np.mean(losses[-50:]):.4f} '
                       f'{(time.time() - t0) / len(losses):.2f}s/step', flush=True)
         scores = evaluate()
-        aps = {name: masked_ap(sc, src['y'][vals[name]], src['w'][vals[name]]) for (name, sc), src in zip(scores.items(), sources)}
+        aps = {name: masked_ap(sc, src['yv'][vals[name]], src['wv'][vals[name]]) for (name, sc), src in zip(scores.items(), sources)}
         all_ap = [v for a in aps.values() for v in a.values()]; mAP = float(np.mean(all_ap)) if all_ap else 0.0
         log.append({'epoch': epoch + 1, 'loss': float(np.mean(losses)), 'valMAP': mAP, 'valAP': aps, 'seconds': time.time() - t0})
         print(json.dumps(log[-1]), flush=True)
+        charts.log({'epoch': epoch + 1, 'epoch loss': log[-1]['loss'], 'validation mAP': mAP, 'minutes per epoch': log[-1]['seconds'] / 60,
+                    **{f'validation mAP {n}': np.mean(list(a.values())) for n, a in aps.items() if a}}, step=(epoch + 1) * steps_per_epoch)
         if epoch == start and args.hours and args.epochs * log[-1]['seconds'] > args.hours * 3600:
             args.epochs = max(epoch + 1, int(args.hours * 3600 // log[-1]['seconds'])); total = steps_per_epoch * args.epochs
             print(f'cut to {args.epochs} epochs to fit {args.hours} h', flush=True)
@@ -197,6 +265,7 @@ def main():
         json.dump({'args': vars(args), 'classes': CLASSES, 'epochs': log,
                    'val': {src['name']: [src['ids'][i] for i in vals[src['name']]] for src in sources}},
                   open(os.path.join(args.run, 'log.json'), 'w'), indent=1)
+    charts.finish()
 
 if __name__ == '__main__':
     main()

@@ -312,6 +312,28 @@ describe('computeEmphasis', () => {
   });
 });
 
+describe('loop or one-shot filter', () => {
+  const clip = (id: string, path: string, durationSeconds: number): DocNode =>
+    mkNode({ id, path, fileType: 'audio', audio: { version: 2, durationSeconds, analyzedSeconds: durationSeconds, instruments: [], notes: [] } as MusicAnalysis });
+  const nodes = [clip('l', 'Drum Loops/a.wav', 8), clip('o', 'Kits/kick.wav', 0.5), clip('u', 'Kits/pad.wav', 9), mkNode({ id: 'doc' })];
+  it('keeps only clips of the picked shape', () => {
+    expect(nodesMatchingFilter(nodes, [], { ...NO_FILTER, clipShape: 'loop' })).toEqual(new Set(['l']));
+    expect(nodesMatchingFilter(nodes, [], { ...NO_FILTER, clipShape: 'one-shot' })).toEqual(new Set(['o']));
+    expect(isFilterActive({ ...NO_FILTER, clipShape: null })).toBe(false);
+  });
+});
+
+describe('part filter', () => {
+  const clip = (id: string, confirmedInstruments: string[]): DocNode =>
+    mkNode({ id, fileType: 'audio', audio: { version: 2, durationSeconds: 8, analyzedSeconds: 8, instruments: [], notes: [], confirmedInstruments } as MusicAnalysis });
+  const nodes = [clip('v', ['voice']), clip('m', ['piano', 'drums']), clip('d', ['drums']), mkNode({ id: 'doc' })];
+  it('keeps clips whose sounds cover the picked stem', () => {
+    expect(nodesMatchingFilter(nodes, [], { ...NO_FILTER, stem: 'drums' })).toEqual(new Set(['m', 'd']));
+    expect(nodesMatchingFilter(nodes, [], { ...NO_FILTER, stem: 'vocals' })).toEqual(new Set(['v']));
+    expect(isFilterActive({ ...NO_FILTER, stem: null })).toBe(false);
+  });
+});
+
 describe('sounds filter', () => {
   const clip = (id: string, confirmedInstruments: string[]): DocNode =>
     mkNode({
@@ -336,5 +358,20 @@ describe('sounds filter', () => {
     const rejected = clip('r', ['voice']);
     rejected.audio!.soundReviews = [{ dimension: 'source', labelId: 'voice', decision: 'rejected', scope: 'track', at: 'now', evidenceRunId: 'x' }];
     expect(nodesMatchingFilter([rejected], [], { ...NO_FILTER, sounds: ['voice'] })).toEqual(new Set());
+  });
+});
+
+describe('saved character-style compatibility', () => {
+  it('keeps the old character facet AND the existing Sounds facet', () => {
+    const clip = (id: string, character: string[], sources: string[]) => mkNode({
+      id, fileType: 'audio', audio: {
+        version: 2, durationSeconds: 8, analyzedSeconds: 8, instruments: [], notes: [],
+        confirmedInstruments: sources,
+        confirmedDjTags: { source: [], production: [], character },
+      },
+    });
+    const nodes = [clip('both', ['warm'], ['voice']), clip('character-only', ['warm'], ['drums']), clip('sound-only', ['bright'], ['voice'])];
+    expect(nodesMatchingFilter(nodes, [], { ...NO_FILTER, style: 'warm' })).toEqual(new Set(['both', 'character-only']));
+    expect(nodesMatchingFilter(nodes, [], { ...NO_FILTER, style: 'warm', sounds: ['voice'] })).toEqual(new Set(['both']));
   });
 });

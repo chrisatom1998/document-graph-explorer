@@ -1,7 +1,7 @@
 import { MUSIC_EDGE_KINDS } from '../audio/musicEdgeKinds';
 import { quickMusic } from '../audio/quickMusic';
 import { beginMusicJob, isCurrentMusicJob, finishMusicJob, updateMusicJob, cancelAllMusicJobs, cancelMusicJob, useMusicJobs } from '../store/musicJobs';
-import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from '../audio/djTags';
+import { mergedDjLabel, sanitizeConfirmedDjTags, type ConfirmedDjTags } from '../audio/djTags';
 import { buildTitleEdges } from '../graph/titleLinks';
 import { fusionPresentation } from '../audio/fusionPresentation';
 import { fusionConfiguration, installedFusionIdentity } from '../audio/fusionRelease';
@@ -26,6 +26,7 @@ import { assertAudioContent } from '../audio/parseAudio';
 import { createMusicCacheContext } from '../audio/musicAnalysisCache';
 import { INSTRUMENT_LABELS } from '../audio/instrumentLabels';
 import { sanitizeSoundReviews, type SoundReview } from '../audio/recognition';
+import { canonicalReviewLabel, latestSoundReview } from '../audio/soundReviewIdentity';
 import { getOriginal } from '../persistence/originals';
 import {
   DUP_SIM_THRESHOLD,
@@ -341,6 +342,13 @@ function ownsAudioAnalysis(id: string, owner: symbol, epoch: number): boolean {
   return corpusEpoch === epoch && audioAnalysisOwners.get(id) === owner;
 }
 
+/** A preview must not overwrite a finished analysis. A cancelled run is not
+ * finished: it carries no new evidence, so the next run's preview replaces it
+ * instead of leaving "Analysis: cancelled" up while that run is in progress. */
+function previewMayReplace(audio: DocNode['audio']): boolean {
+  return !audio || audio.stage === 'preview' || audio.recognition?.status === 'cancelled';
+}
+
 let modelProgressWired = false;
 function wireModelProgress(): void {
   if (modelProgressWired) return;
@@ -553,8 +561,10 @@ async function runIngestBodyInner(
   const pending: PendingFile[] = [];
   let retryIncomplete = false;
   const audioOriginals = new Map<string, { blob: Blob; name: string }>();
-  // Remembered audio is not re-read, but re-adding it still lets stale analyses catch up.
+  // Remembered audio is not re-read, but re-adding it still finishes an analysis that stopped early.
   let audioReAdded = false;
+  // Only the tracks in this drop are analyzed; the rest of the library keeps its results.
+  const audioScope = new Set<string>();
   const remembered: Parameters<typeof rememberLibraryFiles>[0] = [];
   for (const routedFile of routed) {
     let { file } = routedFile;
@@ -590,6 +600,7 @@ async function runIngestBodyInner(
       ? new Blob([])
       : new Blob([file.bytes], { type: mimeForFilename(file.name) });
     if (fileType === 'audio') {
+      audioScope.add(id);
       if (file.knownId) audioReAdded = true;
       else audioOriginals.set(id, { blob: original, name: file.name });
       fileIdOfDoc.set(id, file.fileId);
@@ -878,11 +889,12 @@ async function runIngestBodyInner(
     return false;
   }
 
-  await analyzeAudioNodes(signal, [], audioOriginals);
+  await analyzeAudioNodes(signal, [], audioOriginals, audioScope);
 
   // (e) lexical aggregation over the WHOLE corpus (idf + title mentions
   // are corpus-wide, so every drop rebuilds them)
   const { lexEdges, boilerplate, complete: lexicalComplete } = await runLexicalPass(pool, signal);
+  if (lexicalComplete) await runPreliminaryLexicalClusters(lexEdges, signal);
 
   // (f) embeddings for docs that still need a vector. hasDocTextSync counts
   // evicted-but-persisted text as readable (runLexicalPass just rehydrated it).
@@ -1175,6 +1187,10 @@ async function runLexicalPass(
     store().setEdges(lexEdges);
     layoutSetLinks(toLinkInput(lexEdges));
     layoutReheat(0.8);
+    // This is the first complete, internally consistent graph state: titles,
+    // explicit references, keywords and lexical edges are all committed.
+    // Embedding and semantic clustering refine these same nodes in place.
+    store().setGraphUsable(true);
     complete = true;
   } catch (err) {
     // cancellation must propagate, not degrade into a "linking failed" toast
@@ -1186,6 +1202,38 @@ async function runLexicalPass(
       .pushToast('Keyword linking failed — connections may be incomplete.', 'warning');
   }
   return { lexEdges, boilerplate, complete };
+}
+
+/** Give a fresh graph stable groups immediately; the semantic pass replaces them later. */
+async function runPreliminaryLexicalClusters(
+  lexEdges: Edge[],
+  signal?: AbortSignal,
+): Promise<void> {
+  const store = useGraphStore.getState;
+  const docs = documentNodes();
+  if (docs.length === 0 || docs.some((node) => node.cluster >= 0)) return;
+  try {
+    throwIfAborted(signal);
+    const result = await aggRequest<ClusterDone>(
+      {
+        requestId: 0,
+        type: 'cluster',
+        ids: docs.map((node) => node.id),
+        edges: toLinkInput(lexEdges),
+      },
+      undefined,
+      { signal },
+    );
+    throwIfAborted(signal);
+    store().patchNodes(new Map(
+      Object.entries(result.clusters).map(([id, cluster]) => [id, { cluster }]),
+    ));
+    store().setLocalClusterNames(computeLocalClusterNames(store().nodes));
+    layoutSetClusters(result.clusters);
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    console.warn('preliminary lexical clustering failed', error);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1922,10 +1970,35 @@ function preloadAudioModels(): void {
   void import('../audio/analyzeMusic').then(m => m.preloadMusicModels(mode)).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
 }
 
-/** Run inside the existing mutation queue; every estimate belongs to this corpus snapshot. */
-async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], originals?: Map<string, { blob: Blob; name: string }>): Promise<void> {
+/** No finished whole-track analysis yet: never analyzed, still a preview, or a scan that stopped early. */
+function audioUnfinished(n: DocNode): boolean {
+  return !n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || !n.audio.instrumentScan?.complete;
+}
+
+/** A finished analysis made by an older analysis version or detector release. */
+function audioOutdated(n: DocNode, mode = useSettingsStore.getState().musicAnalysisMode): boolean {
+  const audio = n.audio;
+  if (!audio) return false;
+  return audio.version !== 2 || audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || audio.keyRevision !== KEY_ANALYSIS_REVISION
+    || audio.instrumentScan?.revision !== INSTRUMENT_ANALYSIS_REVISION
+    || (!!audio.recognition && audio.recognition.configurationHash !== recognitionConfiguration(audio.recognition.mode, audio.durationSeconds))
+    || (!!installedFusionIdentity() && (audio.classifierConfiguration !== fusionConfiguration()
+      || (!!audio.fusion && !fusionPresentation(audio.fusion, audio.durationSeconds, audio.recognition?.mode ?? mode)?.qualified)));
+}
+
+/** Finished tracks whose saved results predate the current detectors; Settings > Data offers to update them. */
+export function outdatedAudioIds(): string[] {
+  return documentNodes().filter(n => n.fileType === 'audio' && !audioUnfinished(n) && audioOutdated(n)).map(n => n.id);
+}
+
+/**
+ * Run inside the existing mutation queue; every estimate belongs to this corpus snapshot.
+ * With a `scope` (an ingest), only those tracks are considered and a finished analysis is kept
+ * even when a newer detector release exists: adding files must not re-analyze the library.
+ */
+async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], originals?: Map<string, { blob: Blob; name: string }>, scope?: ReadonlySet<string>): Promise<void> {
   const mode = useSettingsStore.getState().musicAnalysisMode;
-  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!forceIds.length || forceIds.includes(n.id)) && (!useMusicJobs.getState().jobs[n.id] || mode==='full' || forceIds.includes(n.id)) && (!n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION || (n.audio.recognition && n.audio.recognition.configurationHash !== recognitionConfiguration(n.audio.recognition.mode, n.audio.durationSeconds)) || (installedFusionIdentity() && (n.audio.classifierConfiguration !== fusionConfiguration() || (n.audio.fusion && !fusionPresentation(n.audio.fusion,n.audio.durationSeconds,n.audio.recognition?.mode ?? mode)?.qualified))) || forceIds.includes(n.id)));
+  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!forceIds.length || forceIds.includes(n.id)) && (!scope || scope.has(n.id)) && (!useMusicJobs.getState().jobs[n.id] || mode==='full' || forceIds.includes(n.id)) && (forceIds.includes(n.id) || audioUnfinished(n) || (!scope && audioOutdated(n, mode))));
   if (!nodes.length) return;
   const { analyzeMusic, preloadMusicModels } = await import('../audio/analyzeMusic');
   const cacheContext = createMusicCacheContext();
@@ -1992,7 +2065,7 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
             preview(result);
             const applyPreview=()=>{
               const current=store().nodes.find(n=>n.id===node.id);
-              if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!current||!isCurrentMusicJob(node.id,controller)||(current.audio&&current.audio.stage!=='preview'))return;
+              if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!current||!isCurrentMusicJob(node.id,controller)||!previewMayReplace(current.audio))return;
               store().patchNodes(new Map([[node.id,{audio:{...result,confirmedInstruments:current.audio?.confirmedInstruments,soundReviews:current.audio?.soundReviews,confirmedDjTags:current.audio?.confirmedDjTags,copilotProperties:current.audio?.copilotProperties},warning:undefined}]]));
               markDocsDirty([node.id]);
             };
@@ -2038,13 +2111,13 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
         } else {
           cancelMusicJob(node.id);
           audio=await load(preview=>{
-            if(!queuedScopeActive||signal?.aborted||!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||(node.audio&&node.audio.stage!=='preview'))return;
+            if(!queuedScopeActive||signal?.aborted||!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!previewMayReplace(node.audio))return;
             store().patchNodes(new Map([[node.id,{audio:{...preview,confirmedInstruments:node.audio?.confirmedInstruments,soundReviews:node.audio?.soundReviews,confirmedDjTags:node.audio?.confirmedDjTags,copilotProperties:node.audio?.copilotProperties},warning:undefined}]]));markDocsDirty([node.id]);
           });
         }
         throwIfAborted(signal);
         if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch))return;
-        if(audio.stage === 'preview' && node.audio && node.audio.stage !== 'preview')audio={...node.audio};
+        if(audio.stage === 'preview' && !previewMayReplace(node.audio))audio={...node.audio!};
         audio.confirmedInstruments = node.audio?.confirmedInstruments;
         audio.soundReviews = store().nodes.find(n => n.id === node.id)?.audio?.soundReviews;
         audio.confirmedDjTags = node.audio?.confirmedDjTags;
@@ -2184,9 +2257,23 @@ export function setAudioDjTags(id: string, labels?: ConfirmedDjTags): Promise<bo
     const audio=node.audio!;
     const confirmedDjTags=labels===undefined?undefined:sanitizeConfirmedDjTags(labels);
     if(labels!==undefined&&!confirmedDjTags)throw new Error('Invalid DJ corrections.');
-    const sourceLabels=[...new Set(audio.soundReviews?.filter(r=>r.dimension==='source').map(r=>r.labelId))];
-    const reconciliations:SoundReview[]=confirmedDjTags===undefined?[]:sourceLabels.map(labelId=>({labelId,dimension:'source',scope:'track',at:new Date().toISOString(),
-      evidenceRunId:audio.recognition?.runId??'unknown',decision:confirmedDjTags.source.includes(labelId)?'confirmed':'rejected'}));
+    // A newly saved snapshot supersedes earlier reviews, including labels merged across dimensions.
+    // Append canonical decisions instead of clearing history, so a later individual review can still override it.
+    const reviewedLabels=new Map<string, {labelId:string;dimension:'source'|'effect'|'character'}>();
+    for(const review of audio.soundReviews??[]){
+      let dimension=review.dimension, labelId=canonicalReviewLabel(dimension,review.labelId);
+      if(dimension==='effect'||dimension==='source'){
+        // Keep historical source-to-effect identities governed by the surviving production snapshot.
+        const merged=mergedDjLabel(dimension==='effect'?'production':'source',labelId);
+        if(dimension==='effect'&&merged.group==='production')continue;
+        dimension=merged.group==='production'?'effect':merged.group;labelId=merged.label;
+      }
+      if(dimension!=='source'&&dimension!=='character'&&dimension!=='effect')continue;
+      reviewedLabels.set(`${dimension}:${labelId}`,{labelId,dimension});
+    }
+    const reconciliations:SoundReview[]=confirmedDjTags===undefined?[]:[...reviewedLabels.values()].map<SoundReview>(({labelId,dimension})=>({labelId,dimension,scope:'track',at:new Date().toISOString(),
+      evidenceRunId:audio.recognition?.runId??'unknown',decision:confirmedDjTags[dimension==='effect'?'production':dimension].includes(labelId)?'confirmed':'rejected'}))
+      .filter(review=>latestSoundReview(audio.soundReviews,review.dimension,review.labelId)?.decision!==review.decision);
     if((audio.soundReviews?.length??0)+reconciliations.length>500)throw new Error('Review history limit reached. Export this graph before adding more reviews.');
     useGraphStore.getState().patchNodes(new Map([[id,{audio:{...audio,confirmedDjTags,
       ...(confirmedDjTags?{confirmedInstruments:[...confirmedDjTags.source]}:{}),

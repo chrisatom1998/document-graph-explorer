@@ -13,6 +13,7 @@ import { rememberAudioAnalysisUsed, setSpeculativePreloadStop } from './speculat
 const cache = new ResultCache(128);
 const decodedCache = new DecodedMusicCache();
 import { MusicTaskQueue } from './musicTaskQueue';
+import { isTouchMac } from './gpuModelPolicy';
 import { musicInferenceThreads, musicRuntimeIdentity, THREADED_RUNTIME_STALLED, switchToSingleThreadRuntime } from './musicRuntime';
 const workers = new Map<string, Worker>();
 // Pinned quantized native weights total about190MB. Bound retained family sessions
@@ -124,7 +125,7 @@ function warmWorker(worker: Worker, family: string, mode: 'fast' | 'full' = 'fas
 }
 
 /** Tells a worker to use one inference thread once this browser has shown its threads never start. */
-const threadHint = () => musicInferenceThreads() === 1 ? { singleThread: true } : {};
+const threadHint = () => ({ ...(musicInferenceThreads() === 1 ? { singleThread: true } : {}), ...(isTouchMac() ? { touchTablet: true } : {}) });
 /** Once one worker's threads fail to start, every retained model worker is retired, not only that one: a sibling
  * that already loaded a multi-threaded session would otherwise keep it and report results under the one-thread
  * identity. Their in-flight requests fail with WORKER_REPLACED and are retried below on fresh workers. */

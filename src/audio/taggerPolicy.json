@@ -1,7 +1,7 @@
 {
  "version": 1,
- "revision": "all-tags-2026-10-06-r1",
- "modelSha256": "4839854fa429c8c1ed6835a82a4b6c5c1ea490b2a5ecffe0fcf0303f964f9ca6",
+ "revision": "all-tags-recall2-2026-10-11-r1",
+ "modelSha256": "14f80825ba22af6048b62ad8c4dbddd0977eccffa66247b4ee657e9f15e62a56",
  "input": {
   "name": "samples32k",
   "output": "scores",
@@ -41,17 +41,17 @@
    }
   },
   {
-   "output": "guitar",
+   "output": "cat:guitar",
    "label": "guitar",
    "dimension": "source",
-   "threshold": 0.4886,
+   "threshold": 0.3,
    "decides": [
     "guitar"
    ],
    "tested": true,
-   "minSeconds": 10,
    "long": {
-    "rule": "detectors"
+    "rule": "detectors",
+    "afterSeconds": 30
    }
   },
   {
@@ -76,29 +76,29 @@
    }
   },
   {
-   "output": "violin",
+   "output": "cat:violin / fiddle",
    "label": "violin",
    "dimension": "source",
-   "threshold": 0.3732,
+   "threshold": 0.579,
    "decides": [
     "violin",
     "violin / fiddle"
    ],
    "tested": true,
-   "minSeconds": 10,
    "long": {
-    "rule": "detectors"
+    "rule": "detectors",
+    "afterSeconds": 30
    }
   },
   {
    "output": "trumpet",
    "label": "trumpet",
    "dimension": "source",
-   "threshold": 0.4961,
+   "threshold": 0.9486,
    "decides": [
     "trumpet"
    ],
-   "tested": false,
+   "tested": true,
    "minSeconds": 10,
    "long": {
     "rule": "max"
@@ -125,7 +125,6 @@
    "threshold": 0.6704,
    "decides": [
     "bass",
-    "bass guitar",
     "double bass"
    ],
    "tested": false,
@@ -135,10 +134,76 @@
    }
   },
   {
+   "output": "synthesizer",
+   "label": "synthesizer",
+   "dimension": "source",
+   "threshold": 0.5495,
+   "decides": [
+    "synthesizer"
+   ],
+   "tested": true,
+   "minSeconds": 10,
+   "long": {
+    "rule": "max"
+   }
+  },
+  {
+   "output": "cat:percussion",
+   "label": "percussion",
+   "dimension": "source",
+   "threshold": 0.249,
+   "decides": [
+    "percussion"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:animal sound",
+   "label": "animal sound",
+   "dimension": "source",
+   "threshold": 0.2411,
+   "decides": [
+    "animal sound"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:glockenspiel",
+   "label": "glockenspiel",
+   "dimension": "source",
+   "threshold": 0.3828,
+   "decides": [
+    "glockenspiel"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:whistle",
+   "label": "whistle",
+   "dimension": "source",
+   "threshold": 0.9,
+   "decides": [
+    "whistle"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
    "output": "cat:percussive",
    "label": "percussive",
    "dimension": "character",
-   "threshold": 0.646,
+   "threshold": 0.7246,
    "decides": [
     "percussive"
    ],
@@ -158,7 +223,7 @@
    "output": "cat:wobbling",
    "label": "wobbling",
    "dimension": "character",
-   "threshold": 0.5718,
+   "threshold": 0.5222,
    "decides": [
     "wobbling"
    ],
@@ -168,7 +233,7 @@
    "output": "cat:falling",
    "label": "falling",
    "dimension": "character",
-   "threshold": 0.8024,
+   "threshold": 0.8101,
    "decides": [
     "falling"
    ],
@@ -178,11 +243,11 @@
    "output": "cat:pulsing",
    "label": "pulsing",
    "dimension": "character",
-   "threshold": 0.5645,
+   "threshold": 0.6477,
    "decides": [
     "pulsing"
    ],
-   "tested": false
+   "tested": true
   },
   {
    "output": "cat:bright",
@@ -208,7 +273,7 @@
    "output": "cat:distorted",
    "label": "distorted",
    "dimension": "character",
-   "threshold": 0.3459,
+   "threshold": 0.4491,
    "decides": [
     "distorted"
    ],
@@ -218,11 +283,11 @@
    "output": "cat:reverse effect",
    "label": "reverse effect",
    "dimension": "effect",
-   "threshold": 0.7061,
+   "threshold": 0.647,
    "decides": [
     "reverse effect"
    ],
-   "tested": false
+   "tested": true
   },
   {
    "output": "cat:bird ambience",
@@ -238,11 +303,11 @@
    "output": "cat:rain ambience",
    "label": "rain ambience",
    "dimension": "effect",
-   "threshold": 0.7011,
+   "threshold": 0.4504,
    "decides": [
     "rain ambience"
    ],
-   "tested": false
+   "tested": true
   },
   {
    "output": "cat:vocal breath",
@@ -253,6 +318,545 @@
     "vocal breath"
    ],
    "tested": false
+  },
+  {
+   "output": "cat:tambourine",
+   "label": "tambourine",
+   "dimension": "effect",
+   "threshold": 0.1181,
+   "decides": [
+    "tambourine"
+   ],
+   "alsoDecides": [
+    {
+     "dimension": "source",
+     "label": "tambourine"
+    }
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:vocal scream",
+   "label": "vocal scream",
+   "dimension": "effect",
+   "threshold": 0.1959,
+   "decides": [
+    "vocal scream"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:environmental sound",
+   "label": "environmental sound",
+   "dimension": "source",
+   "threshold": 0.4549,
+   "decides": [
+    "environmental sound"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:foley",
+   "label": "foley",
+   "dimension": "source",
+   "threshold": 0.2941,
+   "decides": [
+    "foley"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:turntable",
+   "label": "turntable",
+   "dimension": "source",
+   "threshold": 0.0124,
+   "decides": [
+    "turntable"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:finger snap",
+   "label": "finger snap",
+   "dimension": "effect",
+   "threshold": 0.175,
+   "decides": [
+    "finger snap"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:water ambience",
+   "label": "water ambience",
+   "dimension": "effect",
+   "threshold": 0.3239,
+   "decides": [
+    "water ambience"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:bell",
+   "label": "bell",
+   "dimension": "source",
+   "threshold": 0.4454,
+   "decides": [
+    "bell"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:fm synth",
+   "label": "fm synth",
+   "dimension": "effect",
+   "threshold": 0.0104,
+   "decides": [
+    "fm synth"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:bass guitar",
+   "label": "bass guitar",
+   "dimension": "source",
+   "threshold": 0.5765,
+   "decides": [
+    "bass guitar"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:machine ambience",
+   "label": "machine ambience",
+   "dimension": "effect",
+   "threshold": 0.2647,
+   "decides": [
+    "machine ambience"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:pitched vocal",
+   "label": "pitched vocal",
+   "dimension": "effect",
+   "threshold": 0.4082,
+   "decides": [
+    "pitched vocal"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:hi-hat",
+   "label": "hi-hat",
+   "dimension": "effect",
+   "threshold": 0.3663,
+   "decides": [
+    "hi-hat"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:siren",
+   "label": "siren",
+   "dimension": "effect",
+   "threshold": 0.277,
+   "decides": [
+    "siren"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:flute",
+   "label": "flute",
+   "dimension": "source",
+   "threshold": 0.54,
+   "decides": [
+    "flute"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:marimba",
+   "label": "marimba",
+   "dimension": "source",
+   "threshold": 0.827,
+   "decides": [
+    "marimba"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:vibraphone",
+   "label": "vibraphone",
+   "dimension": "source",
+   "threshold": 0.657,
+   "decides": [
+    "vibraphone"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:crash cymbal",
+   "label": "crash cymbal",
+   "dimension": "effect",
+   "threshold": 0.1631,
+   "decides": [
+    "crash cymbal"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:whisper",
+   "label": "whisper",
+   "dimension": "effect",
+   "threshold": 0.1115,
+   "decides": [
+    "whisper"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:voice",
+   "label": "voice",
+   "dimension": "source",
+   "threshold": 0.587,
+   "decides": [
+    "voice"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:kick",
+   "label": "kick",
+   "dimension": "effect",
+   "threshold": 0.53,
+   "decides": [
+    "kick"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:clap",
+   "label": "clap",
+   "dimension": "effect",
+   "threshold": 0.5,
+   "decides": [
+    "clap"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:organ",
+   "label": "organ",
+   "dimension": "source",
+   "threshold": 0.774,
+   "decides": [
+    "organ"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:gong",
+   "label": "gong",
+   "dimension": "source",
+   "threshold": 0.2,
+   "decides": [
+    "gong"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:laser",
+   "label": "laser",
+   "dimension": "effect",
+   "threshold": 0.6142,
+   "decides": [
+    "laser"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:riser",
+   "label": "riser",
+   "dimension": "effect",
+   "threshold": 0.5525,
+   "decides": [
+    "riser"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:reverberant",
+   "label": "reverberant",
+   "dimension": "character",
+   "threshold": 0.4625,
+   "decides": [
+    "reverberant"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:conga",
+   "label": "conga",
+   "dimension": "effect",
+   "threshold": 0.3076,
+   "decides": [
+    "conga"
+   ],
+   "alsoDecides": [
+    {
+     "dimension": "source",
+     "label": "conga"
+    }
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:vocal chant",
+   "label": "vocal chant",
+   "dimension": "effect",
+   "threshold": 0.7705,
+   "decides": [
+    "vocal chant"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:static noise",
+   "label": "static noise",
+   "dimension": "effect",
+   "threshold": 0.1409,
+   "decides": [
+    "static noise"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:acid synth",
+   "label": "acid synth",
+   "dimension": "effect",
+   "threshold": 0.15,
+   "decides": [
+    "acid synth"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:vocal phrase",
+   "label": "vocal phrase",
+   "dimension": "effect",
+   "threshold": 0.1,
+   "decides": [
+    "vocal phrase"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:synth lead",
+   "label": "synth lead",
+   "dimension": "effect",
+   "threshold": 0.6567,
+   "decides": [
+    "synth lead"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:vocoder vocal",
+   "label": "vocoder vocal",
+   "dimension": "effect",
+   "threshold": 0.3067,
+   "decides": [
+    "vocoder vocal"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:record stop",
+   "label": "record stop",
+   "dimension": "effect",
+   "threshold": 0.5435,
+   "decides": [
+    "record stop"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:glitch effect",
+   "label": "glitch effect",
+   "dimension": "effect",
+   "threshold": 0.401,
+   "decides": [
+    "glitch effect"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:choir",
+   "label": "choir",
+   "dimension": "effect",
+   "threshold": 0.905,
+   "decides": [
+    "choir"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:staccato",
+   "label": "staccato",
+   "dimension": "character",
+   "threshold": 0.4305,
+   "decides": [
+    "staccato"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
   }
  ]
 }

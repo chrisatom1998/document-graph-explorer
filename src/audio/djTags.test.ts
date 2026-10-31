@@ -29,7 +29,13 @@ it('preserves a brief accepted sound and bounds its timing examples',()=>{
  expect(mean.average()[0].score).toBe(.35);
 });
 it('validates annotations and tag evidence without accepting arbitrary labels or times',()=>{
- expect(sanitizeConfirmedDjTags({source:['breath','made up'],production:['vocal breath','vocal breath'],character:['airy']})).toEqual({source:['breath'],production:['vocal breath'],character:['airy']});
+ expect(sanitizeConfirmedDjTags({source:['breath','made up'],production:['vocal breath','vocal breath'],character:['airy']})).toEqual({source:['breath'],production:[],character:['airy']});
+ expect(sanitizeConfirmedDjTags({source:['noise'],production:['synth stab','synth hit'],character:[]})).toEqual({source:[],production:['static noise','synth hit'],character:[]});
+ expect(sanitizeConfirmedDjTags({source:[],production:['downlifter'],character:['falling']})).toEqual({source:[],production:[],character:['falling']});
+ expect(sanitizeConfirmedDjTags({source:['turntable'],production:['vinyl scratch'],character:[]})).toEqual({source:[],production:['vinyl scratch'],character:[]});
+ expect(sanitizeConfirmedDjTags({source:[],production:['harmony vocals','choir'],character:[]})).toEqual({source:[],production:['choir'],character:[]});
+ expect(sanitizeConfirmedDjTags({source:[],production:['303 bass','acid synth'],character:[]})).toEqual({source:[],production:['acid synth'],character:[]});
+ expect(sanitizeConfirmedDjTags({source:[],production:['found sound'],character:[]})).toEqual({source:['foley'],production:[],character:[]});
  expect(sanitizeConfirmedDjTags({source:'breath'})).toBeUndefined();
  expect(sanitizeDjTags([{group:'__proto__',label:'x',score:.9},{group:'production',label:'vocal breath',score:.7,segments:[{start:-1,end:4},{start:0,end:2}]}])).toEqual([{group:'production',label:'vocal breath',score:.7,segments:[{start:0,end:2}]}]);
 });

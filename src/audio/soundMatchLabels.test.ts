@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DocNode } from '../model/types';
 import type { MusicAnalysis } from './musicTypes';
 import type { SoundReview } from './recognition';
-import { soundMatchLabels } from './soundMatchLabels';
+import { otherModelGuessGroups, soundMatchLabels } from './soundMatchLabels';
 
 const review = (dimension: SoundReview['dimension'], labelId: string, decision: SoundReview['decision']): SoundReview => ({
   dimension, labelId, decision, scope: 'track', at: '2026-10-07T12:00:00Z', evidenceRunId: 'old-run',
@@ -52,13 +52,31 @@ describe('cymbal reviews in sound match labels', () => {
     const node = clip({ soundReviews: [review('source', 'cymbals', 'rejected')] });
     node.audio!.soundProfile!.djTags!.push(
       { group: 'production', label: 'kick', score: .9, model: 'Trained head' },
-      { group: 'character', label: 'airy', score: .9, model: 'Trained head (maybe)' },
+      { group: 'character', label: 'bright', score: .9, model: 'Trained head (maybe)' },
       { group: 'production', label: 'ride cymbal', score: .3 },
     );
     expect(soundMatchLabels(node)).toEqual([
       { group: 'production', label: 'kick', origin: 'sounds', weight: .7 },
-      { group: 'character', label: 'airy', origin: 'maybe', weight: .55 },
+      { group: 'character', label: 'bright', origin: 'maybe', weight: .55 },
       { group: 'production', label: 'ride cymbal', origin: 'guess', weight: .4 },
     ]);
+  });
+});
+
+describe('merged look-alike tags', () => {
+  it('lists an old-name model guess once, under the surviving name', () => {
+    const labels = soundMatchLabels(clip({ soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false,
+      djTags: [{ group: 'production', label: 'synth stab', score: .9, model: 'Trained head' }, { group: 'source', label: 'noise', score: .9, model: 'Trained head' }] } }));
+    const names = labels.map(l => `${l.group}:${l.label}`);
+    expect(names).not.toContain('production:synth stab');
+    expect(names).not.toContain('source:noise');
+    expect(names).toEqual(expect.arrayContaining(['production:synth hit', 'production:static noise']));
+  });
+});
+
+describe('labels hidden until tested on real clips', () => {
+  it('leaves them out of other model guesses', () => {
+    const profile = { djTags: [{ group: 'production' as const, label: 'reverse effect', score: .3 }, { group: 'character' as const, label: 'distorted', score: .3 }, { group: 'production' as const, label: 'riser', score: .3 }] };
+    expect(otherModelGuessGroups({ profile, exclude: [] })).toEqual([{ group: 'production', values: ['riser'] }]);
   });
 });

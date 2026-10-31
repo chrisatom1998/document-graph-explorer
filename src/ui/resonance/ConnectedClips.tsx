@@ -62,7 +62,8 @@ function reason(edge: Edge, a: DocNode, b: DocNode): { label: string; detail: st
   return { label, detail: pct, fill: edge.weight, ...extra };
 }
 
-function ClipCard({ node, accent, active, action }: { node: DocNode; accent: string; active?: boolean; action?: { label: string; run: () => void } }) {
+/** Inspector card for one node: thumbnail, title and metadata, with an inline player for audio unless `player` is off. */
+function ClipCard({ node, accent, active, action, player = true }: { node: DocNode; accent: string; active?: boolean; action?: { label: string; run: () => void }; player?: boolean }) {
   const { url, peaks } = useClipAudio(node);
   const file = node.path?.split('/').pop() ?? node.title;
   const meta = node.fileType === 'audio'
@@ -78,7 +79,7 @@ function ClipCard({ node, accent, active, action }: { node: DocNode; accent: str
         </span>
         {action && <button type="button" className="rs-clip__action" onClick={action.run}>{action.label}</button>}
       </div>
-      {node.fileType === 'audio' && <ClipPlayer node={node} url={url} peaks={peaks} color={accent} />}
+      {player && node.fileType === 'audio' && <ClipPlayer node={node} url={url} peaks={peaks} color={accent} />}
     </article>
   );
 }
@@ -126,7 +127,8 @@ export default function ConnectedClips({ detailsOpen, onToggleDetails }: { detai
     <aside className="rs-inspector" aria-label={audio ? 'Connected clips' : 'Connected documents'}>
       <section className="rs-block" aria-label={`Selected ${noun}`}>
         <p className="rs-eyebrow">Selected {noun}</p>
-        <ClipCard node={selected} accent="#a89bff" action={{ label: 'Find', run: () => useUiStore.getState().sendCamera('frameNode', [selected.id]) }} />
+        {/* Full details brings its own player for the selected clip; a second one here would play the clip twice. */}
+        <ClipCard node={selected} accent="#a89bff" player={!detailsOpen} action={{ label: 'Find', run: () => useUiStore.getState().sendCamera('frameNode', [selected.id]) }} />
       </section>
 
       <section className="rs-block" aria-label={`Connected ${noun}s`}>

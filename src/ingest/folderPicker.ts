@@ -6,9 +6,11 @@
 
 import { useUiStore } from '../store/uiStore';
 import { rememberAddOrigin } from '../scene/ingestGesture';
+import { holdReload, recoverFromChunkError } from '../util/staleBuild';
 
 function toastIngestLoadFailure(error: unknown): void {
   console.warn('folder ingest failed to load', error);
+  if (recoverFromChunkError(error)) return;
   useUiStore.getState().pushToast("Couldn't open the folder picker.");
 }
 
@@ -33,9 +35,12 @@ function openFolderInput(): void {
       if (folderInput) folderInput.value = ''; // allow re-picking the same folder
       // An empty change (or no change event at all, on cancel) is a no-op.
       if (files.length === 0) return;
+      // Protect the selection before loading the module that starts ingestion.
+      const release = holdReload();
       import('./folderIngest')
         .then(({ ingestPickedFolderFiles }) => ingestPickedFolderFiles(files))
-        .catch(toastIngestLoadFailure);
+        .catch(toastIngestLoadFailure)
+        .finally(release);
     });
     document.body.appendChild(folderInput);
   }

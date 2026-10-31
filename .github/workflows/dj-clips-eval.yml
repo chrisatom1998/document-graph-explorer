@@ -36,7 +36,7 @@ jobs:
       matrix:
         set: [openmic, giantsteps]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Select OpenMIC clips
         if: matrix.set == 'openmic'
         run: |
@@ -58,7 +58,7 @@ jobs:
             for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
               && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: dj-${{ matrix.set }}-audio
           path: |
@@ -77,18 +77,18 @@ jobs:
         set: [openmic, giantsteps]
         shard: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v7
         with:
           name: dj-${{ matrix.set }}-audio
           path: clips
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
@@ -103,7 +103,7 @@ jobs:
           AUDIO_DIR=clips/audio AUDIO_EXT=${{ matrix.set == 'openmic' && 'ogg' || 'wav' }} \
             MANIFEST=clips/$DOCS/${{ matrix.set }}-manifest.json SHARD=${{ matrix.shard }}/4 \
             node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: dj-${{ matrix.set }}-export-${{ matrix.shard }}
@@ -116,17 +116,17 @@ jobs:
     if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: dj-*-export-*
           path: exports
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: dj-*-audio
           path: clips

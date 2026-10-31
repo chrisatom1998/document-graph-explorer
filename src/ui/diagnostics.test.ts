@@ -12,6 +12,7 @@ describe('buildDiagnosticsText', () => {
       lastError: null,
     });
 
+    expect(text.split('\n')[0]).toBe('Resonance diagnostics');
     expect(text).toContain('Version: 1.0.0');
     expect(text).toContain('Build: standard');
     expect(text).toContain('Corpus: 3 nodes, 2 edges');

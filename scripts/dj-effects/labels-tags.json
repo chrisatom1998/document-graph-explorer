@@ -1,0 +1,556 @@
+{
+ "_doc": "Sound tags mined from Freesound uploader tags for the processing, space and gap-instrument heads (same rules as labels.json; see its _doc). Selected with LABELS=labels-tags.json.",
+ "music": [
+  "loop",
+  "loops",
+  "sample",
+  "samples",
+  "beat",
+  "beats",
+  "hiphop",
+  "hip hop",
+  "music",
+  "edm",
+  "vocal",
+  "vocals",
+  "vox",
+  "electronic",
+  "electronica",
+  "dubstep",
+  "trap",
+  "house",
+  "techno",
+  "breakbeat",
+  "drum",
+  "drums",
+  "bpm",
+  "remix",
+  "dj",
+  "production",
+  "glitch",
+  "idm",
+  "synth",
+  "dance",
+  "bass",
+  "fx",
+  "effect",
+  "transition",
+  "turntable",
+  "vinyl",
+  "dnb",
+  "drum and bass",
+  "jungle",
+  "trance",
+  "reggae",
+  "dub",
+  "dancehall",
+  "scratch",
+  "mix",
+  "track"
+ ],
+ "labels": [
+  {
+   "label": "chorused",
+   "group": "character",
+   "tags": [
+    "chorus",
+    "chorused",
+    "chorus effect",
+    "chorus fx",
+    "choruseffect"
+   ],
+   "context": "music"
+  },
+  {
+   "label": "saturated",
+   "group": "character",
+   "tags": [
+    "saturation",
+    "saturated",
+    "tape saturation",
+    "overdriven",
+    "overdrive",
+    "tube saturation"
+   ],
+   "exclude": [
+    "guitar amp sim"
+   ]
+  },
+  {
+   "label": "distorted",
+   "group": "character",
+   "tags": [
+    "distortion",
+    "distorted",
+    "fuzz",
+    "fuzzy distortion"
+   ]
+  },
+  {
+   "label": "filtered",
+   "group": "character",
+   "tags": [
+    "filtered",
+    "low pass",
+    "lowpass",
+    "lpf",
+    "high pass",
+    "highpass",
+    "hpf",
+    "band pass",
+    "bandpass"
+   ],
+   "exclude": [
+    "sweep",
+    "filter sweep",
+    "swept"
+   ],
+   "context": "music"
+  },
+  {
+   "label": "reverberant",
+   "group": "character",
+   "tags": [
+    "reverb",
+    "reverberant",
+    "reverberation",
+    "hall reverb",
+    "plate reverb",
+    "cathedral",
+    "huge reverb"
+   ],
+   "exclude": [
+    "impulse response",
+    "impulse",
+    "ir",
+    "convolution"
+   ]
+  },
+  {
+   "label": "echoing",
+   "group": "character",
+   "tags": [
+    "echo",
+    "echoes",
+    "echoing",
+    "delay",
+    "delayed",
+    "tape echo",
+    "ping pong delay",
+    "pingpong"
+   ],
+   "exclude": [
+    "impulse response",
+    "impulse",
+    "ir",
+    "convolution",
+    "delay throw",
+    "throw"
+   ],
+   "context": "music"
+  },
+  {
+   "label": "dry",
+   "group": "character",
+   "tags": [
+    "dry",
+    "no reverb",
+    "noreverb",
+    "close mic",
+    "close miked",
+    "anechoic"
+   ],
+   "context": "music"
+  },
+  {
+   "label": "rising",
+   "group": "character",
+   "tags": [
+    "pitch up",
+    "pitchup",
+    "rising",
+    "pitch rise",
+    "ascending"
+   ],
+   "exclude": [
+    "riser"
+   ]
+  },
+  {
+   "label": "falling",
+   "group": "character",
+   "tags": [
+    "pitch down",
+    "pitchdown",
+    "falling",
+    "pitch drop",
+    "descending"
+   ],
+   "exclude": [
+    "downlifter",
+    "fall",
+    "falls",
+    "fallen",
+    "object",
+    "impact"
+   ]
+  },
+  {
+   "label": "gliding",
+   "group": "character",
+   "tags": [
+    "glide",
+    "gliding",
+    "portamento",
+    "slide",
+    "pitch bend",
+    "pitchbend",
+    "glissando"
+   ],
+   "exclude": [
+    "slide guitar",
+    "door",
+    "drawer",
+    "slides"
+   ]
+  },
+  {
+   "label": "sitar",
+   "group": "source",
+   "tags": [
+    "sitar"
+   ]
+  },
+  {
+   "label": "kalimba",
+   "group": "source",
+   "tags": [
+    "kalimba",
+    "mbira",
+    "thumb piano",
+    "thumbpiano"
+   ]
+  },
+  {
+   "label": "banjo",
+   "group": "source",
+   "tags": [
+    "banjo"
+   ]
+  },
+  {
+   "label": "tabla",
+   "group": "source",
+   "tags": [
+    "tabla"
+   ]
+  },
+  {
+   "label": "steel drum",
+   "group": "source",
+   "tags": [
+    "steel drum",
+    "steeldrum",
+    "steel pan",
+    "steelpan",
+    "hang drum",
+    "handpan"
+   ]
+  },
+  {
+   "label": "mandolin",
+   "group": "source",
+   "tags": [
+    "mandolin"
+   ]
+  },
+  {
+   "label": "oboe",
+   "group": "source",
+   "tags": [
+    "oboe"
+   ]
+  },
+  {
+   "label": "bassoon",
+   "group": "source",
+   "tags": [
+    "bassoon"
+   ]
+  },
+  {
+   "label": "tuba",
+   "group": "source",
+   "tags": [
+    "tuba",
+    "sousaphone"
+   ]
+  },
+  {
+   "label": "trombone",
+   "group": "source",
+   "tags": [
+    "trombone"
+   ]
+  },
+  {
+   "label": "horn",
+   "group": "source",
+   "tags": [
+    "french horn",
+    "frenchhorn"
+   ]
+  },
+  {
+   "label": "viola",
+   "group": "source",
+   "tags": [
+    "viola"
+   ]
+  },
+  {
+   "label": "double bass",
+   "group": "source",
+   "tags": [
+    "double bass",
+    "doublebass",
+    "contrabass",
+    "upright bass"
+   ]
+  },
+  {
+   "label": "glockenspiel",
+   "group": "source",
+   "tags": [
+    "glockenspiel"
+   ]
+  },
+  {
+   "label": "marimba",
+   "group": "source",
+   "tags": [
+    "marimba"
+   ]
+  },
+  {
+   "label": "xylophone",
+   "group": "source",
+   "tags": [
+    "xylophone"
+   ]
+  },
+  {
+   "label": "vibraphone",
+   "group": "source",
+   "tags": [
+    "vibraphone",
+    "vibes"
+   ]
+  },
+  {
+   "label": "djembe",
+   "group": "source",
+   "tags": [
+    "djembe"
+   ]
+  },
+  {
+   "label": "cajon",
+   "group": "source",
+   "tags": [
+    "cajon"
+   ]
+  },
+  {
+   "label": "triangle",
+   "group": "source",
+   "tags": [
+    "triangle"
+   ],
+   "exclude": [
+    "wave",
+    "synth",
+    "oscillator",
+    "waveform",
+    "sine",
+    "saw",
+    "square"
+   ]
+  },
+  {
+   "label": "whistle",
+   "group": "source",
+   "tags": [
+    "whistle",
+    "whistling"
+   ]
+  },
+  {
+   "label": "steel guitar",
+   "group": "source",
+   "tags": [
+    "steel guitar",
+    "lap steel",
+    "pedal steel",
+    "dobro"
+   ]
+  },
+  {
+   "label": "waterphone",
+   "group": "source",
+   "tags": [
+    "waterphone"
+   ]
+  },
+  {
+   "label": "woodblock",
+   "group": "production",
+   "tags": [
+    "woodblock",
+    "wood block"
+   ],
+   "context": "music"
+  },
+  {
+   "label": "conga",
+   "group": "production",
+   "tags": [
+    "conga",
+    "congas"
+   ],
+   "context": "music"
+  },
+  {
+   "label": "bongo",
+   "group": "production",
+   "tags": [
+    "bongo",
+    "bongos"
+   ],
+   "context": "music"
+  },
+  {
+   "label": "clave",
+   "group": "production",
+   "tags": [
+    "clave",
+    "claves"
+   ],
+   "context": "music"
+  },
+  {
+   "label": "rimshot",
+   "group": "production",
+   "tags": [
+    "rimshot",
+    "rim shot",
+    "sidestick",
+    "side stick"
+   ],
+   "context": "music"
+  },
+  {
+   "label": "tom",
+   "group": "production",
+   "tags": [
+    "tom",
+    "toms",
+    "tom tom",
+    "floor tom"
+   ],
+   "context": "music"
+  },
+  {
+   "label": "tambourine",
+   "group": "production",
+   "tags": [
+    "tambourine"
+   ],
+   "context": "music"
+  },
+  {
+   "label": "finger snap",
+   "group": "production",
+   "tags": [
+    "finger snap",
+    "fingersnap",
+    "snap",
+    "snaps",
+    "snapping"
+   ],
+   "context": "music"
+  }
+ ],
+ "overlap": [
+  [
+   "distorted",
+   "saturated",
+   "bitcrushed"
+  ],
+  [
+   "reverberant",
+   "echoing"
+  ],
+  [
+   "dry",
+   "reverberant",
+   "echoing"
+  ],
+  [
+   "rising",
+   "falling",
+   "gliding"
+  ],
+  [
+   "chorused",
+   "flanged"
+  ],
+  [
+   "conga",
+   "bongo",
+   "djembe",
+   "cajon",
+   "tabla"
+  ],
+  [
+   "marimba",
+   "xylophone",
+   "vibraphone",
+   "glockenspiel",
+   "kalimba",
+   "steel drum"
+  ],
+  [
+   "woodblock",
+   "clave",
+   "rimshot"
+  ],
+  [
+   "viola",
+   "double bass"
+  ],
+  [
+   "trombone",
+   "tuba",
+   "horn"
+  ],
+  [
+   "oboe",
+   "bassoon"
+  ],
+  [
+   "banjo",
+   "mandolin",
+   "sitar",
+   "steel guitar"
+  ],
+  [
+   "tom",
+   "conga",
+   "bongo",
+   "djembe",
+   "cajon",
+   "tabla"
+  ]
+ ]
+}

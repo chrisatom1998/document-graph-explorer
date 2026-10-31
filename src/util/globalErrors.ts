@@ -1,4 +1,5 @@
 import { useUiStore } from '../store/uiStore';
+import { recoverFromChunkError } from './staleBuild';
 
 const DEDUPE_MS = 5_000;
 
@@ -19,6 +20,7 @@ function detailsFrom(value: unknown): { message: string; stack?: string } {
 }
 
 export function recordGlobalError(value: unknown): void {
+  if (recoverFromChunkError(value)) return;
   const { message, stack } = detailsFrom(value);
   const key = `${message}\n${stack ?? ''}`;
   const now = Date.now();

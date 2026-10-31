@@ -10,6 +10,7 @@ import { namedRelationship } from '../audio/relationships';
 import MusicFeatures from './MusicFeatures';
 import { mimeForFilename } from '../util/fileMime';
 
+/** The clip panel: player, one status line, musical features and authored relationships for one audio node. */
 export default function AudioPreview({ node }: { node: DocNode }) {
   const nodes = useGraphStore((s) => s.nodes);
   const edges = useGraphStore((s) => s.edges);
@@ -111,10 +112,10 @@ export default function AudioPreview({ node }: { node: DocNode }) {
       onError={() => { setPlaying(false); setNeedsConversion(true); setMessage('This format needs conversion. Choose Prepare playback.'); }} />}
     <AudioControls state={controls} />
     {transport && createPortal(<div className="audio-transport"><div className="audio-transport__identity"><strong>{node.title}</strong><small>{node.path || 'Selected sample'}</small></div><AudioControls state={controls} dock /></div>, transport)}
-    {message && <p role="status">{message}</p>}
     {saveFailed && <button type="button" disabled={!idle} onClick={() => void persist()}>Retry saving relationships</button>}
     {original && needsConversion && <button type="button" className="audio-preview__prepare" disabled={converting} onClick={() => void convert()}>{converting ? 'Preparing…' : 'Prepare playback'}</button>}
-    <MusicFeatures node={node} onMessage={setMessage} onSeek={url ? (seconds) => {
+    {/* MusicFeatures renders the panel's one status line, so playback feedback never fights the analysis state for space. */}
+    <MusicFeatures node={node} status={message} onMessage={setMessage} onSeek={url ? (seconds) => {
       if (!player.current) return;
       try {
         player.current.currentTime = seconds;

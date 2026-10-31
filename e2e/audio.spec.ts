@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { details } from './resonance';
+import { details, waitForGraphReady } from './resonance';
 import { correctDjTags } from './sampleAssistant';
 
 test('local synthetic audio is analyzed, playable, and corrections survive reload', async ({ page }) => {
@@ -46,7 +46,7 @@ test('local synthetic audio is analyzed, playable, and corrections survive reloa
     Object.defineProperty(element, 'files', { configurable: true, value: transfer.files });
     element.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled({ timeout: 240_000 });
+  await waitForGraphReady(page, 240_000);
   const firstAnalysisMs = Date.now() - firstStarted;
   const openTrack = async () => {
     await page.getByRole('button', { name: 'Search documents' }).click();
@@ -71,14 +71,14 @@ test('local synthetic audio is analyzed, playable, and corrections survive reloa
   await expect(page.locator('.audio-controls--preview .audio-waveform line')).toHaveCount(101);
   await correctDjTags(page, /Synthetic tone/i, card => card.getByRole('checkbox', { name: 'synthesizer', exact: true }).check(), 'Your DJ tags are saved.');
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeVisible();
+  await waitForGraphReady(page, 120_000);
   await openTrack();
   await expect(page.locator('.music-features')).toContainText('synthesizer');
   await page.getByText('Track actions', { exact: true }).click();
   const repeatedStarted = Date.now();
   await page.getByRole('button', { name: 'Reanalyze musical features', exact: true }).click();
   await expect.poll(() => page.evaluate(() => (window as typeof window & { featureCacheHits: string[] }).featureCacheHits.length), { timeout: 120_000 }).toBeGreaterThanOrEqual(3);
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled({ timeout: 120_000 });
+  await waitForGraphReady(page, 120_000);
   await expect(page.locator('.music-features')).toContainText('synthesizer');
   console.log(JSON.stringify({ firstAnalysisMs, repeatedAnalysisMs: Date.now() - repeatedStarted, cacheHits: await page.evaluate(() => (window as typeof window & { featureCacheHits: string[] }).featureCacheHits) }));
   expect(errors).toEqual([]);

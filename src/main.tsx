@@ -4,9 +4,11 @@ import App from './App';
 import AppErrorBoundary from './ui/AppErrorBoundary';
 import { installGlobalErrorHandlers } from './util/globalErrors';
 import { installOfflineFetchGuard } from './offline';
+import { installStaleBuildRecovery } from './util/staleBuild';
 
 installOfflineFetchGuard();
 installGlobalErrorHandlers();
+installStaleBuildRecovery();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -5,6 +5,20 @@ import { confidentSoundSummary, SOUND_DISPLAY_POLICY } from '../audio/confidentS
 import type { MusicAnalysis } from '../audio/musicTypes';
 import { soundLabelText } from '../audio/djTags';
 import { likelyExtraSounds } from './MainSoundAttributes';
+import { TIMBRE_DEFINITIONS, timbreDescriptions } from '../audio/timbreDescriptions';
+import { djReviewAllows, resolvedNonSourceLabels } from '../audio/soundReviewPolicy';
+
+/** The rule-measured words for how it sounds (timbreDescriptions.ts), as one plain line: not tags, no scores.
+ * Words you rejected, and words already shown as tags, are left out; old analyses without a measurement show nothing. */
+export function SoundDescription({audio,exclude=[]}:{audio:MusicAnalysis;exclude?:Iterable<string>}) {
+  const shown=new Set(exclude);
+  // A saved correction replaces automatic character evidence; later individual reviews still take precedence.
+  const confirmed=audio.confirmedDjTags===undefined?undefined:new Set(resolvedNonSourceLabels(audio).filter(label=>label.group==='character').map(label=>label.label));
+  const words=timbreDescriptions(audio.timbre).filter(word=>!shown.has(word)&&(!confirmed||confirmed.has(word))&&djReviewAllows(audio,'character',word));
+  if(!words.length)return null;
+  const hover=`Measured from the audio by fixed rules, not a trained model or a tested tag. ${words.map(word=>`${word}: ${TIMBRE_DEFINITIONS[word]}`).join('; ')}.`;
+  return <p className="sound-description" title={hover}>Sound: {words.join(', ')}<span className="sr-only"> — {hover}</span></p>;
+}
 
 const ORDER = ['source', 'effect', 'character', 'vocal', 'role'] as const;
 const DIMENSION_NAME = { source: 'Sound source', effect: 'Sound type', character: 'Character', vocal: 'Vocal', role: 'Role' };
@@ -16,7 +30,7 @@ export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnal
     .sort((a,b)=>ORDER.indexOf(a.dimension as typeof ORDER[number])-ORDER.indexOf(b.dimension as typeof ORDER[number]));
   // Separate, dimmed group: untested but probability-like model scores >= 0.5. Only in the real music panel (node given).
   const extras=node?likelyExtraSounds(audio,node,new Set(labels.map(l=>l.label))):[];
-  return <section aria-label="Sound identification" data-display-policy={SOUND_DISPLAY_POLICY} data-filename-policy="missing-dimension-v1" className="sound-tags">
+  return <section aria-label="Sound identification" data-display-policy={SOUND_DISPLAY_POLICY} data-filename-policy="missing-dimension-v6" className="sound-tags">
     <h4 className="sound-tags__title">Sounds</h4>
     {node && <p className="sound-tags__note">Scores are on each model’s own scale, not probabilities, and missing evidence does not prove a sound is absent.</p>}
     {labels.length ? <ul className="sound-tags__list">{labels.map(l => {

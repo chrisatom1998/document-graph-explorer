@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Read the request
         env:
           IN: ${{ toJSON(inputs) }}
@@ -86,7 +86,7 @@ jobs:
           grep -q '^# HELD_OUT=1' "scripts/hf-eval/tasks/$TASK.sh" || exit 0
           python3 -c "import sys; from huggingface_hub import HfApi; a = HfApi(); a.delete_folder(f'runs/{sys.argv[1]}', repo_id=a.whoami()['name'] + '/dge-eval-runs', repo_type='dataset', commit_message='Delete held-out per-track exports')" "$RUN_KEY" || true
           rm -rf "$RUNNER_TEMP/parts"/part-*
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: hf-eval-${{ env.TASK }}

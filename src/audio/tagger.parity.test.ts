@@ -26,6 +26,9 @@ function taggerParitySignal(seconds: number): Float32Array {
 }
 
 describe('trained tagger front end', () => {
+  it('holds reference scores for every policy output', () => {
+    for (const c of fixture.cases) expect(Object.keys(c.scores).sort()).toEqual(TAGGER_POLICY.tags.map(t => t.output).sort());
+  });
   it('cuts the same windows as the Python scorers', () => {
     for (const c of fixture.cases) expect(taggerWindowStarts(c.seconds)).toEqual(c.starts);
   });

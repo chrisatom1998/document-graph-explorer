@@ -1,3 +1,4 @@
+import { confidentSoundSummary } from '../audio/confidentSoundSummary';
 import { handleMusic } from '../workers/aggregatorHandlers';
 import { cancelMusicJob, cancelAllMusicJobs, useMusicJobs } from '../store/musicJobs';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, sanitizeMusicAnalysis } from '../audio/musicTypes';
@@ -33,11 +34,13 @@ import {
   removeDocuments,
   resetCorpus,
   analyzeAudioCorpus,
+  outdatedAudioIds,
   setAudioReview,
 } from './coordinator';
 import { rememberWorldOrigin } from '../scene/ingestBirth';
 import { createRecognition, recognitionConfiguration } from '../audio/recognition';
 import { supportsFusionInput, fusionConfiguration } from '../audio/fusionRelease';
+import { resolvedNonSourceLabels, latestSoundReview } from '../audio/soundReviewPolicy';
 
 const music = vi.hoisted(() => ({ analyzeMusic: vi.fn(), preloadMusicModels: vi.fn(async () => {}) }));
 vi.mock('../audio/analyzeMusic', () => music);
@@ -467,6 +470,75 @@ describe('coordinator ingest', () => {
     expect(docVectorStore.size).toBe(0);
   });
 
+  it('becomes usable after lexical commit and preserves nodes and selection through refinement', async () => {
+    let releaseEmbedding: (() => void) | undefined;
+    let embeddingStarted = false;
+    poolState.requestImpl = async (msg, options) => {
+      if (msg.type !== 'embedBatch') return defaultPoolRequest(msg, options);
+      embeddingStarted = true;
+      await new Promise<void>((resolve) => { releaseEmbedding = resolve; });
+      return defaultPoolRequest(msg, options);
+    };
+
+    const run = ingestFiles([
+      textFile('progressive-one.txt', 'Kafka progressive ingestion one.'),
+      textFile('progressive-two.txt', 'Kafka progressive ingestion two.'),
+    ]);
+    await vi.waitFor(() => {
+      expect(embeddingStarted).toBe(true);
+      expect(useGraphStore.getState().graphUsable).toBe(true);
+    });
+
+    const duringRefinement = useGraphStore.getState();
+    const ids = documentIds();
+    expect(duringRefinement.phase).toBe('embedding');
+    expect(duringRefinement.edges.some((edge) => edge.kind === 'keyword')).toBe(true);
+    expect(duringRefinement.nodes.filter((node) => node.kind === 'document')
+      .every((node) => node.cluster >= 0)).toBe(true);
+    expect(Object.keys(duringRefinement.localClusterNames)).not.toHaveLength(0);
+    expect(aggState.requests.some((request) => request.type === 'cluster')).toBe(true);
+    expect(layout.layoutSetClusters).toHaveBeenCalled();
+    expect(aggState.requests.some((request) => request.type === 'semantic')).toBe(false);
+    expect(docVectorStore.size).toBe(0);
+    useUiStore.getState().setSelected(ids[0]);
+
+    releaseEmbedding?.();
+    await run;
+
+    expect(documentIds()).toEqual(ids);
+    expect(useUiStore.getState().selectedId).toBe(ids[0]);
+    expect(useGraphStore.getState().graphUsable).toBe(true);
+    expect(useGraphStore.getState().phase).toBe('ready');
+    expect(useGraphStore.getState().edges.some((edge) => edge.kind === 'semantic')).toBe(true);
+  });
+
+  it('skips preliminary lexical clustering when the graph already has clusters', async () => {
+    await ingestFiles([textFile('existing-cluster.txt', 'Kafka existing clustered document.')]);
+    expect(useGraphStore.getState().nodes[0]?.cluster).toBeGreaterThanOrEqual(0);
+    aggState.requests = [];
+
+    let releaseEmbedding: (() => void) | undefined;
+    let embeddingStarted = false;
+    poolState.requestImpl = async (msg, options) => {
+      if (msg.type !== 'embedBatch') return defaultPoolRequest(msg, options);
+      embeddingStarted = true;
+      await new Promise<void>((resolve) => { releaseEmbedding = resolve; });
+      return defaultPoolRequest(msg, options);
+    };
+
+    const run = ingestFiles([
+      textFile('added-to-clusters.txt', 'Kafka document added to an existing graph.'),
+    ]);
+    await vi.waitFor(() => expect(embeddingStarted).toBe(true));
+
+    expect(aggState.requests.map((request) => request.type)).toEqual(['lexical']);
+    expect(useGraphStore.getState().nodes.find((node) => node.title === 'added-to-clusters')?.cluster)
+      .toBe(-1);
+
+    releaseEmbedding?.();
+    await run;
+  });
+
   it('settles a mid-parse cancel without rejecting', async () => {
     poolState.hangParse = true;
     const run = ingestFiles([textFile('slow.txt', 'Will hang in parse until cancelled.')]);
@@ -538,11 +610,17 @@ describe('coordinator ingest', () => {
     };
     const run = ingestFiles([file]);
     await vi.waitFor(() => expect(embedStarted).toBe(true));
+    expect(useGraphStore.getState().graphUsable).toBe(true);
+    const [selectedId] = documentIds();
+    useUiStore.getState().setSelected(selectedId);
     cancelIngest();
     await run;
     const [id] = documentIds();
     expect(id).toBeDefined();
     expect(docVectorStore.has(id)).toBe(false);
+    expect(useGraphStore.getState().phase).toBe('ready');
+    expect(useGraphStore.getState().graphUsable).toBe(true);
+    expect(useUiStore.getState().selectedId).toBe(id);
 
     poolState.requestImpl = undefined;
     await ingestFiles([file]);
@@ -570,6 +648,7 @@ describe('coordinator ingest', () => {
     async (passType) => {
       if (passType === 'cluster') {
         await ingestFiles([textFile('existing.txt', 'Kafka existing document.')]);
+        aggState.requests = [];
       }
       const files = [
         textFile('late-cancel-one.txt', 'Kafka late cancellation one.'),
@@ -771,6 +850,11 @@ describe('coordinator remove and watch reconcile', () => {
     expect(persistence.deleteDocsFromCache).toHaveBeenCalledWith([drop.id]);
     expect(persistence.deleteOriginals).toHaveBeenCalledWith([drop.id]);
     expect(useGraphStore.getState().phase).toBe('ready');
+
+    await removeDocuments([keep.id]);
+    expect(documentIds()).toEqual([]);
+    expect(useGraphStore.getState().phase).toBe('idle');
+    expect(useGraphStore.getState().graphUsable).toBe(false);
   });
 
   it('reconcileWatchedFiles ingests the new revision before dropping the old id', async () => {
@@ -1055,6 +1139,94 @@ describe('WAV music ingestion', () => {
     await setAudioDjTags(node.id);
     expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.soundReviews).toEqual(updated.soundReviews);
   });
+  it('lets saved character corrections supersede older reviews while later individual reviews still win', async () => {
+    await ingestFiles([wav('character-review.wav')]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    useGraphStore.getState().patchNodes(new Map([[node.id, { audio: { ...node.audio!, recognition: createRecognition(node.audio!.durationSeconds, 'full') } }]]));
+    const current = () => useGraphStore.getState().nodes.find(n => n.id === node.id)!.audio!;
+    await setAudioReview(node.id, 'warm', 'character', 'confirmed');
+    const original = current().soundReviews![0];
+    await setAudioDjTags(node.id, { source: [], production: [], character: [] });
+    expect(resolvedNonSourceLabels(current()).filter(label => label.group === 'character')).toEqual([]);
+    expect(current().soundReviews?.[0]).toEqual(original);
+    expect(latestSoundReview(current().soundReviews, 'character', 'warm')?.decision).toBe('rejected');
+    const clearedHistory = current().soundReviews;
+    await setAudioDjTags(node.id, { source: [], production: [], character: [] });
+    expect(current().soundReviews).toEqual(clearedHistory);
+    const restored = sanitizeMusicAnalysis(JSON.parse(JSON.stringify(current())))!;
+    expect(resolvedNonSourceLabels(restored).filter(label => label.group === 'character')).toEqual([]);
+    await setAudioReview(node.id, 'warm', 'character', 'confirmed');
+    expect(resolvedNonSourceLabels(current())).toContainEqual({ group: 'character', label: 'warm', source: 'confirmed' });
+    await setAudioReview(node.id, 'warm', 'character', 'uncertain');
+    await setAudioDjTags(node.id, { source: [], production: [], character: ['warm'] });
+    expect(resolvedNonSourceLabels(current())).toContainEqual({ group: 'character', label: 'warm', source: 'confirmed' });
+    expect(current().soundReviews?.map(review => review.decision)).toEqual(['confirmed', 'rejected', 'confirmed', 'uncertain', 'confirmed']);
+    const history = current().soundReviews;
+    await setAudioDjTags(node.id);
+    expect(current().soundReviews).toEqual(history);
+  });
+  it('lets a saved falling correction supersede a historical downlifter rejection', async () => {
+    await ingestFiles([wav('downlifter-review.wav')]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    useGraphStore.getState().patchNodes(new Map([[node.id, { audio: { ...node.audio!, recognition: createRecognition(node.audio!.durationSeconds, 'full') } }]]));
+    await setAudioReview(node.id, 'downlifter', 'effect', 'rejected');
+    const current = () => useGraphStore.getState().nodes.find(n => n.id === node.id)!.audio!;
+    const original = current().soundReviews![0];
+    await setAudioDjTags(node.id, { source: [], production: [], character: ['falling'] });
+    expect(latestSoundReview(current().soundReviews, 'character', 'falling')?.decision).toBe('confirmed');
+    expect(resolvedNonSourceLabels(current())).toContainEqual({ group: 'character', label: 'falling', source: 'confirmed' });
+    expect(current().soundReviews?.[0]).toEqual(original);
+    const restored = sanitizeMusicAnalysis(JSON.parse(JSON.stringify(current())))!;
+    expect(resolvedNonSourceLabels(restored)).toContainEqual({ group: 'character', label: 'falling', source: 'confirmed' });
+    const history = current().soundReviews;
+    await setAudioDjTags(node.id, { source: [], production: [], character: ['falling'] });
+    expect(current().soundReviews).toEqual(history);
+    await setAudioDjTags(node.id, { source: [], production: [], character: [] });
+    expect(latestSoundReview(current().soundReviews, 'character', 'falling')?.decision).toBe('rejected');
+    expect(resolvedNonSourceLabels(current())).toEqual([]);
+  });
+  it('does not reject vinyl scratch through a historical turntable source review when corrections keep it', async () => {
+    await ingestFiles([wav('turntable-review.wav')]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    useGraphStore.getState().patchNodes(new Map([[node.id, { audio: { ...node.audio!, recognition: createRecognition(node.audio!.durationSeconds, 'full') } }]]));
+    await setAudioReview(node.id, 'turntable', 'source', 'confirmed');
+    const current = () => useGraphStore.getState().nodes.find(n => n.id === node.id)!.audio!;
+    const history = current().soundReviews;
+    await setAudioDjTags(node.id, { source: [], production: ['vinyl scratch'], character: [] });
+    expect(current().soundReviews).toEqual(history);
+    expect(latestSoundReview(current().soundReviews, 'effect', 'vinyl scratch')?.decision).toBe('confirmed');
+  });
+  it.each(['confirmed', 'rejected', 'uncertain'] as const)('reconciles historical turntable %s reviews when vinyl scratch is selected and cleared', async decision => {
+    await ingestFiles([wav('turntable-reconcile.wav')]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    useGraphStore.getState().patchNodes(new Map([[node.id, { audio: { ...node.audio!, recognition: createRecognition(node.audio!.durationSeconds, 'full') } }]]));
+    await setAudioReview(node.id, 'turntable', 'source', decision);
+    const current = () => useGraphStore.getState().nodes.find(n => n.id === node.id)!.audio!;
+    const original = current().soundReviews![0];
+    await setAudioDjTags(node.id, { source: [], production: ['vinyl scratch'], character: [] });
+    expect(latestSoundReview(current().soundReviews, 'effect', 'vinyl scratch')?.decision).toBe('confirmed');
+    expect(confidentSoundSummary(current()).map(s => s.label)).toContain('vinyl scratch');
+    expect(current().soundReviews![0]).toEqual(original);
+    await setAudioDjTags(node.id, { source: [], production: [], character: [] });
+    expect(latestSoundReview(current().soundReviews, 'effect', 'vinyl scratch')?.decision).toBe('rejected');
+    expect(confidentSoundSummary(current()).map(s => s.label)).not.toContain('vinyl scratch');
+    const history = current().soundReviews;
+    await setAudioDjTags(node.id, { source: [], production: [], character: [] });
+    expect(current().soundReviews).toEqual(history);
+    expect(confidentSoundSummary(sanitizeMusicAnalysis(current())!).map(s => s.label)).not.toContain('vinyl scratch');
+  });
+  it('refuses a character correction atomically when reconciliation would exceed the review history limit', async () => {
+    await ingestFiles([wav('character-review-limit.wav')]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    const review = { labelId: 'warm', dimension: 'character' as const, decision: 'confirmed' as const, scope: 'track' as const, at: '2026-10-10T00:00:00Z', evidenceRunId: 'r' };
+    const audio = { ...node.audio!, soundReviews: Array.from({ length: 500 }, () => ({ ...review })) };
+    useGraphStore.getState().patchNodes(new Map([[node.id, { audio }]]));
+    await expect(setAudioDjTags(node.id, { source: [], production: [], character: [] })).rejects.toThrow('Review history limit reached');
+    expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio).toEqual(audio);
+    // Saving an unchanged decision needs no new history entry, even at the limit.
+    await expect(setAudioDjTags(node.id, { source: [], production: [], character: ['warm'] })).resolves.toBe(true);
+    expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.soundReviews).toEqual(audio.soundReviews);
+  });
   it('re-runs saved one-shots and full long recordings after a one-shot model change, keeping their reviews', async () => {
     await ingestFiles([wav('hit.wav'), wav('song.wav')]);
     const [hit, song] = useGraphStore.getState().nodes.filter(n => n.fileType === 'audio');
@@ -1111,11 +1283,72 @@ describe('WAV music ingestion', () => {
     expect(useGraphStore.getState().edges.find(e => e.kind === 'instrument')?.evidence[0]).toContain('Confirmed by you on both tracks');
     const nodes = useGraphStore.getState().nodes.filter(n => n.fileType === 'audio');
     useGraphStore.getState().patchNodes(new Map(nodes.map(n => [n.id, { audio: { ...n.audio!, keyRevision: 0 } }])));
-    await ingestFiles([wav('one.wav'), wav('two.wav')]);
+    persistence.getOriginal.mockResolvedValue({ blob: new Blob(['RIFF']), name: 'one.wav' });
+    const fresh = await music.analyzeMusic();
+    music.analyzeMusic.mockClear();
+    music.analyzeMusic.mockImplementation(async () => structuredClone(fresh));
+    await analyzeAudioCorpus();
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(2);
     expect(useGraphStore.getState().nodes.filter(n => n.fileType === 'audio').every(n => n.audio?.confirmedInstruments?.[0] === 'piano')).toBe(true);
     await setAudioInstruments(ids);
     expect(useGraphStore.getState().nodes.filter(n => n.fileType === 'audio').every(n => n.audio?.confirmedInstruments === undefined)).toBe(true);
     expect(useGraphStore.getState().edges.find(e => e.kind === 'instrument')?.evidence[0]).toContain('synthesizer');
+  });
+  it('analyzes only the new track when files are added to a library with older results', async () => {
+    await ingestFiles([wav('one.wav'), wav('two.wav')]);
+    const ids = documentIds();
+    // Every saved result predates the current detectors, as after a model update ships.
+    useGraphStore.getState().patchNodes(new Map(ids.map(id => {
+      const audio = useGraphStore.getState().nodes.find(n => n.id === id)!.audio!;
+      return [id, { audio: { ...audio, keyRevision: 0, classifierConfiguration: 'older release' } }];
+    })));
+    const before = new Map(ids.map(id => [id, useGraphStore.getState().nodes.find(n => n.id === id)!.audio]));
+    music.analyzeMusic.mockClear();
+    // Re-reading the whole folder with one new file in it.
+    await ingestFiles([wav('one.wav'), wav('two.wav'), wav('three.wav')]);
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
+    expect(music.analyzeMusic.mock.calls[0][1]).toBe('three.wav');
+    for (const id of ids) expect(useGraphStore.getState().nodes.find(n => n.id === id)!.audio).toEqual(before.get(id));
+    expect(outdatedAudioIds().sort()).toEqual([...ids].sort());
+    // Updating them is a separate, explicit step.
+    persistence.getOriginal.mockResolvedValue({ blob: new Blob(['RIFF']), name: 'one.wav' });
+    const fresh = await music.analyzeMusic();
+    music.analyzeMusic.mockClear();
+    music.analyzeMusic.mockImplementation(async () => structuredClone(fresh));
+    await analyzeAudioCorpus();
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(2);
+    expect(outdatedAudioIds()).toEqual([]);
+  });
+  it('updates the listed older tracks without restarting unrelated unfinished analysis', async () => {
+    await ingestFiles([wav('older.wav'), wav('unfinished.wav'), wav('current.wav')]);
+    const [older, unfinished, current] = useGraphStore.getState().nodes.filter(n => n.fileType === 'audio');
+    useGraphStore.getState().patchNodes(new Map([
+      [older.id, { audio: { ...older.audio!, keyRevision: 0 } }],
+      [unfinished.id, { audio: { ...unfinished.audio!, instrumentScan: { ...unfinished.audio!.instrumentScan!, complete: false } } }],
+    ]));
+    const before = useGraphStore.getState().nodes.find(n => n.id === unfinished.id)!.audio;
+    const updating = outdatedAudioIds();
+    expect(updating).toEqual([older.id]);
+    persistence.getOriginal.mockResolvedValue({ blob: new Blob(['RIFF']), name: 'older.wav' });
+    const fresh = await music.analyzeMusic();
+    music.analyzeMusic.mockClear();
+    music.analyzeMusic.mockImplementation(async () => structuredClone(fresh));
+    await analyzeAudioCorpus(updating);
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
+    expect(music.analyzeMusic.mock.calls[0][2].cacheKey).toBe(older.id);
+    expect(useGraphStore.getState().nodes.find(n => n.id === unfinished.id)!.audio).toEqual(before);
+    expect(useGraphStore.getState().nodes.find(n => n.id === current.id)!.audio).toEqual(current.audio);
+    expect(outdatedAudioIds()).toEqual([]);
+  });
+  it('finishes an unfinished track in the drop without touching unfinished tracks outside it', async () => {
+    await ingestFiles([wav('one.wav'), wav('two.wav')]);
+    const [one, two] = useGraphStore.getState().nodes.filter(n => n.fileType === 'audio');
+    useGraphStore.getState().patchNodes(new Map([one, two].map(n => [n.id, { audio: { ...n.audio!, instrumentScan: { ...n.audio!.instrumentScan!, complete: false } } }])));
+    music.analyzeMusic.mockClear();
+    await ingestFiles([wav('one.wav')]);
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
+    expect(useGraphStore.getState().nodes.find(n => n.id === one.id)!.audio?.instrumentScan?.complete).toBe(true);
+    expect(useGraphStore.getState().nodes.find(n => n.id === two.id)!.audio?.instrumentScan?.complete).toBe(false);
   });
   it('analyzes new WAVs and repairs missing analysis when the same files are dropped again', async () => {
     await ingestFiles([wav('one.wav'), wav('two.WAV')]);
@@ -1312,6 +1545,44 @@ describe('WAV music ingestion', () => {
     await vi.waitFor(()=>expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.stage).toBeUndefined());
     expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.confirmedDjTags?.source).toEqual(['piano']);
   });
+  it('lets a new Quick run replace a cancelled analysis instead of showing the cancelled run until background work finishes', async () => {
+    await ingestFiles([wav('after-cancel.wav')]);
+    const node=useGraphStore.getState().nodes.find(n=>n.fileType==='audio')!;
+    await setAudioDjTags(node.id,{source:['synthesizer'],production:[],character:[]});
+    // What a cancelled reanalysis leaves behind: a finished-stage result whose ledger is cancelled.
+    const cancelled=createRecognition(node.audio!.durationSeconds,'fast');cancelled.status='cancelled';
+    for(const job of cancelled.jobs)job.status='cancelled';
+    const current=useGraphStore.getState().nodes.find(n=>n.id===node.id)!;
+    useGraphStore.getState().patchNodes(new Map([[node.id,{audio:{...current.audio!,recognition:cancelled}}]]));
+    persistence.getOriginal.mockResolvedValue({blob:new Blob(['RIFF']),name:'after-cancel.wav'});
+    vi.useFakeTimers();
+    useSettingsStore.getState().setMusicAnalysisMode('fast');
+    const original=music.analyzeMusic.getMockImplementation()!;
+    let finish!: (value: Awaited<ReturnType<typeof original>>)=>void;
+    let final!: Awaited<ReturnType<typeof original>>;
+    const failed=createRecognition(node.audio!.durationSeconds,'fast');failed.status='running';
+    failed.jobs.find(job=>job.modelId==='ast')!.status='failed';
+    music.analyzeMusic.mockImplementation(async (...args)=>{
+      final=await original(...args);
+      args[2].onPreview({...final,stage:'preview',recognition:failed});
+      // The background pass is still running when Quick's deadline releases the run.
+      return new Promise(resolve=>{finish=resolve;});
+    });
+    const run=analyzeAudioCorpus([node.id]);
+    await vi.waitFor(()=>expect(finish).toBeTypeOf('function'));
+    await vi.advanceTimersByTimeAsync(14000);
+    await run;
+    vi.useRealTimers();
+    expect(useMusicJobs.getState().jobs[node.id]).toBeDefined();
+    const shown=useGraphStore.getState().nodes.find(n=>n.id===node.id)!.audio!;
+    expect(shown.stage).toBe('preview');
+    expect(shown.recognition?.runId).toBe(failed.runId);
+    expect(shown.recognition?.jobs.find(job=>job.modelId==='ast')?.status).toBe('failed');
+    expect(shown.confirmedDjTags?.source).toEqual(['synthesizer']);
+    cancelMusicJob(node.id);
+    finish(final);
+    await enqueueRun(async()=>undefined);
+  });
 });
 
 describe('remembered library', () => {
@@ -1364,6 +1635,36 @@ describe('remembered library', () => {
     expect(persistence.getOriginal).toHaveBeenCalledWith(node.id);
     expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
     expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.instrumentScan?.complete).toBe(true);
+  });
+
+  it.each([85, 86, 93, 94])('explicitly refreshes a persisted pre-calibration analysis at revision %i', async revision => {
+    const node = await storedTrack('calibration.wav');
+    const saved = { ...node, audio: { ...node.audio!,
+      instrumentScan: { ...node.audio!.instrumentScan!, revision },
+      confirmedInstruments: ['piano'],
+    } };
+    persistence.lookupDocCache.mockResolvedValue({ node: saved, text: '', chunkTexts: [], chunkVectors: null, docVector: null, mdLinkTargets: [], docLinks: [] });
+    persistence.getOriginal.mockResolvedValue({ blob: new Blob([wavBytes()], { type: 'audio/wav' }), name: 'calibration.wav' });
+    persistence.getOriginal.mockClear();
+    const readBytes = vi.fn(async () => wavBytes());
+    await ingestFiles([known('calibration.wav', node.id, readBytes)]);
+    expect(readBytes).not.toHaveBeenCalled();
+    expect(persistence.getOriginal).not.toHaveBeenCalled();
+    expect(music.analyzeMusic).not.toHaveBeenCalled();
+    expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio).toEqual(saved.audio);
+    const updating = outdatedAudioIds();
+    expect(updating).toEqual([node.id]);
+    await analyzeAudioCorpus(updating);
+    expect(persistence.getOriginal).toHaveBeenCalledWith(node.id);
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
+    const refreshed = useGraphStore.getState().nodes.find(n => n.id === node.id)!.audio!;
+    expect(refreshed.instrumentScan?.revision).toBe(INSTRUMENT_ANALYSIS_REVISION);
+    expect(refreshed.instrumentScan?.revision).toBeGreaterThan(86);
+    expect(refreshed.confirmedInstruments).toEqual(['piano']);
+    expect(outdatedAudioIds()).toEqual([]);
+    music.analyzeMusic.mockClear();
+    await analyzeAudioCorpus();
+    expect(music.analyzeMusic).not.toHaveBeenCalled();
   });
 
   it('reads the file after all when its stored record has gone', async () => {

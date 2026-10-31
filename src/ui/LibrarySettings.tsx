@@ -12,6 +12,7 @@ export default function LibrarySettings() {
   const [stats, setStats] = useState<LibraryStats | null | undefined>(undefined);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [outdated, setOutdated] = useState<string[]>([]);
   const audioIds = useGraphStore((s) =>
     s.nodes.filter((n) => n.kind === 'document' && n.fileType === 'audio').map((n) => n.id).join('\n'),
   );
@@ -27,6 +28,23 @@ export default function LibrarySettings() {
       live = false;
     };
   }, [note]);
+
+  // Adding files never re-analyzes the rest of the library, so tracks from an older detector release wait here.
+  useEffect(() => {
+    let live = true;
+    if (!audioIds || (phase !== 'ready' && phase !== 'idle')) {
+      setOutdated([]);
+      return;
+    }
+    void import('../pipeline/coordinatorLazy')
+      .then((m) => {
+        if (live) setOutdated(m.outdatedAudioIds());
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [audioIds, phase, note]);
 
   const forget = () => {
     setBusy(true);
@@ -55,6 +73,30 @@ export default function LibrarySettings() {
       .finally(() => setBusy(false));
   };
 
+  const update = () => {
+    setBusy(true);
+    setNote(null);
+    const updating = outdated;
+    void import('../pipeline/coordinatorLazy')
+      .then(async (m) => {
+        await m.analyzeAudioCorpus(updating);
+        // Older results can remain after an attempt; leaving this list does not prove a Full scan finished.
+        const pending = new Set(m.outdatedAudioIds());
+        return updating.filter((id) => pending.has(id)).length;
+      })
+      .then(
+        (left) =>
+          setNote(
+            left === 0
+              ? `Update requested for ${count(updating.length, 'track')}. Check track progress and warnings.`
+              : `Update requested for ${count(updating.length, 'track')}; ${count(left, 'track')} still ${left === 1 ? 'has' : 'have'} older results. Check track progress and warnings.`,
+          ),
+        (error: unknown) =>
+          setNote(error instanceof Error && error.name === 'AbortError' ? 'Update cancelled.' : 'Update failed. Try again.'),
+      )
+      .finally(() => setBusy(false));
+  };
+
   return (
     <div className="library-settings" aria-label="Saved library">
       <p className="settings-help">
@@ -64,7 +106,23 @@ export default function LibrarySettings() {
             ? 'This browser is not saving the library (storage unavailable).'
             : `Saved library: ${count(stats.files, 'file')} remembered, ${count(stats.analyses, 'track analysis', 'track analyses')} kept. Re-reading a folder skips files whose name, size and date have not changed.`}
       </p>
+      {outdated.length > 0 && (
+        <p className="settings-help">
+          {`${count(outdated.length, 'track')} ${outdated.length === 1 ? 'was' : 'were'} analyzed by an older version of the detectors. Adding files leaves them as they are; update them when you have time.`}
+        </p>
+      )}
       <div className="settings-confirm">
+        {outdated.length > 0 && (
+          <button
+            type="button"
+            className="settings-btn"
+            disabled={busy || (phase !== 'ready' && phase !== 'idle')}
+            onClick={update}
+            title="Re-analyze only the tracks whose saved results came from an older version of the detectors."
+          >
+            {`Update ${count(outdated.length, 'older track')}`}
+          </button>
+        )}
         <button
           type="button"
           className="settings-btn"

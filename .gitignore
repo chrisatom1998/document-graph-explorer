@@ -44,3 +44,7 @@ public/tagger-model/*.onnx
 # NSynth heads are converted locally from Essentia .pb files (no upstream ONNX), so they are committed
 !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
 # learned.json and short-clip.json are small trained heads committed with the app (pinned in manifest.json)
+
+# Copied by scripts/hf-sound-tags/plan.py --launch from REPO_SHA; not source.
+.hf-launch/
+hf-job-id

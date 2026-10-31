@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { details as detailsPanel } from './resonance';
+import { details as detailsPanel, waitForGraphReady } from './resonance';
 import { correctDjTags } from './sampleAssistant';
 
 test('unavailable models stay explicit through correction, cancellation and restart', async ({ page }) => {
@@ -31,14 +31,15 @@ test('unavailable models stay explicit through correction, cancellation and rest
     Object.defineProperty(element, 'files', { configurable: true, value: transfer.files });
     element.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeVisible({ timeout: 240_000 });
+  await waitForGraphReady(page, 240_000);
   const openTrack = async () => {
     await page.getByRole('button', { name: 'Search documents' }).click();
     await page.getByRole('option', { name: /Synthetic tone/i }).click();
     await expect(page.locator('.audio-preview')).toBeVisible();
   };
   await openTrack();
-  await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('Analysis: partial');
+  // The background pass finishes after the quick estimate; on slow runners that takes over 30 s.
+  await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('Analysis: partial', { timeout: 120_000 });
   const details = page.getByText('Technical details', { exact: true });
   if (await details.locator('..').getAttribute('open') === null) await details.click();
   await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('AST: failed');
@@ -55,15 +56,19 @@ test('unavailable models stay explicit through correction, cancellation and rest
   await expect(detailsPanel(page).locator('audio')).toHaveAttribute('src', /^blob:/);
   await correctDjTags(page, /Synthetic tone/i, card => card.getByRole('checkbox', { name: 'synthesizer', exact: true }).check(), 'Your DJ tags are saved.');
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeVisible();
+  await waitForGraphReady(page, 120_000);
   await openTrack();
   await expect(page.locator('.music-features')).toContainText('synthesizer');
   await page.getByText('Track actions', { exact: true }).click();
   await page.getByRole('button', { name: 'Reanalyze musical features' }).click();
   await page.getByRole('button', { name: 'Cancel analysis' }).click();
   await expect(page.getByRole('button', { name: 'Reanalyze musical features' })).toBeEnabled();
+  await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('Analysis cancelled.');
   await expect(page.locator('.music-features')).toContainText('synthesizer');
   await page.getByRole('button', { name: 'Reanalyze musical features' }).click();
+  // Completion feedback persists even if unavailable models finish before the first check.
+  // The previous run's cancellation feedback cannot satisfy this assertion.
+  await expect(page.getByRole('region', { name: 'Musical features' })).toContainText(/Analysis finished\.|Initial analysis ready\./, { timeout: 120_000 });
   await expect(page.getByRole('button', { name: 'Reanalyze musical features' })).toBeEnabled({ timeout: 120_000 });
   await page.getByText('Technical details', { exact: true }).click();
   await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('AST: failed');

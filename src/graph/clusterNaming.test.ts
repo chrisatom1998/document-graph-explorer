@@ -126,3 +126,15 @@ describe('computeLocalClusterNames', () => {
     expect(computeLocalClusterNames([])).toEqual({});
   });
 });
+
+describe('short cluster keywords', () => {
+  it.each(['api', 'sql', 'ai', 'ux', 'war', 'art'])('keeps a dominant %s ahead of a weaker longer keyword', (keyword) => {
+    const nodes = [mkNode('a', 0, [keyword, 'reference']), mkNode('b', 0, [keyword]), mkNode('c', 0, [keyword])];
+    expect(computeLocalClusterNames(nodes)[0]).toBe(`${keyword[0].toUpperCase()}${keyword.slice(1)} & Reference`);
+  });
+
+  it('still drops a record-code stem that a longer keyword in the cluster begins with', () => {
+    const nodes = [mkNode('a', 0, ['dat', 'data platform']), mkNode('b', 0, ['dat', 'data platform']), mkNode('c', 0, ['dat', 'ingest'])];
+    expect(computeLocalClusterNames(nodes)[0]).toBe('Data Platform & Ingest');
+  });
+});

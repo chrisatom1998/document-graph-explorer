@@ -1,0 +1,97 @@
+{
+ "kind": "round16-clean-heads-v1",
+ "excludedFsd50kEvalRecordings": 4972,
+ "bar": 0.5,
+ "heads": [
+  {
+   "kind": "instrument",
+   "name": "hand percussion",
+   "testedOn": "real recordings",
+   "trainPositive": 397,
+   "testPositive": 149,
+   "threshold": 0.972,
+   "tp": 119,
+   "fp": 2,
+   "fn": 30,
+   "precision": 0.9834710743801653,
+   "recall": 0.7986577181208053,
+   "f1": 0.8814814814814815,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ]
+  },
+  {
+   "kind": "instrument",
+   "name": "tuned percussion",
+   "testedOn": "real recordings",
+   "trainPositive": 305,
+   "testPositive": 130,
+   "threshold": 0.981,
+   "tp": 70,
+   "fp": 8,
+   "fn": 60,
+   "precision": 0.8974358974358975,
+   "recall": 0.5384615384615384,
+   "f1": 0.673076923076923,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ]
+  },
+  {
+   "kind": "instrument",
+   "name": "bell",
+   "testedOn": "real recordings",
+   "trainPositive": 498,
+   "testPositive": 170,
+   "threshold": 0.962,
+   "tp": 98,
+   "fp": 27,
+   "fn": 72,
+   "precision": 0.784,
+   "recall": 0.5764705882352941,
+   "f1": 0.6644067796610169,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ]
+  },
+  {
+   "kind": "instrument",
+   "name": "breath",
+   "testedOn": "real recordings",
+   "trainPositive": 309,
+   "testPositive": 113,
+   "threshold": 0.983,
+   "tp": 58,
+   "fp": 13,
+   "fn": 55,
+   "precision": 0.8169014084507042,
+   "recall": 0.5132743362831859,
+   "f1": 0.6304347826086957,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ]
+  },
+  {
+   "kind": "label",
+   "name": "vocal shout",
+   "testedOn": "real recordings",
+   "trainPositive": 252,
+   "testPositive": 110,
+   "threshold": 0.986,
+   "tp": 77,
+   "fp": 3,
+   "fn": 33,
+   "precision": 0.9625,
+   "recall": 0.7,
+   "f1": 0.8105263157894735,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ]
+  }
+ ]
+}

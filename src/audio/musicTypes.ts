@@ -3,21 +3,66 @@ import { sanitizeFusion, type FusionAnalysis } from './fusion';
 import { sanitizeFullMixAnalysis, type FullMixAnalysis } from './fullMixHeads';
 import { sanitizeTaggerAnalysis, type TaggerAnalysis } from './tagger';
 import { sourceLabels, sanitizeRecognition, sanitizeSoundReviews, type Recognition, type SoundReview } from './recognition';
-import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
+import { MERGED_DJ_LABELS, mergedDjLabel, sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
 import { sanitizeStructure, type TrackStructure } from './structure';
 import { sanitizeVersionPrint } from './versionPrint';
+import { sanitizeTimbre, type TimbreSummary } from './timbre';
 import { sanitizeGenreScores, sanitizeStyles, type TrackStyle } from './genreEnergy';
 import { sanitizeNativeWindowEvidence, type NativeWindowEvidence } from './nativeWindowEvidence';
+const MOVED_INTO_SOURCE = new Set(Object.entries(MERGED_DJ_LABELS).filter(([key, to]) => to.group === 'source' && !key.startsWith('source:')).map(([, to]) => to.label));
 export const MUSIC_ANALYSIS_VERSION = 2;
 export const KEY_ANALYSIS_REVISION = 4;
 export const TEMPO_ANALYSIS_REVISION = 5;
 // Enabling the built-in policy makes persisted native-only documents eligible for reanalysis. 70/71: full-mix heads. 73/74: genre and energy.
 // 75/76: the trained tagger. 77/78: its per-window scores (long-recording rules).
 // 79/80: full-precision tagger scores; incomplete outputs remain unknown. 81/82: DJ effect heads retrained on the grown clip set.
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 82 : 81;
+// 83/84: the runs 3 and 5 tagger blend (old tagger scores no longer count).
+// 85/86: sound heads for kalimba, djembe and nine maybe tags (tag-heads-2026-10-09).
+// 87/88: heads at held-out 50/50 ship as full tags (stored "maybe" head scores no longer count).
+// 89/90: five round-16 heads retrained without FSD50K eval clips (round16-clean-2026-10-10).
+// 91/92: tagger blend of runs 3, 5, 7 and 8 with eight more tags (old tagger scores no longer count).
+// 93/94: the tagger decides environmental sound, foley, turntable, finger snap and water ambience (held-out FSD50K 50/50).
+// 95/96: tag-heads-2026-10-09 heads re-tiered on runtime-eligible long clips (conga, gliding, tambourine
+// removed; viola back to maybe).
+// 97/98: short-clip bass guitar head retrained on real recorded basses (licensed-pilot round two).
+// 99/100: tagger blend adds run 9 (bell, fm synth, water ambience).
+// 101/102: tagger blend adds runs 10 and 11 (bass guitar, machine ambience, pitched vocal; falling, glockenspiel, rain
+// ambience and wobbling move to run 10).
+// 105/106: the tagger decides hi-hat (fresh test sets 60/30; the CLAP head failed precision there).
+// 107/108: 12 learned heads retrained without FSD50K eval clips (clean-retrain-2026-10-11).
+// 109/110: neighbour heads (few-shot example matching) for vinyl crackle and vocal shout (knn-heads-2026-10-11).
+// 111/112: both neighbour heads removed again (vinyl crackle went over the 1% false-alarm cap on FSD50K).
+// 113/114: crash cymbal, vocal laugh, whisper and whoosh back to their pre-#232 learned heads (failed on the app path).
+// 115/116: the tagger gains the recall network: it decides guitar, violin, finger snap, siren, flute, marimba and vibraphone
+// on recall-run outputs (fresh test sets 60/30).
+// 117/118: the tagger decides crash cymbal and whisper (fresh test sets 60/30; their learned heads failed on the app path).
+// 119/120: the tagger decides voice on clips up to 30 s (fresh test sets 60/30 under the fair half-split rule; the CLAP head
+// failed precision on every set).
+// 121/122: the recall network is swapped for recall 2: the tagger also decides kick, clap, organ and gong (fresh test sets
+// 60/30 under the fair half-split rule; their CLAP heads failed on the app path).
+// 123/124: the tagger decides laser, riser and reverberant on clips up to 30 s (fresh test sets 60/30 at its own cutoffs; the
+// CLAP head or prompt that showed them failed on the app path).
+// 125/126: the tagger decides conga, vocal chant and static noise on clips up to 30 s (Listen Check clips 60/30 at its own
+// cutoffs; the CLAP head or prompt that showed them found none).
+// 127/128: the tagger decides acid synth and vocal phrase on clips up to 30 s, and whistle needs 0.90 (fresh test sets 60/30
+// under the fair half-split rule; the CLAP heads that showed acid synth and vocal phrase found none, whistle missed precision).
+// 129/130: the clave, drum fill, spoken phrase, tom and vocal laugh heads also run on clips of 2.25 s or less (app-path
+// scoring that follows the summary's display rules, 60/30 on the fresh test sets; the one-shot model found none of them).
+// 131/132: the tagger decides synth lead, vocoder vocal, record stop, glitch effect and choir on clips up to 30 s (fresh test
+// sets 60/30 at its own cutoffs, choir at its fair half-split cutoff; the CLAP prompts and heads that showed them failed).
+// record stop (5 positives) and glitch effect (11 + 5) were too few for the half split to confirm: recheck them first when
+// more labelled clips arrive.
+// 133/134: on recordings shorter than 10 s the electric-guitar head must outscore the acoustic-guitar head,
+// and between 2.25 s and 10 s the CLAP piano head must also clear the tagger's piano cutoff (NSynth test notes).
+// 135/136: a trained rimshot head (also on short clips) replaces the raw-CLAP prompt that never showed it (app-path 60/30 on
+// the fresh test sets, docs/evaluations/rimshot-supersaw-heads-2026-10-31).
+// 137/138: the tagger decides staccato on clips up to 30 s (fresh test sets 60/30 at its own cutoff 0.4305, Listen set 2/1;
+// the maybe CLAP head that showed it fired on 73 of 415 negatives). Only 5 positives judge it, so one miss flips it: recheck
+// first when more labelled clips arrive.
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 138 : 137;
 export interface InstrumentEstimate {
   label: string;
   score: number;
@@ -68,6 +113,9 @@ export interface MusicAnalysis {
   structure?: TrackStructure;
   /** Compact pitch, band-balance and loudness series (versionPrint.ts) that finds other copies and versions of this recording. */
   versionPrint?: string;
+  /** Fixed-rule DSP measurement of how it sounds (timbre.ts), turned into plain words by timbreDescriptions.ts. Absent on
+   * analyses saved before it existed: those keep working and simply show no description until reanalysed. */
+  timbre?: TimbreSummary;
   instrumentScan?: { mode?: MusicAnalysisMode; revision?: number; complete: boolean; analyzedSeconds: number; windows: number };
   notes: string[];
 }
@@ -99,11 +147,19 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   if (Array.isArray(m.confirmedInstruments)) out.confirmedInstruments = [...new Set(m.confirmedInstruments.filter((label): label is string => typeof label === 'string' && sourceLabels.includes(label)))];
   const confirmedDjTags = sanitizeConfirmedDjTags(m.confirmedDjTags);
   if (confirmedDjTags) out.confirmedDjTags = confirmedDjTags;
+  if (out.confirmedInstruments) {
+    // Merged look-alike tags: an instrument merged into another group leaves the list, and a tag merged into source
+    // follows the DJ snapshot, which corrections always save alongside this list.
+    const kept = out.confirmedInstruments.map(label => mergedDjLabel('source', label)).filter(m => m.group === 'source').map(m => m.label);
+    out.confirmedInstruments = [...new Set([...kept, ...(confirmedDjTags?.source.filter(label => MOVED_INTO_SOURCE.has(label)) ?? [])])];
+  }
   const copilotProperties = sanitizeCopilotProperties(m.copilotProperties);
   if (copilotProperties) out.copilotProperties = copilotProperties;
   if (Array.isArray(m.embedding) && m.embedding.length === 512 && m.embedding.every(v => typeof v === 'number' && Number.isFinite(v)) && Math.hypot(...(m.embedding as number[])) > 1e-8) out.embedding = m.embedding as number[];
   const versionPrint = sanitizeVersionPrint(m.versionPrint);
   if (versionPrint) out.versionPrint = versionPrint;
+  const timbre = sanitizeTimbre(m.timbre);
+  if (timbre) out.timbre = timbre;
   const styles = sanitizeStyles(m.styles);
   if (styles) out.styles = styles;
   const genreScores = sanitizeGenreScores(m.genreScores);

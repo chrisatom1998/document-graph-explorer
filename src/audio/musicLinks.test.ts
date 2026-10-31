@@ -48,11 +48,11 @@ describe('musical relationships', () => {
   it('links tracks that share tags the panel lists, ranked below confirmed matches', () => {
     const tagged = (id: string, tags: { group: 'character' | 'production'; label: string; score: number; model?: 'Trained head' | 'Trained head (maybe)' }[]) =>
       node(id, { soundProfile: { version: 1, character: [], roles: [], disagreement: false, models: [], djTags: tags.map(t => ({ model: 'Trained head', ...t })) } as MusicAnalysis['soundProfile'] });
-    const a = tagged('a', [{ group: 'character', label: 'airy', score: .9 }, { group: 'production', label: 'vinyl scratch', score: .8 }]);
-    const b = tagged('b', [{ group: 'character', label: 'airy', score: .7 }, { group: 'production', label: 'vinyl scratch', score: .6 }]);
+    const a = tagged('a', [{ group: 'character', label: 'bright', score: .9 }, { group: 'production', label: 'vinyl scratch', score: .8 }]);
+    const b = tagged('b', [{ group: 'character', label: 'bright', score: .7 }, { group: 'production', label: 'vinyl scratch', score: .6 }]);
     const [edge] = musicPairEdges(a, b);
     expect(edge).toMatchObject({ kind: 'sound' });
-    expect(edge.evidence[0]).toContain('airy (character), vinyl scratch (production / effect)');
+    expect(edge.evidence[0]).toContain('bright (character), vinyl scratch (production / effect)');
     expect(edge.evidence[0]).toContain('Not confirmed by you');
     expect(edge.weight).toBeLessThan(.85);
     // A specific maybe-level effect still links below likely evidence. A lone
@@ -77,8 +77,8 @@ describe('musical relationships', () => {
   it('weights listed tag links by origin, not by raw similarity', () => {
     const tagged = (id: string, tags: { group: 'character'; label: string; score: number; model?: 'Trained head' | 'Music CLAP' }[]) =>
       node(id, { soundProfile: { version: 1, character: [], roles: [], disagreement: false, models: [], djTags: tags.map(t => ({ model: 'Trained head' as const, ...t })) } as MusicAnalysis['soundProfile'] });
-    const mixed = (id: string) => tagged(id, [{ group: 'character', label: 'airy', score: .51 }, { group: 'character', label: 'airy', score: .95, model: 'Music CLAP' }]);
-    const tested = (id: string) => tagged(id, [{ group: 'character', label: 'airy', score: .51 }]);
+    const mixed = (id: string) => tagged(id, [{ group: 'character', label: 'bright', score: .51 }, { group: 'character', label: 'bright', score: .95, model: 'Music CLAP' }]);
+    const tested = (id: string) => tagged(id, [{ group: 'character', label: 'bright', score: .51 }]);
     expect(musicPairEdges(mixed('a'), mixed('b'))[0].weight).toBe(musicPairEdges(tested('c'), tested('d'))[0].weight);
     expect(musicPairEdges(mixed('a'), mixed('b'))[0].weight).toBeCloseTo(.7);
   });

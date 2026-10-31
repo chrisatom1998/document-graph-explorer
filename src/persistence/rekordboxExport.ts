@@ -21,8 +21,9 @@ import { confidentSoundSummary } from '../audio/confidentSoundSummary';
 import { filenameSoundFallback } from '../audio/filenameSoundFallback';
 import { musicNameHints } from '../audio/nameHints';
 import type { DocNode } from '../model/types';
+import { PRODUCT_NAME } from '../product/brand';
 
-export const REKORDBOX_PLAYLIST_NAME = 'Document Graph Explorer';
+export const REKORDBOX_PLAYLIST_NAME = PRODUCT_NAME;
 
 type Key = { tonic: number; mode: 'major' | 'minor' };
 
@@ -189,7 +190,7 @@ export function buildRekordboxXml(nodes: DocNode[], options: RekordboxExportOpti
   const xml = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<DJ_PLAYLISTS Version="1.0.0">',
-    `  <PRODUCT Name="Document Graph Explorer" Version="${attr(options.productVersion ?? '1.0.0')}" Company=""/>`,
+    `  <PRODUCT Name="${PRODUCT_NAME}" Version="${attr(options.productVersion ?? '1.0.0')}" Company=""/>`,
     `  <COLLECTION Entries="${tracks.length}">`,
     ...tracks,
     '  </COLLECTION>',
