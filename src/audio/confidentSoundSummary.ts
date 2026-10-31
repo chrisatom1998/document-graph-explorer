@@ -251,7 +251,11 @@ function shortPianoVeto(sounds: DisplaySound[], audio: MusicAnalysis): DisplaySo
   const score = tagger.scores.piano;
   if (typeof score !== 'number' || score >= piano.threshold) return sounds;
   // Only the trained head's piano is vetoed. Piano from reviewed examples or any other model keeps its own rules.
-  const headOnly = (s: DisplaySound) => !!s.scores?.length && s.scores.every(x => TRAINED_HEAD_SCORES.has(x.model));
+  // Untested scores (AST, Jamendo, CLAP similarity) ride along on the row but never decided it, so they do not count.
+  const headOnly = (s: DisplaySound) => {
+    const deciding = (s.scores ?? []).filter(x => TESTED_SCORES.has(x.model) || MAYBE_SCORES.has(x.model));
+    return deciding.length > 0 && deciding.every(x => TRAINED_HEAD_SCORES.has(x.model));
+  };
   return sounds.filter(s => s.origin === 'confirmed by you' || s.dimension !== 'source' || s.label !== 'piano' || !headOnly(s));
 }
 const GROUP_OF:Partial<Record<Dimension,DjGroup>>={source:'source',effect:'production',character:'character'};

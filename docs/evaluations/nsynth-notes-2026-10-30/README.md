@@ -28,6 +28,10 @@ Truth: electric guitar is `guitar` + `electronic` (171, matching the published t
 
 Of the 314 electric-guitar false positives that remain, 125 are electronic keyboards, 73 are acoustic guitars, 59 are electronic organs and 56 are basses. Requiring a wider gap over the acoustic head made F1 worse on this set (the true notes often lead by only a little). Letting the tagger decide mallet or piano by itself, at the cutoffs it already publishes, did not beat the CLAP head. Those need a model that separates an electric guitar from an electronic keyboard, not another threshold on this split.
 
+## How much to trust the gain
+
+No cutoff was fitted here: the electric-guitar gate is a plain "beats acoustic guitar" comparison, and the piano gate reuses the tagger cutoff already shipped for 10 s and up. But the design choices (a strict `>` against a wider gap, a gate against the tagger alone) were compared on this same NSynth test split, so the before/after gain is somewhat optimistic. Treat it as an upper estimate until it is confirmed on a split that played no part in those choices.
+
 ## How to run
 
 Audio is the NSynth test json/wav archive (CC BY 4.0, about 350 MB compressed). It is not in the repo.
