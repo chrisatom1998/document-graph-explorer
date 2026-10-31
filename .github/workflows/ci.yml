@@ -16,6 +16,8 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
   # onnxruntime-node (pulled in transitively) otherwise downloads the CUDA binaries from
   # api.nuget.org in its postinstall on every run. CI only uses the CPU build, and that
   # host has timed out npm ci on hosted runners more than once.

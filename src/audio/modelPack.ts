@@ -1,5 +1,3 @@
-const AUDIO_PACK_CONSENT_KEY = 'dge-audio-model-pack-consent';
-
 interface AudioPackMarker {
   schema: 1;
   capability: 'audio';
@@ -7,7 +5,7 @@ interface AudioPackMarker {
   bytes: number;
 }
 
-export type AudioPackAuthorization = 'ready' | 'declined' | 'unavailable';
+export type AudioPackAuthorization = 'ready' | 'unavailable';
 
 function isAudioPackMarker(value: unknown): value is AudioPackMarker {
   if (!value || typeof value !== 'object') return false;
@@ -33,14 +31,11 @@ async function loadAudioPackMarker(): Promise<AudioPackMarker | null> {
   }
 }
 
-export async function audioModelPackPreviouslyAuthorized(): Promise<boolean> {
-  const marker = await loadAudioPackMarker();
-  if (!marker) return false;
-  try { return localStorage.getItem(AUDIO_PACK_CONSENT_KEY) === marker.revision; }
-  catch { return false; }
+export async function audioModelPackInstalled(): Promise<boolean> {
+  return (await loadAudioPackMarker()) !== null;
 }
 
-/** Confirm the large, same-origin model transfer before the first audio import. */
+/** Verify that the same-origin audio model pack is installed. */
 export async function authorizeAudioModelPack(): Promise<AudioPackAuthorization> {
   const marker = await loadAudioPackMarker();
   if (!marker) {
@@ -51,15 +46,5 @@ export async function authorizeAudioModelPack(): Promise<AudioPackAuthorization>
     );
     return 'unavailable';
   }
-  try {
-    if (localStorage.getItem(AUDIO_PACK_CONSENT_KEY) === marker.revision) return 'ready';
-  } catch { /* A private session can still authorize this import. */ }
-
-  const accepted = window.confirm(
-    `Audio analysis needs to fetch ${formatAudioPackSize(marker.bytes)} of model files from this app's own origin. ` +
-    'The audio itself stays on this device. Continue?',
-  );
-  if (!accepted) return 'declined';
-  try { localStorage.setItem(AUDIO_PACK_CONSENT_KEY, marker.revision); } catch { /* ask again next session */ }
   return 'ready';
 }

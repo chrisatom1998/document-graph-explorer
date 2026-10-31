@@ -13,6 +13,8 @@ permissions:
   contents: write
 
 env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
   ONNXRUNTIME_NODE_INSTALL: skip
   GIANTSTEPS: https://github.com/GiantSteps/giantsteps-tempo-dataset.git
   GIANTSTEPS_REF: d51ab2422e76abacfaa86616a57054bc222ec9fd

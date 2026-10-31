@@ -88,9 +88,9 @@ CC BY-NC-SA 4.0 for non-commercial use); `DGE_MODELS=full npm run build` and
 does the same before sealing and verifying its artifact. `setup:music` remains
 an alias for `models:audio`.
 
-A complete build serves every inference file from its own origin. On the first
-audio import, the app reads the verified pack marker, displays its exact byte
-count, and asks before the browser fetches the weights. A core-only build
+A complete build serves every inference file from its own origin. On each
+audio import, the app reads the verified pack marker before the browser fetches
+the weights. A core-only build
 instead explains that its distributor must run `npm run models:audio` and
 rebuild. Model binaries and private audio samples are not stored in Git. Build
 checks verify weights, configuration and local description-vector checksums.

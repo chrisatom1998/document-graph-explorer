@@ -114,7 +114,7 @@ npm run dev      # start the Vite dev server at http://localhost:5173
 ```
 
 Node 24 is the supported runtime (`.nvmrc`); Node 22.13 or newer also works, except Node 23, which
-the locked dependencies do not support. Document-only development and builds use the checked-in
+the locked dependencies do not support. Clean local development and builds use the checked-in
 core pack (including BGE embeddings, readers and graph assets) and do not download the roughly
 632 MB audio pack. Run `npm run models:audio` to download and checksum-verify that optional pack,
 or set `DGE_MODELS=full` for a normal dev/build command. `npm run build:airgap` always prepares and
@@ -334,7 +334,7 @@ executable validation, a Docker image build and a container smoke test.
 Production hosting must send the security headers used in Vite development and preview
 (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`) and should
 send the Content-Security-Policy as a response header. The checked-in Vercel and Docker
-configurations are the current examples; see [DEPLOYMENT.md](DEPLOYMENT.md) and
+configurations include the full audio pack and are the current examples; see [DEPLOYMENT.md](DEPLOYMENT.md) and
 [SECURITY.md](SECURITY.md).
 
 ## Tech stack

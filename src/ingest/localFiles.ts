@@ -147,9 +147,7 @@ export async function ingestNamedFiles(named: NamedFile[]): Promise<void> {
       const { authorizeAudioModelPack } = await import('../audio/modelPack');
       const authorization = await authorizeAudioModelPack();
       if (authorization !== 'ready') {
-        const reason = authorization === 'declined'
-          ? 'audio model download was not approved'
-          : 'audio model pack is not installed';
+        const reason = 'audio model pack is not installed';
         for (const file of audioFiles) useGraphStore.getState().addIgnored(file.path ?? file.name, reason);
         authorizedFiles = files.filter(file => file.fileType !== 'audio');
       }
