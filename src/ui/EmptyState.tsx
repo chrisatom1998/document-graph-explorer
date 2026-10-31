@@ -10,7 +10,8 @@ import heroPng1920 from '../assets/hero/hero-lime-1920.png';
 import heroWebp960 from '../assets/hero/hero-lime-960.webp';
 import heroWebp1920 from '../assets/hero/hero-lime-1920.webp';
 
-const HERO_SIZES = '(max-width: 820px) 100vw, 720px';
+// Desktop: the art fills the card (up to 1080px wide). Phone: the img is 170% wide.
+const HERO_SIZES = '(max-width: 820px) 170vw, min(1080px, 100vw)';
 
 const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
 

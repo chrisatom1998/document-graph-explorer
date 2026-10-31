@@ -1,4 +1,4 @@
-import bpy, random, math
+import bpy, random, math, os, shutil, subprocess
 from mathutils import Vector
 random.seed(7)
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -81,6 +81,25 @@ sc.view_settings.view_transform='Standard';sc.view_settings.look='None'
 sc.use_nodes=True;nt=sc.node_tree;rl=nt.nodes['Render Layers'];comp=nt.nodes['Composite']
 g=nt.nodes.new('CompositorNodeGlare');g.glare_type='FOG_GLOW';g.quality='HIGH';g.size=9;g.threshold=0.4;g.mix=-0.3
 nt.links.new(rl.outputs[0],g.inputs[0]);nt.links.new(g.outputs[0],comp.inputs[0])
-sc.render.filepath='/workspace/resonance/hero_lime.png'
-bpy.ops.wm.save_as_mainfile(filepath='/workspace/resonance/hero_lime.blend')
+# Paths are relative to this script, so a rerun refreshes the app's assets:
+#   blender -b -P design/hero/hero_lime.py
+HERE=os.path.dirname(os.path.abspath(__file__))
+ASSETS=os.path.normpath(os.path.join(HERE,'..','..','src','assets','hero'))
+os.makedirs(ASSETS,exist_ok=True)
+full=os.path.join(HERE,'hero_lime.png')
+sc.render.filepath=full
 bpy.ops.render.render(write_still=True)
+# Resize to the 1920w and 960w files the welcome screen loads, then make WebP copies
+# (needs `cwebp` on PATH; the PNGs are kept as the fallback).
+for w in (1920,960):
+    img=bpy.data.images.load(full)
+    h=round(img.size[1]*w/img.size[0])
+    if img.size[0]!=w: img.scale(w,h)
+    png=os.path.join(ASSETS,f'hero-lime-{w}.png')
+    img.filepath_raw=png;img.file_format='PNG';img.save()
+    bpy.data.images.remove(img)
+    if shutil.which('cwebp'):
+        subprocess.run(['cwebp','-q','82',png,'-o',os.path.join(ASSETS,f'hero-lime-{w}.webp')],check=True)
+    else:
+        print('cwebp not found: skipped',f'hero-lime-{w}.webp')
+os.remove(full)
