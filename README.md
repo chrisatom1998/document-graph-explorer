@@ -1,3 +1,9 @@
+<img
+  src="public/hero.webp"
+  alt="Resonance banner: purple document pages, audio waveforms, and linked nodes on a dark navy field, with open space on the left for a headline."
+  width="100%"
+/>
+
 <div align="center">
   <img src="public/icon.svg" alt="Resonance icon" width="96" height="96" />
   <h1>Resonance</h1>
