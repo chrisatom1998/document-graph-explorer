@@ -1,6 +1,6 @@
 import { RULE_DESCRIBED_LABELS } from './timbreDescriptions';
 import {MERGED_DJ_LABELS,mergedDjLabel} from './djTags';
-import {expect,it} from 'vitest';
+import {describe,expect,it} from 'vitest';
 import {confidentSoundSummary,HIDDEN_UNTIL_TESTED,LIKELY_SOUND_CUTOFF,TRACK_SOUND_FLOOR} from './confidentSoundSummary';
 import {createRecognition,recordEvidence} from './recognition';
 import type {MusicAnalysis} from './musicTypes';
@@ -51,7 +51,7 @@ it.each([.399999,.4])('applies inclusive boundaries to character and effect tag 
 });
 it('marks labels backed only by maybe-level trained heads, and lets a full head win',()=>{
  const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'production',label:'snare',score:.9,model:'Trained head (maybe)'},{group:'production',label:'kick',score:.8,model:'Trained head'}]};
- expect(confidentSoundSummary(a).map(s=>[s.label,s.maybe===true])).toEqual([['snare',true],['kick',false]]);
+ expect(confidentSoundSummary(a).map(s=>[s.label,s.maybe===true])).toEqual([['snare',true],['kick',false],['drums',false]]);
 });
 it('can display every catalog label once a trained head reports it',async()=>{
  const {default:catalog}=await import('./djCatalog.json');
@@ -136,4 +136,28 @@ it('hides labels that failed on real clips unless the listener confirmed them',(
  expect(confidentSoundSummary(a).map(s=>s.label)).toEqual(['riser']);
  a.soundReviews=[{dimension:'effect',labelId:'reverse effect',decision:'confirmed',scope:'track',at:'2026-10-10T00:00:00.000Z',evidenceRunId:'r'}];
  expect(confidentSoundSummary(a).map(s=>s.label).sort()).toEqual(['reverse effect','riser']);
+});
+
+describe('drums umbrella (Chris, 2026-10-31)',()=>{
+ const kit=(...tags:{label:string;score:number;model:'Trained head'|'Trained head (maybe)'}[]):MusicAnalysis=>({...audio(),instruments:[],soundProfile:{version:1,character:[],roles:[],models:[],disagreement:false,djTags:tags.map(t=>({group:'production' as const,...t}))}});
+ it('shows drums beside any drum-kit tag, keeping the kit tag',()=>{
+  for(const label of ['kick','snare','hi-hat','closed hi-hat','ride cymbal','tom','rimshot','drum loop','breakbeat']){
+   const shown=confidentSoundSummary(kit({label,score:.8,model:'Trained head'})).map(s=>`${s.dimension}:${s.label}`);
+   expect(shown).toContain('source:drums');expect(shown.some(s=>s.startsWith('effect:'))).toBe(true);
+  }
+ });
+ it('leaves hand percussion and effects alone',()=>{
+  for(const label of ['cowbell','conga','bongo','shaker','tambourine','clave','finger snap','percussion hit','top loop','reverse cymbal'])
+   expect(confidentSoundSummary(kit({label,score:.8,model:'Trained head'})).map(s=>s.label)).not.toContain('drums');
+ });
+ it('takes the strongest kit tag and stays a maybe when only maybes back it',()=>{
+  expect(confidentSoundSummary(kit({label:'snare',score:.9,model:'Trained head (maybe)'})).find(s=>s.label==='drums')).toMatchObject({dimension:'source',maybe:true});
+  const both=confidentSoundSummary(kit({label:'snare',score:.9,model:'Trained head (maybe)'},{label:'kick',score:.6,model:'Trained head'})).filter(s=>s.label==='drums');
+  expect(both).toHaveLength(1);expect(both[0].maybe).toBeUndefined();
+ });
+ it('respects a listener who rejected drums',()=>{
+  const a=kit({label:'kick',score:.8,model:'Trained head'});
+  a.soundReviews=[{dimension:'source',labelId:'drums',decision:'rejected',scope:'track',at:'2026-10-31T12:00:00Z',evidenceRunId:'r'}];
+  expect(confidentSoundSummary(a).map(s=>s.label)).toEqual(['kick']);
+ });
 });
