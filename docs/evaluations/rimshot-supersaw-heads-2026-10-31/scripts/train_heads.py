@@ -2,14 +2,14 @@
 filtered against the private exclude list, plus DSP renders for supersaw). C, hard-negative weight and (supersaw) renders
 on/off are chosen on 5-fold out-of-fold scores of the REAL clips, folds by uploader; renders only sit in training folds.
 Threshold: lowest OOF cutoff with precision >= MIN_P (0.7) on real clips, never below 0.5.
-Usage: train_heads.py <tag> <manifest.json>... --emb <dir> --out <head.json>"""
+Usage: train_heads.py <tag> <manifest.json>... --emb <dir> --out <head.json> [--one-shot]"""
 import json, sys, glob, os, argparse
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GroupKFold
 from sklearn.metrics import average_precision_score
 ap = argparse.ArgumentParser(); ap.add_argument('tag'); ap.add_argument('manifests', nargs='+'); ap.add_argument('--emb'); ap.add_argument('--out')
-ap.add_argument('--hard', default='drum-hit'); a = ap.parse_args(); MIN_P = float(os.environ.get('MIN_P', 0.7))
+ap.add_argument('--hard', default='drum-hit'); ap.add_argument('--one-shot', action='store_true', help='also run the head on clips of 2.25 s or less'); a = ap.parse_args(); MIN_P = float(os.environ.get('MIN_P', 0.7))
 meta = {}
 for m in a.manifests: meta.update({c['id']: c for c in json.load(open(m))['clips']})
 emb = {}
@@ -53,5 +53,6 @@ apv, variant, hw, C, (th, tp, fp, npos) = best
 mask = real | (~real if variant != 'real' else np.zeros(len(ids), bool))
 m = fit(mask, C, hw)
 head = {'group': 'production', 'label': a.tag, 'weights': [round(float(v), 6) for v in m.coef_[0]], 'bias': round(float(m.intercept_[0]), 6), 'threshold': round(th, 4)}
+if a.one_shot: head['oneShot'] = True
 json.dump({'head': head, 'choice': {'variant': variant, 'hardWeight': hw, 'C': C, 'oofAP': apv, 'oofThreshold': th, 'oofTP': tp, 'oofFP': fp, 'oofPositives': npos},
            'trainClips': {'real': int(real.sum()), 'realPositives': int(y[real].sum()), 'renders': int((~real).sum())}}, open(a.out, 'w'))

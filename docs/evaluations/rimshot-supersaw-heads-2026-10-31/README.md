@@ -14,7 +14,8 @@ prompt comparison, which needs a raw similarity of 0.50 on clips longer than 2.2
 - Heads: logistic regression (`scripts/train_heads.py`). C and the hard-negative weight are chosen on 5-fold out-of-fold
   scores of the real clips, folds by uploader. Cutoff: lowest out-of-fold score with precision >= 0.70, never below 0.5.
   Supersaw renders (`scripts/synth_saw.py`, 160 detuned saw stacks, 640 other synths) were tried and lost out of fold, so
-  the shipped supersaw head is real clips only.
+  the trained supersaw head (not shipped in this PR; it follows in its own PR) is real clips only. Rimshot was trained
+  with `--one-shot` (78 of its 88 training positives are 2.25 s or shorter).
 
 | head | real clips (positives, uploaders) | hard negatives | choice | out-of-fold at cutoff |
 |---|---|---|---|---|
