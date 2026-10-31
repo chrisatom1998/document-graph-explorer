@@ -1,0 +1,111 @@
+name: Fetch one Jamendo shard
+description: Restore a shard's tracks, download whatever is still missing, and keep a partial result when the CDN drops.
+
+inputs:
+  harness:
+    description: Commit whose select-jamendo.py and frozen manifest are used. The downloader is taken from this workflow instead.
+    required: true
+  shard:
+    description: Shard index, 0-19
+    required: true
+  mode:
+    description: fast or full, used only in the artifact name
+    required: true
+  pass:
+    description: 1 on the first attempt, 2 on the retry. Each pass writes its own partial cache key.
+    required: true
+  audio-cache:
+    description: Prefix of the shared audio cache keys (workflow env AUDIO_CACHE).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: ${{ inputs.harness }}
+        path: harness
+    # The harness is the base commit so a PR cannot change how scores are judged. select-jamendo.py stays that copy.
+    # The downloader below is replaced with this workflow's copy only while the base still streams whole archives.
+    - uses: actions/checkout@v7
+      with:
+        ref: ${{ github.sha }}
+        path: workflow-src
+    - name: Use this workflow's Jamendo downloader until the base has it
+      shell: bash
+      run: |
+        # Once main has the range downloader, a PR cannot swap in its own copy. Until then the base
+        # script still streams whole archives, so this workflow's copy is what can survive a 503.
+        if grep -q 'class RangeSource' harness/scripts/holdout-r3/fetch-jamendo.py; then
+          echo "Base harness already has the range downloader."
+        else
+          cp workflow-src/scripts/holdout-r3/fetch-jamendo.py harness/scripts/holdout-r3/fetch-jamendo.py
+          echo "Base harness still streams whole archives; using this workflow's downloader."
+        fi
+        grep -q 'class RangeSource' harness/scripts/holdout-r3/fetch-jamendo.py
+        grep -q 'checksum mismatch' harness/scripts/holdout-r3/fetch-jamendo.py
+    - name: Restore this shard's tracks
+      id: part
+      uses: actions/cache/restore@v6
+      with:
+        path: gate-audio/jamendo
+        # Exact key: this shard is complete, skip the network. Prefix: an earlier run died after some folders;
+        # cache-hit stays false, so the fetch below continues from the wavs that are already here.
+        key: ${{ inputs.audio-cache }}-jamendo-part-${{ inputs.shard }}-of-20
+        restore-keys: |
+          ${{ inputs.audio-cache }}-jamendo-partial-${{ inputs.shard }}-
+    - name: Check the frozen selection against the pinned dataset metadata
+      if: steps.part.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        M="$RUNNER_TEMP/mj"
+        for f in data/splits/split-0/autotagging_instrument-test.tsv data/raw_30s_cleantags.tsv \
+                 derived/music-classification-annotations/music-classification-annotations-clean.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
+          mkdir -p "$M/$(dirname $f)"; curl -fsSL --retry 6 -o "$M/$f" "$JAMENDO_META/$f"
+        done
+        python3 harness/scripts/holdout-r3/select-jamendo.py "$M"
+    - name: Fetch and cut this shard's tracks
+      id: fetch
+      if: steps.part.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+        # 45m stays under the job's 60m. A job timeout cancels the runner and skips the partial-cache
+        # save; a step that exits on its own still has the wavs for that save.
+        timeout 45m python3 harness/scripts/holdout-r3/fetch-jamendo.py "harness/$DOCS/jamendo-manifest.json" \
+          "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ inputs.shard }}/20 gate-audio/jamendo
+    - name: Save this shard's tracks
+      if: success() && steps.part.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: gate-audio/jamendo
+        key: ${{ inputs.audio-cache }}-jamendo-part-${{ inputs.shard }}-of-20
+    - name: See whether a failed attempt still has tracks worth keeping
+      id: keep
+      if: (failure() || cancelled()) && steps.part.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        if find gate-audio/jamendo -name '*.wav' -size +44c 2>/dev/null | grep -q .; then
+          echo "keep=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "keep=false" >> "$GITHUB_OUTPUT"
+          echo "no finished tracks to keep"
+        fi
+    - name: Keep the tracks this attempt finished
+      if: (failure() || cancelled()) && steps.keep.outputs.keep == 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: gate-audio/jamendo
+        # A new key every attempt: a cache cannot be updated, and the next run's restore-keys prefix takes the newest.
+        key: ${{ inputs.audio-cache }}-jamendo-partial-${{ inputs.shard }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.pass }}
+    - name: Upload this shard's tracks for the combined cache
+      # Pass 1 always uploads, including a shard restored from a finished cache, so the combined cache can be
+      # rebuilt. Pass 2 uploads only a shard it had to fetch: a shard pass 1 already finished has an artifact,
+      # and uploading that name again would collide.
+      if: success() && (inputs.pass == '1' || steps.part.outputs.cache-hit != 'true')
+      uses: actions/upload-artifact@v6
+      with:
+        name: gate-audio-jamendo-${{ inputs.mode }}-${{ inputs.shard }}
+        path: gate-audio/jamendo
+        retention-days: 3
+        overwrite: true
