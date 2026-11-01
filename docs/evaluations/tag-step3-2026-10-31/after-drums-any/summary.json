@@ -1,0 +1,46 @@
+{
+ "set": "FSD50K eval slice (docs/evaluations/tag-baseline-2026-10-31/manifest.csv)",
+ "clips": 681,
+ "complete": true,
+ "unscoredClips": 0,
+ "tagsScored": 46,
+ "models": {
+  "clap": "021dd4fb962b4ed20cc3a6730b09e0ccf9f9c49931047032118a3b64828513a6",
+  "tagger": "14f80825ba22af6048b62ad8c4dbddd0977eccffa66247b4ee657e9f15e62a56"
+ },
+ "taggerRevision": "all-tags-recall2-2026-10-11-r1",
+ "learnedRevision": "trained-heads-2026-10-04-r6c+maybe-2026-10-05+amari-r24+dj-effects-2026-10-06+oneshot+dj-effects-2026-10-09+tag-heads-2026-10-09+promoted-50+round16-clean-2026-10-10+runtime-eligible+clean-retrain-2026-10-11+app-path-revert-4+oneshot-5-2026-10-29+rimshot-2026-10-31",
+ "shortClipRevision": "short-clip-2026-10-05-clapRepeat-no-synth+synth-hit-nsynth-2026-10-05+bass-hit-crops-2026-10-05+licensed-pilot-r2-bass-guitar-2026-10-10",
+ "scope": "AST, Jamendo and long-recording event windows not run",
+ "jamendoLowerBound": [
+  "drums",
+  "piano"
+ ],
+ "durations": {
+  "min": 0.31453125,
+  "median": 8.4535625,
+  "max": 30,
+  "oneShots": 25
+ },
+ "micro": {
+  "precision": 0.624,
+  "recall": 0.635,
+  "f1": 0.629,
+  "tp": 786,
+  "fp": 474,
+  "fn": 452
+ },
+ "macro": {
+  "precision": 0.709,
+  "recall": 0.629,
+  "f1": 0.641,
+  "note": "mean over tags; a tag never shown counts precision 0"
+ },
+ "counts": {
+  "50_50": 31,
+  "60_60": 22,
+  "70_70": 10,
+  "60_30": 33
+ },
+ "timing": "decide drums-any: 57 s"
+}

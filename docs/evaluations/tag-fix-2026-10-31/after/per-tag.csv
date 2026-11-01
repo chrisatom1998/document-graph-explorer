@@ -1,0 +1,47 @@
+tag,display_key,support,negatives,tp,fp,fn,tp_maybe,fp_maybe,precision,recall,f1,false_alarm_rate,passes_60_30,pass_50_50,pass_60_60,pass_70_70,deciders,caveat
+foley,source:foley,20,661,8,34,12,0,0,0.19,0.4,0.258,0.0514,False,False,False,False,tagger cat:foley@0.15,
+clap,effect:clap,21,660,5,1,16,0,0,0.833,0.238,0.37,0.0015,False,False,False,False,tagger cat:clap@0.5; clap-head@0.943; one-shot@0.8712,
+wind ambience,effect:wind ambience,20,661,10,21,10,0,0,0.323,0.5,0.392,0.0318,False,False,False,False,tagger cat:wind ambience@0.05,
+vocal shout,effect:vocal shout,20,661,9,16,11,0,0,0.36,0.45,0.4,0.0242,False,False,False,False,tagger cat:vocal shout@0.03; clap-head@0.986,
+drums,source:drums,49,632,43,112,6,0,9,0.277,0.878,0.422,0.1772,False,False,False,False,tagger drums@0.2928; clap-head@0.506; one-shot@0.7229,old head trained on FSD50K eval: may be inflated
+bell,source:bell,26,655,11,15,15,0,0,0.423,0.423,0.423,0.0229,False,False,False,False,tagger cat:bell@0.4454; clap-head@0.962,
+piano,source:piano,20,661,15,36,5,0,0,0.294,0.75,0.423,0.0545,False,False,False,False,tagger piano@0.5337; clap-head@0.85; one-shot@0.6352,old head trained on FSD50K eval: may be inflated
+hi-hat,effect:hi-hat,20,661,7,5,13,0,0,0.583,0.35,0.438,0.0076,False,False,False,False,tagger cat:hi-hat@0.15; one-shot@0.867,
+snare,effect:snare,24,657,8,4,16,0,0,0.667,0.333,0.444,0.0061,True,False,False,False,clap-head@0.856; one-shot@0.5794,
+machine ambience,effect:machine ambience,20,661,9,9,11,0,0,0.5,0.45,0.474,0.0136,False,False,False,False,tagger cat:machine ambience@0.2647,
+tambourine,effect:tambourine,15,666,5,1,10,0,0,0.833,0.333,0.476,0.0015,True,False,False,False,tagger cat:tambourine@0.1181; tagger cat:tambourine@0.1181; one-shot@0.5,
+spoken phrase,effect:spoken phrase,34,647,13,5,21,0,0,0.722,0.382,0.5,0.0077,True,False,False,False,clap-head@0.947,
+water ambience,effect:water ambience,20,661,15,25,5,3,12,0.375,0.75,0.5,0.0378,False,False,False,False,tagger cat:water ambience@0.3239; clap-head@0.935 maybe,old head trained on FSD50K eval: may be inflated
+bird ambience,effect:bird ambience,20,661,8,3,12,8,3,0.727,0.4,0.516,0.0045,True,False,False,False,tagger cat:bird ambience@0.1277 (untested); clap-head@0.98 maybe,
+voice,source:voice,99,582,52,45,47,0,0,0.536,0.525,0.531,0.0773,False,True,False,False,tagger cat:voice@0.587; clap-head@0.5; one-shot@0.7495,
+animal sound,source:animal sound,31,650,15,6,16,0,0,0.714,0.484,0.577,0.0092,True,False,False,False,tagger cat:animal sound@0.2411,
+bass guitar,source:bass guitar,20,661,11,6,9,0,0,0.647,0.55,0.595,0.0091,True,True,False,False,tagger cat:bass guitar@0.5765; one-shot@0.6537,
+strings,source:strings,20,661,11,5,9,0,1,0.688,0.55,0.611,0.0076,True,True,False,False,clap-head@0.924,old head trained on FSD50K eval: may be inflated
+kick,effect:kick,21,660,14,10,7,0,0,0.583,0.667,0.622,0.0152,False,True,False,False,tagger cat:kick@0.53; clap-head@0.951; one-shot@0.7824,old head trained on FSD50K eval: may be inflated
+organ,source:organ,19,662,10,3,9,0,0,0.769,0.526,0.625,0.0045,True,True,False,False,tagger cat:organ@0.774; clap-head@0.92,old head trained on FSD50K eval: may be inflated
+whisper,effect:whisper,20,661,15,13,5,0,0,0.536,0.75,0.625,0.0197,False,True,False,False,tagger cat:whisper@0.1115; clap-head@0.824,old head trained on FSD50K eval: may be inflated
+breath,source:breath,21,660,12,5,9,10,5,0.706,0.571,0.632,0.0076,True,True,False,False,clap-head@0.983,
+glockenspiel,source:glockenspiel,20,661,10,1,10,0,0,0.909,0.5,0.645,0.0015,True,True,False,False,tagger cat:glockenspiel@0.3828,
+crash cymbal,effect:crash cymbal,19,662,11,3,8,0,0,0.786,0.579,0.667,0.0045,True,True,False,False,tagger cat:crash cymbal@0.1631; clap-head@0.838,old head trained on FSD50K eval: may be inflated
+rain ambience,effect:rain ambience,20,661,16,9,4,0,0,0.64,0.8,0.711,0.0136,True,True,True,False,tagger cat:rain ambience@0.4504; clap-head@0.926,old head trained on FSD50K eval: may be inflated
+vocal laugh,effect:vocal laugh,20,661,14,5,6,0,0,0.737,0.7,0.718,0.0076,True,True,True,True,clap-head@0.965,old head trained on FSD50K eval: may be inflated
+electric guitar,source:electric guitar,20,661,13,3,7,0,0,0.812,0.65,0.722,0.0045,True,True,True,False,clap-head@0.933,old head trained on FSD50K eval: may be inflated
+mallet instrument,source:mallet instrument,22,659,17,8,5,0,4,0.68,0.773,0.723,0.0121,True,True,True,False,clap-head@0.936,old head trained on FSD50K eval: may be inflated
+harp,source:harp,20,661,12,1,8,0,0,0.923,0.6,0.727,0.0015,True,True,True,False,clap-head@0.846,
+siren,effect:siren,20,661,16,8,4,0,0,0.667,0.8,0.727,0.0121,True,True,True,False,tagger cat:siren@0.277; clap-head@0.7545,old head trained on FSD50K eval: may be inflated
+whoosh,effect:whoosh,20,661,12,1,8,0,0,0.923,0.6,0.727,0.0015,True,True,True,False,clap-head@0.941; one-shot@0.8215,old head trained on FSD50K eval: may be inflated
+crowd ambience,effect:crowd ambience,20,661,14,4,6,0,0,0.778,0.7,0.737,0.0061,True,True,True,True,clap-head@0.985,
+environmental sound,source:environmental sound,46,635,30,5,16,0,0,0.857,0.652,0.741,0.0079,True,True,True,False,tagger cat:environmental sound@0.4549,
+vocal scream,effect:vocal scream,20,661,12,0,8,0,0,1.0,0.6,0.75,0,True,True,True,False,tagger cat:vocal scream@0.1959,
+harmonica,source:harmonica,20,661,19,11,1,0,0,0.633,0.95,0.76,0.0166,True,True,True,False,clap-head@0.752,
+cymbal,effect:cymbal,38,643,35,19,3,0,0,0.648,0.921,0.761,0.0295,True,True,True,False,tagger cymbals@0.45; tagger cymbals@0.45; one-shot@0.9801,
+guitar,source:guitar,59,622,46,15,13,0,0,0.754,0.78,0.767,0.0241,True,True,True,True,tagger cat:guitar@0.3; one-shot@0.6598,
+gong,source:gong,20,661,14,2,6,0,0,0.875,0.7,0.778,0.003,True,True,True,True,tagger cat:gong@0.2; clap-head@0.923,old head trained on FSD50K eval: may be inflated
+percussion,source:percussion,115,566,77,6,38,1,1,0.928,0.67,0.778,0.0106,True,True,True,False,tagger cat:percussion@0.249,
+finger snap,effect:finger snap,20,661,13,0,7,0,0,1.0,0.65,0.788,0,True,True,True,False,tagger cat:finger snap@0.175; clap-head@0.958; one-shot@0.9595,
+vinyl scratch,effect:vinyl scratch,20,661,16,3,4,0,0,0.842,0.8,0.821,0.0045,True,True,True,True,clap-head@0.595; one-shot@0.8286,
+acoustic guitar,source:acoustic guitar,20,661,15,0,5,0,0,1.0,0.75,0.857,0,True,True,True,True,clap-head@0.931,old head trained on FSD50K eval: may be inflated
+cowbell,effect:cowbell,20,661,15,0,5,0,0,1.0,0.75,0.857,0,True,True,True,True,clap-head@0.964; one-shot@0.5,old head trained on FSD50K eval: may be inflated
+trumpet,source:trumpet,20,661,16,0,4,0,0,1.0,0.8,0.889,0,True,True,True,True,tagger trumpet@0.9486; clap-head@0.863,
+accordion,source:accordion,19,662,18,3,1,0,0,0.857,0.947,0.9,0.0045,True,True,True,True,clap-head@0.959,old head trained on FSD50K eval: may be inflated
+tabla,source:tabla,6,675,6,0,0,0,0,1.0,1.0,1.0,0,True,True,True,True,clap-head@0.732,support < 10

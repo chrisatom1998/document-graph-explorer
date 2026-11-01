@@ -159,5 +159,29 @@ describe('drums umbrella (Chris, 2026-10-31)',()=>{
   const a=kit({label:'kick',score:.8,model:'Trained head'});
   a.soundReviews=[{dimension:'source',labelId:'drums',decision:'rejected',scope:'track',at:'2026-10-31T12:00:00Z',evidenceRunId:'r'}];
   expect(confidentSoundSummary(a).map(s=>s.label)).toEqual(['kick']);
+  });
+});
+
+describe('ambience umbrella (Chris, 2026-11-01)',()=>{
+ const amb=(...tags:{label:string;score:number;model:'Trained head'|'Trained head (maybe)'}[]):MusicAnalysis=>({...audio(),instruments:[],soundProfile:{version:1,character:[],roles:[],models:[],disagreement:false,djTags:tags.map(t=>({group:'production' as const,...t}))}});
+ it('shows ambience beside any background-ambience tag, keeping the child tag',()=>{
+  for(const label of ['rain ambience','water ambience','bird ambience','crowd ambience','machine ambience']){
+   const shown=confidentSoundSummary(amb({label,score:.8,model:'Trained head'})).map(s=>`${s.dimension}:${s.label}`);
+   expect(shown).toContain('effect:ambience');expect(shown).toContain(`effect:${label}`);
+  }
+ });
+ it('leaves other effects alone',()=>{
+  for(const label of ['riser','whoosh','static noise','vinyl crackle'])
+   expect(confidentSoundSummary(amb({label,score:.8,model:'Trained head'})).map(s=>s.label)).not.toContain('ambience');
+ });
+ it('shows one ambience, a maybe only when only maybes back it',()=>{
+  expect(confidentSoundSummary(amb({label:'rain ambience',score:.9,model:'Trained head (maybe)'})).find(s=>s.label==='ambience')).toMatchObject({dimension:'effect',maybe:true});
+  const both=confidentSoundSummary(amb({label:'rain ambience',score:.9,model:'Trained head (maybe)'},{label:'bird ambience',score:.6,model:'Trained head'})).filter(s=>s.label==='ambience');
+  expect(both).toHaveLength(1);expect(both[0].maybe).toBeUndefined();
+ });
+ it('respects a listener who rejected ambience',()=>{
+  const a=amb({label:'rain ambience',score:.8,model:'Trained head'});
+  a.soundReviews=[{dimension:'effect',labelId:'ambience',decision:'rejected',scope:'track',at:'2026-11-01T12:00:00Z',evidenceRunId:'r'}];
+  expect(confidentSoundSummary(a).map(s=>s.label)).toEqual(['rain ambience']);
  });
 });

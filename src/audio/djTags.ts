@@ -68,6 +68,13 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
 export const DRUM_KIT_LABELS: ReadonlySet<string> = new Set(['kick', 'snare', 'clap', 'hi-hat', 'closed hi-hat', 'open hi-hat',
   'ride cymbal', 'crash cymbal', 'cymbal', 'rimshot', 'tom', 'drum fill', 'snare roll', 'breakbeat', 'drum loop'].map(l => `production:${l}`));
 export const DRUMS_UMBRELLA = { group: 'source', label: 'drums' } as const;
+/** Background-ambience tags that also show the umbrella "ambience" tag (Chris, 2026-11-01: Splice, Beatport Sounds and
+ * Cymatics all file these under one "ambience" word). The child tags stay and keep their own tested scores. On the full
+ * FSD50K eval set (10,231 clips, rule fixed before scoring) the umbrella measured P 0.675 / R 0.688, and it false-alarms
+ * on 0.17% of NSynth test notes (reports/dj-tags-plan-2026-11-01). */
+export const AMBIENCE_KIDS: ReadonlySet<string> = new Set(['rain ambience', 'water ambience', 'bird ambience', 'crowd ambience',
+  'machine ambience', 'wind ambience'].map(l => `production:${l}`));
+export const AMBIENCE_UMBRELLA = { group: 'production', label: 'ambience' } as const;
 export const mergedDjLabel = (group: DjGroup, label: string): { group: DjGroup; label: string } => MERGED_DJ_LABELS[`${group}:${label}`] ?? { group, label };
 /** Labels people can pick: the catalog minus the merged names. */
 const pickable = (group: DjGroup) => DJ_LABELS[group].filter(label => !MERGED_DJ_LABELS[`${group}:${label}`]);

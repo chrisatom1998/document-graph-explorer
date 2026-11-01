@@ -1515,6 +1515,19 @@
       "axis": "dj-texture"
     },
     {
+      "group": "production",
+      "family": "texture",
+      "label": "ambience",
+      "source": "sound effect",
+      "description": "Any background ambience: rain, water, birds, crowd, machine hum or wind.",
+      "aliases": [
+        "ambiences",
+        "field ambience"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-ambience"
+    },
+    {
       "group": "character",
       "family": "timbre",
       "label": "airy",
