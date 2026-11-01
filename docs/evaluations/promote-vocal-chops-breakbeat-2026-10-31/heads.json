@@ -1,0 +1,35 @@
+{
+ "kind": "promoted-heads-v1",
+ "date": "2026-10-31",
+ "note": "The heads already on main, with unchanged weights, bias and threshold, scored on the held-out real test clips of the 2026-10-31 CLAP-head run (library brands held out by a deterministic hash, so none of their clips are training clips). Both clear the 0.50/0.50 bar, so the maybe flag is removed. Aggregate counts only; test clip ids stay private.",
+ "heads": [
+  {
+   "label": "vocal chops",
+   "threshold": 0.904,
+   "precision": 0.6283,
+   "recall": 0.9103,
+   "tp": 71,
+   "fp": 42,
+   "fn": 7,
+   "testPositive": 78,
+   "testNegative": 4899,
+   "testedOn": "held-out library brands",
+   "from": "maybe",
+   "to": "full (likely)"
+  },
+  {
+   "label": "breakbeat",
+   "threshold": 0.911,
+   "precision": 0.716,
+   "recall": 0.5577,
+   "tp": 58,
+   "fp": 23,
+   "fn": 46,
+   "testPositive": 104,
+   "testNegative": 3059,
+   "testedOn": "held-out library brands",
+   "from": "maybe",
+   "to": "full (likely)"
+  }
+ ]
+}
