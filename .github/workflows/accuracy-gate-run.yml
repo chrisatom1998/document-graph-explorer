@@ -422,11 +422,10 @@ jobs:
           restore-keys: music-models-
       - name: Install Playwright Chromium
         # Fail at setup instead of consuming the whole two-hour analysis job
-        # when an upstream browser or OS-package download stalls.
+        # when an upstream browser or OS-package download stalls. The browser
+        # archive is cached; this limit still covers a cold download.
         timeout-minutes: 10
-        env:
-          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: 60000
-        run: npx playwright install --with-deps chromium
+        uses: ./.github/actions/setup-playwright
       - name: Build
         run: npm run build
       - name: Analyse in the real app

@@ -159,7 +159,7 @@ export default defineConfig(({ mode }) => ({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.{ts,tsx}', 'agent/**/*.test.js'],
+    include: ['src/**/*.test.{ts,tsx}', 'agent/**/*.test.js', 'scripts/fetch-models.test.mjs'],
     setupFiles: ['src/test/setup.ts'],
   },
 }));

@@ -1,0 +1,58 @@
+name: Install Playwright Chromium
+description: >
+  Restore ~/.cache/ms-playwright for the installed Playwright version and
+  install apt libraries only when the browser binary is missing them.
+
+runs:
+  using: composite
+  steps:
+    - name: Read Playwright version
+      id: playwright
+      shell: bash
+      run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+    - name: Restore Playwright browsers
+      id: cache
+      uses: actions/cache/restore@v6
+      with:
+        path: ~/.cache/ms-playwright
+        key: ms-playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+
+    - name: Install Playwright Chromium and system dependencies
+      id: install
+      shell: bash
+      env:
+        CACHE_HIT: ${{ steps.cache.outputs.cache-hit }}
+        PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '60000'
+      run: |
+        set -euo pipefail
+        installed=false
+        browser="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+        if [ "$CACHE_HIT" != "true" ] || [ ! -e "$browser" ]; then
+          npx playwright install chromium
+          installed=true
+          browser="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+        else
+          echo "Playwright Chromium cache hit (${{ steps.playwright.outputs.version }})."
+        fi
+        if [ ! -e "$browser" ]; then
+          echo "Playwright Chromium is not installed at $browser" >&2
+          exit 1
+        fi
+        # Hosted runners do not keep the apt packages across jobs. Skip them
+        # when this machine can already load the cached browser.
+        if ! ldd "$browser" >/dev/null 2>&1 || ldd "$browser" | grep -q 'not found'; then
+          echo "Installing Playwright system dependencies."
+          npx playwright install-deps chromium
+        else
+          echo "Playwright system dependencies already present."
+        fi
+        echo "installed=$installed" >> "$GITHUB_OUTPUT"
+
+    - name: Save Playwright browsers
+      if: steps.install.outputs.installed == 'true'
+      continue-on-error: true
+      uses: actions/cache/save@v6
+      with:
+        path: ~/.cache/ms-playwright
+        key: ms-playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
