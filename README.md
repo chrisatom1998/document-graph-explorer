@@ -268,6 +268,25 @@ Measured on an Apple M5 Max: the 100-PDF demo corpus ingests end to end in about
 2,000-node layout settles in under 6 seconds, and the settled scene holds the display's 120 Hz cap.
 Methodology and caveats are in [docs/benchmarks.md](docs/benchmarks.md).
 
+Tagging speed was measured on 1 November 2026 with `npm run bench:tag-speed` against the production
+build. Host: Linux, 4 vCPU Intel Xeon, 16 GiB reported by Chrome (`navigator.deviceMemory`),
+Node 22.23.4, Headless Chrome 156.0.8078.47, SwiftShader, cross-origin isolated. The fixed set is
+four 2-second windows of `iowa-flute-first8s.wav` (starting at 0, 0.5, 1 and 2 seconds) plus the
+whole `iowa-marimba-C7.wav`. Cold is the first flute window in a fresh profile. Warm is the other
+four clips, one at a time, after that load. Each time runs from the file-picker handoff until the
+saved graph holds a tag `confidentSoundSummary` would show; the sound identification panel then
+showed that tag for every clip. Cold model load is the wall clock of the overlapping model preload
+requests on the first clip. Four warm clips is too small for a stable p95, so the p95 below is the
+observed nearest-rank value.
+
+| Analysis mode | Cold model load | Cold clip | Warm median | Warm observed p95 | Warm clips/second |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Fast | 35.215 s | 39.500 s | 6.575 s | 7.662 s | 0.145 |
+| Full | 36.560 s | 40.966 s | 5.735 s | 6.936 s | 0.162 |
+
+Both modes tagged every clip and reported no page errors. **Full** had the lower warm median
+(5.735 s, 0.162 clips/second) and is the fastest reliable method on this machine and this set.
+
 ## Scripts
 
 | Script | What it does |
@@ -286,6 +305,7 @@ Methodology and caveats are in [docs/benchmarks.md](docs/benchmarks.md).
 | `npm run check:bundle` | Enforce eager-JavaScript limits for normal and air-gapped builds |
 | `npm run bench:layout` | Layout-convergence benchmark against the production worker |
 | `npm run bench:import`, `bench:dj:*`, `test:benchmarks` | Audio import and tag-accuracy benchmarks ([docs/audio-evaluation-infrastructure.md](docs/audio-evaluation-infrastructure.md)) |
+| `npm run bench:tag-speed -- <new.json>` | Cold model-load and warm per-clip tag latency on a fixed short-clip set. Requires a production build with the audio models (`DGE_MODELS=full npm run build`) |
 | `npm run review:sounds` | Start the local Python sound reviewer used by **Find free packs** |
 | `npm run agent` | Run the standalone read-only repo agent ([agent/README.md](agent/README.md)) |
 

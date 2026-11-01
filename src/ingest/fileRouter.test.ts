@@ -131,6 +131,17 @@ describe('routeFileWithSniff', () => {
     expect(routeFileWithSniff('image.png', textBytes)).toBeNull();
     expect(routeFileWithSniff('data.zip', textBytes)).toBeNull();
   });
+
+  it('does not trust a browser audio MIME ahead of the bytes', () => {
+    const textBytes = new TextEncoder().encode('not really audio').buffer;
+    const wavBytes = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x41, 0x56, 0x45]).buffer;
+    expect(routeFileWithSniff('notes.txt', textBytes, 'audio/mpeg')).toBe('txt');
+    expect(routeFileWithSniff('clip.bin', textBytes, 'audio/wav')).toBeNull();
+    expect(routeFileWithSniff('fake.wav', textBytes, 'audio/wav')).toBeNull();
+    expect(routeFileWithSniff('fake.wav', textBytes)).toBeNull();
+    expect(routeFileWithSniff('loop.bin', wavBytes, 'audio/wav')).toBe('audio');
+    expect(routeFileWithSniff('loop.wav', wavBytes, 'audio/x-wav')).toBe('audio');
+  });
 });
 
 describe('isIngestCandidate', () => {

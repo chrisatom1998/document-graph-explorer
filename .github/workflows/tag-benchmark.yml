@@ -1,0 +1,73 @@
+# Weekly tagging-speed measurement. Separate from ci.yml on purpose: that
+# workflow is owned by another change. Dispatch it by hand with the same file.
+name: Tag speed benchmark
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 1'
+
+permissions:
+  contents: read
+
+env:
+  DGE_MODELS: full
+  ONNXRUNTIME_NODE_INSTALL: skip
+  MUSIC_MODEL_PATHS: |
+    public/audio-model-pack.json
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    public/tagger-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  tag-speed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Restore audio model weights
+        id: music-models
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+
+      - name: Download audio model weights
+        if: steps.music-models.outputs.cache-hit != 'true'
+        run: npm run setup:music
+
+      - name: Save audio model weights
+        if: steps.music-models.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Measure tagging speed
+        run: npm run bench:tag-speed -- artifacts/tag-speed.json --timeout=900
+
+      - name: Upload tag-speed JSON
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: tag-speed
+          path: artifacts/tag-speed.json
+          retention-days: 30
+          if-no-files-found: error

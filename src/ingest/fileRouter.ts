@@ -103,9 +103,15 @@ export function isIngestCandidate(name: string): boolean {
   return true;
 }
 
+/** Shown when a file named as audio is plain text. The bytes were sniffed; the name was not trusted. */
+export const TEXT_DISGUISED_AS_AUDIO = 'not audio (file contents are text)';
+
 export function routeFileWithSniff(name: string, bytes: ArrayBuffer, mime = ''): FileType | null {
-  if (mime.startsWith('audio/')) return 'audio';
   const type = routeFile(name);
+  // A browser-reported audio/* type is not evidence by itself. Text keeps the
+  // route its name and bytes earn; only non-text bytes may be taken as audio.
+  if (mime.startsWith('audio/') && !looksLikeText(bytes)) return 'audio';
+  if (type === 'audio' && looksLikeText(bytes)) return null;
   if (type) return type;
 
   const ext = extensionOf(name);

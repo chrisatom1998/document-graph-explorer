@@ -5,7 +5,7 @@ import { inspectGraph } from './core.mjs';
 // Observes messages without changing request payloads, inference, or app state.
 export function installObserver() {
   const g = globalThis;
-  const stats = g.__dgeBenchmark = { requests: [], pending: 0, longTasks: [], transactionMs: [], corpusWrites: 0, epoch: 0 };
+  const stats = g.__dgeBenchmark = { requests: [], warmSpans: [], pending: 0, longTasks: [], transactionMs: [], corpusWrites: 0, epoch: 0 };
   const NativeWorker = g.Worker;
   g.Worker = class extends NativeWorker {
     constructor(url, options) {
@@ -15,9 +15,13 @@ export function installObserver() {
         const request = pending.get(key);
         if (!request) return;
         pending.delete(key); stats.pending--;
-        if (request.epoch === stats.epoch) stats.requests.push({ kind: request.kind, ms: performance.now() - request.start,
-          inferenceExecuted: data?.runtime?.inferenceExecuted ?? null, runtime: data?.runtime ?? null,
-          failed: !!data?.error || data?.type === 'error', progress: request.progress });
+        if (request.epoch === stats.epoch) {
+          const end = performance.now();
+          stats.requests.push({ kind: request.kind, ms: end - request.start, start: request.start,
+            inferenceExecuted: data?.runtime?.inferenceExecuted ?? null, runtime: data?.runtime ?? null,
+            failed: !!data?.error || data?.type === 'error', progress: request.progress });
+          if (request.kind === 'warm') stats.warmSpans.push({ start: request.start, end });
+        }
       };
       this.addEventListener('message', ({ data }) => {
         if (!data) return;

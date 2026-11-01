@@ -39,7 +39,8 @@
     "bench:dj:prepare": "node scripts/benchmarks/prepare.mjs",
     "bench:dj:run": "node scripts/benchmarks/run.mjs accuracy",
     "bench:dj:score": "vite-node scripts/benchmarks/score.mjs",
-    "bench:import": "node scripts/benchmarks/run.mjs import"
+    "bench:import": "node scripts/benchmarks/run.mjs import",
+    "bench:tag-speed": "vite-node scripts/benchmarks/tag-speed.mjs"
   },
   "dependencies": {
     "@ffmpeg/core": "^0.12.10",
