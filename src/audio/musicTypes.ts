@@ -7,6 +7,7 @@ import { MERGED_DJ_LABELS, mergedDjLabel, sanitizeConfirmedDjTags, type Confirme
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
+import { sanitizeSoundTagFixes, type SoundTagFix } from './soundTagFixes';
 import { sanitizeStructure, type TrackStructure } from './structure';
 import { sanitizeVersionPrint } from './versionPrint';
 import { sanitizeTimbre, type TimbreSummary } from './timbre';
@@ -90,6 +91,8 @@ export interface MusicAnalysis {
   tagger?: TaggerAnalysis;
   recognition?: Recognition;
   soundReviews?: SoundReview[];
+  /** Listener fixes from the "Not sure? Fix it" chip; display only, kept across reanalysis like the other corrections. */
+  soundTagFixes?: SoundTagFix[];
   stage?: 'preview';
   version: 1 | 2;
   tempoRevision?: number;
@@ -150,6 +153,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   out.recognition = sanitizeRecognition(m.recognition, out.durationSeconds);
   if (!out.recognition) delete out.recognition;
   if (Array.isArray(m.soundReviews)) out.soundReviews = sanitizeSoundReviews(m.soundReviews);
+  const soundTagFixes = sanitizeSoundTagFixes(m.soundTagFixes);
+  if (soundTagFixes?.length) out.soundTagFixes = soundTagFixes;
   if (m.stage === 'preview') out.stage = 'preview';
   if (Array.isArray(m.confirmedInstruments)) out.confirmedInstruments = [...new Set(m.confirmedInstruments.filter((label): label is string => typeof label === 'string' && sourceLabels.includes(label)))];
   const confirmedDjTags = sanitizeConfirmedDjTags(m.confirmedDjTags);

@@ -7,6 +7,9 @@ import { soundLabelText } from '../audio/djTags';
 import { likelyExtraSounds } from './MainSoundAttributes';
 import { TIMBRE_DEFINITIONS, timbreDescriptions } from '../audio/timbreDescriptions';
 import { djReviewAllows, resolvedNonSourceLabels } from '../audio/soundReviewPolicy';
+import { applySoundTagFixes, needsFixChip, type SoundTagFix } from '../audio/soundTagFixes';
+import { useState } from 'react';
+import SoundTagFixer from './SoundTagFixer';
 
 /** The rule-measured words for how it sounds (timbreDescriptions.ts), as one plain line: not tags, no scores.
  * Words you rejected, and words already shown as tags, are left out; old analyses without a measurement show nothing. */
@@ -24,8 +27,12 @@ const ORDER = ['source', 'effect', 'character', 'vocal', 'role'] as const;
 const DIMENSION_NAME = { source: 'Sound source', effect: 'Sound type', character: 'Character', vocal: 'Vocal', role: 'Role' };
 
 /** The identified sounds as tags. Explanations live in hover text, not on the page. */
-export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnalysis;mode?:string;node?:Pick<DocNode, 'path' | 'title'>}) {
-  const scored=confidentSoundSummary(audio,mode);
+export default function ConfidentSoundSummary({audio,mode,node,onFix}:{audio:MusicAnalysis;mode?:string;node?:Pick<DocNode, 'path' | 'title'>;
+  /** Given only where a fix can be saved: shows "Not sure? Fix it" on possible and maybe tags. */
+  onFix?:(fix:Omit<SoundTagFix,'at'>)=>Promise<unknown>}) {
+  const [fixing,setFixing]=useState<{dimension:SoundTagFix['dimension'];label:string}|null>(null);
+  // Listener fixes override the shown tags for this file; scores and links are untouched.
+  const scored=applySoundTagFixes(confidentSoundSummary(audio,mode),audio.soundTagFixes);
   const labels=[...scored,...(node?filenameSoundFallback(audio,node,scored).map(item=>({...item,scores:undefined})):[])]
     .sort((a,b)=>ORDER.indexOf(a.dimension as typeof ORDER[number])-ORDER.indexOf(b.dimension as typeof ORDER[number]));
   // Separate, dimmed group: untested but probability-like model scores >= 0.5. Only in the real music panel (node given).
@@ -49,8 +56,12 @@ export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnal
         {kind === 'name' && <span className="sound-tag__note">name</span>}
         {unverified ? <span className="sound-tag__note">unverified</span> : possible ? <span className="sound-tag__note">possible</span> : kind === 'maybe' && <span className="sound-tag__note">maybe</span>}
         <span className="sr-only"> — {hover}</span>
+        {onFix && needsFixChip(l) && <button type="button" className="sound-tag__fix" aria-expanded={fixing?.dimension === l.dimension && fixing.label === l.label}
+          aria-label={`Not sure? Fix ${soundLabelText(l.label)}`} title="Not sure? Keep it, remove it, or pick the right tag"
+          onClick={() => setFixing(f => f?.dimension === l.dimension && f.label === l.label ? null : {dimension: l.dimension, label: l.label})}>Not sure? Fix it</button>}
       </li>;
     })}</ul> : !extras.length && <p className="sound-tags__empty">Nothing identified yet</p>}
+    {onFix && fixing && labels.some(l => l.dimension === fixing.dimension && l.label === fixing.label) && <SoundTagFixer tag={fixing} onFix={onFix} onClose={() => setFixing(null)} />}
     {extras.length>0&&<ul className="sound-tags__list sound-tags__list--likely" aria-label="Likely, not yet tested">{extras.map(row=>{
       const hover=`${DIMENSION_NAME[row.dimension]} · likely: model score ${row.probabilityScore!.toFixed(2)}, not checked by a tested detector for this clip (not a chance) · display only, not used for links`;
       return <li key={`${row.dimension}:${row.label}`} className="sound-tag sound-tag--likely-extra" title={hover}>
