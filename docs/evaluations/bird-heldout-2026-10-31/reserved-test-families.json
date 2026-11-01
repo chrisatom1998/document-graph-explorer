@@ -1,0 +1,12 @@
+{
+ "set": "bird-heldout-2026-10-31",
+ "note": "Held-out test for 'bird ambience' (round A). Rule-based: a group is held out when int(sha256('dge-bird-heldout-2026-10-31|<group>')[:8], 16) % 100 < 15. Groups: ff1010bird = Freesound uploader, Warblr10k = recording id (Warblr publishes no user ids). The staged manifest (private) lists the exact ids; never trained, tuned or calibrated on.",
+ "birdHeldoutRule": {
+  "salt": "dge-bird-heldout-2026-10-31",
+  "heldPct": 15,
+  "groups": {
+   "ff1010bird": "freesound uploader",
+   "warblr10k": "itemid"
+  }
+ }
+}
