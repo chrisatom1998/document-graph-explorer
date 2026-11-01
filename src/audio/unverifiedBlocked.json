@@ -13,6 +13,10 @@
   "supersaw",
   "syncopated",
   "synth bass",
-  "synth stab"
- ]
+  "synth stab",
+  "ambience"
+ ],
+ "umbrellaOnly": {
+  "ambience": "Shown only as the umbrella of the ambience tags (Chris, 2026-11-01); its raw CLAP prompt is never shown on its own."
+ }
 }
