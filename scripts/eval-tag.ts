@@ -44,6 +44,7 @@ import { combineSoundModels } from '../src/audio/ensemble';
 import { confidentSoundSummary } from '../src/audio/confidentSoundSummary';
 import { DescriptionAccumulator, descriptionScores, type DescriptionPrompt, type DescriptionScore } from '../src/audio/profileDescriptions';
 import { learnedDjScores, sanitizeLearnedDjModel, type LearnedDjModel } from '../src/audio/learnedDjModel';
+import { readLearnedDocument } from '../src/audio/readLearnedModel';
 import { sanitizeShortClipModel, shortClipScores, SHORT_CLIP_MAX_SECONDS, type ShortClipModel } from '../src/audio/shortClipModel';
 import { instrumentWindowStarts } from '../src/audio/instrumentEvidence';
 import { TAGGER_POLICY, TAGGER_SAMPLE_RATE, TAGGER_WINDOW_SAMPLES, TaggerEvidence, taggerWindow, taggerWindowStarts, type TaggerTag } from '../src/audio/tagger';
@@ -87,7 +88,7 @@ const soundManifest = JSON.parse(readFileSync(join(PUBLIC, 'sound-model/manifest
 const prompts = JSON.parse(readFileSync(join(PUBLIC, 'sound-model/prompts.json'), 'utf8')) as DescriptionPrompt[];
 // Candidate model files (a branch's learned.json, a proposed short-clip.json or taggerPolicy.json) can stand in for
 // the shipped ones; the cached model outputs are reused because the CLAP weights and the tagger weights do not change.
-const learnedRaw = JSON.parse(readFileSync(opt('learned') ?? join(PUBLIC, 'sound-model/learned.json'), 'utf8'));
+const learnedRaw = readLearnedDocument(opt('learned') ?? join(PUBLIC, 'sound-model/learned.json'));
 const shortRaw = JSON.parse(readFileSync(opt('short-clip') ?? join(PUBLIC, 'sound-model/short-clip.json'), 'utf8'));
 if (opt('policy')) { const alt = JSON.parse(readFileSync(opt('policy')!, 'utf8')) as typeof TAGGER_POLICY; if (alt.modelSha256 !== TAGGER_POLICY.modelSha256) throw new Error('--policy is for another tagger model'); TAGGER_POLICY.tags.length = 0; TAGGER_POLICY.tags.push(...alt.tags); }
 const learned = sanitizeLearnedDjModel(learnedRaw), shortClip = sanitizeShortClipModel(shortRaw);

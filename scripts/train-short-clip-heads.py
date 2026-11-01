@@ -8,6 +8,9 @@ Usage: <venv>/python scripts/train-short-clip-heads.py [compare|export]
   export   -> fit the chosen feature set on train, pick thresholds on calibration, write the model JSON
 """
 import json, glob, sys, os, datetime
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from learned_store import load_learned
 import numpy as np
 from collections import defaultdict
 from sklearn.linear_model import LogisticRegression
@@ -127,7 +130,7 @@ SHIPPED_MAP = {'kick': 'role:kick', 'snare': 'role:snare', 'open hi-hat': 'role:
 
 def shipped():
     """Today's shipped CLAP heads on the looped fingerprint, exactly as learnedDjScores thresholds them (maybe heads included)."""
-    model = json.load(open(f'{ROOT}/public/sound-model/learned.json'))
+    model = load_learned(f'{ROOT}/public/sound-model/learned.json')
     X = block(DEV, 'clapRepeat')
     fired = defaultdict(lambda: np.zeros(len(DEV), bool))
     for hd in model['heads']:

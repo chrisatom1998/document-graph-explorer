@@ -23,6 +23,8 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
+sys.path.insert(0, os.path.join(ROOT, 'scripts'))
+from learned_store import load_learned  # noqa: E402
 sys.path.insert(0, HERE)
 import bars  # noqa: E402
 
@@ -193,7 +195,7 @@ def main():
 
     catalog = load(os.path.join(ROOT, 'src/audio/djCatalog.json'))['categories']
     policy = load(os.path.join(ROOT, 'src/audio/taggerPolicy.json'))
-    learned = load(os.path.join(ROOT, 'public/sound-model/learned.json'))['heads']
+    learned = load_learned(os.path.join(ROOT, 'public/sound-model/learned.json'))['heads']
     short = load(os.path.join(ROOT, 'public/sound-model/short-clip.json'))['heads']
     prompts = load(os.path.join(ROOT, 'public/sound-model/prompts.json'))
     quotes = load(os.path.join(HERE, 'fresh_quotes.json'))

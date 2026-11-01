@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { confidentSoundSummary, SOUND_TAG_BAR } from './confidentSoundSummary';
-import { sanitizeLearnedDjModel } from './learnedDjModel';
+import { readLearnedModel } from './readLearnedModel';
 import type { MusicAnalysis } from './musicTypes';
 import { TAGGER_POLICY, TAGGER_REVISION } from './tagger';
 
@@ -82,7 +82,7 @@ const RUNTIME_DROPPED = ['conga', 'gliding', 'tambourine'];
 const STILL_MAYBE = ['bright', 'dark', 'glassy', 'percussive', 'pulsing', 'swelling', 'wobbling', 'noise sweep', 'filter sweep'];
 
 interface Head { label: string; threshold: number; weights: number[]; bias: number; maybe?: boolean; oneShot?: boolean }
-const learned = (JSON.parse(readFileSync('public/sound-model/learned.json', 'utf8')) as { heads: Head[] }).heads;
+const learned = readLearnedModel()!.heads as Head[];
 const head = (label: string) => learned.find(h => h.label === label)!;
 type Row = { label?: string; name?: string; threshold?: number | null; precision?: number | null; recall?: number | null };
 const rows = (report: string): Row[] => {
@@ -130,7 +130,7 @@ describe('the 50/50 shipping bar', () => {
     expect(h.weights[0]).toBeCloseTo(0.926403, 6);
     expect(h.weights.at(-1)).toBeCloseTo(0.144107, 6);
     expect(coefficientDigest(h)).not.toBe(previous.coefficientDigest);
-    const loaded = sanitizeLearnedDjModel(JSON.parse(readFileSync('public/sound-model/learned.json', 'utf8')));
+    const loaded = readLearnedModel();
     expect(loaded?.heads?.find(x => x.label === 'trumpet')).toMatchObject({ threshold: 0.863, bias: -4.108752 });
   });
 

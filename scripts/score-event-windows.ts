@@ -5,7 +5,7 @@
  * Usage: npx vite-node scripts/score-event-windows.ts <windows test.json> <fingerprint dir> <out.json> */
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { sanitizeShortClipModel, shortClipScores } from '../src/audio/shortClipModel';
-import { sanitizeLearnedDjModel } from '../src/audio/learnedDjModel';
+import { readLearnedModel } from '../src/audio/readLearnedModel';
 
 const [MANIFEST, DIR, OUT] = process.argv.slice(2);
 const clips: { id: string; labels: string[]; levelDb: number }[] = JSON.parse(readFileSync(MANIFEST, 'utf8')).clips;
@@ -14,7 +14,7 @@ for (const f of readdirSync(DIR).filter(f => /^emb-.*\.jsonl$/.test(f)))
   for (const line of readFileSync(`${DIR}/${f}`, 'utf8').split('\n')) if (line) { const r = JSON.parse(line); emb.set(r.id, r.embedding); }
 const rows = clips.filter(c => emb.has(c.id));
 const short = sanitizeShortClipModel(JSON.parse(readFileSync('public/sound-model/short-clip.json', 'utf8')))!;
-const learned = sanitizeLearnedDjModel(JSON.parse(readFileSync('public/sound-model/learned.json', 'utf8')))!;
+const learned = readLearnedModel()!;
 
 // Which mixture target labels make each detector label true.
 const SYNTH = ['synth stab', 'synth pluck', 'synth chord', 'synth lead', 'synth bass', 'synth sequence', 'synth arpeggio', 'bell synth', 'brass synth', 'organ synth', 'string synth', 'atmospheric pad'];

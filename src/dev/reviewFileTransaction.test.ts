@@ -84,3 +84,16 @@ it('backs up and restores an existing learned file instead of deleting it', asyn
   expect(await readFile(join(root, 'public/sound-model/learned.json'), 'utf8')).toBe('previous learned content');
   expect(await readFile(join(backup, 'public/sound-model/learned.json'), 'utf8')).toBe('previous learned content');
 });
+
+it('removes a replaced head file and restores it when publication fails', async () => {
+  const { root, writes, backup } = await fixture();
+  await mkdir(join(root, 'public/sound-model/heads'), { recursive: true });
+  await writeFile(join(root, 'public/sound-model/heads/old.json'), 'old head');
+  writes.set('public/sound-model/heads/new.json', 'new head');
+  await expect(withReviewFileTransaction(writes, backup, async () => {
+    await expect(access(join(root, 'public/sound-model/heads/old.json'))).rejects.toMatchObject({ code: 'ENOENT' });
+    throw new Error('validation failed');
+  }, root, ['public/sound-model/heads/old.json'])).rejects.toThrow('validation failed');
+  expect(await readFile(join(root, 'public/sound-model/heads/old.json'), 'utf8')).toBe('old head');
+  await expect(access(join(root, 'public/sound-model/heads/new.json'))).rejects.toMatchObject({ code: 'ENOENT' });
+});

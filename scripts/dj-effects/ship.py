@@ -10,10 +10,13 @@ Heads already shipped as "maybe" are re-tiered from their recorded held-out scor
 promote-heads.py (same FULL bar), not by retraining.
 New labels (labels.json "new") get a catalog entry on their own axis (dj-effect), so they do not change which
 existing label wins the dj-transition axis; add-prompts.mjs then gives them CLAP text vectors (on Actions).
-Re-pins learned.json in manifest.json, bumps the learned.json revision and the catalog version, and rewrites
+Writes one file per head (scripts/learned_store.py). Does not pin learned.json in manifest.json. Bumps the learned.json revision and the catalog version, and rewrites
 calibratedLabels.json. When the report also scores every held-out clip ("extended", train.py PRIMARY_ROUND), a head that
 replaces a current one must beat it there too. REVISION_TAG (default dj-effects-2026-10-06) names the revision suffix.  Usage: ship.py <dir with report.json + heads.json>"""
-import json, sys, hashlib, os
+import json, sys, os
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from learned_store import load_learned, write_learned
 from eligibility import eligible_metrics
 D = sys.argv[1]
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -21,7 +24,7 @@ spec = {L['label']: L for L in json.load(open(f"{HERE}/{os.environ.get('LABELS',
 report = json.load(open(f'{D}/report.json'))['labels']
 trained = {h['label']: h for h in json.load(open(f'{D}/heads.json'))['heads']}
 LEARNED, MANIFEST, CATALOG = 'public/sound-model/learned.json', 'public/sound-model/manifest.json', 'src/audio/djCatalog.json'
-model = json.load(open(LEARNED)); catalog = json.load(open(CATALOG))
+model = load_learned(LEARNED); catalog = json.load(open(CATALOG))
 MAX_SECONDS = json.load(open('public/sound-model/short-clip.json'))['maxSeconds']
 cats = {(c['group'], c['label']) for c in catalog['categories']}
 FULL, MAYBE_P, MAYBE_R = 0.50, 0.45, 0.30   # FULL equals SOUND_TAG_BAR in src/audio/confidentSoundSummary.ts
@@ -81,16 +84,20 @@ if not any(r['shipped'] for r in out):
     for row in out: print(f"{row['label']}: no - {row['why']}")
     sys.exit('nothing to ship; reports without runtime-eligible scores must be regenerated with DURATIONS or rescore.py')
 model['revision'] += '+' + os.environ.get('REVISION_TAG', 'dj-effects-2026-10-06')
-body = json.dumps(model, separators=(',', ':')) + '\n'
-open(LEARNED, 'w').write(body)
-man = json.load(open(MANIFEST)); man['sha256']['learned.json'] = hashlib.sha256(body.encode()).hexdigest()
+digest = write_learned(LEARNED, model)
+man = json.load(open(MANIFEST))
+manifest_changed = False
+if 'learned.json' in man.get('sha256', {}):
+    del man['sha256']['learned.json']; manifest_changed = True
 if added_cats:
     catalog['version'] += 1; man['catalogVersion'] = catalog['version']
     open(CATALOG, 'w').write(json.dumps(catalog, indent=2, ensure_ascii=False) + '\n')
-open(MANIFEST, 'w').write(json.dumps(man, indent=2) + '\n')
-labels = sorted({x['label'] for f in (LEARNED, 'public/sound-model/short-clip.json') for x in json.load(open(f))['heads']})
+    manifest_changed = True
+if manifest_changed:
+    open(MANIFEST, 'w').write(json.dumps(man, indent=2) + '\n')
+labels = sorted({x['label'] for x in load_learned(LEARNED)['heads']} | {x['label'] for x in json.load(open('public/sound-model/short-clip.json'))['heads']})
 open('src/audio/calibratedLabels.json', 'w').write(json.dumps(labels, indent=0) + '\n')
-json.dump({'kind': 'dj-effect-heads-shipped-v1', 'learnedRevision': model['revision'], 'learnedSha256': man['sha256']['learned.json'],
+json.dump({'kind': 'dj-effect-heads-shipped-v1', 'learnedRevision': model['revision'], 'learnedSha256': digest,
            'newCatalogLabels': added_cats, 'heads': out}, open(f'{D}/shipped.json', 'w'), indent=1)
 for r in out: print(f"{r['label']:<16}" + (f"{r['precision']:.2f}/{r['recall']:.2f} " if r.get('precision') is not None else '          ') + (f"SHIPPED {r['tier']}" + (f" (replaces {r['replaced']['tier']} head: P {r['replaced']['precision']:.2f} R {r['replaced']['recall']:.2f})" if r.get('replaced') else '') if r['shipped'] else f"no - {r['why']}"))
 print(f"new catalog labels: {added_cats or 'none'}; learned.json now {len(model['heads'])} heads")

@@ -2,12 +2,12 @@ import { loadSongMusicModel } from './songMusicModel';
 import { instrumentScores } from '../audio/instrumentLabels';
 import { songInstrumentCandidates, songInstrumentTags, songMusicEvidence, type SongInstrumentCandidate } from '../audio/songRecognition';
 import { songReviewStarts } from '../audio/analysisPlan';
-import { learnedDjScores, sanitizeLearnedDjModel } from '../audio/learnedDjModel';
+import { learnedDjScores } from '../audio/learnedDjModel';
+import { readLearnedModel } from '../audio/readLearnedModel';
 /** Run the app's category selector on local audio, without filename prompts or uploads.
  * Usage: npx vite-node src/dev/classifyDjAudio.ts -- <audio files>
  */
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { env, AutoProcessor, AutoModelForAudioClassification, ClapAudioModelWithProjection } from '@huggingface/transformers';
 import { descriptionScores, type DescriptionPrompt } from '../audio/profileDescriptions';
@@ -24,15 +24,9 @@ const repository = './public/sound-model';
 const processor = await AutoProcessor.from_pretrained(repository, {local_files_only:true});
 const model = await ClapAudioModelWithProjection.from_pretrained(repository, {dtype:'q8',local_files_only:true});
 const prompts = JSON.parse(await readFile('public/sound-model/prompts.json','utf8')) as DescriptionPrompt[];
-let learned: ReturnType<typeof sanitizeLearnedDjModel>;
-// A private reviewed model is optional and must be explicitly pinned before use.
-if(manifest.sha256?.['learned.json']) {
-  try {
-    const bytes=await readFile('public/sound-model/learned.json');
-    if(createHash('sha256').update(bytes).digest('hex')!==manifest.sha256['learned.json'])throw Error('Reviewed model hash mismatch');
-    learned=sanitizeLearnedDjModel(JSON.parse(bytes.toString('utf8')));
-  } catch { console.warn('Optional reviewed model unavailable; using frozen base models.'); }
-}
+let learned: ReturnType<typeof readLearnedModel>;
+try { learned = readLearnedModel(); }
+catch { console.warn('Optional reviewed model unavailable; using frozen base models.'); }
 const songMode = process.argv.includes('--song');
 const instruments = songMode ? await AutoModelForAudioClassification.from_pretrained('./public/music-model',{dtype:'q8',local_files_only:true}) : null;
 const instrumentProcessor = songMode ? await AutoProcessor.from_pretrained('./public/music-model',{local_files_only:true}) : null;

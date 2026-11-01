@@ -14,13 +14,14 @@ import { DJ_CATALOG, DJ_HIDDEN_LABELS, DJ_PICKER_LABELS, MERGED_DJ_LABELS, sound
 import { TAGGER_POLICY } from '../src/audio/tagger';
 import { CALIBRATED_LABELS, HIDDEN_UNTIL_TESTED, UNVERIFIED_BLOCKED } from '../src/audio/confidentSoundSummary';
 import { SHORT_RECORDING_HEAD_GATES } from '../src/audio/learnedDjModel';
+import { readLearnedDocument } from '../src/audio/readLearnedModel';
 import { SHORT_CLIP_MAX_SECONDS } from '../src/audio/shortClipModel';
 import { isRuleDescribedLabel } from '../src/audio/timbreDescriptions';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'docs/tag-decision-map.md');
 interface Head { group: DjGroup; label: string; threshold: number; maybe?: boolean; oneShot?: boolean }
-const learned = JSON.parse(readFileSync(join(ROOT, 'public/sound-model/learned.json'), 'utf8')) as { heads: Head[]; examples: unknown[] };
+const learned = readLearnedDocument(join(ROOT, 'public/sound-model/learned.json')) as { heads: Head[]; examples: unknown[] };
 const shortClip = JSON.parse(readFileSync(join(ROOT, 'public/sound-model/short-clip.json'), 'utf8')) as { heads: Head[] };
 const prompts = JSON.parse(readFileSync(join(ROOT, 'public/sound-model/prompts.json'), 'utf8')) as { group: string; label: string | null }[];
 const taggerClasses = JSON.parse(readFileSync(join(ROOT, 'public/tagger-model/model.json'), 'utf8')).classes as string[];

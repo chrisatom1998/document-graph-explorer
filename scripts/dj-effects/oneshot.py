@@ -4,14 +4,17 @@ The app scores those clips with one-shot heads only, unless a learned.json head 
 (musicAnalysis.worker.ts). A shipped DJ-effect head is cleared when, on the held-out clips that short (train.py
 "heldOutOneShot", same threshold), it has at least MIN_POSITIVES positives, precision >= 0.45 and recall >= 0.30 (the
 maybe floor in ship.py), and beats the label's short-clip.json head on the same clips if one exists (higher min(P, R),
-then F1). Re-pins learned.json in manifest.json.  Usage: oneshot.py <dir with report.json + heads.json>"""
-import json, sys, hashlib
+then F1). Writes the split head files and does not pin learned.json in manifest.json.  Usage: oneshot.py <dir with report.json + heads.json>"""
+import json, sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from learned_store import load_learned, write_learned, drop_learned_pin
 D = sys.argv[1]
 MIN_POSITIVES = 10
 LEARNED, MANIFEST = 'public/sound-model/learned.json', 'public/sound-model/manifest.json'
 report = json.load(open(f'{D}/report.json'))['labels']
 trained = {h['label']: h for h in json.load(open(f'{D}/heads.json'))['heads']}
-model = json.load(open(LEARNED))
+model = load_learned(LEARNED)
 key = lambda P, R: (min(P, R), 2 * P * R / (P + R) if P + R else 0.0)
 cleared = []
 for head in model['heads']:
@@ -33,8 +36,6 @@ for head in model['heads']:
           (f"  (one-shot P {o['precision']:.2f} R {o['recall']:.2f}, {o['positives']}+/{o['negatives']}-)" if o.get('positives') else ''))
 if cleared and '+oneshot' not in model['revision']:
     model['revision'] += '+oneshot'
-body = json.dumps(model, separators=(',', ':')) + '\n'
-open(LEARNED, 'w').write(body)
-man = json.load(open(MANIFEST)); man['sha256']['learned.json'] = hashlib.sha256(body.encode()).hexdigest()
-open(MANIFEST, 'w').write(json.dumps(man, indent=2) + '\n')
+write_learned(LEARNED, model)
+drop_learned_pin(MANIFEST)
 print(f'{len(cleared)} heads cleared for one-shots: {cleared}')

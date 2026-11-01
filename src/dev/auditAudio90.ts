@@ -3,22 +3,23 @@ import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { sourceLabels, dimensionLabels } from '../audio/recognition';
 import { DJ_CATALOG } from '../audio/djTags';
-import { sanitizeLearnedDjModel } from '../audio/learnedDjModel';
+import { sanitizeLearnedDjModel, type LearnedDjExample } from '../audio/learnedDjModel';
+import { readLearnedDocument } from '../audio/readLearnedModel';
 import { strictReviewedModel } from './strictReviewedEvaluation';
 
 const evidencePath = process.argv[2];
 if (!evidencePath) throw new Error('Pass preserved consumed per-category report path');
 const output = resolve('artifacts/astra90'); mkdirSync(output, { recursive: true });
 const bytes = readFileSync(evidencePath); const consumed = JSON.parse(bytes.toString());
-const learnedBytes = readFileSync('public/sound-model/learned.json');
-const learned = JSON.parse(learnedBytes.toString());
+const learnedBytes = readFileSync('public/sound-model/head-sha256.txt');
+const learned = readLearnedDocument() as { examples: { provenance?: string }[]; heads: { group: string; label: string; threshold: number }[] };
 const fusionPolicyBytes = readFileSync('public/fusion-model/policy.json');
 const fusionPolicy = JSON.parse(fusionPolicyBytes.toString());
 const fusionModel = JSON.parse(readFileSync('public/fusion-model/model.json', 'utf8'));
 const rules = ['src/audio/djTags.ts', 'src/audio/djClassification.ts', 'src/audio/ensemble.ts', 'src/audio/fusionPresentation.ts', 'src/audio/learnedDjModel.ts', 'src/audio/analyzeDecodedMusic.ts', 'src/audio/instrumentEvidence.ts'];
 const sha = (x: Buffer) => createHash('sha256').update(x).digest('hex');
 let strictRejection = '';
-try { strictReviewedModel(learned.examples, []); } catch (e) { strictRejection = String(e); }
+try { strictReviewedModel(learned.examples as LearnedDjExample[], []); } catch (e) { strictRejection = String(e); }
 const categories = new Map<string, { dimension: string; label: string; routes: string[] }>();
 const add = (dimension: string, label: string, route: string) => {
   const key = dimension + ':' + label;

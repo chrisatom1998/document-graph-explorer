@@ -11,6 +11,9 @@ Never selects a sound or uploader reserved by a frozen test set (reserved-test-f
 Usage: freesound-mine-manifest.py <meta.parquet> <out.json>   env: PER_LABEL (120), PER_UPLOADER (4),
 SKIP=label,label  (labels another session already covers)"""
 import json, sys, os, re, hashlib
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from learned_store import load_learned
 import pyarrow.parquet as pq
 
 META, OUT = sys.argv[1:3]
@@ -24,7 +27,7 @@ SKIP_IDS = {str(c['freesoundId']) for f in filter(None, os.environ.get('SKIP_IDS
 FP = '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints'
 catalog = json.load(open('src/audio/djCatalog.json'))['categories']
 coverage = {r['label']: r['terms'] for r in json.load(open(f'{FP}/coverage.json'))['rows']}
-shipped = {h['label'] for f in ('learned.json', 'short-clip.json') for h in json.load(open(f'public/sound-model/{f}'))['heads']}
+shipped = {h['label'] for h in load_learned('public/sound-model/learned.json')['heads']} | {h['label'] for h in json.load(open('public/sound-model/short-clip.json'))['heads']}
 
 reserved_ids, reserved_users = set(), set()
 for f in ('docs/evaluations/short-clips-2026-10-04/reserved-test-families.json', 'docs/evaluations/synth-clips-2026-10-05/reserved-test-families.json'):

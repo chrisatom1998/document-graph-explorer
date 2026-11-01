@@ -14,6 +14,10 @@ single output; neighbour scores are off on clips <= 2.25 s (the app gives those 
 LOCAL ONLY: reads test audio embeddings; nothing here leaves the container.
 """
 import csv, glob, hashlib, json, os, re, sys
+from pathlib import Path
+_repo = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_repo / 'scripts'))
+from learned_store import load_learned
 import numpy as np
 WORK = os.environ.get('KNN_WORK', '/tmp/knn')  # container scratch: features, test embeddings, model files
 from sklearn.linear_model import LogisticRegression
@@ -28,7 +32,7 @@ for n in ('fsd50k-eval', 'nsynth-test'):
 BOARD = ['free-tag-set-test', 'fsd50k-eval', 'nsynth-test']; EXTRA_CAL = ['freesound-reserved']; MIN_POS = 5
 rng = np.random.default_rng(0)
 APPBASE = os.environ.get('BASE') == 'app'
-LEARNED = json.load(open('/home/user/document-graph-explorer/public/sound-model/learned.json'))  # its linear heads only
+LEARNED = load_learned(_repo / 'public/sound-model/learned.json')  # its linear heads only
 LINES = [(.5, .5), (.6, .6), (.7, .7), (.5, .3), (.6, .3)]
 classes = json.load(open(f'{MODEL}/onnx/model.json'))['classes']; th = json.load(open(f'{MODEL}/thresholds.json'))
 policy = {t['label']: t for t in json.load(open(f'{REPO}/src/audio/taggerPolicy.json'))['tags']}

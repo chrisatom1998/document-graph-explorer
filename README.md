@@ -289,6 +289,12 @@ Methodology and caveats are in [docs/benchmarks.md](docs/benchmarks.md).
 | `npm run review:sounds` | Start the local Python sound reviewer used by **Find free packs** |
 | `npm run agent` | Run the standalone read-only repo agent ([agent/README.md](agent/README.md)) |
 
+### Sound-head changes
+
+Trained CLAP heads are one file per label: `public/sound-model/heads/<slug>.json` (sorted keys, one line). `public/sound-model/learned.json` is only the envelope (version, encoder, revision, and the head order, one slug per line). `public/sound-model/head-sha256.txt` stores one `slug hash` line per file, sorted by slug. The app compiles every head into a single module, so the browser still loads them in one request. That module's integrity stamp comes from `head-sha256.txt` at build time. `manifest.json` does not pin `learned.json`.
+
+A head change should edit that label's file and its line in `head-sha256.txt`. Use `scripts/learned_store.py` (`write_learned`) instead of rewriting `learned.json` as one line. Two different labels do not share a line. Adding a label also adds one slug to the envelope. If two additions land together, keep both slugs. If both change `revision`, keep both suffixes. Neighbour heads (example banks) go in `public/sound-model/neighbours/` and are listed under `neighbours` in the envelope.
+
 ## Builds
 
 | Command | Output | Network behaviour |
