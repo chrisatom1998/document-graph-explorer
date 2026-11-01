@@ -61,7 +61,7 @@ jobs:
           python3 -c "from huggingface_hub import whoami; w = whoami(); print('HF account:', w['name'], '| PRO:', w.get('isPro'))"
       - name: Fetch the SoundCloud excerpts
         if: ${{ (inputs.soundcloud || 'true') == 'true' }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: sc-audio-*
           merge-multiple: true

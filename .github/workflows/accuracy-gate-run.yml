@@ -409,7 +409,7 @@ jobs:
           node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync(process.argv[1])),gone=m.items.filter(i=>!fs.existsSync(`${process.argv[2]}/${i.id}.wav`));
             if(gone.length){console.error(`${gone.length} of ${m.items.length} tracks have no audio, e.g. ${gone[0].id}`);process.exit(1)}' \
             gate-manifests/${{ matrix.set }}.json gate-audio/${{ matrix.set }}
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -434,7 +434,7 @@ jobs:
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
           AUDIO_DIR=gate-audio/${{ matrix.set }} AUDIO_EXT=wav MANIFEST=gate-manifests/${{ matrix.set }}.json \
             SHARD=${{ matrix.shard }}/${{ matrix.of }} node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: gate-${{ inputs.mode }}-${{ matrix.side }}-${{ matrix.set }}-${{ matrix.shard }}
           path: out/run/graph-export.json
@@ -467,13 +467,13 @@ jobs:
         with:
           ref: ${{ needs.plan.outputs.base }}
           path: app-base
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         if: needs.plan.outputs.run == 'true'
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: app-head/package-lock.json
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         if: needs.plan.outputs.run == 'true'
         with:
           pattern: gate-${{ inputs.mode }}-*
@@ -513,7 +513,7 @@ jobs:
       - name: Show the verdict
         if: always() && needs.plan.outputs.run == 'true'
         run: '[ -f summary.md ] && cat summary.md >> "$GITHUB_STEP_SUMMARY" || true'
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always() && needs.plan.outputs.run == 'true'
         with:
           name: gate-${{ inputs.mode }}-reports
