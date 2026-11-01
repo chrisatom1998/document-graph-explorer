@@ -11,6 +11,8 @@ A tag a clip may hold without FSD50K naming it (a conga is only "Drum" there) is
 """
 import csv, os, time
 
+import drum_sounds
+
 REPO, REV = 'Fhrozen/FSD50k', os.environ.get('FSD50K_REV', 'main')
 # FSD50K class -> app tags it shows.
 EXTRA = {
@@ -46,15 +48,19 @@ def labels_for(classes):
         elif not classes & UNKNOWN_IF.get(tag, set()): out[f'cat:{tag}'] = False
     return out
 
-def relabel(items, split, strings=False, classes=None):
+def relabel(items, split, strings=False, classes=None, drums_any=False):
     """Adds the labels above to prepared FSD50K items in place (ids 'fsd50k:<fname>'). Present beats an existing absent;
-    an existing present is never removed. strings=True writes 'present'/'absent' (eval sets), else 1.0/0.0 (training)."""
+    an existing present is never removed. strings=True writes 'present'/'absent' (eval sets), else 1.0/0.0 (training).
+    drums_any=True (runs trained with the 2026-10-31 drums meaning, drum_sounds.py): a clip with any FSD50K drum class,
+    e.g. a lone Hi-hat or the generic Drum class, is drums present too, not only Drum_kit."""
     classes = classes if classes is not None else fsd50k_classes(split)
     changed = 0
     for it in items:
         cls = classes.get(it['id'].split(':', 1)[1])
         if cls is None: continue
-        for k, v in labels_for(cls).items():
+        extra = labels_for(cls)
+        if drums_any and cls & set(drum_sounds.FSD50K_DRUM_CLASSES): extra['cat:drums'] = True
+        for k, v in extra.items():
             old = it['labels'].get(k)
             if old in (1.0, 'present') or (old is not None and not v): continue
             it['labels'][k] = ('present' if v else 'absent') if strings else float(v)

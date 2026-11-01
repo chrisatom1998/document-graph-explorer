@@ -36,13 +36,14 @@ class BuildSet(unittest.TestCase):
         self.assertEqual(kick['labels']['cat:piano'], 'absent')
 
     def test_drums_means_any_drum_but_selection_keeps_the_training_map(self):
-        rows = self.rows + [row(30, ['Snare_drum', 'Drum']), row(31, ['Tabla', 'Drum']), row(32, ['Drum']), row(33, ['Hi-hat', 'Cymbal'])]
-        info = self.info | {str(i): {'uploader': f'v{i}'} for i in range(30, 34)}
+        rows = self.rows + [row(30, ['Snare_drum', 'Drum']), row(31, ['Tabla', 'Drum']), row(32, ['Drum']), row(33, ['Hi-hat', 'Cymbal']),
+                            row(34, ['Crash_cymbal']), row(35, ['Tambourine', 'Percussion'])]
+        info = self.info | {str(i): {'uploader': f'v{i}'} for i in range(30, 36)}
         _, clips, items, _ = build_set.build(rows, info, per_tag=4, per_uploader=4, negatives=20, reserved=self.reserved)
         lab = {i['id']: i['labels'] for i in items}
-        for fname in (11, 30, 31, 32):                                   # kick, snare, tabla and plain drum clips all count as drums
+        for fname in (11, 30, 31, 32, 33, 34):   # kick, snare, tabla, plain drum, hi-hat and cymbal one-shots all count (Chris, Oct 31)
             self.assertEqual(lab[f'fsd50k-eval:{fname}']['cat:drums'], 'present', fname)
-        self.assertEqual(lab['fsd50k-eval:33']['cat:drums'], 'absent')   # a cymbal or hi-hat on its own is not a drum
+        self.assertEqual(lab['fsd50k-eval:35']['cat:drums'], 'absent')   # tambourine / percussion on its own is not a drum
         self.assertEqual(lab['fsd50k-eval:11']['cat:kick'], 'present')
         plain = next(c for c in clips if c['fname'] == '32')
         self.assertEqual(plain['tags'], [])                              # selection still sees no mapped class: it can be a negative

@@ -1,0 +1,13 @@
+tag,ced_rows,kept,uploaders,licences,dropped: FSD50K eval clip (judge pool),dropped: FSD50K eval uploader (judge pool),dropped: FSD50K dev-val uploader (tuning set),dropped: reserved test family,dropped: already listed by an earlier round,dropped: reserved-uploader hash rule,dropped: CED score < 0.5,dropped: uploader cap,dropped: tag cap
+bell,1000,11,9,CC0=10 NC3=1,77,126,257,7,335,187,0,0,0
+clap,0,0,0,,0,0,0,0,0,0,0,0,0
+cymbal,0,0,0,,0,0,0,0,0,0,0,0,0
+drums,0,0,0,,0,0,0,0,0,0,0,0,0
+foley,0,0,0,,0,0,0,0,0,0,0,0,0
+hi-hat,0,0,0,,0,0,0,0,0,0,0,0,0
+machine ambience,945,13,11,BY3=1 CC0=12,47,147,231,7,143,191,166,0,0
+piano,0,0,0,,0,0,0,0,0,0,0,0,0
+snare,0,0,0,,0,0,0,0,0,0,0,0,0
+tambourine,187,0,0,,23,24,63,0,28,37,12,0,0
+vocal shout,157,3,1,CC0=3,13,14,32,10,23,31,31,0,0
+wind ambience,1000,3,3,BY3=1 BY4=1 CC0=1,22,111,209,12,223,323,97,0,0

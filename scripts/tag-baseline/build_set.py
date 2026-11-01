@@ -46,7 +46,9 @@ def reserved_rule():
 # it has no separate tom or kick class. Percussion alone (cymbals, shakers, bells) is not a drum. The training map
 # (scripts/audio-model/labelmap.py) still says Drum_kit only, and clip selection keeps using it, so the judge set's
 # clips do not move: only their drums labels do.
-EVAL_LABELS = {'Drum': ['drums'], 'Drum_kit': ['drums'], 'Bass_drum': ['drums'], 'Snare_drum': ['drums'], 'Tabla': ['drums']}
+# Chris 2026-10-31: drums = any drum sound, single kick/snare/hi-hat/cymbal one-shots included (the training rule is
+# scripts/audio-model/drum_sounds.py; FSD50K_DRUM_CLASSES there is this list).
+EVAL_LABELS = {c: ['drums'] for c in ('Drum', 'Drum_kit', 'Bass_drum', 'Snare_drum', 'Hi-hat', 'Cymbal', 'Crash_cymbal', 'Tabla')}
 
 
 def catalog_tags(classes):
