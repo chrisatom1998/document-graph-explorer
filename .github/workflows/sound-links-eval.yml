@@ -46,7 +46,7 @@ jobs:
           curl -fsSL --retry 6 -o datasets/nsynth.tgz "$NSYNTH"
       - name: Select clips
         run: python3 scripts/sound-links/select.py datasets/openmic.tgz datasets/fma_metadata.zip datasets/nsynth.tgz data
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: sound-links-data
           path: data
@@ -60,7 +60,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -74,7 +74,7 @@ jobs:
       - name: Fetch any model weights the cache lacks
         run: npm run setup:music
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: sound-links-data
           path: data
@@ -92,7 +92,7 @@ jobs:
           git checkout "$BASE_REF" -- src
           for set in songs-test notes-test; do npx vite-node scripts/sound-links/tune.mjs data/$set.json data/$set.jsonl out/$set-base.json '{"neighbors":3,"floor":0.7}'; done
           git checkout HEAD -- src
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sound-links-tuning
@@ -114,7 +114,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -127,7 +127,7 @@ jobs:
           restore-keys: music-models-
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: sound-links-data
           path: data
@@ -147,7 +147,7 @@ jobs:
         run: |
           git checkout HEAD -- src
           node scripts/sound-links/score.mjs data/${{ matrix.set }}.json out/run/graph-export.json "${{ matrix.build }} ${{ matrix.set }}" out/score.json
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sound-links-${{ matrix.build }}-${{ matrix.set }}

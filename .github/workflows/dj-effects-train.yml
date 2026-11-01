@@ -38,7 +38,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -92,7 +92,7 @@ jobs:
           except urllib.error.HTTPError as e: code = e.code
           print('freesound page status:', code); sys.exit(0 if code in (200, 404) else 1)
           PY
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm

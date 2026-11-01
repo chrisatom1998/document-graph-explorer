@@ -64,7 +64,7 @@ jobs:
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
           python3 scripts/holdout-r3/fetch-jamendo.py "$DOCS/jamendo-manifest.json" \
             "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ matrix.shard }}/10 audio
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: h3-jamendo-audio-${{ matrix.shard }}
           path: audio
@@ -90,7 +90,7 @@ jobs:
             for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
               && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
           fi
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: h3-mtgkey-audio
           path: |
@@ -128,7 +128,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           path: harness
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: ${{ matrix.set == 'jamendo' && 'h3-jamendo-audio-*' || 'h3-mtgkey-audio' }}
           # The Jamendo artifacts hold bare WAVs (one upload path); the MTG key one also holds its manifest under docs/.
@@ -140,7 +140,7 @@ jobs:
           # The harness's driver handles both the old toolbar and the #137 layout; an app's own copy may not.
           cp harness/scripts/short-clip-upload-eval.mjs scripts/
           git log -1 --format='app under test: %H %s'
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -164,7 +164,7 @@ jobs:
           AUDIO_DIR=clips/audio AUDIO_EXT=wav MANIFEST=manifest.json SHARD=${{ matrix.shard }}/${{ matrix.of }} \
             node scripts/short-clip-upload-eval.mjs out/run test 20
           git rev-parse HEAD > out/run/app-commit.txt
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: h3-${{ matrix.set }}-export-${{ matrix.shard }}
@@ -183,16 +183,16 @@ jobs:
       - uses: actions/checkout@v7
         with:
           path: harness
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: h3-*-export-*
           path: exports
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: h3-mtgkey-audio
           path: clips
