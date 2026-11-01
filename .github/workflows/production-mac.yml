@@ -119,6 +119,7 @@ jobs:
       SOURCE_SHA: ${{ needs.prepare.outputs.sha }}
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
       ARCH: ${{ matrix.arch }}
+      DGE_MODELS: full
       ONNXRUNTIME_NODE_INSTALL: skip
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
