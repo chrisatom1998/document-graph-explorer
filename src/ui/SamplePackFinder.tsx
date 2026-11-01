@@ -19,7 +19,10 @@ export default function SamplePackFinder() {
   const request = useRef<AbortController | null>(null);
   useEffect(() => () => request.current?.abort(), []);
   const packs = findSamplePacks(query);
-  const localApi = import.meta.env.DEV && !AIRGAP && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+  // The reviewer listens on this same machine. Loopback production previews
+  // (and the browser suite, which serves the built app) get the real archive
+  // input; a public host never does.
+  const localApi = !AIRGAP && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
   const importer = useReviewerImport(localApi);
   const [packName, setPackName] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');

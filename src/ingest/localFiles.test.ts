@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { prepareIngestFiles } from './localFiles';
+import { TEXT_DISGUISED_AS_AUDIO } from './fileRouter';
 import { libraryKey } from '../persistence/library';
+import { useGraphStore } from '../store/graphStore';
 
 const library = vi.hoisted(() => ({ lookupLibraryFiles: vi.fn() }));
 vi.mock('../persistence/library', async (importOriginal) => ({
@@ -36,6 +38,24 @@ describe('prepareIngestFiles', () => {
     const { files } = await prepareIngestFiles([{ file }]);
     expect(files[0].fileType).toBe('audio');
     expect(files[0].bytes.byteLength).toBe(12);
+  });
+
+  it('rejects a .wav whose bytes are text instead of ingesting it as audio', async () => {
+    useGraphStore.getState().reset();
+    const file = new File(['this is plain text, not a waveform'], 'mislabeled.wav', { type: 'audio/wav' });
+    const { files } = await prepareIngestFiles([{ file, path: 'pack/mislabeled.wav' }]);
+    expect(files).toEqual([]);
+    expect(useGraphStore.getState().ignoredFiles).toEqual([
+      { name: 'pack/mislabeled.wav', reason: TEXT_DISGUISED_AS_AUDIO },
+    ]);
+  });
+
+  it('keeps a text file when the browser calls it audio', async () => {
+    const file = new File(['hello notes'], 'notes.txt', { type: 'audio/mpeg' });
+    const { files } = await prepareIngestFiles([{ file }]);
+    expect(files).toHaveLength(1);
+    expect(files[0].fileType).toBe('txt');
+    expect(new TextDecoder().decode(files[0].bytes)).toBe('hello notes');
   });
 
   it('does not read known binary extensions', async () => {

@@ -3,7 +3,8 @@ import type { IngestFile } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { lookupLibraryFiles, libraryKey, type LibraryHit } from '../persistence/library';
-import { isIngestCandidate, routeFileWithSniff } from './fileRouter';
+import { isIngestCandidate, routeFile, routeFileWithSniff, TEXT_DISGUISED_AS_AUDIO } from './fileRouter';
+import { looksLikeText } from './textSniffer';
 import { reportReadFailures, type ReadFailure } from './readFailures';
 import { holdReload, recoverFromChunkError } from '../util/staleBuild';
 
@@ -121,6 +122,13 @@ export async function prepareIngestFiles(
       continue;
     }
     const fileType = routeFileWithSniff(file.name, bytes, file.type);
+    // routeFileWithSniff returns null for a .wav (or other audio name) whose
+    // bytes are text. Dropping the bytes and letting the coordinator sniff the
+    // empty buffer again would accept the name and ingest it as audio.
+    if (fileType === null && routeFile(file.name) === 'audio' && looksLikeText(bytes)) {
+      useGraphStore.getState().addIgnored(path ?? file.name, TEXT_DISGUISED_AS_AUDIO);
+      continue;
+    }
     totalBytes += fileType !== null ? bytes.byteLength : 0;
     output.push({
       fileId: crypto.randomUUID(),
