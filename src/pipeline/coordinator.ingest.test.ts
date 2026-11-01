@@ -470,6 +470,75 @@ describe('coordinator ingest', () => {
     expect(docVectorStore.size).toBe(0);
   });
 
+  it('becomes usable after lexical commit and preserves nodes and selection through refinement', async () => {
+    let releaseEmbedding: (() => void) | undefined;
+    let embeddingStarted = false;
+    poolState.requestImpl = async (msg, options) => {
+      if (msg.type !== 'embedBatch') return defaultPoolRequest(msg, options);
+      embeddingStarted = true;
+      await new Promise<void>((resolve) => { releaseEmbedding = resolve; });
+      return defaultPoolRequest(msg, options);
+    };
+
+    const run = ingestFiles([
+      textFile('progressive-one.txt', 'Kafka progressive ingestion one.'),
+      textFile('progressive-two.txt', 'Kafka progressive ingestion two.'),
+    ]);
+    await vi.waitFor(() => {
+      expect(embeddingStarted).toBe(true);
+      expect(useGraphStore.getState().graphUsable).toBe(true);
+    });
+
+    const duringRefinement = useGraphStore.getState();
+    const ids = documentIds();
+    expect(duringRefinement.phase).toBe('embedding');
+    expect(duringRefinement.edges.some((edge) => edge.kind === 'keyword')).toBe(true);
+    expect(duringRefinement.nodes.filter((node) => node.kind === 'document')
+      .every((node) => node.cluster >= 0)).toBe(true);
+    expect(Object.keys(duringRefinement.localClusterNames)).not.toHaveLength(0);
+    expect(aggState.requests.some((request) => request.type === 'cluster')).toBe(true);
+    expect(layout.layoutSetClusters).toHaveBeenCalled();
+    expect(aggState.requests.some((request) => request.type === 'semantic')).toBe(false);
+    expect(docVectorStore.size).toBe(0);
+    useUiStore.getState().setSelected(ids[0]);
+
+    releaseEmbedding?.();
+    await run;
+
+    expect(documentIds()).toEqual(ids);
+    expect(useUiStore.getState().selectedId).toBe(ids[0]);
+    expect(useGraphStore.getState().graphUsable).toBe(true);
+    expect(useGraphStore.getState().phase).toBe('ready');
+    expect(useGraphStore.getState().edges.some((edge) => edge.kind === 'semantic')).toBe(true);
+  });
+
+  it('skips preliminary lexical clustering when the graph already has clusters', async () => {
+    await ingestFiles([textFile('existing-cluster.txt', 'Kafka existing clustered document.')]);
+    expect(useGraphStore.getState().nodes[0]?.cluster).toBeGreaterThanOrEqual(0);
+    aggState.requests = [];
+
+    let releaseEmbedding: (() => void) | undefined;
+    let embeddingStarted = false;
+    poolState.requestImpl = async (msg, options) => {
+      if (msg.type !== 'embedBatch') return defaultPoolRequest(msg, options);
+      embeddingStarted = true;
+      await new Promise<void>((resolve) => { releaseEmbedding = resolve; });
+      return defaultPoolRequest(msg, options);
+    };
+
+    const run = ingestFiles([
+      textFile('added-to-clusters.txt', 'Kafka document added to an existing graph.'),
+    ]);
+    await vi.waitFor(() => expect(embeddingStarted).toBe(true));
+
+    expect(aggState.requests.map((request) => request.type)).toEqual(['lexical']);
+    expect(useGraphStore.getState().nodes.find((node) => node.title === 'added-to-clusters')?.cluster)
+      .toBe(-1);
+
+    releaseEmbedding?.();
+    await run;
+  });
+
   it('settles a mid-parse cancel without rejecting', async () => {
     poolState.hangParse = true;
     const run = ingestFiles([textFile('slow.txt', 'Will hang in parse until cancelled.')]);
@@ -541,11 +610,17 @@ describe('coordinator ingest', () => {
     };
     const run = ingestFiles([file]);
     await vi.waitFor(() => expect(embedStarted).toBe(true));
+    expect(useGraphStore.getState().graphUsable).toBe(true);
+    const [selectedId] = documentIds();
+    useUiStore.getState().setSelected(selectedId);
     cancelIngest();
     await run;
     const [id] = documentIds();
     expect(id).toBeDefined();
     expect(docVectorStore.has(id)).toBe(false);
+    expect(useGraphStore.getState().phase).toBe('ready');
+    expect(useGraphStore.getState().graphUsable).toBe(true);
+    expect(useUiStore.getState().selectedId).toBe(id);
 
     poolState.requestImpl = undefined;
     await ingestFiles([file]);
@@ -573,6 +648,7 @@ describe('coordinator ingest', () => {
     async (passType) => {
       if (passType === 'cluster') {
         await ingestFiles([textFile('existing.txt', 'Kafka existing document.')]);
+        aggState.requests = [];
       }
       const files = [
         textFile('late-cancel-one.txt', 'Kafka late cancellation one.'),
@@ -774,6 +850,11 @@ describe('coordinator remove and watch reconcile', () => {
     expect(persistence.deleteDocsFromCache).toHaveBeenCalledWith([drop.id]);
     expect(persistence.deleteOriginals).toHaveBeenCalledWith([drop.id]);
     expect(useGraphStore.getState().phase).toBe('ready');
+
+    await removeDocuments([keep.id]);
+    expect(documentIds()).toEqual([]);
+    expect(useGraphStore.getState().phase).toBe('idle');
+    expect(useGraphStore.getState().graphUsable).toBe(false);
   });
 
   it('reconcileWatchedFiles ingests the new revision before dropping the old id', async () => {
@@ -1213,13 +1294,13 @@ describe('WAV music ingestion', () => {
     expect(useGraphStore.getState().nodes.filter(n => n.fileType === 'audio').every(n => n.audio?.confirmedInstruments === undefined)).toBe(true);
     expect(useGraphStore.getState().edges.find(e => e.kind === 'instrument')?.evidence[0]).toContain('synthesizer');
   });
-  it('analyzes only the new track when files are added to a library with older results', async () => {
+  it.each([1, 2] as const)('analyzes only the new track when files are added to a library with older v%i results', async version => {
     await ingestFiles([wav('one.wav'), wav('two.wav')]);
     const ids = documentIds();
     // Every saved result predates the current detectors, as after a model update ships.
     useGraphStore.getState().patchNodes(new Map(ids.map(id => {
       const audio = useGraphStore.getState().nodes.find(n => n.id === id)!.audio!;
-      return [id, { audio: { ...audio, keyRevision: 0, classifierConfiguration: 'older release' } }];
+      return [id, { audio: { ...audio, version, instrumentScan: version === 1 ? undefined : audio.instrumentScan, keyRevision: 0, classifierConfiguration: 'older release' } }];
     })));
     const before = new Map(ids.map(id => [id, useGraphStore.getState().nodes.find(n => n.id === id)!.audio]));
     music.analyzeMusic.mockClear();
@@ -1555,6 +1636,62 @@ describe('remembered library', () => {
     expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
     expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.instrumentScan?.complete).toBe(true);
   });
+
+  it('keeps completed legacy v1 results and offers an explicit update that preserves corrections', async () => {
+    const node = await storedTrack('legacy.wav');
+    const audio = sanitizeMusicAnalysis({
+      version: 1, durationSeconds: 10, analyzedSeconds: 10, instruments: [{ label: 'piano', score: .8 }],
+      confirmedInstruments: ['piano'], notes: [],
+    })!;
+    expect(audio.instrumentScan).toBeUndefined();
+    const saved = { ...node, audio };
+    // Restoring a graph without re-adding its files must offer the targeted update too.
+    useGraphStore.getState().addNodes([saved]);
+    expect(outdatedAudioIds()).toEqual([node.id]);
+    resetCorpus();
+    persistence.lookupDocCache.mockResolvedValue({ node: saved, text: '', chunkTexts: [], chunkVectors: null, docVector: null, mdLinkTargets: [], docLinks: [] });
+    persistence.getOriginal.mockResolvedValue({ blob: new Blob([wavBytes()], { type: 'audio/wav' }), name: 'legacy.wav' });
+    persistence.getOriginal.mockClear();
+    const readBytes = vi.fn(async () => wavBytes());
+    await ingestFiles([known('legacy.wav', node.id, readBytes)]);
+    expect(readBytes).not.toHaveBeenCalled();
+    expect(persistence.getOriginal).not.toHaveBeenCalled();
+    expect(music.analyzeMusic).not.toHaveBeenCalled();
+    expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio).toEqual(audio);
+    expect(outdatedAudioIds()).toEqual([node.id]);
+    await analyzeAudioCorpus(outdatedAudioIds());
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
+    const updated = useGraphStore.getState().nodes.find(n => n.id === node.id)!.audio!;
+    expect(updated.version).toBe(2);
+    expect(updated.instrumentScan?.complete).toBe(true);
+    expect(updated.confirmedInstruments).toEqual(['piano']);
+    expect(outdatedAudioIds()).toEqual([]);
+  });
+
+  it.each(['legacy-preview', 'legacy-incomplete', 'v2-no-scan', 'v2-incomplete', 'v2-fast', 'no-analysis'] as const)(
+    'still retries a remembered %s analysis with an explicit unfinished/error state', async state => {
+      const node = await storedTrack('unfinished.wav');
+      const audio = { ...node.audio!, confirmedInstruments: ['piano'] };
+      if (state.startsWith('legacy')) audio.version = 1;
+      if (state === 'legacy-preview') { audio.stage = 'preview'; audio.instrumentScan = undefined; }
+      if (state === 'legacy-incomplete' || state === 'v2-incomplete') audio.instrumentScan = { ...audio.instrumentScan!, complete: false };
+      if (state === 'v2-no-scan') audio.instrumentScan = undefined;
+      if (state === 'v2-fast') audio.instrumentScan = { ...audio.instrumentScan!, mode: 'fast' };
+      const saved = { ...node, audio: state === 'no-analysis' ? undefined : audio, warning: 'Previous analysis stopped early.' };
+      useGraphStore.getState().addNodes([saved]);
+      expect(outdatedAudioIds()).toEqual([]);
+      resetCorpus();
+      persistence.lookupDocCache.mockResolvedValue({ node: saved, text: '', chunkTexts: [], chunkVectors: null, docVector: null, mdLinkTargets: [], docLinks: [] });
+      persistence.getOriginal.mockResolvedValue({ blob: new Blob([wavBytes()], { type: 'audio/wav' }), name: 'unfinished.wav' });
+      await ingestFiles([known('unfinished.wav', node.id)]);
+      expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
+      const updated = useGraphStore.getState().nodes.find(n => n.id === node.id)!;
+      expect(updated.audio?.version).toBe(2);
+      expect(updated.audio?.instrumentScan?.complete).toBe(true);
+      expect(updated.warning).toBeUndefined();
+      if (state !== 'no-analysis') expect(updated.audio?.confirmedInstruments).toEqual(['piano']);
+    },
+  );
 
   it.each([85, 86, 93, 94])('explicitly refreshes a persisted pre-calibration analysis at revision %i', async revision => {
     const node = await storedTrack('calibration.wav');

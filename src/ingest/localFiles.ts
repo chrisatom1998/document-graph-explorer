@@ -141,7 +141,18 @@ export async function ingestNamedFiles(named: NamedFile[]): Promise<void> {
     // A one-shot selection has no manifest to retry against, so deferred files
     // stay reported-and-skipped exactly as before.
     const { files } = await prepareIngestFiles(named, { reuseLibrary: true });
-    if (files.length === 0) {
+    let authorizedFiles = files;
+    const audioFiles = files.filter(file => file.fileType === 'audio');
+    if (audioFiles.length > 0) {
+      const { authorizeAudioModelPack } = await import('../audio/modelPack');
+      const authorization = await authorizeAudioModelPack();
+      if (authorization !== 'ready') {
+        const reason = 'audio model pack is not installed';
+        for (const file of audioFiles) useGraphStore.getState().addIgnored(file.path ?? file.name, reason);
+        authorizedFiles = files.filter(file => file.fileType !== 'audio');
+      }
+    }
+    if (authorizedFiles.length === 0) {
       // Fully rejected — no run will settle, so snapshot the rejections into
       // the persistent report here.
       const { publishIngestReport } = await import('../pipeline/ingestReport');
@@ -149,7 +160,7 @@ export async function ingestNamedFiles(named: NamedFile[]): Promise<void> {
       return;
     }
     const { ingestFiles } = await import('../pipeline/coordinatorLazy');
-    await ingestFiles(files);
+    await ingestFiles(authorizedFiles);
   } catch (error) {
     console.error('ingestion failed', error);
     if (recoverFromChunkError(error)) return;
