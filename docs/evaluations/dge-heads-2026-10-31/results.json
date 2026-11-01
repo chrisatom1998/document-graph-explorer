@@ -1,0 +1,141 @@
+{
+ "tests": {
+  "vocal chops": "78 positives, held-out library brands",
+  "breakbeat": "104 positives, held-out library brands",
+  "foghorn bass": "16 positives, held-out real recordings"
+ },
+ "rows": [
+  {
+   "tag": "vocal chops",
+   "run": "head shipping today (main)",
+   "tp": 71,
+   "fp": 42,
+   "fn": 7,
+   "precision": 0.6283185840707964,
+   "recall": 0.9102564102564102,
+   "trainPositive": "-",
+   "file": "shipped-on-before-test.json"
+  },
+  {
+   "tag": "vocal chops",
+   "run": "retrain, no new clips (before)",
+   "tp": 61,
+   "fp": 36,
+   "fn": 17,
+   "precision": 0.6288659793814433,
+   "recall": 0.782051282051282,
+   "trainPositive": 134,
+   "file": "before.json"
+  },
+  {
+   "tag": "vocal chops",
+   "run": "+ Looperman 106 + BSD 20",
+   "tp": 63,
+   "fp": 44,
+   "fn": 15,
+   "precision": 0.5887850467289719,
+   "recall": 0.8076923076923077,
+   "trainPositive": 260,
+   "file": "after-vc-pos.json"
+  },
+  {
+   "tag": "vocal chops",
+   "run": "+ BSD 20 + 640 VocalSet/VocalSound negatives",
+   "tp": 62,
+   "fp": 46,
+   "fn": 16,
+   "precision": 0.5740740740740741,
+   "recall": 0.7948717948717948,
+   "trainPositive": 154,
+   "file": "after-vc-open.json"
+  },
+  {
+   "tag": "vocal chops",
+   "run": "+ all three",
+   "tp": 60,
+   "fp": 36,
+   "fn": 18,
+   "precision": 0.625,
+   "recall": 0.7692307692307693,
+   "trainPositive": 260,
+   "file": "after-vc-pos-neg.json"
+  },
+  {
+   "tag": "breakbeat",
+   "run": "head shipping today (main)",
+   "tp": 58,
+   "fp": 23,
+   "fn": 46,
+   "precision": 0.7160493827160493,
+   "recall": 0.5576923076923077,
+   "trainPositive": "-",
+   "file": "shipped-on-before-test.json"
+  },
+  {
+   "tag": "breakbeat",
+   "run": "retrain, no new clips (before)",
+   "tp": 32,
+   "fp": 8,
+   "fn": 72,
+   "precision": 0.8,
+   "recall": 0.3076923076923077,
+   "trainPositive": 1024,
+   "file": "before.json"
+  },
+  {
+   "tag": "breakbeat",
+   "run": "+ Looperman 206 + BSD 146 + Freesound 73",
+   "tp": 35,
+   "fp": 10,
+   "fn": 69,
+   "precision": 0.7777777777777778,
+   "recall": 0.33653846153846156,
+   "trainPositive": 1449,
+   "file": "after-bb-all.json"
+  },
+  {
+   "tag": "breakbeat",
+   "run": "+ BSD 146 + Freesound 73 (open only)",
+   "tp": 31,
+   "fp": 14,
+   "fn": 73,
+   "precision": 0.6888888888888889,
+   "recall": 0.2980769230769231,
+   "trainPositive": 1243,
+   "file": "after-bb-open.json"
+  },
+  {
+   "tag": "breakbeat",
+   "run": "+ all, strength grid 0.25-4 (picked C=1)",
+   "tp": 35,
+   "fp": 10,
+   "fn": 69,
+   "precision": 0.7777777777777778,
+   "recall": 0.33653846153846156,
+   "trainPositive": 1449,
+   "file": "after-bb-all-cgrid.json"
+  },
+  {
+   "tag": "foghorn bass",
+   "run": "head shipping today (main)",
+   "tp": 8,
+   "fp": 41,
+   "fn": 8,
+   "precision": 0.16326530612244897,
+   "recall": 0.5,
+   "trainPositive": "-",
+   "file": "shipped-on-before-test.json"
+  },
+  {
+   "tag": "foghorn bass",
+   "run": "retrain, no new clips (before)",
+   "tp": 5,
+   "fp": 18,
+   "fn": 11,
+   "precision": 0.21739130434782608,
+   "recall": 0.3125,
+   "trainPositive": 52,
+   "file": "before.json"
+  }
+ ]
+}
