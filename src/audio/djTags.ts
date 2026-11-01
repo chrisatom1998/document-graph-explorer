@@ -76,14 +76,20 @@ export const DJ_PICKER_LABELS: Record<DjGroup, readonly string[]> = { source: pi
  * 2026-10-10, reports/dj-tag-review-2026-10-10). They still run, show on clips and can be found by searching the
  * picker; they just aren't listed until searched for. On 2026-10-11 Chris brought back eleven of them, then the tag keep
  * list (reports/tag-keep-list-2026-10-11) hid syncopated, chorused and flanged again and merged rising and foley hit
- * away, leaving sound effect, percussion hit, staccato, plucked, pulsing and wobbling listed. */
+ * away, leaving sound effect, percussion hit, staccato, plucked, pulsing and wobbling listed. On 2026-11-01 Chris hid four
+ * failing tags we have no realistic training data for (wobbling among them). */
 export const DJ_HIDDEN_LABELS: ReadonlySet<string> = new Set([
   ...['bassoon', 'oboe', 'clarinet', 'cello', 'double bass', 'banjo', 'mandolin', 'sitar', 'jaw harp',
     'singing bowl', 'waterphone', 'kalimba', 'environmental sound',
     // Tag keep list (Chris, 2026-10-11): rare in DJ sample libraries and untested or unlearnable here.
     'ukulele', 'steel guitar', 'steel drum', 'tabla'].map(l => `source:${l}`),
-  ...['brass synth', 'string synth', 'fm synth', 'wind ambience'].map(l => `production:${l}`),
-  ...['sustained', 'rhythmic', 'rolling', 'gliding', 'percussive', 'swelling', 'syncopated', 'chorused', 'flanged'].map(l => `character:${l}`),
+  ...['brass synth', 'string synth', 'fm synth', 'wind ambience',
+    // No realistic training data (Chris, 2026-11-01; supply from docs/evaluations/data-gaps-2026-10-31/per-tag.csv):
+    // pitched vocal and vocal-like synth have 0 staged and 0 open Freesound clips, wobbling 7 and 3, and the only
+    // other "foghorn" clips are literal ship horns. Filter sweep, synth hit and vocal ad-lib wait for Splice credits.
+    'pitched vocal', 'vocal-like synth', 'foghorn bass'].map(l => `production:${l}`),
+  ...['sustained', 'rhythmic', 'rolling', 'gliding', 'percussive', 'swelling', 'syncopated', 'chorused', 'flanged',
+    'wobbling'].map(l => `character:${l}`),
 ]);
 export interface DjTag { group: DjGroup; label: string; score: number; model?: 'AudioSet AST' | 'MTG-Jamendo' | 'Music CLAP' | 'Reviewed examples' | 'Trained head' | 'Trained head (maybe)'; segments?: { start: number; end: number }[]; windowEvidence?: NativeWindowEvidence }
 export const DJ_TYPE_SOURCE: Record<string, string> = Object.fromEntries(
