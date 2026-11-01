@@ -147,7 +147,7 @@ jobs:
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
           restore-keys: music-models-
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        uses: ./.github/actions/setup-playwright
       - name: Use the base app source
         if: matrix.build == 'base'
         run: git checkout "$BASE_REF" -- src

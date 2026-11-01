@@ -1,0 +1,124 @@
+name: Prepare audio model weights
+description: >
+  Restore the audio pack from the Actions cache, including a restore-keys prefix
+  match, without downloading it again. A cold miss retries the lookup so a
+  sibling job can publish the cache, then downloads through the checksummed
+  mirror before essentia.upf.edu.
+
+inputs:
+  save:
+    description: Save a complete pack under the current manifest key.
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Restore audio model weights
+      id: try1
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ env.MUSIC_MODEL_PATHS }}
+        key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+        # A manifest edit changes the key. The newest music-models- cache is
+        # still a restore, not a signal to contact essentia.upf.edu.
+        restore-keys: music-models-
+
+    # Run 41253941758 looked up the same key from several jobs at once. The
+    # ones that missed then downloaded from essentia while a sibling was
+    # already saving that cache. Wait briefly and look again before any fetch.
+    - name: Wait before retrying the audio model cache
+      if: steps.try1.outputs.cache-matched-key == ''
+      shell: bash
+      run: sleep 15
+
+    - name: Restore audio model weights (retry)
+      id: try2
+      if: steps.try1.outputs.cache-matched-key == ''
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ env.MUSIC_MODEL_PATHS }}
+        key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+        restore-keys: music-models-
+
+    - name: Wait before the last audio model cache lookup
+      if: steps.try1.outputs.cache-matched-key == '' && steps.try2.outputs.cache-matched-key == ''
+      shell: bash
+      run: sleep 30
+
+    - name: Restore audio model weights (second retry)
+      id: try3
+      if: steps.try1.outputs.cache-matched-key == '' && steps.try2.outputs.cache-matched-key == ''
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ env.MUSIC_MODEL_PATHS }}
+        key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+        restore-keys: music-models-
+
+    - name: Record which audio model cache was restored
+      id: music
+      shell: bash
+      env:
+        HIT1: ${{ steps.try1.outputs.cache-hit }}
+        KEY1: ${{ steps.try1.outputs.cache-matched-key }}
+        HIT2: ${{ steps.try2.outputs.cache-hit }}
+        KEY2: ${{ steps.try2.outputs.cache-matched-key }}
+        HIT3: ${{ steps.try3.outputs.cache-hit }}
+        KEY3: ${{ steps.try3.outputs.cache-matched-key }}
+      run: |
+        set -euo pipefail
+        hit=false
+        key=""
+        if [ -n "$KEY1" ]; then hit="$HIT1"; key="$KEY1";
+        elif [ -n "${KEY2:-}" ]; then hit="$HIT2"; key="$KEY2";
+        elif [ -n "${KEY3:-}" ]; then hit="$HIT3"; key="$KEY3";
+        fi
+        echo "cache-hit=$hit" >> "$GITHUB_OUTPUT"
+        echo "cache-matched-key=$key" >> "$GITHUB_OUTPUT"
+        if [ -n "$key" ]; then
+          echo "Restored audio models from $key (exact hit: $hit)."
+        else
+          echo "No audio model cache matched, including the music-models- prefix."
+        fi
+
+    # cache-hit is true only for the exact key. A restore-keys match still
+    # restored the files; checksum them offline instead of downloading.
+    - name: Checksum restored audio models offline
+      id: restored
+      if: steps.music.outputs.cache-matched-key != '' && steps.music.outputs.cache-hit != 'true'
+      continue-on-error: true
+      shell: bash
+      env:
+        DGE_MODEL_OFFLINE: '1'
+      run: npm run setup:music
+
+    - name: Download audio model weights
+      id: download
+      if: steps.music.outputs.cache-matched-key == '' || steps.restored.outcome == 'failure'
+      continue-on-error: true
+      shell: bash
+      run: npm run setup:music
+
+    - name: Restore audio model weights saved by a sibling job
+      id: sibling
+      if: steps.download.outcome == 'failure'
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ env.MUSIC_MODEL_PATHS }}
+        key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+        restore-keys: music-models-
+
+    - name: Require audio models from cache or a verified download
+      if: steps.download.outcome == 'failure' && steps.sibling.outputs.cache-matched-key == ''
+      shell: bash
+      run: |
+        echo "Audio model download failed and no music-models cache could be restored." >&2
+        exit 1
+
+    - name: Save audio model weights
+      if: inputs.save == 'true' && steps.music.outputs.cache-hit != 'true' && (steps.restored.outcome == 'success' || steps.download.outcome == 'success')
+      continue-on-error: true
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ env.MUSIC_MODEL_PATHS }}
+        key: music-models-${{ hashFiles('public/*-model/manifest.json') }}

@@ -23,6 +23,10 @@ env:
   # host has timed out npm ci on hosted runners more than once.
   ONNXRUNTIME_NODE_INSTALL: skip
   # Gitignored, checksum-verified optional weights fetched by `npm run models:audio`.
+  # Tried before essentia.upf.edu. One-time: upload the Jamendo ONNX files as
+  # assets on a GitHub Release tagged models-v1 (not Latest). Asset names match
+  # the manifest filenames. sha256 stays the manifest's.
+  DGE_MODEL_MIRROR: https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1
   MUSIC_MODEL_PATHS: |
     public/audio-model-pack.json
     public/music-model/**/*.onnx
@@ -48,30 +52,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # The audio model weights come from upstream hosts (huggingface.co,
-      # essentia.upf.edu) that sometimes time out. Restore them from cache and
-      # save them right after a successful download, so a later failing step
-      # or a flaky host never forces the next run to download them again.
-      - name: Restore audio model weights
-        id: music-models
-        uses: actions/cache/restore@v6
+      # An exact cache hit or a music-models- prefix restore is used as-is.
+      # A cold miss retries that lookup, then downloads via DGE_MODEL_MIRROR
+      # before essentia.upf.edu. The pack is saved only after a verified download.
+      - name: Prepare audio model weights
+        uses: ./.github/actions/prepare-audio-models
         with:
-          path: ${{ env.MUSIC_MODEL_PATHS }}
-          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
-          # A PR that edits any manifest gets a new key; fall back to the newest cache so
-          # setup:music only fetches what changed instead of everything from upstream hosts.
-          restore-keys: music-models-
-
-      - name: Download audio model weights
-        if: steps.music-models.outputs.cache-hit != 'true'
-        run: npm run setup:music
-
-      - name: Save audio model weights
-        if: steps.music-models.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
-        with:
-          path: ${{ env.MUSIC_MODEL_PATHS }}
-          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          save: 'true'
 
       - name: Lint
         run: npm run lint
@@ -140,17 +127,8 @@ jobs:
         run: python3 -m pip install numpy==2.3.5
 
       # Same weights as lint-and-build; tests that read them see the same files. Restore only: lint-and-build saves.
-      - name: Restore audio model weights
-        id: music-models
-        uses: actions/cache/restore@v6
-        with:
-          path: ${{ env.MUSIC_MODEL_PATHS }}
-          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
-          restore-keys: music-models-
-
-      - name: Download audio model weights
-        if: steps.music-models.outputs.cache-hit != 'true'
-        run: npm run setup:music
+      - name: Prepare audio model weights
+        uses: ./.github/actions/prepare-audio-models
 
       - name: Test
         run: npm test -- ${{ matrix.args }}
@@ -217,33 +195,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # The audio model weights come from upstream hosts (huggingface.co,
-      # essentia.upf.edu) that sometimes time out. Restore them from cache and
-      # save them right after a successful download, so a later failing step
-      # or a flaky host never forces the next run to download them again.
-      - name: Restore audio model weights
-        id: music-models
-        uses: actions/cache/restore@v6
+      # An exact cache hit or a music-models- prefix restore is used as-is.
+      # A cold miss retries that lookup, then downloads via DGE_MODEL_MIRROR
+      # before essentia.upf.edu.
+      - name: Prepare audio model weights
+        uses: ./.github/actions/prepare-audio-models
         with:
-          path: ${{ env.MUSIC_MODEL_PATHS }}
-          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
-          # A PR that edits any manifest gets a new key; fall back to the newest cache so
-          # setup:music only fetches what changed instead of everything from upstream hosts.
-          restore-keys: music-models-
-
-      - name: Download audio model weights
-        if: steps.music-models.outputs.cache-hit != 'true'
-        run: npm run setup:music
-
-      - name: Save audio model weights
-        if: steps.music-models.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
-        with:
-          path: ${{ env.MUSIC_MODEL_PATHS }}
-          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          save: 'true'
 
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        uses: ./.github/actions/setup-playwright
 
       - name: Build (production)
         run: npm run build
@@ -286,24 +247,10 @@ jobs:
         with:
           node-version: 24
 
-      - name: Restore audio model weights
-        id: music-models
-        uses: actions/cache/restore@v6
+      - name: Prepare audio model weights
+        uses: ./.github/actions/prepare-audio-models
         with:
-          path: ${{ env.MUSIC_MODEL_PATHS }}
-          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
-          restore-keys: music-models-
-
-      - name: Download audio model weights
-        if: steps.music-models.outputs.cache-hit != 'true'
-        run: npm run setup:music
-
-      - name: Save audio model weights
-        if: steps.music-models.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
-        with:
-          path: ${{ env.MUSIC_MODEL_PATHS }}
-          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          save: 'true'
 
       - name: Build Docker image
         run: docker compose build

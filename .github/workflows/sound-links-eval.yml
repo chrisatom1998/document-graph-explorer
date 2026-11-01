@@ -126,7 +126,7 @@ jobs:
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
           restore-keys: music-models-
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        uses: ./.github/actions/setup-playwright
       - uses: actions/download-artifact@v7
         with:
           name: sound-links-data
