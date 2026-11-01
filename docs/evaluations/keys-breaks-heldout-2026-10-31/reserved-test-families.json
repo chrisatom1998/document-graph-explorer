@@ -1,0 +1,9 @@
+{
+ "set": "keys-breaks-heldout-2026-10-31",
+ "note": "Held-out uploaders for the job C electric piano / breakbeat candidates (scripts/audio-model/ced-check-keys-breaks.py). Rule-based: an uploader is held out when int(sha256('dge-keys-breaks-heldout-2026-10-31|freesound-user:<username>')[:8], 16) % 100 < 15. The private candidates.csv lists the exact ids; held-out rows are never trained, tuned or calibrated on.",
+ "keysBreaksHeldoutRule": {
+  "salt": "dge-keys-breaks-heldout-2026-10-31",
+  "heldPct": 15,
+  "groups": "freesound-user:<username>"
+ }
+}

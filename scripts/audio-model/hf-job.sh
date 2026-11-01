@@ -63,7 +63,7 @@ nproc; free -g | head -2; df -h $W | tail -1
 # scripts and label map, so a rerun with the same data skips the ~3 h prep. The upload runs alongside training.
 DIRS="prep prepj holdout"; [ "${ALL_TAGS:-0}" = 1 ] && DIRS="$DIRS fsdprep nsprep fsprep xprep"
 # The run 7+ sources are cached separately, one by one (below), so their scripts stay out of this key.
-KEY=$( (ls $S/prepare*.py | grep -v -e prepare-rawstems.py -e prepare-iowa.py -e prepare-chrisdrive.py -e prepare-vcsl.py -e prepare-slakh-more.py -e prepare-sao.py -e prepare-fsnew.py -e prepare-run9.py -e prepare-round10.py | xargs cat; cat $S/labelmap.py; echo "$DIRS") | sha256sum | cut -c1-12)
+KEY=$( (ls $S/prepare*.py | grep -v -e prepare-rawstems.py -e prepare-iowa.py -e prepare-chrisdrive.py -e prepare-vcsl.py -e prepare-slakh-more.py -e prepare-sao.py -e prepare-fsnew.py -e prepare-run9.py -e prepare-round10.py -e prepare-staged.py | xargs cat; cat $S/labelmap.py; echo "$DIRS") | sha256sum | cut -c1-12)
 # The run 7+ sources below are cached one by one under prep-cache/src/<name>/<key> of the same private dataset (prep-cache.py):
 # the key covers the source's prepare script, the local modules and files it uses, its output-changing arguments and a
 # content hash of its private input, so a source is only rebuilt when one of those changed. Built sources are uploaded once
@@ -126,6 +126,22 @@ if [ -n "${RUN9_DATA:-}" ]; then   # private staged run 9 audio (stage-run9.py):
     && if [ -n "${RUN9_AUDIT:-}" ]; then python3 -c "import sys, shutil; from huggingface_hub import hf_hub_download as d; r, f = sys.argv[1].split(':'); shutil.copy(d(r, f, repo_type='dataset'), 'run9-audited.csv')" "$RUN9_AUDIT"; fi \
     && python3 $S/prepare-run9.py "r9stage/${RUN9_DATA#*:}" r9prep --workers 6 ${RUN9_AUDIT:+--audit run9-audited.csv} ${LOOKALIKES:+--lookalikes $LOOKALIKES} && rm -rf r9stage && to_cache run9 r9prep run9.log; } ) > run9.log 2>&1 & RN_PID=$!
 fi
+BD_PID=; GF_PID=
+stage_prep() {   # <name> <dir> <DATA> <frames> <eval name> <eval cap> <eval tag>...: a round A/B staged folder (stage-birds.py,
+  # stage-guitarfx.py) -> training windows + held-out eval (prepare-staged.py), cached like the other run 7+ sources
+  local name=$1 dir=$2 data=$3 frames=$4 ev=$5 cap=$6; shift 6; local tags=() t; for t in "$@"; do tags+=(--eval-tag "$t"); done
+  from_cache "$name" "$dir" prepare-staged.py --data "$data" --arg "name=$name frames=$frames eval=$ev cap=$cap tags=$*" \
+    || { python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir=sys.argv[2], max_workers=16)" "$data" "${name}stage" \
+    && python3 $S/prepare-staged.py "${name}stage/${data#*:}" "$dir" --name "$name" --frames "$frames" --eval "$ev" --eval-cap "$cap" "${tags[@]}" \
+    && rm -rf "${name}stage" && to_cache "$name" "$dir" "$name.log"; }
+}
+# Round A: BIRDS_DATA=<private dataset>:<folder> (stage-birds.py: ff1010bird + Warblr10k, CC BY) adds bird ambience
+# training audio and scores its held-out groups (eval-birds; docs/evaluations/bird-heldout-2026-10-31).
+if [ -n "${BIRDS_DATA:-}" ]; then ( stage_prep birds bdprep "$BIRDS_DATA" 1000 eval-birds 1200 "bird ambience" ) > birds.log 2>&1 & BD_PID=$!; fi
+# Round B: GUITARFX_DATA=<private dataset>:<folder> (stage-guitarfx.py: IDMT-SMT-Audio-Effects guitar 1 + Medley-solos-DB
+# solosDb, non-commercial weights) adds distorted / effect / solo-instrument audio and scores the fresh held-out guitar and
+# songs (eval-distorted; docs/evaluations/distorted-heldout-2026-10-31).
+if [ -n "${GUITARFX_DATA:-}" ]; then ( stage_prep guitarfx gfprep "$GUITARFX_DATA" 600 eval-distorted 1200 distorted ) > guitarfx.log 2>&1 & GF_PID=$!; fi
 CACHE_PID=
 if python3 - "$KEY" $DIRS <<'PY'
 import os, shutil, sys
@@ -162,9 +178,9 @@ else
     for x in tinysol egfx fsld waivops surge; do python3 $S/prepare-extra.py $x xprep > $x.log 2>&1 & done
     if [ -f $S/prepare-slakh.py ]; then python3 $S/prepare-slakh.py xprep > slakh.log 2>&1 & fi
   fi
-  LOGS=$(ls *.log | grep -v -e rawstems.log -e iowa.log -e chrisdrive.log -e vcsl.log -e slakhmore.log -e sao.log -e fsnew.log -e run9.log -e round10.log)
+  LOGS=$(ls *.log | grep -v -e rawstems.log -e iowa.log -e chrisdrive.log -e vcsl.log -e slakhmore.log -e sao.log -e fsnew.log -e run9.log -e round10.log -e birds.log -e guitarfx.log)
   # The raw-stems, Iowa and chris-drive preps are waited on (and their logs shown) separately below.
-  for job in $(jobs -p); do case " ${RS_PID:-} ${IOWA_PID:-} ${CD_PID:-} ${VCSL_PID:-} ${SM_PID:-} ${SAO_PID:-} ${FN_PID:-} ${RN_PID:-} " in *" $job "*) continue;; esac; wait $job || { tail -n 20 $LOGS; exit 1; }; done
+  for job in $(jobs -p); do case " ${RS_PID:-} ${IOWA_PID:-} ${CD_PID:-} ${VCSL_PID:-} ${SM_PID:-} ${SAO_PID:-} ${FN_PID:-} ${RN_PID:-} ${BD_PID:-} ${GF_PID:-} " in *" $job "*) continue;; esac; wait $job || { tail -n 20 $LOGS; exit 1; }; done
   tail -n 3 $LOGS; echo "data prep took $(( ($(date +%s) - START) / 60 )) min"; df -h $W | tail -1
   python3 - "$KEY" $DIRS > cache-upload.txt 2>&1 <<'PY' &
 import sys
@@ -189,6 +205,8 @@ if [ -n "$SM_PID" ]; then wait $SM_PID || { tail -n 30 slakhmore.log; exit 1; };
 if [ -n "$SAO_PID" ]; then wait $SAO_PID || { tail -n 30 sao.log; exit 1; }; tail -n 2 sao.log; EXTRA+=(--extra sao=saoprep); fi
 if [ -n "$FN_PID" ]; then wait $FN_PID || { tail -n 30 fsnew.log; exit 1; }; tail -n 3 fsnew.log; EXTRA+=(--extra fsnew=fnprep); fi
 if [ -n "$RN_PID" ]; then wait $RN_PID || { tail -n 30 run9.log; exit 1; }; tail -n 4 run9.log; EXTRA+=(--extra fs9=r9prep --extra ls9=r9prep); fi
+if [ -n "$BD_PID" ]; then wait $BD_PID || { tail -n 30 birds.log; exit 1; }; tail -n 3 birds.log; EXTRA+=(--extra birds=bdprep); fi
+if [ -n "$GF_PID" ]; then wait $GF_PID || { tail -n 30 guitarfx.log; exit 1; }; tail -n 3 guitarfx.log; EXTRA+=(--extra guitarfx=gfprep); fi
 if [ "${ROUND12:-0}" = 1 ]; then   # round 12: empty-tag train audio, staged train-only (test filtering ran in the project container)
   GUARD=(etguard)   # the FSD50K eval check reads the lists this job actually trains on
   if [ -n "${RUN9_DATA:-}" ]; then
@@ -278,6 +296,8 @@ if [ -n "$TRAIN_DROP" ]; then EXTRA+=(--drop "$TRAIN_DROP"); fi
 # classes) and weighs their present labels POS_WEIGHT times in the loss, so tags that miss real sounds fire more often.
 # A RECALL_TAGS entry may be <tag>:<weight> to weigh that tag on its own (e.g. DJ priority tags higher).
 if [ -n "${RECALL_TAGS:-}" ]; then EXTRA+=(--rare-tags "bass,organ,cello,trumpet,violin,saxophone,$(echo "$RECALL_TAGS" | sed -E 's/:[0-9.]+(,|$)/\1/g')" --pos-tags "$RECALL_TAGS" --pos-weight "${POS_WEIGHT:-1}"); fi
+# NEG_TAGS=<tag>[:<weight>],... weighs those tags' absent labels NEG_WEIGHT times (train.py --neg-tags), against false alarms.
+if [ -n "${NEG_TAGS:-}" ]; then EXTRA+=(--neg-tags "$NEG_TAGS" --neg-weight "${NEG_WEIGHT:-1}"); fi
 if [ "${MERGE_ONLY:-0}" = 1 ]; then EXTRA+=(--merge $S/round12/round12.json); fi   # round 13: round 12's merges without its oversampling
 python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --rare-repeat "${RARE_REPEAT:-1}" --repeat "${SOURCE_REPEAT:-}" --threads 8 --hours "$HOURS"
 # Which data trained this model, so it can be rebuilt without any one source (chris-drive rows keep source=chris-drive).
@@ -312,6 +332,9 @@ if os.path.exists('r9prep/eval-run9.json'):
     for n in ('fs9', 'ls9'):
         if n in man['sources']: man['sources'][n]['reviewed'] = False
     man['run9Ids'] = json.load(open('r9prep/run9-ids.json'))
+for d, n, note in (('bdprep', 'eval-birds', 'bird held-out groups (ff1010bird uploaders, Warblr recordings)'), ('gfprep', 'eval-distorted', 'held-out guitar 2 and Medley-solos songs')):
+    if os.path.exists(f'{d}/{n}.json'):   # aggregate counts only: the held-out ids stay in the private staged manifest
+        e = json.load(open(f'{d}/{n}.json')); man.setdefault('heldOutTest', {})[n] = {'groups': len({i['artist'] for i in e['items']}), 'clips': len(e['items']), 'note': note + '; never trained, tuned or calibrated on'}
 if os.path.exists('cdprep/chrisdrive-files.json'): man['chrisDrive'] = json.load(open('cdprep/chrisdrive-files.json'))
 if os.environ.get('ABSENT_FIX'):   # train.py --absent-fix label edits: where they came from and exactly which file
     import hashlib
@@ -339,6 +362,8 @@ CAL=(openmic=prep jamendo=prepj); EVAL=(prep/eval-round1 prep/eval-round2 holdou
 [ -n "$SAO_PID" ] && CAL+=(sao=saoprep) && EVAL+=(saoprep/eval-sao)
 [ -n "$FN_PID" ] && CAL+=(fsnew=fnprep) && EVAL+=(fnprep/eval-fsnew)
 [ -n "$RN_PID" ] && CAL+=(fs9=r9prep ls9=r9prep) && EVAL+=(r9prep/eval-run9)
+[ -n "$BD_PID" ] && CAL+=(birds=bdprep) && EVAL+=(bdprep/eval-birds)
+[ -n "$GF_PID" ] && CAL+=(guitarfx=gfprep) && EVAL+=(gfprep/eval-distorted)
 [ -n "$R10_PID" ] && CAL+=(round10=r10prep)
 [ -n "${ET_PID:-}" ] && CAL+=(etfs9=etprep etls9=etprep)
 for x in $R13_SETS; do CAL+=($x); done

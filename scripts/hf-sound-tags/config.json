@@ -44,7 +44,10 @@
     "fresh-tests-2026-10-11",
     "sasse-test",
     "idmt-bass",
-    "locked-free-tag-holdout"
+    "locked-free-tag-holdout",
+    "distorted-heldout-2026-10-31",
+    "bird-heldout-2026-10-31",
+    "keys-breaks-heldout-2026-10-31"
   ],
   "pricesUsdPerHour": {
     "cpu-basic": 0.01,

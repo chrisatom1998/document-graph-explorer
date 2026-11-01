@@ -11,10 +11,20 @@ built from out-of-fold round 11 teacher scores on train-side clips only.
   add for the same tag.
 Both touch only weak absences: a clip's own present labels and its outright absences (round 10's absent_tags, run 9's
 look-alike absences) are never changed. Like --soft, only the training targets change; validation keeps the clip's own labels.
+
+Label cleanup (relabel(), reports/label-cleanup-2026-10-11): a positive that came from a word with a second meaning (a subway
+"ride", a glass "break", a voice going "ohh") or from a synthetic NSynth patch named after a real instrument is not that sound.
+- wrong: {item id: [tag]} the clip's own present tag becomes an outright absence.
+- unsure: {item id: [tag]} the clip's own present tag becomes unknown (no target, no weight).
+- relabel_rules: [{"id": regex, "wrong": [tag], "unsure": [tag], "absent": [tag]}] the same, for every item id the regex
+  matches; "absent" also makes a tag the clip does not have an outright absence (a hard negative, e.g. "not a kick" on low
+  synth bass notes).
+Unlike the kinds above these change the clip's own labels, before merges and aliases, so validation and calibration see them too.
 """
 import json
+import re
 
-FIX = {'drop': {}, 'add': {}, 'absent': {}}
+FIX = {'drop': {}, 'add': {}, 'absent': {}, 'wrong': {}, 'unsure': {}, 'rules': []}
 
 
 def load(path):
@@ -22,7 +32,31 @@ def load(path):
     FIX['drop'] = {k: set(v) for k, v in d.get('drop', {}).items()}
     FIX['add'] = {k: set(v) for k, v in d.get('add', {}).items()}
     FIX['absent'] = {k: set(v) for k, v in d.get('absent', {}).items()}
+    FIX['wrong'] = {k: set(v) for k, v in d.get('wrong', {}).items()}
+    FIX['unsure'] = {k: set(v) for k, v in d.get('unsure', {}).items()}
+    FIX['rules'] = [(re.compile(r['id']), set(r.get('wrong', [])), set(r.get('unsure', [])), set(r.get('absent', [])))
+                    for r in d.get('relabel_rules', [])]
     return len(FIX['drop']), len(FIX['add'])
+
+
+def relabel(item_id, labels, weak_set):
+    """Label cleanup: turn the clip's own wrong-sense positives into absences (wrong) or unknowns (unsure), and fill a rule's
+    hard negatives (absent) where the clip does not have the tag. Edits labels and weak_set in place and returns how many
+    labels changed; an unknown wins over an absence for the same tag."""
+    wrong, unsure, absent = set(FIX['wrong'].get(item_id, ())), set(FIX['unsure'].get(item_id, ())), set()
+    for rx, w, u, a in FIX['rules']:
+        if rx.search(item_id): wrong |= w; unsure |= u; absent |= a
+    n = 0
+    for t in wrong | unsure | absent:
+        c = f'cat:{t}'
+        if labels.get(c, 0) >= 0.5:
+            if t in unsure: labels.pop(c)
+            elif t in wrong: labels[c] = 0.0
+            else: continue   # a hard negative never overrides the clip's own positive
+        elif t in absent and t not in unsure and (c not in labels or c in weak_set): labels[c] = 0.0
+        else: continue
+        weak_set.discard(c); n += 1
+    return n
 
 
 def edits(item_id, labels, weak_set):
