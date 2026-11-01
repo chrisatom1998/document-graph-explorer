@@ -109,7 +109,9 @@ function genreEnergyFields(acc: GenreEnergyScores): Pick<MusicAnalysis, 'styles'
 }
 /** The fusion scorer's contract is the fixed prompt catalog it was trained on. Trained-head,
  * reviewed-example, one-shot and DJ-effect (dj-effect axis, added later) scores ride along in the same output for tagging and are not part of it. */
-export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot' && d.group !== 'dj-effect' && d.group !== 'embedding');
+/** CLAP axes added after the fusion model was trained: the fusion scorer's input stays its frozen description order. */
+const POST_FUSION_AXES = new Set(['dj-ambience']);
+export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot' && d.group !== 'dj-effect' && d.group !== 'embedding' && !POST_FUSION_AXES.has(d.group));
 /** Model jobs share a bounded timeline, but never each other's validity. Evidence is applied in one fixed order. */
 export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
   // The runtime each AST/CLAP output came from: a threaded stall can switch this browser to one thread mid-run.

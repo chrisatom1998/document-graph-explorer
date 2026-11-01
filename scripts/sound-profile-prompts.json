@@ -2753,5 +2753,95 @@
     "group": "dj-effect",
     "label": null,
     "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-ambience",
+    "label": "ambience",
+    "prompt": "Any background ambience: rain, water, birds, crowd, machine hum or wind."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable ambience sound."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-ambience",
+    "label": null,
+    "prompt": "A vocal chop loop."
   }
 ]

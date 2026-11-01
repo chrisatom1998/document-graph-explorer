@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { confidentSoundSummary, FULL_MIX_JAMENDO_SCORE } from './confidentSoundSummary';
+import { confidentSoundSummary as fullSummary, FULL_MIX_JAMENDO_SCORE } from './confidentSoundSummary';
 import { createRecognition, recordEvidence } from './recognition';
 import { sanitizeMusicAnalysis, type MusicAnalysis } from './musicTypes';
 import { TAGGER_REVISION } from './tagger';
@@ -10,6 +10,9 @@ import { NATIVE_WINDOW_EVIDENCE_LIMIT, nativeScoreOutside, sanitizeNativeWindowE
 import { DescriptionAccumulator, type DescriptionScore } from './profileDescriptions';
 import { combineSoundModels } from './ensemble';
 
+// These tests use rain ambience as the example effect; its "ambience" umbrella (Chris, 2026-11-01) copies the child's
+// tier and coverage and is checked once below, so the coverage cases look at the child tags only.
+const confidentSoundSummary = (a: MusicAnalysis) => fullSummary(a).filter(s => !(s.dimension === 'effect' && s.label === 'ambience'));
 type Interval = { start: number; end: number };
 const middle = [{ start: 75, end: 85 }, { start: 85, end: 95 }, { start: 95, end: 105 }];
 function audio(durationSeconds = 180, intervals: Interval[] | undefined = middle, windows = 3): MusicAnalysis {
@@ -288,4 +291,10 @@ describe('a merged-away label folding into a tagger-decided tag', () => {
     expect(shown(a).filter(s => s === 'source:foley')).toHaveLength(1);
     expect(shown(a)).not.toContain('effect:foley hit');
   });
+});
+it('the ambience umbrella carries the child tag\'s tier and unknown coverage', () => {
+  const a = native(audio(180, undefined, 2), 'rain ambience');
+  const [child, umbrella] = fullSummary(a);
+  expect(child).toMatchObject({ label: 'rain ambience' });
+  expect(umbrella).toEqual({ ...child, label: 'ambience' });
 });
