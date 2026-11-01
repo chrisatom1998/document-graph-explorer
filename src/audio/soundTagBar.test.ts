@@ -33,6 +33,9 @@ const PROMOTED: [label: string, threshold: number, precision: number, recall: nu
   ['impact', .8206, .63, .72, 'dj-effects-2026-10-09/shipped.json'],
   ['riser', .8384, .68, .69, 'dj-effects-2026-10-09/shipped.json'],
   ['laser', .7867, .51, .53, 'dj-effects-2026-10-09/shipped.json'],
+  // 2026-10-31: the shipped heads, unchanged, scored on held-out library brands (78 and 104 positives).
+  ['vocal chops', .904, .628, .910, 'promote-vocal-chops-breakbeat-2026-10-31/heads.json'],
+  ['breakbeat', .911, .716, .558, 'promote-vocal-chops-breakbeat-2026-10-31/heads.json'],
 ];
 /** tag-heads-2026-10-09 heads are not cleared for one-shots, so ship.py tiers them on the held-out clips longer than
  * 2.25 s where the browser actually runs them (heldOutLongClip), not on the aggregate that included short clips. */
