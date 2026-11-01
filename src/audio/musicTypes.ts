@@ -65,7 +65,11 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 139/140: the tagger decides reese bass on clips up to 30 s at 0.1219, a cutoff set on 1,474 fresh non-test, non-training
 // Freesound clips (32 reese) with calibrate.py's own rule, before any test clip was scored (Listen set 2/0, free-tag-set 0 false
 // alarms of 219). Only 5 positives judge it: recheck first when more labelled clips arrive.
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 140 : 139;
+// 141/142: the tagger decides cymbal on clips of any length up to 30 s (the old 10 s
+// minimum and the window rule left every shorter clip and most longer ones with no decision), plus wind ambience and
+// vocal shout from its own outputs; foley and hi-hat cutoffs move. Cutoffs picked on an FSD50K dev-val tuning set that
+// shares no uploader with the tag-baseline judge set (docs/evaluations/tag-fix-2026-10-31).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 142 : 141;
 export interface InstrumentEstimate {
   label: string;
   score: number;

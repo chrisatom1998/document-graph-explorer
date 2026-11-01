@@ -1,5 +1,5 @@
 """Tests for the tag-baseline set builder and summary (stdlib only). Run: python3 scripts/tag-baseline/test_tag_baseline.py"""
-import json, os, subprocess, sys, tempfile, unittest
+import json, os, subprocess, sys, tempfile, unittest, unittest.mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -34,6 +34,30 @@ class BuildSet(unittest.TestCase):
         kick = next(i for i in items if i['id'] == 'fsd50k-eval:11')
         self.assertEqual(kick['labels']['cat:kick'], 'present')
         self.assertEqual(kick['labels']['cat:piano'], 'absent')
+
+    def test_drums_means_any_drum_but_selection_keeps_the_training_map(self):
+        rows = self.rows + [row(30, ['Snare_drum', 'Drum']), row(31, ['Tabla', 'Drum']), row(32, ['Drum']), row(33, ['Hi-hat', 'Cymbal'])]
+        info = self.info | {str(i): {'uploader': f'v{i}'} for i in range(30, 34)}
+        _, clips, items, _ = build_set.build(rows, info, per_tag=4, per_uploader=4, negatives=20, reserved=self.reserved)
+        lab = {i['id']: i['labels'] for i in items}
+        for fname in (11, 30, 31, 32):                                   # kick, snare, tabla and plain drum clips all count as drums
+            self.assertEqual(lab[f'fsd50k-eval:{fname}']['cat:drums'], 'present', fname)
+        self.assertEqual(lab['fsd50k-eval:33']['cat:drums'], 'absent')   # a cymbal or hi-hat on its own is not a drum
+        self.assertEqual(lab['fsd50k-eval:11']['cat:kick'], 'present')
+        plain = next(c for c in clips if c['fname'] == '32')
+        self.assertEqual(plain['tags'], [])                              # selection still sees no mapped class: it can be a negative
+        before = build_set.build(self.rows, self.info, 4, 1, 3, self.reserved)[1]
+        with unittest.mock.patch.dict(build_set.EVAL_LABELS, clear=True):     # the drums relabel never moves which clips are chosen
+            self.assertEqual([c['fname'] for c in build_set.build(self.rows, self.info, 4, 1, 3, self.reserved)[1]], [c['fname'] for c in before])
+
+    def test_only_tags_tuning_set(self):
+        _, clips, items, _ = build_set.build(self.rows, self.info, per_tag=4, per_uploader=4, negatives=5, reserved=self.reserved,
+                                             only=['kick'], prefix='fsd50k-dev')
+        self.assertTrue(all(i['id'].startswith('fsd50k-dev:') for i in items))
+        self.assertEqual(sum('kick' in c['tags'] for c in clips), 4)
+        negs = [c for c in clips if 'kick' not in c['tags']]
+        self.assertEqual(len(negs), 5)                                   # negatives lack the target but may carry other tags (piano)
+        self.assertTrue(any(c['tags'] for c in negs))
 
     def test_deterministic(self):
         a = build_set.build(self.rows, self.info, 4, 2, 3, self.reserved)[2]

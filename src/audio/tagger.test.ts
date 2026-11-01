@@ -165,6 +165,18 @@ describe('trained tagger display', () => {
     expect(shown.map(s => s.label).sort()).toEqual(['crash cymbal', 'whisper']);
     for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
   });
+  it('decides cymbal on clips under 10 s, and wind ambience and vocal shout, over their CLAP heads', () => {
+    const shownLabels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
+    const heads = [...['wind ambience', 'vocal shout'].map(label => ({ group: 'production' as const, label, score: .9, model: 'Trained head' as const })),
+      { group: 'source' as const, label: 'cymbals', score: .9, model: 'Trained head' as const }];
+    const outputs = ['cymbals', 'cat:wind ambience', 'cat:vocal shout'];
+    const low = shownLabels(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads));
+    for (const label of ['cymbals', 'wind ambience', 'vocal shout']) expect(low).not.toContain(label);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads))
+      .filter(s => ['cymbals', 'wind ambience', 'vocal shout'].includes(s.label));
+    expect(shown.map(s => s.label).sort()).toEqual(['cymbals', 'vocal shout', 'wind ambience']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
   it('decides kick, clap, organ and gong over their CLAP heads', () => {
     const shownLabels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
     const heads = [...['kick', 'clap'].map(label => ({ group: 'production' as const, label, score: .9, model: 'Trained head' as const })),
@@ -292,7 +304,7 @@ describe('trained tagger long-recording rules', () => {
   it('installs the rules picked on the full-song tuning set', () => {
     expect(Object.fromEntries(TAGGER_POLICY.tags.filter(t => t.long).map(t => [t.output, t.long]))).toEqual({
       drums: { rule: 'max', threshold: .5757 }, trumpet: { rule: 'max' }, piano: { rule: 'detectors' }, 'cat:guitar': { rule: 'detectors', afterSeconds: 30 },
-      cymbals: { rule: 'detectors' }, 'cat:violin / fiddle': { rule: 'detectors', afterSeconds: 30 }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' },
+      cymbals: { rule: 'detectors', afterSeconds: 30 }, 'cat:violin / fiddle': { rule: 'detectors', afterSeconds: 30 }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' },
       synthesizer: { rule: 'max' }, 'cat:percussion': { rule: 'detectors' }, 'cat:animal sound': { rule: 'detectors' },
       'cat:glockenspiel': { rule: 'detectors' }, 'cat:whistle': { rule: 'detectors' }, 'cat:tambourine': { rule: 'detectors' },
       'cat:vocal scream': { rule: 'detectors' }, 'cat:environmental sound': { rule: 'detectors', afterSeconds: 30 },
@@ -311,8 +323,9 @@ describe('trained tagger long-recording rules', () => {
       'cat:acid synth': { rule: 'detectors', afterSeconds: 30 }, 'cat:vocal phrase': { rule: 'detectors', afterSeconds: 30 },
       'cat:synth lead': { rule: 'detectors', afterSeconds: 30 }, 'cat:vocoder vocal': { rule: 'detectors', afterSeconds: 30 },
       'cat:record stop': { rule: 'detectors', afterSeconds: 30 }, 'cat:glitch effect': { rule: 'detectors', afterSeconds: 30 },
-      'cat:choir': { rule: 'detectors', afterSeconds: 30 }, 'cat:staccato': { rule: 'detectors', afterSeconds: 30 },
-      'cat:reese bass': { rule: 'detectors', afterSeconds: 30 } });
+      'cat:choir': { rule: 'detectors', afterSeconds: 30 }, 'cat:wind ambience': { rule: 'detectors', afterSeconds: 30 },
+      'cat:vocal shout': { rule: 'detectors', afterSeconds: 30 },
+      'cat:staccato': { rule: 'detectors', afterSeconds: 30 }, 'cat:reese bass': { rule: 'detectors', afterSeconds: 30 } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
   it('needs the higher full-song drums threshold on long recordings only', () => {
@@ -332,7 +345,8 @@ describe('trained tagger long-recording rules', () => {
   it.each(['cat:environmental sound', 'cat:foley', 'cat:turntable', 'cat:finger snap', 'cat:water ambience', 'cat:guitar', 'cat:violin / fiddle', 'cat:siren',
     'cat:flute', 'cat:marimba', 'cat:vibraphone', 'cat:crash cymbal', 'cat:whisper', 'cat:voice', 'cat:kick', 'cat:clap',
     'cat:organ', 'cat:gong', 'cat:laser', 'cat:riser', 'cat:reverberant', 'cat:conga', 'cat:vocal chant', 'cat:static noise', 'cat:acid synth', 'cat:vocal phrase',
-    'cat:synth lead', 'cat:vocoder vocal', 'cat:record stop', 'cat:glitch effect', 'cat:choir', 'cat:staccato', 'cat:reese bass'])(
+    'cat:synth lead', 'cat:vocoder vocal', 'cat:record stop', 'cat:glitch effect', 'cat:choir', 'cymbals', 'cat:hi-hat', 'cat:wind ambience', 'cat:vocal shout',
+    'cat:staccato', 'cat:reese bass'])(
     'keeps the tagger deciding %s up to 30 s, as the held-out scorer did, and defers on longer recordings', output => {
       const at = (duration: number, windows: number) => taggerDecisions({ revision: TAGGER_REVISION, windows, scores: { [output]: threshold(output) } }, duration)!
         .find(d => d.tag.output === output);
