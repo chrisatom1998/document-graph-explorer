@@ -7,11 +7,12 @@ const audio = { version: 2, durationSeconds: 8, analyzedSeconds: 8, instruments:
   soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false,
     djTags: [{ group: 'production', label: 'kick', score: .45, model: 'Trained head' }] } };
 const graph = { nodes: [{ path: 'c000001.wav', audio }], edges: [] };
-assert.deepEqual(displayedPredictions(manifest, graph, 'all')[0].labels, ['effect:kick']);
+// A shown kick also shows the drums umbrella (Chris, 2026-10-31).
+assert.deepEqual(displayedPredictions(manifest, graph, 'all')[0].labels, ['effect:kick', 'source:drums']);
 assert.deepEqual(displayedPredictions(manifest, graph, 'likely')[0].labels, []);
 assert.equal(displayedPredictions(manifest, graph)[1].status, 'missing');
 audio.soundProfile.djTags[0].score = .85;
-assert.deepEqual(displayedPredictions(manifest, graph, 'likely')[0].labels, ['effect:kick']);
+assert.deepEqual(displayedPredictions(manifest, graph, 'likely')[0].labels, ['effect:kick', 'source:drums']);
 audio.soundReviews = [{ dimension: 'effect', labelId: 'kick', decision: 'confirmed' }];
 assert.throws(() => displayedPredictions(manifest, graph), /blind prediction/);
 delete audio.soundReviews;

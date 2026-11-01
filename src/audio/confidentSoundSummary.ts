@@ -1,5 +1,5 @@
 import { confirmedInstrumentList, sourceReviewAllows } from './instrumentEvidence';
-import { AMBIENCE_KIDS, AMBIENCE_UMBRELLA, canonicalDjLabel, MERGED_DJ_LABELS, mergedDjLabel, type DjGroup } from './djTags';
+import { AMBIENCE_KIDS, AMBIENCE_UMBRELLA, canonicalDjLabel, DRUM_KIT_LABELS, DRUMS_UMBRELLA, MERGED_DJ_LABELS, mergedDjLabel, type DjGroup } from './djTags';
 import { fusionPresentation } from './fusionPresentation';
 import type { MusicAnalysis } from './musicTypes';
 import { dimensionLabels, type Dimension, type Interval } from './recognition';
@@ -14,7 +14,7 @@ import { isRuleDescribedLabel } from './timbreDescriptions';
 
 /** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
  * musicLinks), so a display change also changes which instrument links a track can form, by design. */
-export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v15';
+export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v16';
 /** The shipping bar (Chris, 2026-10-10): a detector shows as a normal tag when its held-out precision AND recall on clips and
  * samples are both at least this; below it, a useful detector shows as a faded "maybe". Full songs are a no-regression check
  * only. scripts/head-scorecard.py and scripts/dj-effects/ship.py use the same bar; the tagger's `tested` flags use the 60/30
@@ -229,7 +229,7 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   if(voiceHeads.length&&Math.max(...voiceHeads)<FULL_MIX_VOICE_VETO&&!taggerShown.has('source:voice')&&result.get('source:voice')?.origin==='model estimate')result.delete('source:voice');
   const testedBest=(s:DisplaySound)=>Math.max(...s.scores!.filter(x=>TESTED_SCORES.has(x.model)).map(x=>x.score));
   const raised=(s:DisplaySound)=>fullMix&&s.dimension==='source'&&FULL_MIX_MIN_TESTED_SCORE[s.label]!==undefined&&testedBest(s)<FULL_MIX_MIN_TESTED_SCORE[s.label];
-  return shortPianoVeto(ambienceUmbrella(foldMerged([...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
+  return shortPianoVeto(drumsUmbrella(ambienceUmbrella(foldMerged([...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
     :HIDDEN_UNTIL_TESTED.has(s.label)?[]
     :s.coverageUnknown?[s]
     :s.scores?.some(x=>TESTED_SCORES.has(x.model))?raised(s)?[]:[tiered(s,m=>TESTED_SCORES.has(m))]
@@ -238,7 +238,9 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     // Merged estimates obey the destination's hidden-label policy and listener choices.
     (dimension,label)=>!HIDDEN_UNTIL_TESTED.has(label)&&allowed(dimension,label)&&(dimension==='source'?confirmed===undefined:audio.confirmedDjTags===undefined)),
     // The umbrella is an estimate under ambience, so it obeys the same rules as any effect estimate.
-    ()=>!HIDDEN_UNTIL_TESTED.has(AMBIENCE_UMBRELLA.label)&&allowed(DIMENSION_OF[AMBIENCE_UMBRELLA.group],AMBIENCE_UMBRELLA.label)&&audio.confirmedDjTags===undefined), audio);
+    ()=>!HIDDEN_UNTIL_TESTED.has(AMBIENCE_UMBRELLA.label)&&allowed(DIMENSION_OF[AMBIENCE_UMBRELLA.group],AMBIENCE_UMBRELLA.label)&&audio.confirmedDjTags===undefined),
+    // The umbrella is an estimate under drums, so it obeys the same rules as any source estimate.
+    ()=>!HIDDEN_UNTIL_TESTED.has(DRUMS_UMBRELLA.label)&&allowed('source',DRUMS_UMBRELLA.label)&&confirmed===undefined), audio);
 }
 /** Any shown background-ambience tag (AMBIENCE_KIDS) also shows "ambience", unless ambience already shows at least as
  * strongly. The child tag stays. A listener who rejected ambience, or confirmed their sound tags, gets no umbrella;
@@ -253,6 +255,22 @@ function ambienceUmbrella(sounds:DisplaySound[],canEstimate:()=>boolean):Display
     if(!best||stronger(item,best))best=item;
   }
   const at=sounds.findIndex(s=>key(s)===target);
+  return at<0?[...sounds,best!]:sounds.map((s,i)=>i===at?best!:s);
+}
+/** Any shown drum-kit tag (DRUM_KIT_LABELS) also shows drums, unless drums already shows at least as strongly. The kit
+ * tag itself stays. A listener who rejected drums, or confirmed their instrument list, gets no umbrella; neither does a
+ * kit tag the listener confirmed by hand. */
+function drumsUmbrella(sounds:DisplaySound[],canEstimate:()=>boolean):DisplaySound[]{
+  // Only model estimates: a tag the listener confirmed by hand shows exactly as they picked it.
+  const kit=sounds.filter(s=>s.origin==='model estimate'&&s.dimension==='effect'&&DRUM_KIT_LABELS.has(`production:${s.label}`));
+  if(!kit.length||!canEstimate())return sounds;
+  const key=(s:DisplaySound)=>`${s.dimension}:${s.label}`,drums=`${DIMENSION_OF[DRUMS_UMBRELLA.group]}:${DRUMS_UMBRELLA.label}`;
+  let best=sounds.find(s=>key(s)===drums);
+  for(const s of kit){
+    const item:DisplaySound={...s,dimension:DIMENSION_OF[DRUMS_UMBRELLA.group],label:DRUMS_UMBRELLA.label};
+    if(!best||stronger(item,best))best=item;
+  }
+  const at=sounds.findIndex(s=>key(s)===drums);
   return at<0?[...sounds,best!]:sounds.map((s,i)=>i===at?best!:s);
 }
 /** Between a one-shot and the tagger's 10 s piano handoff, the CLAP piano head is the only decider and it fires on

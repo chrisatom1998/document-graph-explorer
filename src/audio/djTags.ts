@@ -61,6 +61,13 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'character:echoing': { group: 'character', label: 'reverberant' },
   'character:rising': { group: 'production', label: 'riser' },
 };
+/** Drum-kit tags that also show the umbrella "drums" tag (Chris, 2026-10-31: "merge them all into one tag drums"; he
+ * chose the umbrella so kick, snare and the rest keep showing and keep their own tested scores). Hand percussion
+ * (shaker, tambourine, conga, bongo, cowbell, clave, finger snap), percussion hits/loops, top loops and reverse cymbal
+ * stay separate: they are not drum-kit sounds. closed hi-hat already merges into hi-hat. */
+export const DRUM_KIT_LABELS: ReadonlySet<string> = new Set(['kick', 'snare', 'clap', 'hi-hat', 'closed hi-hat', 'open hi-hat',
+  'ride cymbal', 'crash cymbal', 'cymbal', 'rimshot', 'tom', 'drum fill', 'snare roll', 'breakbeat', 'drum loop'].map(l => `production:${l}`));
+export const DRUMS_UMBRELLA = { group: 'source', label: 'drums' } as const;
 /** Background-ambience tags that also show the umbrella "ambience" tag (Chris, 2026-11-01: Splice, Beatport Sounds and
  * Cymatics all file these under one "ambience" word). The child tags stay and keep their own tested scores. On the full
  * FSD50K eval set (10,231 clips, rule fixed before scoring) the umbrella measured P 0.675 / R 0.688, and it false-alarms
