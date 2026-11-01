@@ -12,6 +12,8 @@ import unittest
 from eligibility import eligible_metrics, long_clip_metrics
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))
+from learned_store import load_learned
 
 
 def metric(tp, fp, fn, negatives=100, unknown=0):
@@ -61,11 +63,11 @@ def ship(label, row, current=None, all_ineligible=False):
             assert not (root / 'report/shipped.json').exists()
             return result
         decisions = json.loads((root / 'report/shipped.json').read_text())
-        model_bytes = (root / 'public/sound-model/learned.json').read_bytes()
-        model = json.loads(model_bytes)
+        model = load_learned(root / 'public/sound-model/learned.json')
         manifest = json.loads((root / 'public/sound-model/manifest.json').read_text())
-        assert hashlib.sha256(model_bytes).hexdigest() == manifest['sha256']['learned.json']
-        assert decisions['learnedSha256'] == manifest['sha256']['learned.json']
+        integrity = (root / 'public/sound-model/head-sha256.txt').read_bytes()
+        assert 'learned.json' not in manifest['sha256']
+        assert decisions['learnedSha256'] == hashlib.sha256(integrity).hexdigest()
         assert json.loads((root / 'src/audio/calibratedLabels.json').read_text()) == sorted(h['label'] for h in model['heads'])
         return next(r for r in decisions['heads'] if r['label'] == label), model
 
@@ -109,7 +111,7 @@ class ShippingTests(unittest.TestCase):
         evaluation = root / 'docs/evaluations/tag-heads-2026-10-09'
         report = json.loads((evaluation / 'report.json').read_text())
         shipped = json.loads((evaluation / 'shipped.json').read_text())
-        learned = json.loads((root / 'public/sound-model/learned.json').read_text())
+        learned = load_learned(root / 'public/sound-model/learned.json')
         self.assertEqual(report['rescoring']['roundingDifferences'], [])
         self.assertEqual(report['rescoring']['heldOutUnknownDurations'], 0)
         selected = [row for row in shipped['heads'] if row['shipped']]

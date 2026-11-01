@@ -23,7 +23,9 @@ async function atomicWrite(path: string, bytes: string | Buffer): Promise<void> 
  */
 export async function withReviewFileTransaction<T>(
   writes: ReadonlyMap<string, string>, backupDirectory: string, publish: () => Promise<T>, root = process.cwd(),
+  deletes: readonly string[] = [],
 ): Promise<T> {
+  for (const path of deletes) if (writes.has(path)) throw new Error(`Cannot write and delete ${path}`);
   const originals = new Map<string, Buffer | undefined>();
   for (const path of writes.keys()) {
     const original = await readExisting(resolve(root, path));
@@ -34,11 +36,25 @@ export async function withReviewFileTransaction<T>(
       await writeFile(backup, original);
     }
   }
+  for (const path of deletes) {
+    const original = await readExisting(resolve(root, path));
+    originals.set(path, original);
+    if (original !== undefined) {
+      const backup = join(backupDirectory, path);
+      await mkdir(dirname(backup), { recursive: true });
+      await writeFile(backup, original);
+    }
+  }
   const written: string[] = [];
+  const removed: string[] = [];
   try {
     for (const [path, content] of writes) {
       await atomicWrite(resolve(root, path), content);
       written.push(path);
+    }
+    for (const path of deletes) {
+      await rm(resolve(root, path), { force: true });
+      removed.push(path);
     }
     return await publish();
   } catch (error) {
@@ -52,6 +68,14 @@ export async function withReviewFileTransaction<T>(
         const original = originals.get(path);
         if (original === undefined) await rm(destination);
         else await atomicWrite(destination, original);
+      } catch (rollbackError) { rollbackErrors.push(rollbackError); }
+    }
+    for (const path of removed.reverse()) {
+      try {
+        const destination = resolve(root, path);
+        if (await readExisting(destination) !== undefined) continue;
+        const original = originals.get(path);
+        if (original !== undefined) await atomicWrite(destination, original);
       } catch (rollbackError) { rollbackErrors.push(rollbackError); }
     }
     if (rollbackErrors.length) throw new AggregateError([error, ...rollbackErrors], 'Review publication failed and some files could not be restored.');

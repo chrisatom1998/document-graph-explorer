@@ -21,6 +21,9 @@ clips of rounds <= n only, so heads trained on a grown clip set are judged on ex
 "extended" adds the same numbers on every held-out clip, new rounds included.
 Usage: train.py <audio-manifest.json> <embeddings dir> <out dir> [renders-manifest.json]"""
 import json, sys, glob, os, datetime
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from learned_store import load_learned
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GroupKFold
@@ -67,9 +70,10 @@ def choose_threshold(t, p):
 fit = lambda A, y, C: LogisticRegression(C=C, class_weight='balanced', max_iter=1000, tol=1e-4).fit(A, y)
 
 shipped = {}
-for f in ('learned.json', 'short-clip.json'):
-    for hd in json.load(open(f'public/sound-model/{f}'))['heads']:
-        shipped.setdefault(hd['label'], []).append({**hd, 'file': f})
+for hd in load_learned('public/sound-model/learned.json')['heads']:
+    shipped.setdefault(hd['label'], []).append({**hd, 'file': 'learned.json'})
+for hd in json.load(open('public/sound-model/short-clip.json'))['heads']:
+    shipped.setdefault(hd['label'], []).append({**hd, 'file': 'short-clip.json'})
 SC = json.load(open('public/sound-model/short-clip.json'))
 assert SC['blocks'] == ['clapRepeat'], 'short-clip comparison assumes the CLAP-only block layout'
 XS = (X - np.asarray(SC['mean'])) / np.asarray(SC['std'])   # shortClipModel.ts vector(): unit CLAP, then standardised

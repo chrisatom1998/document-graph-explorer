@@ -6,6 +6,9 @@ A head that clears it is then refitted on all of its data with the same threshol
 No examples are written: dataset labels are not user reviews.
 Usage: build-learned-heads.py <vault manifest> <vault fingerprints> <fx manifest> <fx fingerprints> <report.json>"""
 import json, sys, glob, hashlib, datetime, os
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from learned_store import write_learned, drop_learned_pin
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GroupKFold
@@ -115,12 +118,9 @@ for r, _ in results:
     p = f"{r['precision']*100:.0f}%" if 'precision' in r else '-'; q = f"{r['recall']*100:.0f}%" if 'recall' in r else '-'
     print(f"{r['label']:<16}{r['group']:<12}{r['testPositive']:>6}{p:>11}{q:>8}   {'YES' if r['ships'] else 'no - ' + r['why']}")
 model = {'version': 1, 'encoder': ENCODER, 'revision': 'trained-heads-2026-10-04', 'examples': [], 'heads': heads}
-body = json.dumps(model, separators=(',', ':')) + '\n'
-open('public/sound-model/learned.json', 'w').write(body)
-digest = hashlib.sha256(body.encode()).hexdigest()
-mp = 'public/sound-model/manifest.json'; man = json.load(open(mp)); man['sha256']['learned.json'] = digest
-open(mp, 'w').write(json.dumps(man, indent=2) + '\n')
+digest = write_learned('public/sound-model/learned.json', model)
+drop_learned_pin()
 json.dump({'kind': 'shipped-heads-report-v1', 'builtAt': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'bar': BAR,
            'learnedSha256': digest, 'note': 'Effect heads were trained and tested on guitar and bass recordings only.',
            'heads': [r for r, _ in results]}, open(REPORT, 'w'), indent=1)
-print(f'\n{len(heads)} heads shipped -> public/sound-model/learned.json ({len(body)//1024} KB), manifest pinned {digest[:12]}')
+print(f'\n{len(heads)} heads shipped -> public/sound-model/heads/ ({len(heads)} files), integrity {digest[:12]}')

@@ -11,6 +11,9 @@ rewrites src/audio/calibratedLabels.json as apply_heads.py does.
 INSTRUMENT_ANALYSIS_REVISION in src/audio/musicTypes.ts is bumped by hand in the same commit.
 """
 import hashlib, json, math, sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from learned_store import load_learned
 
 HEADS, LABEL, TAG = sys.argv[1:4]
 SHORT, MANIFEST = 'public/sound-model/short-clip.json', 'public/sound-model/manifest.json'
@@ -32,6 +35,6 @@ manifest = json.load(open(MANIFEST))
 manifest['sha256']['short-clip.json'] = hashlib.sha256(body.encode()).hexdigest()
 open(MANIFEST, 'w').write(json.dumps(manifest, indent=2) + '\n')
 # Same detector list as apply_heads.py: every label with a learned or short-clip head.
-labels = sorted({x['label'] for f in ('public/sound-model/learned.json', SHORT) for x in json.load(open(f))['heads']})
+labels = sorted({x['label'] for x in load_learned('public/sound-model/learned.json')['heads']} | {x['label'] for x in json.load(open(SHORT))['heads']})
 open('src/audio/calibratedLabels.json', 'w').write(json.dumps(labels, indent=0) + '\n')
 print(f"{LABEL}: {'replaced' if old else 'added'} short-clip head, threshold {head['threshold']}")

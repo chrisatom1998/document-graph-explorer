@@ -1,18 +1,21 @@
 """Adds heads exported by `EXPORT=0.65 train-with-extras.py` to public/sound-model/learned.json
 as faded "maybe" tags, without touching the heads already there. Use this instead of
 ship-round-heads.py when other scripts own some of the shipped heads (it rebuilds the file).
-A head whose tag already ships is left alone. Only the learned.json line in manifest.json changes.
+A head whose tag already ships is left alone. Each new head is its own file. manifest.json is not pinned.
 FULL_BAR (default 0.50, Chris's bar of 2026-10-10, = SOUND_TAG_BAR in confidentSoundSummary.ts): heads whose
 held-out precision AND recall reach it ship as full tags, the rest as maybe.
 Usage: add-maybe-heads.py <round-export.json> <report.json>"""
-import json, sys, hashlib, datetime, os
+import json, sys, datetime, os
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from learned_store import load_learned, write_learned, drop_learned_pin
 SRC, REPORT = sys.argv[1:3]
 FULL_BAR = float(os.environ.get('FULL_BAR') or 0.50)
 SKIP = set(filter(None, os.environ.get('SKIP', '').split(',')))   # labels another session owns
 REAL_ONLY = os.environ.get('REAL_ONLY') == '1'   # only heads measured on library brands or real recordings
 LEARNED, MANIFEST = 'public/sound-model/learned.json', 'public/sound-model/manifest.json'
 catalog = {c['label']: c for c in json.load(open('src/audio/djCatalog.json'))['categories']}
-model = json.load(open(LEARNED)); shipped = {(h['group'], h['label']) for h in model['heads']}
+model = load_learned(LEARNED); shipped = {(h['group'], h['label']) for h in model['heads']}
 added, report = [], []
 for r in json.load(open(SRC))['results']:
     group = catalog.get(r['name'], {}).get('group')
@@ -27,13 +30,10 @@ for r in json.load(open(SRC))['results']:
     shipped.add((group, r['name']))   # first export of a label wins (instrument vs label job)
     report.append({**row, 'group': group, 'added': True, 'tier': 'full' if full else 'maybe'})
 model['heads'] += added; model['revision'] = model['revision'].split('+')[0] + f'+maybe-{datetime.date.today()}'
-body = json.dumps(model, separators=(',', ':')) + '\n'
-open(LEARNED, 'w').write(body)
-digest = hashlib.sha256(body.encode()).hexdigest()
-man = json.load(open(MANIFEST)); man['sha256']['learned.json'] = digest
+digest = write_learned(LEARNED, model)
+drop_learned_pin(MANIFEST)
 # Labels with a tested detector; the Sounds panel only falls back to raw CLAP for labels NOT in this list.
-json.dump(sorted({h['label'] for f in (LEARNED, 'public/sound-model/short-clip.json') for h in json.load(open(f))['heads']}), open('src/audio/calibratedLabels.json', 'w'), indent=0)
-open(MANIFEST, 'w').write(json.dumps(man, indent=2) + '\n')
+json.dump(sorted({h['label'] for h in load_learned(LEARNED)['heads']} | {h['label'] for h in json.load(open('public/sound-model/short-clip.json'))['heads']}), open('src/audio/calibratedLabels.json', 'w'), indent=0)
 json.dump({'kind': 'added-maybe-heads-v1', 'builtAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
            'learnedSha256': digest, 'heads': report}, open(REPORT, 'w'), indent=1)
 for x in report: print(f"{x['name']:<18}{(x['precision'] or 0)*100:>5.0f}%{(x['recall'] or 0)*100:>5.0f}%  " + (f"ADDED as {x['tier']}" if x['added'] else 'no - ' + x['why']))

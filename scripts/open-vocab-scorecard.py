@@ -2,12 +2,20 @@
 plus the best held-out measurement from a training round (precision, recall, support, where it was tested).
 Buckets use the 45/45 bar (full tags also meet 60/60). Usage: open-vocab-scorecard.py <round.json> <out.json> [baseline-learned.json]"""
 import json, sys, subprocess
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from learned_store import load_learned
 ROUND, OUT = sys.argv[1:3]
 cat = json.load(open('src/audio/djCatalog.json'))['categories']
-learned = {h['label']: h for h in json.load(open('public/sound-model/learned.json'))['heads']}
+learned = {h['label']: h for h in load_learned()['heads']}
 short = {h['label'] for h in json.load(open('public/sound-model/short-clip.json'))['heads']}
 base = set()
-if len(sys.argv) > 3: base = {h['label'] for h in json.loads(subprocess.check_output(['git', 'show', sys.argv[3]]))['heads']} | short
+if len(sys.argv) > 3:
+    shown = json.loads(subprocess.check_output(['git', 'show', sys.argv[3]]))
+    shown_heads = shown.get('heads') or []
+    if shown_heads and isinstance(shown_heads[0], str):
+        sys.exit('baseline learned.json is a split index; pass a monolithic learned.json')
+    base = {h['label'] for h in shown_heads} | short
 OWNED = {'reversed vocal', 'pitched vocal', 'vocoder vocal', 'reverse cymbal', 'reverse impact', 'record stop', 'sub drop', 'noise', 'vinyl crackle',
          'animal sound', 'bell', 'glockenspiel', 'tuned percussion', 'breath', 'vocal shout', 'hi-hat', 'cymbal', 'voice', 'turntable',
          'machine ambience', 'foley', 'hand percussion', 'environmental sound', 'dry', 'distorted', 'reverberant', 'echoing', 'filtered'}

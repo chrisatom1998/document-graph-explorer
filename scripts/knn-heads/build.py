@@ -9,6 +9,9 @@ Usage: python3 -I build.py <pool.npz> <banks.json> <picks.json> [learned.json]
 Vectors are stored as int8 of the unit vector (cosine ignores scale).
 """
 import base64, json, sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from learned_store import load_learned, write_learned
 import numpy as np
 pool, banks_path, picks_path = sys.argv[1:4]
 out = sys.argv[4] if len(sys.argv) > 4 else 'public/sound-model/learned.json'
@@ -23,8 +26,8 @@ heads = []
 for tag in sorted(picks):
     heads.append({'group': picks[tag]['group'], 'label': tag, 'examples': q8(X[[row[p] for p in banks['tags'][tag]]]),
                   'skipBackground': [k for k, j in enumerate(bg) if tag in tags[j]], 'cutoff': round(float(picks[tag]['cutoff']), 5)})
-model = json.load(open(out))
+model = load_learned(out)
 model['neighbours'] = {'k': K, 'background': q8(X[bg]), 'heads': heads}
 model['revision'] = model['revision'].split('+knn-heads')[0] + '+knn-heads-2026-10-11'
-json.dump(model, open(out, 'w'), separators=(',', ':'))
-print(f'{len(heads)} neighbour heads, background {len(bg)}, file {len(json.dumps(model, separators=(",", ":"))) / 1e6:.2f} MB')
+digest = write_learned(out, model)
+print(f'{len(heads)} neighbour heads, background {len(bg)}, integrity {digest[:12]}')

@@ -101,7 +101,8 @@ it('keeps full-mix Jamendo scores below their measured threshold hidden, and hon
 });
 it('keeps the calibrated-label list in sync with the shipped detectors',async()=>{
  const {readFileSync}=await import('node:fs');const {CALIBRATED_LABELS}=await import('./confidentSoundSummary');
- const shipped=new Set(['learned.json','short-clip.json'].flatMap(f=>JSON.parse(readFileSync(`public/sound-model/${f}`,'utf8')).heads.map((h:{label:string})=>h.label)));
+ const {readLearnedModel}=await import('./readLearnedModel');
+ const shipped=new Set([...(readLearnedModel()?.heads??[]).map(h=>h.label),...JSON.parse(readFileSync('public/sound-model/short-clip.json','utf8')).heads.map((h:{label:string})=>h.label)]);
  expect([...CALIBRATED_LABELS].sort()).toEqual([...shipped].sort());
 });
 const clapOnly=(label:string,group:'source'|'production'|'character',score:number,durationSeconds=8):MusicAnalysis=>({...audio(),durationSeconds,analyzedSeconds:durationSeconds,instruments:[],soundProfile:{version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group,label,score,model:'Music CLAP'}]}});

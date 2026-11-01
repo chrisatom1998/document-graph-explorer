@@ -1,7 +1,8 @@
 import { loadPinnedSoundAsset } from './pinnedSoundAsset';
+import { loadBundledLearnedModel } from './loadBundledLearnedModel';
 import { musicInferenceThreads, musicRuntimeDiagnostics, musicRuntimeIdentity, THREADED_RUNTIME_STALLED, switchToSingleThreadRuntime } from './musicRuntime';
 import soundManifest from '../../public/sound-model/manifest.json';
-import { learnedDjScores, sanitizeLearnedDjModel, type LearnedDjModel } from './learnedDjModel';
+import { learnedDjScores, type LearnedDjModel } from './learnedDjModel';
 import { sanitizeShortClipModel, shortClipScores, type ShortClipModel } from './shortClipModel';
 import { eventFeatures } from './eventFeatures';
 import { cachedAudioInference, isAudioEmbedding, isScoreMap } from './audioInferenceCache';
@@ -97,15 +98,14 @@ let soundDescriptions: Promise<{ prompts: DescriptionPrompt[]; learned?: Learned
 function getSoundDescriptions() {
   return soundDescriptions ??= (async () => {
     const hashes = soundManifest.sha256 as Record<string, string>;
-    const [rawPrompts, rawLearned, rawShort] = await Promise.all([
+    const [rawPrompts, rawShort, learned] = await Promise.all([
       loadPinnedSoundAsset('prompts.json', hashes['prompts.json']),
-      loadPinnedSoundAsset('learned.json', hashes['learned.json']),
       loadPinnedSoundAsset('short-clip.json', hashes['short-clip.json']),
+      loadBundledLearnedModel(),
     ]);
-    const learned = sanitizeLearnedDjModel(rawLearned);
     const shortClip = sanitizeShortClipModel(rawShort);
     if (!Array.isArray(rawPrompts)) throw new Error('Sound descriptions are invalid.');
-    if (hashes['learned.json'] && (!learned || learned.encoder !== CLAP_ENCODER)) throw new Error('Trained sound model is invalid.');
+    if (!learned || learned.encoder !== CLAP_ENCODER) throw new Error('Trained sound model is invalid.');
     if (hashes['short-clip.json'] && (!shortClip || shortClip.clapEncoder !== CLAP_ENCODER)) throw new Error('One-shot sound model is invalid.');
     return { prompts: rawPrompts as DescriptionPrompt[], learned, shortClip };
   })().catch(error => { soundDescriptions = null; throw error; });

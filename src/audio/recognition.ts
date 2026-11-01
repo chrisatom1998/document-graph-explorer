@@ -11,6 +11,7 @@ import { DJ_LABELS } from './djTags';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { CHARACTER_LABELS, ROLE_LABELS, VOCAL_LABELS } from './soundProfile';
 import { canonicalReviewLabel, sharedSoundReviewIdentity } from './soundReviewIdentity';
+import { learnedHeadsStamp } from './learnedIntegrity';
 export type Interval = { start: number; end: number };
 export type ModelId = 'ast' | 'jamendo' | 'clap' | 'rhythm' | 'tonal';
 export type Dimension = 'source' | 'vocal' | 'role' | 'character' | 'effect';
@@ -70,7 +71,7 @@ export function familyOf(label: string): string {
 /** One-shot heads change what short clips display, and full analyses of long recordings use them on event windows
  * (analyzeDecodedMusic eventPass): a new file re-runs both. Fast long analyses never use them and stay current. */
 const oneShotIdentity = `one-shot-${((clap.sha256 as Record<string, string>)['short-clip.json'] ?? 'none').slice(0, 12)}-prompts-${clap.sha256['prompts.json'].slice(0, 12)}`;
-export const recognitionConfiguration = (mode: 'fast' | 'full', durationSeconds?: number) => `timeline-v1:${mode}:decoder-mono-v3-short-pcm:${musicRuntimeIdentity()}:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:short-unsupported-completion-v1:audio-mime-v1:pinned-models-required-v1${durationSeconds !== undefined && durationSeconds <= SHORT_CLIP_MAX_SECONDS ? `:${oneShotIdentity}` : mode === 'full' && durationSeconds !== undefined ? `:event-windows-v1:${oneShotIdentity}` : ''}:uncalibrated`;
+export const recognitionConfiguration = (mode: 'fast' | 'full', durationSeconds?: number) => `timeline-v1:${mode}:decoder-mono-v3-short-pcm:${musicRuntimeIdentity()}:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:short-unsupported-completion-v1:audio-mime-v1:pinned-models-required-v1:learned-${learnedHeadsStamp}${durationSeconds !== undefined && durationSeconds <= SHORT_CLIP_MAX_SECONDS ? `:${oneShotIdentity}` : mode === 'full' && durationSeconds !== undefined ? `:event-windows-v1:${oneShotIdentity}` : ''}:uncalibrated`;
 export function createRecognition(duration: number, mode: 'fast' | 'full', audioFingerprint?: string): Recognition {
   // Checksum prefixes keep the growing Jamendo asset list inside the 512-character ledger bound.
   const versions = [ast.revision, Object.values(jamendo.sha256).map(hash => hash.slice(0, 16)).join(':'), clap.revision, `${TEMPO_CNN_WEIGHTS}:essentia-0.1.3-tempo-1`, `${KEY_CNN_WEIGHTS}:essentia-0.1.3-key-4`];

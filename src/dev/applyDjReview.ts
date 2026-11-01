@@ -1,5 +1,5 @@
 /** Local review service's transactional model publisher. */
-import { readFile, writeFile, rename, access } from 'node:fs/promises';
+import { readFile, writeFile, rename, access, readdir, rm } from 'node:fs/promises';
 import { resolve, dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -75,18 +75,40 @@ const oldRevisionSource=await readFile('src/audio/musicTypes.ts','utf8');
 const nextRevisionSource=oldRevisionSource.replace(/INSTRUMENT_ANALYSIS_REVISION = (\d+)/,(_,value:string)=>`INSTRUMENT_ANALYSIS_REVISION = ${Number(value)+1}`);
 if(nextRevisionSource===oldRevisionSource)throw new Error('Could not update the audio analysis revision.');
 const catalogVersion=catalog.version+(additions.length?1:0);
-const modelText=JSON.stringify(model)+'\n'; const promptsText=JSON.stringify(prompts);
+const promptsText=JSON.stringify(prompts);
 manifest.catalogVersion=catalogVersion;
 manifest.sha256['prompts.json']=createHash('sha256').update(promptsText).digest('hex');
-manifest.sha256['learned.json']=createHash('sha256').update(modelText).digest('hex');
-const writes=new Map([
+delete manifest.sha256['learned.json'];
+const stage=join(directory,'learned-stage');
+await rm(stage,{recursive:true,force:true});
+const monolithic=join(directory,'learned-monolithic.json');
+await writeFile(monolithic,JSON.stringify(model));
+execFileSync('python3',['scripts/learned_store.py','write',monolithic,join(stage,'learned.json')],{stdio:'inherit'});
+const staged: [string, string][] = [];
+const walk=async (dir: string, prefix: string) => {
+  for (const entry of await readdir(dir,{withFileTypes:true})) {
+    const rel=prefix?`${prefix}/${entry.name}`:entry.name;
+    const abs=join(dir,entry.name);
+    if (entry.isDirectory()) await walk(abs, rel);
+    else if (entry.isFile()) staged.push([rel, await readFile(abs,'utf8')]);
+  }
+};
+await walk(stage,'');
+const writes=new Map<string, string>([
   [catalogPath,JSON.stringify({...catalog,version:catalogVersion,categories},null,2)+'\n'],
   [promptsPath,promptsText],
   ['scripts/sound-profile-prompts.json',JSON.stringify(prompts.map(p=>({group:p.group,label:p.label,prompt:p.prompt})),null,2)+'\n'],
-  ['public/sound-model/learned.json',modelText],
   [manifestPath,JSON.stringify(manifest,null,2)+'\n'],
   ['src/audio/musicTypes.ts',nextRevisionSource],
 ]);
+for (const [rel, content] of staged) writes.set(`public/sound-model/${rel}`, content);
+const keep=new Set(staged.map(([rel])=>rel));
+const deletes: string[] = [];
+for (const folder of ['heads','neighbours']) {
+  let names: string[] = [];
+  try { names = await readdir(join('public/sound-model', folder)); } catch { names = []; }
+  for (const name of names) if (name.endsWith('.json') && !keep.has(`${folder}/${name}`)) deletes.push(`public/sound-model/${folder}/${name}`);
+}
 const staging=join(directory,'web-build');
 let movedPrevious=false;
 await withReviewFileTransaction(writes, join(directory,'backup'), async () => {
@@ -99,6 +121,6 @@ await withReviewFileTransaction(writes, join(directory,'backup'), async () => {
   try {await rename(staging,'dist');}catch(error){if(movedPrevious)await rename(join(directory,'previous-web-build'),'dist');throw error;}
   const result={revision:model.revision,classifier:trained.report,trainedExamples:model.examples.length,addedCategories:additions.length,totalCategories:categories.length,updatedAt:new Date().toISOString(),method:'Supervised classifiers and nearest reviewed examples over frozen CLAP audio features',validation:'Build and asset checks passed. Classifier test results are provisional; improvement over the base model has not been measured.',next:'Reload the local Document Graph Explorer web app and reanalyze audio. Packaged desktop copies require a separate rebuild.'};
   await writeFile(join(directory,'result.json'),JSON.stringify(result,null,2)+'\n');
-});
+}, process.cwd(), deletes);
 // This script is also type-checked as part of the app project.
 export type PublishedDjModel = LearnedDjModel;

@@ -8,9 +8,12 @@ Verdict under the user's 2026-10-10 bar: a full tag needs held-out precision AND
 Read-only: it never edits learned.json. Heads with no matching row are listed as unverified.
 Usage: head-scorecard.py [out.json]"""
 import json, glob, sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from learned_store import load_learned
 
 FULL, MAYBE = 0.50, 0.45   # keep FULL equal to SOUND_TAG_BAR in src/audio/confidentSoundSummary.ts and ship.py
-heads = json.load(open('public/sound-model/learned.json'))['heads']
+heads = load_learned()['heads']
 rows = []   # (label, threshold, precision, recall, testPositive, source)
 for f in sorted(glob.glob('docs/evaluations/*/*.json')):
     try: d = json.load(open(f))

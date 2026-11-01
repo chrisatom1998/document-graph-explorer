@@ -9,6 +9,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { buildCsp } from './src/security/csp';
 import pkg from './package.json';
 import { essentiaCsp } from './scripts/essentia-csp';
+import { learnedHeadsPlugin } from './scripts/learned-heads-plugin';
 
 // In a git worktree, node_modules is a symlink to the main checkout. Because
 // onnxruntime-web is in optimizeDeps.exclude below, its .wasm files are served
@@ -81,7 +82,7 @@ const workerAssetFileNames = (info: { names: string[] }): string =>
 // Isolation permits bounded ONNX WASM threading. All model/runtime resources
 // remain same-origin; hosts without isolation retain one-thread inference.
 export default defineConfig(({ mode }) => ({
-  plugins: [essentiaCsp(), react(), tailwindcss(), injectCsp(mode === 'airgap'), ...(mode === 'airgap' ? [] : [djAssistantPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djCopilotPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djReviewerPlugin()])],
+  plugins: [learnedHeadsPlugin(), essentiaCsp(), react(), tailwindcss(), injectCsp(mode === 'airgap'), ...(mode === 'airgap' ? [] : [djAssistantPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djCopilotPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djReviewerPlugin()])],
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   server: { fs: { allow: serveRoots() }, headers: { ...SECURITY_HEADERS, 'Permissions-Policy': mode === 'airgap' ? SECURITY_HEADERS['Permissions-Policy'] : SECURITY_HEADERS['Permissions-Policy'].replace('microphone=()', 'microphone=(self)') } },
   // Workers receive Vercel's CSP as a response header, not the page's meta tag.
@@ -89,7 +90,7 @@ export default defineConfig(({ mode }) => ({
   preview: { headers: { ...SECURITY_HEADERS, 'Content-Security-Policy': `${buildCsp({ airgap: mode === 'airgap' })}; frame-ancestors 'none'` } },
   worker: {
     format: 'es',
-    plugins: () => [essentiaCsp()],
+    plugins: () => [learnedHeadsPlugin(), essentiaCsp()],
     rolldownOptions: {
       output: {
         entryFileNames: `assets/[name]-[hash]-${BUILD_ID}.js`,

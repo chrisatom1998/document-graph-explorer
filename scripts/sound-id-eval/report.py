@@ -13,10 +13,12 @@ import math
 import sys
 from collections import defaultdict
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from learned_store import load_learned
 
 ROOT = Path(__file__).resolve().parents[2]
 rows = [json.loads(line) for line in open(sys.argv[1]) if line.strip()]
-learned = json.loads((ROOT / 'public/sound-model/learned.json').read_text())
+learned = load_learned(ROOT / 'public/sound-model/learned.json')
 policy = json.loads((ROOT / 'src/audio/taggerPolicy.json').read_text())
 heads = {h['label']: h for h in learned['heads'] if h['group'] == 'source'}
 pol = {t['label']: t for t in policy['tags']}

@@ -77,7 +77,15 @@ def main():
     t0 = time.time()
     src = os.environ['ALLOW']
     allow = set(open(src if os.path.exists(src) else hf_hub_download(PRIV, src, repo_type='dataset')).read().split())
-    shipped = json.loads(urllib.request.urlopen(os.environ['LEARNED']).read())
+    learned_source = os.environ['LEARNED']
+    if os.path.exists(learned_source):
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+        from learned_store import load_learned
+        shipped = load_learned(learned_source)
+    else:
+        shipped = json.loads(urllib.request.urlopen(learned_source).read())
+        if shipped.get('heads') and isinstance(shipped['heads'][0], str):
+            raise SystemExit('LEARNED url is a split index. Point LEARNED at a local learned.json from a checkout.')
     old = {h['label']: h for h in shipped['heads']}
     tags = [t for t in (os.environ.get('TAGS') or ','.join(sorted(set(MAP.values()) & set(old)))).split(',') if t]
     dev_lab, eval_lab = fsd_labels('dev'), fsd_labels('eval')

@@ -7,7 +7,9 @@ written (no per-clip decisions), so the judge set stays a judge set.
 "Shown" is the app's own display decision (normal or faded "maybe"), as eval-tag.ts measures it. A tag the app never
 showed has no precision; it counts as 0 in the macro averages (zero_division=0) and its F1 is 0.
 """
-import argparse, csv, json, os
+import argparse, csv, json, os, sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+from learned_store import load_learned
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 # docs/evaluations/clean-retrain-2026-10-11: heads "kept old, unverified" were refit on FSD50K eval on the Mac, so their
@@ -19,7 +21,7 @@ FSD50K_EVAL_LEAK = {'accordion', 'acoustic guitar', 'cowbell', 'crash cymbal', '
 
 def deciders():
     policy = json.load(open(os.path.join(ROOT, 'src/audio/taggerPolicy.json')))
-    learned = json.load(open(os.path.join(ROOT, 'public/sound-model/learned.json')))
+    learned = load_learned(os.path.join(ROOT, 'public/sound-model/learned.json'))
     short = json.load(open(os.path.join(ROOT, 'public/sound-model/short-clip.json')))
     out = {}
     add = lambda label, s: out.setdefault(label, []).append(s)

@@ -3,7 +3,10 @@
 A head at or above 65% precision AND recall on held-out brands ships as a normal tag; one between
 50% and 65% ships with maybe=true and the app shows it as a faded "maybe" tag.
 Usage: ship-round-heads.py <round-export.json> <report.json>"""
-import json, sys, hashlib, datetime
+import json, sys, datetime
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from learned_store import write_learned, drop_learned_pin
 
 SRC, REPORT = sys.argv[1:3]
 FULL, MAYBE = 0.65, 0.5
@@ -27,12 +30,9 @@ for r in json.load(open(SRC))['results']:
     heads[tag] = (score, head); report.append({**row, 'tag': list(tag), 'ships': True, 'maybe': score < FULL})
 out = [h for _, h in sorted(heads.values(), key=lambda x: -x[0])]
 model = {'version': 1, 'encoder': ENCODER, 'revision': 'trained-heads-2026-10-04-r4', 'examples': [], 'heads': out}
-body = json.dumps(model, separators=(',', ':')) + '\n'
-open('public/sound-model/learned.json', 'w').write(body)
-digest = hashlib.sha256(body.encode()).hexdigest()
-mp = 'public/sound-model/manifest.json'; man = json.load(open(mp)); man['sha256']['learned.json'] = digest
-open(mp, 'w').write(json.dumps(man, indent=2) + '\n')
+digest = write_learned('public/sound-model/learned.json', model)
+drop_learned_pin()
 json.dump({'kind': 'shipped-heads-report-v2', 'builtAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
            'bars': {'full': FULL, 'maybe': MAYBE}, 'learnedSha256': digest, 'heads': report}, open(REPORT, 'w'), indent=1)
 for x in report: print(f"{x['name']:<16}{x['precision']*100:>5.0f}%{x['recall']*100:>5.0f}%  " + (('MAYBE ' if x.get('maybe') else 'SHIPS ') + '/'.join(x['tag']) if x['ships'] else 'no - ' + x['why']))
-print(f"\n{len(out)} heads ({sum(1 for h in out if h.get('maybe'))} maybe) -> learned.json {len(body)//1024} KB, pinned {digest[:12]}")
+print(f"\n{len(out)} heads ({sum(1 for h in out if h.get('maybe'))} maybe) -> split heads, integrity {digest[:12]}")

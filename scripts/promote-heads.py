@@ -2,12 +2,15 @@
 
 Read the scorecard first: a head can be a maybe tag for reasons the score does not show (instrument heads were
 kept as maybe because they transfer poorly to real sample libraries), so heads are promoted by name, never in bulk.
-Re-pins the learned.json hash in manifest.json. REVISION_TAG (default promoted-50) names the revision suffix.
+Does not pin learned.json in manifest.json. REVISION_TAG (default promoted-50) names the revision suffix.
 Usage: promote-heads.py <head-scorecard.json> <label> [label ...]"""
-import json, sys, hashlib, os
+import json, sys, os
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from learned_store import load_learned, write_learned, drop_learned_pin
 
 card = {h['label']: h for h in json.load(open(sys.argv[1]))['heads']}
-path = 'public/sound-model/learned.json'; model = json.load(open(path))
+path = 'public/sound-model/learned.json'; model = load_learned(path)
 for label in sys.argv[2:]:
     c = card.get(label)
     if not c or c.get('should') != 'full': sys.exit(f'{label}: scorecard does not support a full tag ({c and c.get("verdict")})')
@@ -15,7 +18,5 @@ for label in sys.argv[2:]:
     head.pop('maybe', None)
     print(f"{label}: full tag ({c['precision']:.0%} / {c['recall']:.0%}, {c['source']})")
 model['revision'] += '+' + os.environ.get('REVISION_TAG', 'promoted-50')
-body = json.dumps(model, separators=(',', ':')) + '\n'
-open(path, 'w').write(body)
-mp = 'public/sound-model/manifest.json'; man = json.load(open(mp)); man['sha256']['learned.json'] = hashlib.sha256(body.encode()).hexdigest()
-open(mp, 'w').write(json.dumps(man, indent=2) + '\n')
+write_learned(path, model)
+drop_learned_pin()
