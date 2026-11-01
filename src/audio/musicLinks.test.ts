@@ -443,12 +443,21 @@ describe('more like this (soundsLike)', () => {
     for (let i = 1; i < hits.length; i++) expect(hits[i - 1].score).toBeGreaterThanOrEqual(hits[i].score);
     const linked = buildMusicEdges(nodes).filter(e => e.kind === 'similar' && (e.source === 'g0m0' || e.target === 'g0m0'));
     expect(linked.length).toBeLessThan(hits.length);
-    expect(soundsLike('g0m0', nodes, 2)).toHaveLength(2);
+    expect(soundsLike('g0m0', nodes, [], 2)).toHaveLength(2);
   });
   it('is undefined for a clip without a fingerprint and skips clips without one', () => {
     const nodes = [node('bare'), sounding('a', 0, 0), sounding('b', 0, 1), node('other')];
     expect(soundsLike('bare', nodes)).toBeUndefined();
     expect(soundsLike('missing', nodes)).toBeUndefined();
     expect(soundsLike('a', nodes)!.map(h => h.id)).toEqual(['b']);
+  });
+  it('counts only audio files and leaves out exact copies of the seed', () => {
+    const stray: DocNode = { ...sounding('text', 0, 2), fileType: 'markdown' as DocNode['fileType'] };
+    const copy = { ...sounding('copy', 0, 0) };
+    const nodes = [sounding('a', 0, 0), sounding('b', 0, 1), stray, copy];
+    const duplicate = { id: 'a->copy:version', source: 'a', target: 'copy', kind: 'version' as const, weight: 1, evidence: ['Same recording: test.'] };
+    expect(soundsLike('a', nodes)!.map(h => h.id)).toEqual(['copy', 'b']);
+    expect(soundsLike('a', nodes, [duplicate])!.map(h => h.id)).toEqual(['b']);
+    expect(soundsLike('text', nodes)).toBeUndefined();
   });
 });

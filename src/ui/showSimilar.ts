@@ -31,7 +31,8 @@ export function showSimilarTo(seedId: string): number {
  * Returns the number framed, or undefined when the clip has no fingerprint yet.
  */
 export function showSoundsLike(seedId: string): number | undefined {
-  const hits = soundsLike(seedId, useGraphStore.getState().nodes);
+  const { nodes, edges } = useGraphStore.getState();
+  const hits = soundsLike(seedId, nodes, edges);
   if (!hits) return undefined;
   if (hits.length > 0) frame(seedId, hits.map((hit) => hit.id));
   return hits.length;

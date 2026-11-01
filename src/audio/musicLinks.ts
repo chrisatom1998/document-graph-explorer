@@ -188,15 +188,18 @@ export interface SoundAlikeHit { id: string; score: number }
 /** "More like this" for a clip: every other clip in the library ranked by the same sound-alike score that picks the
  * graph's sounds-alike links (CLAP fingerprint, blended with music styles on longer tracks), kept at or above the shipped
  * link floor. Unlike the links, it is not capped at each track's 3 closest, so it shows the wider neighbourhood.
- * No model runs here: it reuses the fingerprints analysis already stored. Undefined means the seed has no fingerprint. */
-export function soundsLike(seedId: string, nodes: DocNode[], limit = 12, floor = SOUND_LINK_POLICY.floor): SoundAlikeHit[] | undefined {
-  const seedNode = nodes.find(n => n.id === seedId && n.audio);
+ * No model runs here: it reuses the fingerprints analysis already stored. Undefined means the seed has no fingerprint.
+ * Like the links, only audio files count, and exact copies of the seed (the graph's duplicate version links in `edges`)
+ * are left out: a copy scores about 1 and would always rank first while telling you nothing new. */
+export function soundsLike(seedId: string, nodes: DocNode[], edges: Edge[] = [], limit = 12, floor = SOUND_LINK_POLICY.floor): SoundAlikeHit[] | undefined {
+  const seedNode = nodes.find(n => n.id === seedId && n.fileType === 'audio' && n.audio);
   if (!seedNode) return;
   const seed = fingerprint(seedNode);
   if (!seed.vector) return;
+  const copies = new Set(edges.filter(e => (e.source === seedId || e.target === seedId) && versionRelation(e) === 'duplicate').map(e => e.source === seedId ? e.target : e.source));
   const hits: SoundAlikeHit[] = [];
   for (const node of nodes) {
-    if (node.id === seedId || !node.audio?.embedding) continue;
+    if (node.id === seedId || node.fileType !== 'audio' || !node.audio?.embedding || copies.has(node.id)) continue;
     const score = soundAlikeScore(seed, fingerprint(node));
     if (score !== undefined && score >= floor) hits.push({ id: node.id, score });
   }

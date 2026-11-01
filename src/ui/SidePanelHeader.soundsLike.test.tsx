@@ -34,6 +34,14 @@ describe('More like this on a clip', () => {
     expect(useUiStore.getState().highlightOwner).toBe('showMe');
   });
 
+  it('says so when no clip clears the sound-alike floor', () => {
+    const a = clip('a', unit([1, 2, 3])), c = clip('c', unit([300, 301, 302]));
+    show(a, [a, c]);
+    fireEvent.click(screen.getByRole('button', { name: /more like this/i }));
+    expect(useUiStore.getState().searchResults).toBeNull();
+    expect(useUiStore.getState().toasts.at(-1)?.message).toMatch(/No clips in this library sound close enough/);
+  });
+
   it('says so when the clip has no fingerprint yet', () => {
     const a = clip('a');
     show(a, [a, clip('b', unit([1]))]);
