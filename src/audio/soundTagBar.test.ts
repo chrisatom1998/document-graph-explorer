@@ -178,6 +178,13 @@ describe('the 50/50 shipping bar', () => {
 
   // Trained from training-only mirror clips (filtered against the private exclude list) and judged once on the fresh test
   // sets with the app-path scorer. docs/evaluations/rimshot-supersaw-heads-2026-10-31.
+  // Trained on FSD50K dev train clips, cutoffs set on FSD50K dev val, judged once on FSD50K eval (no shared uploaders).
+  // reports/dj-tags-plan-2026-11-01 (female P 0.794 / R 0.771, male P 0.620 / R 0.629, no NSynth false alarms).
+  it.each([['female vocal', .76], ['male vocal', .79]] as const)('ships the %s head as a normal tag at its dev-val cutoff', (label, threshold) => {
+    expect(head(label)).toMatchObject({ group: 'production' });
+    expect(head(label).maybe).toBeUndefined();
+    expect(head(label).threshold).toBeCloseTo(threshold, 4);
+  });
   it('ships the rimshot head on short clips at its out-of-fold cutoff', () => {
     expect(head('rimshot')).toMatchObject({ group: 'production', oneShot: true });
     expect(head('rimshot').maybe).toBeUndefined();

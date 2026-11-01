@@ -559,6 +559,32 @@
     },
     {
       "group": "production",
+      "family": "vocal",
+      "label": "female vocal",
+      "source": "voice",
+      "description": "A woman singing.",
+      "aliases": [
+        "female vox",
+        "female vocals"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal-gender"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "male vocal",
+      "source": "voice",
+      "description": "A man singing.",
+      "aliases": [
+        "male vox",
+        "male vocals"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal-gender"
+    },
+    {
+      "group": "production",
       "family": "breath",
       "label": "vocal breath",
       "source": "breath",
