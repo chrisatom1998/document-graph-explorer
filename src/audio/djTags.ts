@@ -89,7 +89,7 @@ export const DJ_PICKER_LABELS: Record<DjGroup, readonly string[]> = { source: pi
  * picker; they just aren't listed until searched for. On 2026-10-11 Chris brought back eleven of them, then the tag keep
  * list (reports/tag-keep-list-2026-10-11) hid syncopated, chorused and flanged again and merged rising and foley hit
  * away, leaving sound effect, percussion hit, staccato, plucked, pulsing and wobbling listed. On 2026-11-01 Chris hid four
- * failing tags we have no realistic training data for (wobbling among them). */
+ * failing tags we have no realistic training data for (wobbling among them), and on 2026-11-02 he hid cowbell. */
 export const DJ_HIDDEN_LABELS: ReadonlySet<string> = new Set([
   ...['bassoon', 'oboe', 'clarinet', 'cello', 'double bass', 'banjo', 'mandolin', 'sitar', 'jaw harp',
     'singing bowl', 'waterphone', 'kalimba', 'environmental sound',
@@ -99,7 +99,9 @@ export const DJ_HIDDEN_LABELS: ReadonlySet<string> = new Set([
     // No realistic training data (Chris, 2026-11-01; supply from docs/evaluations/data-gaps-2026-10-31/per-tag.csv):
     // pitched vocal and vocal-like synth have 0 staged and 0 open Freesound clips, wobbling 7 and 3, and the only
     // other "foghorn" clips are literal ship horns. Filter sweep, synth hit and vocal ad-lib wait for Splice credits.
-    'pitched vocal', 'vocal-like synth', 'foghorn bass'].map(l => `production:${l}`),
+    'pitched vocal', 'vocal-like synth', 'foghorn bass',
+    // Cowbell (Chris, 2026-11-02): 4/17 on the app path and no realistic way to fix it, so it stops counting.
+    'cowbell'].map(l => `production:${l}`),
   ...['sustained', 'rhythmic', 'rolling', 'gliding', 'percussive', 'swelling', 'syncopated', 'chorused', 'flanged',
     'wobbling'].map(l => `character:${l}`),
 ]);
