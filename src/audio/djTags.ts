@@ -30,7 +30,7 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'production:closed hi-hat': { group: 'production', label: 'hi-hat' },
   'production:noise sweep': { group: 'production', label: 'filter sweep' },
   'production:stutter effect': { group: 'production', label: 'glitch effect' },
-  'production:synth drone': { group: 'production', label: 'ambient drone' },
+  'production:synth drone': { group: 'production', label: 'atmospheric pad' },
   'production:synth sequence': { group: 'production', label: 'synth arpeggio' },
   'production:reverse impact': { group: 'production', label: 'reverse effect' },
   'character:saturated': { group: 'character', label: 'distorted' },
@@ -57,7 +57,7 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'production:woodblock': { group: 'production', label: 'clave' },
   'production:hi-hat loop': { group: 'production', label: 'top loop' },
   'production:shaker loop': { group: 'production', label: 'percussion loop' },
-  'production:texture': { group: 'production', label: 'ambient drone' },
+  'production:texture': { group: 'production', label: 'atmospheric pad' },
   'character:echoing': { group: 'character', label: 'reverberant' },
   'character:rising': { group: 'production', label: 'riser' },
   // Chris, 2026-11-02 ("Guitar + test 3 more", reports/tag-merge-2026-11-02): every acoustic and electric guitar test clip
@@ -65,6 +65,13 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   // score does not change. The two heads failed alone, mostly on bass guitar notes.
   'source:acoustic guitar': { group: 'source', label: 'guitar' },
   'source:electric guitar': { group: 'source', label: 'guitar' },
+  // Same pick, measured before shipping ($0, reports/tag-merge-2026-11-02). Tested taggers decide hi-hat and percussion
+  // inside their excerpt, so those rows only gain the Listen clips of the old names (hi-hat 4 of 6 found, percussion 4 of
+  // 5, no false alarms). Atmospheric pad with ambient drone folded in: free-tag-set P 0.96 R 0.41 (was P 0.92 R 0.57).
+  // Synth drone and texture point straight at atmospheric pad because merges are looked up one step only.
+  'production:open hi-hat': { group: 'production', label: 'hi-hat' },
+  'production:percussion hit': { group: 'source', label: 'percussion' },
+  'production:ambient drone': { group: 'production', label: 'atmospheric pad' },
 };
 /** Background-ambience tags that also show the umbrella "ambience" tag (Chris, 2026-11-01: Splice, Beatport Sounds and
  * Cymatics all file these under one "ambience" word). The child tags stay and keep their own tested scores. On the full
