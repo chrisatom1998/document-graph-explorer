@@ -185,6 +185,13 @@ describe('the 50/50 shipping bar', () => {
     expect(head(label).maybe).toBeUndefined();
     expect(head(label).threshold).toBeCloseTo(threshold, 4);
   });
+  // Trained on FSD50K dev train + AudioSet + Freesound training clips, cutoff set on FSD50K dev val, judged once on FSD50K
+  // eval: P 0.641 / R 0.843, no NSynth false alarms. reports/bass-acapella-rap-2026-11-02.
+  it('ships the acapella head as a normal tag at its dev-val cutoff', () => {
+    expect(head('acapella')).toMatchObject({ group: 'production' });
+    expect(head('acapella').maybe).toBeUndefined();
+    expect(head('acapella').threshold).toBeCloseTo(.92, 4);
+  });
   it('ships the rimshot head on short clips at its out-of-fold cutoff', () => {
     expect(head('rimshot')).toMatchObject({ group: 'production', oneShot: true });
     expect(head('rimshot').maybe).toBeUndefined();

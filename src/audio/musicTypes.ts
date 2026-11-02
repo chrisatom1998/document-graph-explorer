@@ -72,7 +72,10 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // shares no uploader with the tag-baseline judge set (docs/evaluations/tag-fix-2026-10-31).
 // 143/144: trained female vocal and male vocal heads (FSD50K dev train, cutoffs on dev val, judged once on FSD50K eval:
 // female P 0.794 / R 0.771, male P 0.620 / R 0.629, no NSynth false alarms; reports/dj-tags-plan-2026-11-01).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 144 : 143;
+// 145/146: trained acapella head (singing with no instruments; FSD50K dev train + AudioSet + Freesound training clips,
+// cutoff on FSD50K dev val, judged once on FSD50K eval: P 0.641 / R 0.843, no NSynth false alarms;
+// reports/bass-acapella-rap-2026-11-02).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 146 : 145;
 export interface InstrumentEstimate {
   label: string;
   score: number;
