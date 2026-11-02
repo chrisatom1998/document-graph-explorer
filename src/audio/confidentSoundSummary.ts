@@ -1,5 +1,5 @@
 import { confirmedInstrumentList, sourceReviewAllows } from './instrumentEvidence';
-import { AMBIENCE_KIDS, AMBIENCE_UMBRELLA, canonicalDjLabel, MERGED_DJ_LABELS, mergedDjLabel, type DjGroup } from './djTags';
+import { AMBIENCE_KIDS, AMBIENCE_UMBRELLA, areHiddenSoundTagsShown, canonicalDjLabel, DJ_HIDDEN_LABELS, MERGED_DJ_LABELS, mergedDjLabel, type DjGroup } from './djTags';
 import { fusionPresentation } from './fusionPresentation';
 import type { MusicAnalysis } from './musicTypes';
 import { dimensionLabels, type Dimension, type Interval } from './recognition';
@@ -229,7 +229,7 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   if(voiceHeads.length&&Math.max(...voiceHeads)<FULL_MIX_VOICE_VETO&&!taggerShown.has('source:voice')&&result.get('source:voice')?.origin==='model estimate')result.delete('source:voice');
   const testedBest=(s:DisplaySound)=>Math.max(...s.scores!.filter(x=>TESTED_SCORES.has(x.model)).map(x=>x.score));
   const raised=(s:DisplaySound)=>fullMix&&s.dimension==='source'&&FULL_MIX_MIN_TESTED_SCORE[s.label]!==undefined&&testedBest(s)<FULL_MIX_MIN_TESTED_SCORE[s.label];
-  return shortPianoVeto(ambienceUmbrella(foldMerged([...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
+  return withoutHiddenTags(shortPianoVeto(ambienceUmbrella(foldMerged([...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
     :HIDDEN_UNTIL_TESTED.has(s.label)?[]
     :s.coverageUnknown?[s]
     :s.scores?.some(x=>TESTED_SCORES.has(x.model))?raised(s)?[]:[tiered(s,m=>TESTED_SCORES.has(m))]
@@ -238,7 +238,13 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     // Merged estimates obey the destination's hidden-label policy and listener choices.
     (dimension,label)=>!HIDDEN_UNTIL_TESTED.has(label)&&allowed(dimension,label)&&(dimension==='source'?confirmed===undefined:audio.confirmedDjTags===undefined)),
     // The umbrella is an estimate under ambience, so it obeys the same rules as any effect estimate.
-    ()=>!HIDDEN_UNTIL_TESTED.has(AMBIENCE_UMBRELLA.label)&&allowed(DIMENSION_OF[AMBIENCE_UMBRELLA.group],AMBIENCE_UMBRELLA.label)&&audio.confirmedDjTags===undefined), audio);
+    ()=>!HIDDEN_UNTIL_TESTED.has(AMBIENCE_UMBRELLA.label)&&allowed(DIMENSION_OF[AMBIENCE_UMBRELLA.group],AMBIENCE_UMBRELLA.label)&&audio.confirmedDjTags===undefined), audio));
+}
+/** With the hidden-tags switch off, model estimates of a DJ_HIDDEN_LABELS tag are dropped; hand-confirmed tags stay. */
+function withoutHiddenTags(sounds:DisplaySound[]):DisplaySound[]{
+  if(areHiddenSoundTagsShown())return sounds;
+  const group=(d:Dimension):DjGroup|undefined=>d==='source'?'source':d==='effect'?'production':d==='character'?'character':undefined;
+  return sounds.filter(s=>{const g=group(s.dimension);return s.origin==='confirmed by you'||!g||!DJ_HIDDEN_LABELS.has(`${g}:${s.label}`);});
 }
 /** Any shown background-ambience tag (AMBIENCE_KIDS) also shows "ambience", unless ambience already shows at least as
  * strongly. The child tag stays. A listener who rejected ambience, or confirmed their sound tags, gets no umbrella;
