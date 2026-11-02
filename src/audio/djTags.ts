@@ -89,9 +89,10 @@ export const DJ_PICKER_LABELS: Record<DjGroup, readonly string[]> = { source: pi
  * picker; they just aren't listed until searched for. On 2026-10-11 Chris brought back eleven of them, then the tag keep
  * list (reports/tag-keep-list-2026-10-11) hid syncopated, chorused and flanged again and merged rising and foley hit
  * away, leaving sound effect, percussion hit, staccato, plucked, pulsing and wobbling listed. On 2026-11-01 Chris hid four
- * failing tags we have no realistic training data for (wobbling among them), and on 2026-11-02 he hid cowbell. */
+ * failing tags we have no realistic training data for (wobbling among them), and on 2026-11-02 he hid cowbell and unhid
+ * bassoon (its RWC refit passes 60/60 on both held-out judges, docs/evaluations/rwc-woodwind-heads-2026-10-30). */
 export const DJ_HIDDEN_LABELS: ReadonlySet<string> = new Set([
-  ...['bassoon', 'oboe', 'clarinet', 'cello', 'double bass', 'banjo', 'mandolin', 'sitar', 'jaw harp',
+  ...['oboe', 'clarinet', 'cello', 'double bass', 'banjo', 'mandolin', 'sitar', 'jaw harp',
     'singing bowl', 'waterphone', 'kalimba', 'environmental sound',
     // Tag keep list (Chris, 2026-10-11): rare in DJ sample libraries and untested or unlearnable here.
     'ukulele', 'steel guitar', 'steel drum', 'tabla'].map(l => `source:${l}`),

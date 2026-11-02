@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { confidentSoundSummary, SOUND_TAG_BAR } from './confidentSoundSummary';
+import { DJ_HIDDEN_LABELS } from './djTags';
 import type { MusicAnalysis } from './musicTypes';
 
 /** RWC woodwind refit (2026-10-30): bassoon refit with RWC bassoon notes, fit on training rows only and judged once on the
@@ -36,6 +37,10 @@ describe('RWC woodwind refit', () => {
       expect(s.positives).toBeGreaterThanOrEqual(5);
       expect(Math.min(s.precision!, s.recall)).toBeGreaterThanOrEqual(SOUND_TAG_BAR);
     }
+  });
+
+  it('lists bassoon in the tag picker again (unhidden by Chris, 2026-11-02)', () => {
+    expect(DJ_HIDDEN_LABELS.has('source:bassoon')).toBe(false);
   });
 
   it.each(['flute', 'oboe'])('leaves %s unchanged after it failed the rule', label => {
