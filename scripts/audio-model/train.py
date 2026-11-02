@@ -21,6 +21,7 @@ import numpy as np
 warnings.filterwarnings('ignore')
 import torch
 import torch.nn.functional as F
+import fx_aug  # noqa: E402  (same folder)
 
 EAT = os.path.abspath(os.environ.get('EFFICIENTAT', 'EfficientAT'))
 sys.path.insert(0, EAT)
@@ -127,7 +128,12 @@ def main():
     ap.add_argument('--soft', help="round 11 teacher soft labels (round11/build-soft.py JSON: {'items': {id: {tag: p}}})")
     ap.add_argument('--absent-fix', help="coverage #2: JSON {'drop': {id: [tag]}, 'add': {id: [tag]}, 'absent': {id: [tag]}} (coverage/labelfix/build-absent-fix.py, coverage/merge-absent.py); "
                     'drop sets a likely-present weak absence to weight 0, add makes it a full-weight positive. Default off')
+    ap.add_argument('--fx', type=float, default=0.0, help='effects augmentation on the log-mel (fx_aug.py: EQ, pitch, reverb, compression); '
+                    'base probability per clip, 0 = off (default)')
+    ap.add_argument('--mixstyle', type=float, default=0.0, help='Freq-MixStyle share of each batch (fx_aug.py), 0 = off (default)')
+    ap.add_argument('--no-masks', action='store_true', help='drop the SpecAugment time/frequency masks (EfficientAT found masking hurt mAP)')
     args = ap.parse_args()
+    if args.fx or args.mixstyle or args.no_masks: print(f'augmentation: fx {args.fx}, mixstyle {args.mixstyle}, masks {"off" if args.no_masks else "on"}', flush=True)
     global DRUMS_ANY
     DRUMS_ANY = not args.drums_kit_only; print(f'drums labels: {"any drum sound (drum_sounds.py)" if DRUMS_ANY else "kit only (old)"}', flush=True)
     if args.merge:
@@ -211,9 +217,10 @@ def main():
     def augment(x):
         x = x + torch.from_numpy((2 * np.log(10 ** (rng.uniform(-6, 6, (len(x), 1, 1)) / 20)) / 5).astype(np.float32))  # gain (mel is (log + 4.5) / 5)
         x = torch.stack([torch.roll(v, int(rng.integers(-50, 50)), dims=-1) for v in x])                         # +-0.5 s
-        for v in x:                                                                                                # SpecAugment
-            f = int(rng.integers(0, 24)); f0 = int(rng.integers(0, 128 - f)); v[f0:f0 + f] = v.mean()
-            t = int(rng.integers(0, 80)); t0 = int(rng.integers(0, FRAMES - t)); v[:, t0:t0 + t] = v.mean()
+        if not args.no_masks:
+            for v in x:                                                                                            # SpecAugment
+                f = int(rng.integers(0, 24)); f0 = int(rng.integers(0, 128 - f)); v[f0:f0 + f] = v.mean()
+                t = int(rng.integers(0, 80)); t0 = int(rng.integers(0, FRAMES - t)); v[:, t0:t0 + t] = v.mean()
         return x
 
     def evaluate():
@@ -236,7 +243,9 @@ def main():
             for si, src in enumerate(sources):
                 idx = np.array([i for sj, i in picked if sj == si], int)
                 if len(idx): xs.append(mels(src, idx)); ys.append(src['y'][idx]); ws.append(src['w'][idx]); part.append(len(idx))
-            x = augment(torch.cat(xs)).unsqueeze(1).to(dev); yt = torch.from_numpy(np.concatenate(ys)).to(dev); wt = torch.from_numpy(np.concatenate(ws)).to(dev)
+            x = augment(torch.cat(xs)).to(dev)
+            if args.fx > 0 or args.mixstyle > 0: x = fx_aug.apply(x, rng, args.fx, args.mixstyle)          # --fx / --mixstyle, on the device (off by default)
+            x = x.unsqueeze(1); yt = torch.from_numpy(np.concatenate(ys)).to(dev); wt = torch.from_numpy(np.concatenate(ws)).to(dev)
             if args.mixup:
                 # Mix within a source only: sources label different tags, and a pair is scored only where both clips label it.
                 starts = np.cumsum([0] + part[:-1]); p2 = torch.from_numpy(np.concatenate([st + rng.permutation(n) for st, n in zip(starts, part)])).to(dev)

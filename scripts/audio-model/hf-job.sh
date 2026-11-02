@@ -279,6 +279,10 @@ if [ -n "$TRAIN_DROP" ]; then EXTRA+=(--drop "$TRAIN_DROP"); fi
 # A RECALL_TAGS entry may be <tag>:<weight> to weigh that tag on its own (e.g. DJ priority tags higher).
 if [ -n "${RECALL_TAGS:-}" ]; then EXTRA+=(--rare-tags "bass,organ,cello,trumpet,violin,saxophone,$(echo "$RECALL_TAGS" | sed -E 's/:[0-9.]+(,|$)/\1/g')" --pos-tags "$RECALL_TAGS" --pos-weight "${POS_WEIGHT:-1}"); fi
 if [ "${MERGE_ONLY:-0}" = 1 ]; then EXTRA+=(--merge $S/round12/round12.json); fi   # round 13: round 12's merges without its oversampling
+# Effects augmentation (Nov 2 2026, fx_aug.py): FX_AUG=<base probability>, MIXSTYLE=<batch share>, NO_MASKS=1 drops SpecAugment masks. Off by default.
+if [ -n "${FX_AUG:-}" ]; then EXTRA+=(--fx "$FX_AUG"); fi
+if [ -n "${MIXSTYLE:-}" ]; then EXTRA+=(--mixstyle "$MIXSTYLE"); fi
+if [ "${NO_MASKS:-0}" = 1 ]; then EXTRA+=(--no-masks); fi
 python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --rare-repeat "${RARE_REPEAT:-1}" --repeat "${SOURCE_REPEAT:-}" --threads 8 --hours "$HOURS"
 # Which data trained this model, so it can be rebuilt without any one source (chris-drive rows keep source=chris-drive).
 python3 - "${EXTRA[@]}" <<'EOF'
