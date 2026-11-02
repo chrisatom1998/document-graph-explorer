@@ -60,6 +60,11 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'production:texture': { group: 'production', label: 'ambient drone' },
   'character:echoing': { group: 'character', label: 'reverberant' },
   'character:rising': { group: 'production', label: 'riser' },
+  // Chris, 2026-11-02 ("Guitar + test 3 more", reports/tag-merge-2026-11-02): every acoustic and electric guitar test clip
+  // is already labelled guitar, and the tested guitar tagger decides the merged names inside its excerpt, so the guitar
+  // score does not change. The two heads failed alone, mostly on bass guitar notes.
+  'source:acoustic guitar': { group: 'source', label: 'guitar' },
+  'source:electric guitar': { group: 'source', label: 'guitar' },
 };
 /** Background-ambience tags that also show the umbrella "ambience" tag (Chris, 2026-11-01: Splice, Beatport Sounds and
  * Cymatics all file these under one "ambience" word). The child tags stay and keep their own tested scores. On the full

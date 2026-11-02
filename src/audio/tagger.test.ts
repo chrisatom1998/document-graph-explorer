@@ -146,6 +146,14 @@ describe('trained tagger display', () => {
     expect(shown.filter(s => s.dimension === 'effect').map(s => s.label)).toEqual(['hi-hat']);
     expect(shown.find(s => s.label === 'hi-hat')!.scores).toMatchObject([{ model: TAGGER_SCORE }]);
   });
+  it('decides guitar over the merged acoustic and electric guitar heads', () => {
+    const sources = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'source').map(s => s.label).sort();
+    const heads = ['acoustic guitar', 'electric guitar'].map(label => ({ group: 'source' as const, label, score: .99, model: 'Trained head' as const }));
+    expect(sources(track(4, { 'cat:guitar': .01 }, heads))).toEqual([]);
+    const shown = confidentSoundSummary(track(4, { 'cat:guitar': threshold('cat:guitar') }, heads)).filter(s => s.dimension === 'source');
+    expect(shown.map(s => s.label)).toEqual(['guitar']);
+    expect(shown[0].scores).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
   it('decides siren, flute, marimba and vibraphone over their CLAP heads, and guitar and violin on short clips', () => {
     const shownLabels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
     const heads = [{ group: 'production' as const, label: 'siren', score: .9, model: 'Trained head' as const },
