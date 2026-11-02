@@ -1,0 +1,75 @@
+{
+ "train_clips": {
+  "fsd50k-train": 4694,
+  "egmd": 1238,
+  "audioset-a": 2168
+ },
+ "train_seconds": 172,
+ "shipped": {
+  "micro_p": 0.624,
+  "micro_r": 0.635,
+  "micro_f1": 0.629,
+  "macro_p": 0.709,
+  "macro_r": 0.629,
+  "macro_f1": 0.641,
+  "pass_60_30": 33
+ },
+ "eat_heads_alone": {
+  "micro_p": 0.528,
+  "micro_r": 0.542,
+  "micro_f1": 0.535,
+  "macro_p": 0.6,
+  "macro_r": 0.499,
+  "macro_f1": 0.521,
+  "pass_60_30": 24
+ },
+ "shipped_plus_eat": {
+  "micro_p": 0.754,
+  "micro_r": 0.595,
+  "micro_f1": 0.665,
+  "macro_p": 0.76,
+  "macro_r": 0.591,
+  "macro_f1": 0.644,
+  "pass_60_30": 37
+ },
+ "rules_changed": {
+  "foley": "and eat>=0.850",
+  "clap": "replace eat>=0.787",
+  "wind ambience": "replace eat>=0.639",
+  "bell": "and eat>=0.730",
+  "piano": "and eat>=0.718",
+  "hi-hat": "and eat>=0.188",
+  "machine ambience": "or eat>=0.915",
+  "tambourine": "or eat>=0.310",
+  "spoken phrase": "replace eat>=0.978",
+  "water ambience": "and eat>=0.874",
+  "drums": "and eat>=0.040",
+  "voice": "replace eat>=0.786",
+  "animal sound": "replace eat>=0.355",
+  "bass guitar": "or eat>=0.973",
+  "strings": "or eat>=0.531",
+  "kick": "replace eat>=0.799",
+  "organ": "or eat>=0.819",
+  "whisper": "and eat>=0.143",
+  "breath": "and eat>=0.950",
+  "crash cymbal": "and eat>=0.007",
+  "rain ambience": "and eat>=0.877",
+  "vocal laugh": "and eat>=0.800",
+  "electric guitar": "or eat>=0.404",
+  "mallet instrument": "and eat>=0.009",
+  "crowd ambience": "replace eat>=0.793",
+  "environmental sound": "or eat>=0.898",
+  "vocal scream": "and eat>=0.796",
+  "cymbal": "and eat>=0.207",
+  "guitar": "replace eat>=0.432",
+  "gong": "or eat>=0.244",
+  "percussion": "or eat>=0.746",
+  "acoustic guitar": "or eat>=0.726"
+ },
+ "no_head": [
+  "glockenspiel",
+  "harmonica",
+  "vinyl scratch",
+  "tabla"
+ ]
+}

@@ -1,0 +1,47 @@
+tag,support,baseline_P,baseline_R,baseline_F1,baseline_60_30,eat_P,eat_R,eat_F1,eat_60_30,eat_fails_on,rule,change
+foley,20,0.19,0.4,0.258,False,0.625,0.25,0.357,False,recall,and eat>=0.850,
+clap,21,0.833,0.238,0.37,False,0.333,0.476,0.392,False,precision,replace eat>=0.787,
+wind ambience,20,0.323,0.5,0.392,False,0.259,0.35,0.298,False,precision,replace eat>=0.639,
+vocal shout,20,0.36,0.45,0.4,False,0.36,0.45,0.4,False,precision,keep,
+bell,26,0.423,0.423,0.423,False,0.615,0.308,0.41,True,,and eat>=0.730,newly passes
+piano,20,0.294,0.75,0.423,False,0.6,0.6,0.6,True,,and eat>=0.718,newly passes
+hi-hat,20,0.583,0.35,0.438,False,0.833,0.25,0.385,False,recall,and eat>=0.188,
+snare,24,0.667,0.333,0.444,True,0.667,0.333,0.444,True,,keep,
+machine ambience,20,0.5,0.45,0.474,False,0.5,0.5,0.5,False,precision,or eat>=0.915,
+tambourine,15,0.833,0.333,0.476,True,0.857,0.4,0.545,True,,or eat>=0.310,
+spoken phrase,34,0.722,0.382,0.5,True,0.667,0.059,0.108,False,recall,replace eat>=0.978,newly fails
+water ambience,20,0.375,0.75,0.5,False,0.625,0.5,0.556,True,,and eat>=0.874,newly passes
+drums,63,0.361,0.889,0.514,False,0.849,0.714,0.776,True,,and eat>=0.040,newly passes
+bird ambience,20,0.727,0.4,0.516,True,0.727,0.4,0.516,True,,keep,
+voice,99,0.536,0.525,0.531,False,0.873,0.556,0.679,True,,replace eat>=0.786,newly passes
+animal sound,31,0.714,0.484,0.577,True,0.576,0.613,0.594,False,precision,replace eat>=0.355,newly fails
+bass guitar,20,0.647,0.55,0.595,True,0.647,0.55,0.595,True,,or eat>=0.973,
+strings,20,0.688,0.55,0.611,True,0.609,0.7,0.651,True,,or eat>=0.531,
+kick,21,0.583,0.667,0.622,False,0.8,0.381,0.516,True,,replace eat>=0.799,newly passes
+organ,19,0.769,0.526,0.625,True,0.647,0.579,0.611,True,,or eat>=0.819,
+whisper,20,0.536,0.75,0.625,False,0.75,0.75,0.75,True,,and eat>=0.143,newly passes
+breath,21,0.706,0.571,0.632,True,0.818,0.429,0.562,True,,and eat>=0.950,
+glockenspiel,20,0.909,0.5,0.645,True,0.909,0.5,0.645,True,,keep,
+crash cymbal,19,0.786,0.579,0.667,True,0.786,0.579,0.667,True,,and eat>=0.007,
+rain ambience,20,0.64,0.8,0.711,True,0.923,0.6,0.727,True,,and eat>=0.877,
+vocal laugh,20,0.737,0.7,0.718,True,0.917,0.55,0.687,True,,and eat>=0.800,
+electric guitar,20,0.812,0.65,0.722,True,0.565,0.65,0.605,False,precision,or eat>=0.404,newly fails
+mallet instrument,22,0.68,0.773,0.723,True,0.708,0.773,0.739,True,,and eat>=0.009,
+harp,20,0.923,0.6,0.727,True,0.923,0.6,0.727,True,,keep,
+siren,20,0.667,0.8,0.727,True,0.667,0.8,0.727,True,,keep,
+whoosh,20,0.923,0.6,0.727,True,0.923,0.6,0.727,True,,keep,
+crowd ambience,20,0.778,0.7,0.737,True,0.739,0.85,0.791,True,,replace eat>=0.793,
+environmental sound,46,0.857,0.652,0.741,True,0.786,0.717,0.75,True,,or eat>=0.898,
+vocal scream,20,1.0,0.6,0.75,True,1.0,0.5,0.667,True,,and eat>=0.796,
+harmonica,20,0.633,0.95,0.76,True,0.633,0.95,0.76,True,,keep,
+cymbal,38,0.648,0.921,0.761,True,0.833,0.526,0.645,True,,and eat>=0.207,
+guitar,59,0.754,0.78,0.767,True,0.93,0.678,0.784,True,,replace eat>=0.432,
+gong,20,0.875,0.7,0.778,True,0.875,0.7,0.778,True,,or eat>=0.244,
+percussion,115,0.928,0.67,0.778,True,0.902,0.722,0.802,True,,or eat>=0.746,
+finger snap,20,1.0,0.65,0.788,True,1.0,0.65,0.788,True,,keep,
+vinyl scratch,20,0.842,0.8,0.821,True,0.842,0.8,0.821,True,,keep,
+acoustic guitar,20,1.0,0.75,0.857,True,1.0,0.8,0.889,True,,or eat>=0.726,
+cowbell,20,1.0,0.75,0.857,True,1.0,0.75,0.857,True,,keep,
+trumpet,20,1.0,0.8,0.889,True,1.0,0.8,0.889,True,,keep,
+accordion,19,0.857,0.947,0.9,True,0.857,0.947,0.9,True,,keep,
+tabla,6,1.0,1.0,1.0,True,1.0,1.0,1.0,True,,keep,

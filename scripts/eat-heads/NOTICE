@@ -1,0 +1,14 @@
+EAT-heads candidate (scripts/eat-heads/). Offline candidate only: not bundled with the app and not read by it.
+
+Encoder (not redistributed here; downloaded from Hugging Face at a pinned revision when you run extract_eat.py):
+  EAT: Efficient Audio Transformer, EAT-base epoch 30, fine-tuned on AudioSet-2M.
+  Code:    MIT License, Copyright (c) 2024 Wenxi Chen
+           https://github.com/cwx-worst-one/EAT (LICENSE: https://github.com/cwx-worst-one/EAT/blob/main/LICENSE)
+  Weights: MIT License
+           https://huggingface.co/worstchan/EAT-base_epoch30_finetune_AS2M (revision 60d61e8b2e9e5ba3be6860285de80cb7d625ccbb)
+  Full MIT text: scripts/licenses/EAT-MIT.txt
+
+Trained heads (candidate/eat-heads-2026-11-01.json):
+  Treat as CC BY-NC-SA 4.0 (non-commercial, share-alike). They were trained on FSD50K clips (per-clip Creative Commons licences,
+  including CC BY-NC; https://zenodo.org/records/4060432), E-GMD v2 (CC BY 4.0; https://magenta.tensorflow.org/datasets/e-gmd)
+  and AudioSet clips (labels CC BY 4.0; audio from YouTube, used for training only). No audio is stored in this repo.

@@ -352,6 +352,8 @@ the CLAP model is Apache-2.0, and the MTG-Jamendo models and the trained sound t
 distributing builds; commercial use of the MTG models needs separate permission. Provenance notices
 live in `public/jamendo-model/NOTICE`, `public/music-model/NOTICE.md`, `public/sound-model/NOTICE`
 and the generated `audio-runtime/NOTICE.txt`.
+The offline EAT-heads candidate in `scripts/eat-heads/` (not bundled) uses EAT, whose code and weights are MIT,
+and its trained heads count as CC BY-NC-SA; see `scripts/eat-heads/NOTICE`.
 
 ## More documentation
 
