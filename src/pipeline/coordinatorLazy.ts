@@ -10,6 +10,7 @@ export {
   outdatedAudioIds,
   setAudioInstruments,
   setAudioReview,
+  setAudioTagFix,
   setAudioDjTags,
   loadDemoCorpus,
   rebuildEmbeddings,

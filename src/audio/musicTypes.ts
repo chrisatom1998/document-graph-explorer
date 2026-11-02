@@ -7,6 +7,7 @@ import { MERGED_DJ_LABELS, mergedDjLabel, sanitizeConfirmedDjTags, type Confirme
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
+import { sanitizeSoundTagFixes, type SoundTagFix } from './soundTagFixes';
 import { sanitizeStructure, type TrackStructure } from './structure';
 import { sanitizeVersionPrint } from './versionPrint';
 import { sanitizeTimbre, type TimbreSummary } from './timbre';
@@ -65,9 +66,18 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 139/140: the tagger decides reese bass on clips up to 30 s at 0.1219, a cutoff set on 1,474 fresh non-test, non-training
 // Freesound clips (32 reese) with calibrate.py's own rule, before any test clip was scored (Listen set 2/0, free-tag-set 0 false
 // alarms of 219). Only 5 positives judge it: recheck first when more labelled clips arrive.
-// 141/142: a reference-sound (neighbour) head for bitcrushed, cutoff set from training clips only (1% false alarms on
+// 141/142: the tagger decides cymbal on clips of any length up to 30 s (the old 10 s
+// minimum and the window rule left every shorter clip and most longer ones with no decision), plus wind ambience and
+// vocal shout from its own outputs; foley and hi-hat cutoffs move. Cutoffs picked on an FSD50K dev-val tuning set that
+// shares no uploader with the tag-baseline judge set (docs/evaluations/tag-fix-2026-10-31).
+// 143/144: trained female vocal and male vocal heads (FSD50K dev train, cutoffs on dev val, judged once on FSD50K eval:
+// female P 0.794 / R 0.771, male P 0.620 / R 0.629, no NSynth false alarms; reports/dj-tags-plan-2026-11-01).
+// 145/146: trained acapella head (singing with no instruments; FSD50K dev train + AudioSet + Freesound training clips,
+// cutoff on FSD50K dev val, judged once on FSD50K eval: P 0.641 / R 0.843, no NSynth false alarms;
+// reports/bass-acapella-rap-2026-11-02).
+// 147/148: a reference-sound (neighbour) head for bitcrushed, cutoff set from training clips only (1% false alarms on
 // held-out training negatives); fresh test sets 0/0 -> 1.00/0.80 on the free-tag-set (docs/evaluations/ref-blend-2026-10-31).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 142 : 141;
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 148 : 147;
 export interface InstrumentEstimate {
   label: string;
   score: number;
@@ -88,6 +98,8 @@ export interface MusicAnalysis {
   tagger?: TaggerAnalysis;
   recognition?: Recognition;
   soundReviews?: SoundReview[];
+  /** Listener fixes from the "Not sure? Fix it" chip; display only, kept across reanalysis like the other corrections. */
+  soundTagFixes?: SoundTagFix[];
   stage?: 'preview';
   version: 1 | 2;
   tempoRevision?: number;
@@ -148,6 +160,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   out.recognition = sanitizeRecognition(m.recognition, out.durationSeconds);
   if (!out.recognition) delete out.recognition;
   if (Array.isArray(m.soundReviews)) out.soundReviews = sanitizeSoundReviews(m.soundReviews);
+  const soundTagFixes = sanitizeSoundTagFixes(m.soundTagFixes);
+  if (soundTagFixes?.length) out.soundTagFixes = soundTagFixes;
   if (m.stage === 'preview') out.stage = 'preview';
   if (Array.isArray(m.confirmedInstruments)) out.confirmedInstruments = [...new Set(m.confirmedInstruments.filter((label): label is string => typeof label === 'string' && sourceLabels.includes(label)))];
   const confirmedDjTags = sanitizeConfirmedDjTags(m.confirmedDjTags);

@@ -58,7 +58,7 @@
    "output": "cymbals",
    "label": "cymbals",
    "dimension": "source",
-   "threshold": 0.6699,
+   "threshold": 0.45,
    "decides": [
     "cymbals",
     "cymbal"
@@ -70,9 +70,9 @@
     }
    ],
    "tested": true,
-   "minSeconds": 10,
    "long": {
-    "rule": "detectors"
+    "rule": "detectors",
+    "afterSeconds": 30
    }
   },
   {
@@ -369,7 +369,7 @@
    "output": "cat:foley",
    "label": "foley",
    "dimension": "source",
-   "threshold": 0.2941,
+   "threshold": 0.15,
    "decides": [
     "foley"
    ],
@@ -492,7 +492,7 @@
    "output": "cat:hi-hat",
    "label": "hi-hat",
    "dimension": "effect",
-   "threshold": 0.3663,
+   "threshold": 0.15,
    "decides": [
     "hi-hat"
    ],
@@ -837,6 +837,34 @@
    "threshold": 0.905,
    "decides": [
     "choir"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:wind ambience",
+   "label": "wind ambience",
+   "dimension": "effect",
+   "threshold": 0.05,
+   "decides": [
+    "wind ambience"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:vocal shout",
+   "label": "vocal shout",
+   "dimension": "effect",
+   "threshold": 0.03,
+   "decides": [
+    "vocal shout"
    ],
    "tested": true,
    "long": {

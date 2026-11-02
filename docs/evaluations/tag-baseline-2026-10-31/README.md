@@ -17,6 +17,10 @@ from one run on 2026-10-31 (logs listed at the end).
 - Only IDs, labels and metadata are committed (`manifest.csv`, `items.json`). **No audio is in the repo.**
   `scripts/tag-baseline/fetch.sh` downloads the audio again from the pinned revision, outside the repo.
 
+**Relabelled in step 2 (same day, after Chris defined drums as any drum sound):** `items.json` and `manifest.csv` now
+also count FSD50K `Drum`, `Bass_drum`, `Snare_drum` and `Tabla` as drums. The 681 clips are the same; 29 gain a drums
+label. The drums row below used the old labels (kit only); see `docs/evaluations/tag-fix-2026-10-31`.
+
 **This is a judge set.** Evaluate on it only. Never train on it, pick thresholds on it, or upload its audio anywhere.
 To tune in step 2, use the pick/check halves in the report, or a separate set.
 

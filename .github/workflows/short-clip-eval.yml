@@ -8,6 +8,8 @@ on:
   workflow_dispatch:
 
 env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
   ONNXRUNTIME_NODE_INSTALL: skip
   BASE_REF: d1b7b05928804975802348288f29384ce5a40245
   MUSIC_MODEL_PATHS: |
