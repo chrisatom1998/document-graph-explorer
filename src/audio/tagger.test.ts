@@ -146,6 +146,19 @@ describe('trained tagger display', () => {
     expect(shown.filter(s => s.dimension === 'effect').map(s => s.label)).toEqual(['hi-hat']);
     expect(shown.find(s => s.label === 'hi-hat')!.scores).toMatchObject([{ model: TAGGER_SCORE }]);
   });
+  it('decides hi-hat and percussion over the merged open hi-hat and percussion hit heads', () => {
+    const heads = [{ group: 'production' as const, label: 'open hi-hat', score: .99, model: 'Trained head' as const },
+      { group: 'production' as const, label: 'percussion hit', score: .99, model: 'Trained head' as const }];
+    const labels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
+    expect(labels(track(4, { 'cat:hi-hat': .01, 'cat:percussion': .01 }, heads))).toEqual([]);
+    const shown = confidentSoundSummary(track(4, { 'cat:hi-hat': threshold('cat:hi-hat'), 'cat:percussion': threshold('cat:percussion') }, heads));
+    expect(shown.map(s => s.label).sort()).toEqual(['hi-hat', 'percussion']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('shows the ambient drone head as atmospheric pad', () => {
+    const heads = [{ group: 'production' as const, label: 'ambient drone', score: .99, model: 'Trained head' as const }];
+    expect(confidentSoundSummary(track(4, {}, heads)).filter(s => s.dimension === 'effect').map(s => s.label)).toEqual(['atmospheric pad']);
+  });
   it('decides guitar over the merged acoustic and electric guitar heads', () => {
     const sources = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'source').map(s => s.label).sort();
     const heads = ['acoustic guitar', 'electric guitar'].map(label => ({ group: 'source' as const, label, score: .99, model: 'Trained head' as const }));
