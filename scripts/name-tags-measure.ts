@@ -4,10 +4,10 @@
 // 2) Coverage on sample-pack paths (training manifest): how often a file gets any name tag. Pack labels there were
 //    written from the path by rule, so agreement would be circular; only coverage is reported.
 // LOCAL ONLY: reads test labels from the project folder; writes aggregate counts, never clip ids or titles.
-// Usage (repo root): npx vite-node scripts/name-tags/measure.ts <fsd50k-eval.csv> <eval_clips_info_FSD50K.json> <manifest.jsonl> <out.json>
+// Usage (repo root): npx vite-node scripts/name-tags-measure.ts <fsd50k-eval.csv> <eval_clips_info_FSD50K.json> <manifest.jsonl> <out.json>
 import { readFileSync, writeFileSync } from 'node:fs';
-import { namedSounds } from '../../src/audio/nameSoundLexicon';
-import { mergedDjLabel, DJ_CATALOG, DJ_HIDDEN_LABELS, type DjGroup } from '../../src/audio/djTags';
+import { namedSounds } from '../src/audio/nameSoundLexicon';
+import { mergedDjLabel, DJ_CATALOG, DJ_HIDDEN_LABELS, type DjGroup } from '../src/audio/djTags';
 
 const [setCsv, infoJson, manifest, out] = process.argv.slice(2);
 const groupOf = new Map(DJ_CATALOG.map(c => [c.label, c.group as DjGroup]));
