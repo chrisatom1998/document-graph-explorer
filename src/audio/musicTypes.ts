@@ -70,7 +70,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // minimum and the window rule left every shorter clip and most longer ones with no decision), plus wind ambience and
 // vocal shout from its own outputs; foley and hi-hat cutoffs move. Cutoffs picked on an FSD50K dev-val tuning set that
 // shares no uploader with the tag-baseline judge set (docs/evaluations/tag-fix-2026-10-31).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 142 : 141;
+// 143/144: trained female vocal and male vocal heads (FSD50K dev train, cutoffs on dev val, judged once on FSD50K eval:
+// female P 0.794 / R 0.771, male P 0.620 / R 0.629, no NSynth false alarms; reports/dj-tags-plan-2026-11-01).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 144 : 143;
 export interface InstrumentEstimate {
   label: string;
   score: number;
