@@ -105,12 +105,6 @@ export const DJ_HIDDEN_LABELS: ReadonlySet<string> = new Set([
   ...['sustained', 'rhythmic', 'rolling', 'gliding', 'percussive', 'swelling', 'syncopated', 'chorused', 'flanged',
     'wobbling'].map(l => `character:${l}`),
 ]);
-/** Settings switch (Chris, 2026-11-02): when off, tags in DJ_HIDDEN_LABELS stop showing on clips as model estimates
- * (tags a listener confirmed by hand still show). On by default, which keeps the long-standing behaviour: hidden tags
- * are only left out of the picker list. The settings store sets this on load and on every change. */
-let hiddenSoundTagsShown = true;
-export function setHiddenSoundTagsShown(show: boolean): void { hiddenSoundTagsShown = show; }
-export function areHiddenSoundTagsShown(): boolean { return hiddenSoundTagsShown; }
 export interface DjTag { group: DjGroup; label: string; score: number; model?: 'AudioSet AST' | 'MTG-Jamendo' | 'Music CLAP' | 'Reviewed examples' | 'Trained head' | 'Trained head (maybe)'; segments?: { start: number; end: number }[]; windowEvidence?: NativeWindowEvidence }
 export const DJ_TYPE_SOURCE: Record<string, string> = Object.fromEntries(
   DJ_CATALOG.filter(c => c.group === 'production' && c.source).map(c => [c.label, c.source!]),

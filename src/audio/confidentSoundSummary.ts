@@ -1,6 +1,7 @@
 import { confirmedInstrumentList, sourceReviewAllows } from './instrumentEvidence';
-import { AMBIENCE_KIDS, AMBIENCE_UMBRELLA, areHiddenSoundTagsShown, canonicalDjLabel, DJ_HIDDEN_LABELS, MERGED_DJ_LABELS, mergedDjLabel, type DjGroup } from './djTags';
+import { AMBIENCE_KIDS, AMBIENCE_UMBRELLA, canonicalDjLabel, DJ_HIDDEN_LABELS, MERGED_DJ_LABELS, mergedDjLabel, type DjGroup } from './djTags';
 import { fusionPresentation } from './fusionPresentation';
+import { areHiddenSoundTagsShown } from './hiddenSoundTagsSwitch';
 import type { MusicAnalysis } from './musicTypes';
 import { dimensionLabels, type Dimension, type Interval } from './recognition';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';

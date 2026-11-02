@@ -12,7 +12,7 @@
  */
 
 import { create } from 'zustand';
-import { setHiddenSoundTagsShown } from '../audio/djTags';
+import { setHiddenSoundTagsShown } from '../audio/hiddenSoundTagsSwitch';
 import {
   DEFAULT_OLLAMA_MODEL,
   DEFAULT_OPENROUTER_CHAT_MODEL,

@@ -237,7 +237,7 @@ describe('storage and recognition settings', () => {
 describe('showHiddenSoundTags switch', () => {
   it('defaults on, persists, and drives the sound-tag filter', async () => {
     const { useSettingsStore } = await import('./settingsStore');
-    const { areHiddenSoundTagsShown } = await import('../audio/djTags');
+    const { areHiddenSoundTagsShown } = await import('../audio/hiddenSoundTagsSwitch');
     expect(useSettingsStore.getState().showHiddenSoundTags).toBe(true);
     useSettingsStore.getState().setShowHiddenSoundTags(false);
     expect(areHiddenSoundTagsShown()).toBe(false);
