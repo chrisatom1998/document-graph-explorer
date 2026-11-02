@@ -23,6 +23,12 @@ export function loadManifest(file) {
   return m;
 }
 
+// A successful prefix is not a successful experiment.
+export function isCompleteRun(report, expectedRows) {
+  return !report.aborted && report.rows.length === expectedRows
+    && report.rows.every(row => row.status === 'complete');
+}
+
 export function cosine(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b) || !a.length || a.length !== b.length
     || [...a, ...b].some(x => !Number.isFinite(x))) throw new Error('Invalid embedding');

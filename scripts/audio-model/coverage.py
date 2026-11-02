@@ -22,11 +22,12 @@ def main():
     catalog = json.load(open(os.path.join(root, 'src/audio/djCatalog.json')))['categories']
     th = json.load(open(os.path.join(run, 'thresholds.json'))); log = json.load(open(os.path.join(run, 'log.json')))
     if log.get('args', {}).get('merge'): train.MERGE.update(json.load(open(log['args']['merge'])).get('merge', {}))   # as train.py trained
+    train.DRUMS_ANY = 'drums_kit_only' in log.get('args', {}) and not log['args']['drums_kit_only']   # as train.py trained
     if log.get('args', {}).get('drop'): train.DROP.update(json.load(open(log['args']['drop'])))   # left out of training, so not counted
     pos = np.zeros(len(train.CLASSES), int)
     for name, d in preps.items():
         mel, js = FILES.get(name, (f'{name}-mel.npy', f'{name}.json')); items = json.load(open(os.path.join(d, js)))['items']
-        if name == 'fsd50k': fsd50k_extra.relabel(items, 'dev')
+        if name == 'fsd50k': fsd50k_extra.relabel(items, 'dev', drums_any=train.DRUMS_ANY)
         val = set(log['val'].get(name, []))
         src = train.load_source(name, os.path.join(d, mel), [it for it in items if it['id'] not in val], 1.0)
         pos += ((src['y'] == 1) & (src['w'] > 0)).sum(0)

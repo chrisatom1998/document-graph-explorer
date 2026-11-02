@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
+
 jobs:
   release:
     runs-on: ubuntu-latest

@@ -33,6 +33,9 @@ const PROMOTED: [label: string, threshold: number, precision: number, recall: nu
   ['impact', .8206, .63, .72, 'dj-effects-2026-10-09/shipped.json'],
   ['riser', .8384, .68, .69, 'dj-effects-2026-10-09/shipped.json'],
   ['laser', .7867, .51, .53, 'dj-effects-2026-10-09/shipped.json'],
+  // 2026-10-31: the shipped heads, unchanged, scored on held-out library brands (78 and 104 positives).
+  ['vocal chops', .904, .628, .910, 'promote-vocal-chops-breakbeat-2026-10-31/heads.json'],
+  ['breakbeat', .911, .716, .558, 'promote-vocal-chops-breakbeat-2026-10-31/heads.json'],
 ];
 /** tag-heads-2026-10-09 heads are not cleared for one-shots, so ship.py tiers them on the held-out clips longer than
  * 2.25 s where the browser actually runs them (heldOutLongClip), not on the aggregate that included short clips. */
@@ -177,6 +180,20 @@ describe('the 50/50 shipping bar', () => {
 
   // Trained from training-only mirror clips (filtered against the private exclude list) and judged once on the fresh test
   // sets with the app-path scorer. docs/evaluations/rimshot-supersaw-heads-2026-10-31.
+  // Trained on FSD50K dev train clips, cutoffs set on FSD50K dev val, judged once on FSD50K eval (no shared uploaders).
+  // reports/dj-tags-plan-2026-11-01 (female P 0.794 / R 0.771, male P 0.620 / R 0.629, no NSynth false alarms).
+  it.each([['female vocal', .76], ['male vocal', .79]] as const)('ships the %s head as a normal tag at its dev-val cutoff', (label, threshold) => {
+    expect(head(label)).toMatchObject({ group: 'production' });
+    expect(head(label).maybe).toBeUndefined();
+    expect(head(label).threshold).toBeCloseTo(threshold, 4);
+  });
+  // Trained on FSD50K dev train + AudioSet + Freesound training clips, cutoff set on FSD50K dev val, judged once on FSD50K
+  // eval: P 0.641 / R 0.843, no NSynth false alarms. reports/bass-acapella-rap-2026-11-02.
+  it('ships the acapella head as a normal tag at its dev-val cutoff', () => {
+    expect(head('acapella')).toMatchObject({ group: 'production' });
+    expect(head('acapella').maybe).toBeUndefined();
+    expect(head('acapella').threshold).toBeCloseTo(.92, 4);
+  });
   it('ships the rimshot head on short clips at its out-of-fold cutoff', () => {
     expect(head('rimshot')).toMatchObject({ group: 'production', oneShot: true });
     expect(head('rimshot').maybe).toBeUndefined();

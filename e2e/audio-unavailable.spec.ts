@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { details as detailsPanel } from './resonance';
+import { details as detailsPanel, waitForGraphReady } from './resonance';
 import { correctDjTags } from './sampleAssistant';
 
 test('unavailable models stay explicit through correction, cancellation and restart', async ({ page }) => {
@@ -31,7 +31,7 @@ test('unavailable models stay explicit through correction, cancellation and rest
     Object.defineProperty(element, 'files', { configurable: true, value: transfer.files });
     element.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeVisible({ timeout: 240_000 });
+  await waitForGraphReady(page, 240_000);
   const openTrack = async () => {
     await page.getByRole('button', { name: 'Search documents' }).click();
     await page.getByRole('option', { name: /Synthetic tone/i }).click();
@@ -56,7 +56,7 @@ test('unavailable models stay explicit through correction, cancellation and rest
   await expect(detailsPanel(page).locator('audio')).toHaveAttribute('src', /^blob:/);
   await correctDjTags(page, /Synthetic tone/i, card => card.getByRole('checkbox', { name: 'synthesizer', exact: true }).check(), 'Your DJ tags are saved.');
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeVisible();
+  await waitForGraphReady(page, 120_000);
   await openTrack();
   await expect(page.locator('.music-features')).toContainText('synthesizer');
   await page.getByText('Track actions', { exact: true }).click();

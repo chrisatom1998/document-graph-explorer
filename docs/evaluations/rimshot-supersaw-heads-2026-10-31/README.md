@@ -33,7 +33,7 @@ cutoff was fitted on these clips.
 | rimshot | 3 of 5, 2 false alarms (P 0.60, R 0.60) | 2 of 4, 0 false alarms | FSD50K eval 0.25%, NSynth test 0.95%, SASS-E 0 | pass |
 | supersaw | 2 of 5, 1 false alarm (P 0.67, R 0.40) | no positives, 0 of 219 false alarms | none | pass |
 
-No other tag changed with either head. Supersaw was re-scored on main after #262 merged: same numbers, only supersaw changes. Both pass close to the line (rimshot precision exactly 0.60, NSynth false alarms
+No other tag changed with either head. Supersaw was re-scored on main after #262 merged and again on main 1b8ca7a (Nov 2): same numbers both times, only supersaw changes. Both pass close to the line (rimshot precision exactly 0.60, NSynth false alarms
 just under the 1% cap), so a relabel of one test clip could flip them.
 
 Test clips, their scores and the exclude list stay private and are not in this folder.

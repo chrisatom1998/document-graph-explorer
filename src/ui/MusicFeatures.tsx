@@ -12,6 +12,7 @@ import { isBroadInstrument } from '../audio/instrumentLabels';
 import { useGraphStore } from '../store/graphStore';
 import { OtherModelGuesses, SoundExplanation } from './SoundIdentification';
 import { confidentSoundSummary } from '../audio/confidentSoundSummary';
+import { applySoundTagFixes, type SoundTagFix } from '../audio/soundTagFixes';
 import { filenameSoundFallback } from '../audio/filenameSoundFallback';
 import { RecognitionDiagnostics, type RecognitionEvidenceProps } from './RecognitionEvidence';
 import { clockTime as time } from './clockTime';
@@ -43,7 +44,7 @@ export default function MusicFeatures({ node, onSeek, onMessage, status }: { nod
   const confirmed = analysis ? confirmedInstrumentList(analysis) : undefined;
   const reviewedLabels = analysis ? resolvedNonSourceLabels(analysis) : [];
   // What the Sounds row already shows, so the untested guesses below it never repeat a tag.
-  const shownSounds = analysis ? (() => { const scored = confidentSoundSummary(analysis); return [...scored, ...filenameSoundFallback(analysis, node, scored)].map(s => s.label); })() : [];
+  const shownSounds = analysis ? (() => { const scored = applySoundTagFixes(confidentSoundSummary(analysis), analysis.soundTagFixes); return [...scored, ...filenameSoundFallback(analysis, node, scored)].map(s => s.label); })() : [];
   // Keyed off `confirmed`, not off confirmedDjTags: a track confirmed through
   // the legacy confirmedInstruments field (or through a source review) has no
   // confirmedDjTags, and gating on that used to leave the chips empty and force
@@ -74,6 +75,10 @@ export default function MusicFeatures({ node, onSeek, onMessage, status }: { nod
       setMessage(useMusicJobs.getState().jobs[node.id] ? 'Initial analysis ready. Full verification continues in the background.' : 'Analysis finished. Results and any warnings are shown here.');
     } catch (error) { setMessage(abort.signal.aborted ? 'Analysis cancelled.' : error instanceof Error ? error.message : 'Analysis failed.'); }
     finally { setController(null); }
+  };
+  const saveFix = async (fix: Omit<SoundTagFix, 'at'>) => {
+    const { setAudioTagFix } = await import('../pipeline/coordinatorLazy');
+    setMessage(await setAudioTagFix(node.id, fix) === 'Relationships saved on this device.' ? 'Your fix is saved.' : 'Fix applied. Export this graph to keep it.');
   };
   const genre = genreFromScores(analysis?.genreScores?.scores), energy = energyFromScore(analysis?.energyScore);
   const list = (items: InstrumentEstimate[]) => <ul className="music-instruments">{items.map(i => <li key={i.label}>
@@ -118,7 +123,7 @@ export default function MusicFeatures({ node, onSeek, onMessage, status }: { nod
       </dl>
       {analysis.structure && <TrackStructure structure={analysis.structure} duration={analysis.durationSeconds} onSeek={onSeek} />}
       <TrackVersions node={node} />
-      <ConfidentSoundSummary audio={analysis} node={node} />
+      <ConfidentSoundSummary audio={analysis} node={node} onFix={phase === 'ready' ? saveFix : undefined} />
       <SoundDescription audio={analysis} exclude={shownSounds} />
       <MusicNeighbours node={node} nodes={nodes} nodeIndex={nodeIndex} edges={edges} />
       <details className="music-analysis-details">

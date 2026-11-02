@@ -24,6 +24,8 @@ permissions:
   contents: write
 
 env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
   APP_REF: ${{ inputs.app_ref || (startsWith(github.ref_name, 'holdout-r3/') && github.sha) || 'main' }}
   ONNXRUNTIME_NODE_INSTALL: skip
   DOCS: docs/evaluations/holdout-r3-2026-10-06

@@ -18,6 +18,8 @@ permissions:
   contents: write
 
 env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
   ONNXRUNTIME_NODE_INSTALL: skip
   DOCS: docs/evaluations/sample-packs-2026-10-06
   RESULTS: ${{ inputs.results_dir || 'results' }}

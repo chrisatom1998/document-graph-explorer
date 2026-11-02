@@ -30,7 +30,7 @@
  *          --clap-backend cpu|wasm (wasm = the browser's own runtime, slower; cached separately),
  *          --learned / --short-clip / --policy <file> (evaluate another branch's or a proposed model file as "today"),
  *          --row-seconds N (fixed-length .npy rows: the clips' real length, e.g. 4 for NSynth notes),
- *          --score-only / --decide-only, --watch a,b (extra tags measured under every candidate), --parity (check the
+ *          --score-only / --decide-only, --watch a,b (extra tags measured under every candidate), --decisions <file> (shown tags per clip, today's cutoffs), --parity (check the
  *          tagger against src/audio/taggerParity.fixture.json first), --grid-tagger / --grid-head "0.1,0.2,...".
  * Requires: npm run setup:music (model weights) and ffmpeg on PATH (resampling, decoding).
  */
@@ -50,6 +50,7 @@ import { TAGGER_POLICY, TAGGER_SAMPLE_RATE, TAGGER_WINDOW_SAMPLES, TaggerEvidenc
 import type { MusicAnalysis } from '../src/audio/musicTypes';
 import { inputCacheIdentity } from './eval-tag-input';
 import { isRuleDescribedLabel } from '../src/audio/timbreDescriptions';
+import { soundReviewKey } from '../src/audio/soundReviewIdentity';
 
 // ---------- arguments ----------
 const argv = process.argv.slice(2);
@@ -356,7 +357,11 @@ function decide(rec: CachedClip, o: Overrides): Map<string, Shown> {
     mergeDjTags(profile, djEvidence.results(), average);
     const analysis: MusicAnalysis = { version: 2, durationSeconds: rec.duration, analyzedSeconds: rec.duration, instruments: [], notes: [], soundProfile: profile,
       tagger: evidence.results(), instrumentScan: { mode: 'full', complete: true, analyzedSeconds: rec.duration, windows: rec.clap.length } };
-    return new Map(confidentSoundSummary(analysis).map(s => [`${s.dimension}:${s.label}`, { maybe: !!s.maybe, tier: s.tier, uncalibrated: !!s.uncalibrated }]));
+    const shown = new Map<string, Shown>(confidentSoundSummary(analysis).map(s => [`${s.dimension}:${s.label}`, { maybe: !!s.maybe, tier: s.tier, uncalibrated: !!s.uncalibrated }]));
+    // One sound can show under another name the app treats as the same identity (soundReviewKey: a tagger's alsoDecides
+    // aliases, e.g. the tagger's source "cymbals" for the one-shot "cymbal"). The set's label counts as shown under either.
+    for (const [key, s] of [...shown]) { const [d, ...l] = key.split(':'); const id = `=${soundReviewKey(d as 'source', l.join(':'))}`; if (!shown.has(id) || (shown.get(id)!.maybe && !s.maybe)) shown.set(id, s); }
+    return shown;
   });
 }
 interface Counts { positives: number; negatives: number; tp: number; fp: number; fn: number; tpMaybe: number; fpMaybe: number }
@@ -374,10 +379,10 @@ function evaluate(records: CachedClip[], o: Overrides, keys: string[]) {
   }
   for (const rec of records) {
     const shown = decide(rec, o), h = half(rec.group), bucket: Part = rec.duration <= SHORT_CLIP_MAX_SECONDS ? 'oneShots' : 'longer';
-    decisions[rec.id] = [...shown.keys()];
+    decisions[rec.id] = [...shown.keys()].filter(k => !k.startsWith('='));
     for (const key of keys) {
       const truth = rec.labels[key]; if (truth === undefined) continue;
-      const s = shown.get(key);
+      const [d, ...l] = key.split(':'), s = shown.get(key) ?? shown.get(`=${soundReviewKey(d as 'source', l.join(':'))}`);
       for (const part of [h, 'all', bucket] as const) {
         const c = table[key][part];
         if (truth) { c.positives++; if (s) { c.tp++; if (s.maybe) c.tpMaybe++; } else c.fn++; }
@@ -417,6 +422,8 @@ function decidePhase() {
   if (jamendoTags.length) { console.log(`note: ${jamendoTags.map(t => t.label).join(', ')} can also show through tested Jamendo scores on recordings of 10 s or more, which this evaluator does not run; "today" recall for them is a lower bound.`); report.jamendoLowerBound = jamendoTags.map(t => t.label); }
   const current = evaluate(records, {}, keys);
   (report.current as Record<string, unknown>) = current.table;
+  // --decisions <file>: the tags shown per clip under today's cutoffs (for error analysis on a dev set; never tune on a judge set).
+  const decisionsPath = opt('decisions'); if (decisionsPath) writeFileSync(decisionsPath, JSON.stringify(current.decisions));
   console.log(`\n== today (the app as shipped; ${SCOPE}) ==`);
   for (const k of keys) { const m = current.table[k]; console.log(`${k.padEnd(28)} all P ${fmt(m.all.precision)} R ${fmt(m.all.recall)} FA ${fmt(m.all.falseAlarmRate)}  (tp ${m.all.tp} fp ${m.all.fp} fn ${m.all.fn}; pos ${m.all.positives} neg ${m.all.negatives})  pick P ${fmt(m.pick.precision)} R ${fmt(m.pick.recall)}  check P ${fmt(m.check.precision)} R ${fmt(m.check.recall)}  one-shots R ${fmt(m.oneShots.recall)} (${m.oneShots.positives}) longer R ${fmt(m.longer.recall)} (${m.longer.positives})  ${m.all.passes6030 ? 'PASSES 60/30' : 'fails 60/30'}`); }
   const candidates = report.candidates as Record<string, unknown>;
