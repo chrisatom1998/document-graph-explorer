@@ -89,6 +89,26 @@ describe('removeNodes', () => {
   });
 });
 
+describe('progressive usability', () => {
+  beforeEach(() => {
+    useGraphStore.getState().reset();
+  });
+
+  it('keeps the lexical usability milestone through ready and clears it on reset', () => {
+    const store = useGraphStore.getState();
+    store.addNodes([mkNode('a')]);
+    store.setGraphUsable(true);
+    store.setPhase('embedding');
+    expect(useGraphStore.getState().graphUsable).toBe(true);
+
+    useGraphStore.getState().setPhase('ready');
+    expect(useGraphStore.getState().graphUsable).toBe(true);
+
+    useGraphStore.getState().reset();
+    expect(useGraphStore.getState().graphUsable).toBe(false);
+  });
+});
+
 // Ids arrive from imported files and share links, so they are untrusted text.
 describe('node ids that collide with Object.prototype members', () => {
   beforeEach(() => {

@@ -62,6 +62,10 @@ def main():
         d = json.loads(raw)
         bad_ids |= {int(x) for x in d.get('freesoundIds', [])}
         bad_users |= {u.removeprefix('freesound-user:') for k in ('freesoundUploaders', 'fsdUploaders') for u in d.get(k, [])}
+    raw = fetch(f'https://raw.githubusercontent.com/chrisatom1998/document-graph-explorer/{sha}/docs/evaluations/tag-baseline-2026-10-31/manifest.csv')
+    if raw is None: sys.exit(f'could not fetch the judge-set manifest at {sha}; refusing to stage without it')
+    judge_users = {r['uploader'].casefold() for r in csv.DictReader(raw.decode().splitlines())}
+    judge_users |= {u.casefold() for i, u in zip(meta['id'], meta['username']) if int(i) in fsd_eval}   # FSD50K-eval uploaders
     cache = lambda f: json.load(open(hf_hub_download(f'{me}/dge-tagger-data', f, repo_type='dataset')))['items']
     key = os.environ.get('CACHE_KEY', 'cb691f46e32e')
     fs_train = {int(i['id'].split(':')[1]) for i in cache(f'prep-cache/{key}/fsprep/freesound.json')}
@@ -73,7 +77,7 @@ def main():
         u = user.get(s)
         if u is None: why['no metadata (deleted sound)'] += 1; continue
         if sp == 'train':
-            r = ('FSD50K eval' if s in fsd_eval else 'reserved test sound' if s in bad_ids else 'reserved test uploader' if u in bad_users or synth_held(u)
+            r = ('FSD50K eval' if s in fsd_eval else 'reserved test sound' if s in bad_ids else 'reserved test uploader' if u in bad_users or synth_held(u) else 'judge-set or FSD50K-eval uploader' if u.casefold() in judge_users
                  else 'cached Freesound test' if s in fs_eval or fs_test(u) else 'uploader has a heldout sound' if u in held_users else None)
         else:
             r = 'already trained (FSD50K dev)' if s in fsd_dev else 'already trained (cached Freesound)' if s in fs_train else None

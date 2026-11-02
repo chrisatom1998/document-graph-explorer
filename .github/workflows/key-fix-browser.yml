@@ -10,6 +10,8 @@ permissions:
   contents: write
 
 env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
   ONNXRUNTIME_NODE_INSTALL: skip
   HARNESS_SHA: f691fa915b88796516d010a1b4b83f2c089e2c3a   # head of claude/project-thread-unl6fy (PR #119) on 2026-10-06
   HARNESS: scripts/dj-clips scripts/short-clip-upload-eval.mjs docs/evaluations/dj-clips-round2-2026-10-06/mtg-key-manifest.json

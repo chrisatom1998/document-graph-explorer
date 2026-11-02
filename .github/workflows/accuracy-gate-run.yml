@@ -30,6 +30,8 @@ permissions:
   contents: read
 
 env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
   ONNXRUNTIME_NODE_INSTALL: skip
   DOCS: docs/evaluations/holdout-r3-2026-10-06
   JAMENDO_META: https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/cafd8e20c265ed84f1e61f1c875327971f43a62f

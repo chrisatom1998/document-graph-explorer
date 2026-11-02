@@ -7,6 +7,7 @@ import { MERGED_DJ_LABELS, mergedDjLabel, sanitizeConfirmedDjTags, type Confirme
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
+import { sanitizeSoundTagFixes, type SoundTagFix } from './soundTagFixes';
 import { sanitizeStructure, type TrackStructure } from './structure';
 import { sanitizeVersionPrint } from './versionPrint';
 import { sanitizeTimbre, type TimbreSummary } from './timbre';
@@ -59,7 +60,22 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // and between 2.25 s and 10 s the CLAP piano head must also clear the tagger's piano cutoff (NSynth test notes).
 // 135/136: a trained rimshot head (also on short clips) replaces the raw-CLAP prompt that never showed it (app-path 60/30 on
 // the fresh test sets, docs/evaluations/rimshot-supersaw-heads-2026-10-31).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 136 : 135;
+// 137/138: the tagger decides staccato on clips up to 30 s (fresh test sets 60/30 at its own cutoff 0.4305, Listen set 2/1;
+// the maybe CLAP head that showed it fired on 73 of 415 negatives). Only 5 positives judge it, so one miss flips it: recheck
+// first when more labelled clips arrive.
+// 139/140: the tagger decides reese bass on clips up to 30 s at 0.1219, a cutoff set on 1,474 fresh non-test, non-training
+// Freesound clips (32 reese) with calibrate.py's own rule, before any test clip was scored (Listen set 2/0, free-tag-set 0 false
+// alarms of 219). Only 5 positives judge it: recheck first when more labelled clips arrive.
+// 141/142: the tagger decides cymbal on clips of any length up to 30 s (the old 10 s
+// minimum and the window rule left every shorter clip and most longer ones with no decision), plus wind ambience and
+// vocal shout from its own outputs; foley and hi-hat cutoffs move. Cutoffs picked on an FSD50K dev-val tuning set that
+// shares no uploader with the tag-baseline judge set (docs/evaluations/tag-fix-2026-10-31).
+// 143/144: trained female vocal and male vocal heads (FSD50K dev train, cutoffs on dev val, judged once on FSD50K eval:
+// female P 0.794 / R 0.771, male P 0.620 / R 0.629, no NSynth false alarms; reports/dj-tags-plan-2026-11-01).
+// 145/146: trained acapella head (singing with no instruments; FSD50K dev train + AudioSet + Freesound training clips,
+// cutoff on FSD50K dev val, judged once on FSD50K eval: P 0.641 / R 0.843, no NSynth false alarms;
+// reports/bass-acapella-rap-2026-11-02).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 146 : 145;
 export interface InstrumentEstimate {
   label: string;
   score: number;
@@ -80,6 +96,8 @@ export interface MusicAnalysis {
   tagger?: TaggerAnalysis;
   recognition?: Recognition;
   soundReviews?: SoundReview[];
+  /** Listener fixes from the "Not sure? Fix it" chip; display only, kept across reanalysis like the other corrections. */
+  soundTagFixes?: SoundTagFix[];
   stage?: 'preview';
   version: 1 | 2;
   tempoRevision?: number;
@@ -140,6 +158,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   out.recognition = sanitizeRecognition(m.recognition, out.durationSeconds);
   if (!out.recognition) delete out.recognition;
   if (Array.isArray(m.soundReviews)) out.soundReviews = sanitizeSoundReviews(m.soundReviews);
+  const soundTagFixes = sanitizeSoundTagFixes(m.soundTagFixes);
+  if (soundTagFixes?.length) out.soundTagFixes = soundTagFixes;
   if (m.stage === 'preview') out.stage = 'preview';
   if (Array.isArray(m.confirmedInstruments)) out.confirmedInstruments = [...new Set(m.confirmedInstruments.filter((label): label is string => typeof label === 'string' && sourceLabels.includes(label)))];
   const confirmedDjTags = sanitizeConfirmedDjTags(m.confirmedDjTags);

@@ -114,10 +114,12 @@ npm run dev      # start the Vite dev server at http://localhost:5173
 ```
 
 Node 24 is the supported runtime (`.nvmrc`); Node 22.13 or newer also works, except Node 23, which
-the locked dependencies do not support. The first
-`npm run dev` or `npm run build` needs network access: a pre-script downloads about 632 MB of
-checksum-verified audio-model weights from Hugging Face into `public/` (not stored in Git). Later
-runs reuse the local files. Run `npm run setup:music` once while online to work offline afterwards.
+the locked dependencies do not support. Clean local development and builds use the checked-in
+core pack (including BGE embeddings, readers and graph assets) and do not download the roughly
+632 MB audio pack. Run `npm run models:audio` to download and checksum-verify that optional pack,
+or set `DGE_MODELS=full` for a normal dev/build command. `npm run build:airgap` always prepares and
+verifies every model so the sealed artifact remains complete. `npm run setup:music` is retained as
+an alias for `models:audio`.
 
 Open the printed URL, then drag clips, sample packs, documents or folders onto the window. Whole
 source repositories are supported and `.gitignore` rules are honoured.
@@ -273,7 +275,10 @@ Methodology and caveats are in [docs/benchmarks.md](docs/benchmarks.md).
 | `npm run dev` | Start the Vite development server with HMR (also hosts the developer-only sound assistant) |
 | `npm run build` | Type-check, build the production app, verify runtime assets, and enforce the bundle budget |
 | `npm run build:airgap` | Build and verify the sealed zero-external-host distribution |
-| `npm run setup:music` | Download and verify the audio-model weights ahead of offline work |
+| `npm run models:core` | Verify/select the checked-in document and graph model pack (the default) |
+| `npm run models:audio` | Download and checksum-verify the optional audio-model weights |
+| `npm run models:full` | Prepare both core and audio packs for a complete offline build |
+| `npm run setup:music` | Alias for `npm run models:audio` |
 | `npm run typecheck` | Run TypeScript over the app and the e2e suite without emitting files |
 | `npm run lint` | Run ESLint across the repository |
 | `npm test` / `npm run test:watch` | Run the Vitest suite once, or in watch mode |
@@ -288,8 +293,8 @@ Methodology and caveats are in [docs/benchmarks.md](docs/benchmarks.md).
 
 | Command | Output | Network behaviour |
 | --- | --- | --- |
-| `npm run build` | `dist/` | Fully local by default; optional OpenRouter, local Ollama, or an explicitly started collaboration session |
-| `npm run build:airgap` | `dist-airgap/` | **Zero external destinations** enforced by CSP, runtime refusal, sanitization and a post-build verification gate |
+| `npm run build` | `dist/` | Core/document pack by default; includes audio only after `models:audio` or with `DGE_MODELS=full` |
+| `npm run build:airgap` | `dist-airgap/` | All model packs; **zero external destinations** enforced by CSP, runtime refusal, sanitization and a post-build verification gate |
 | `npm run build:desktop` | `release/mac-arm64/*.app`, copied to `/Applications` | Local macOS desktop app (run on a Mac) |
 | `npm run dist:mac` | DMG and ZIP under `release/` | macOS installer images; ad-hoc signed, not notarized, Apple Silicon by default |
 | `npm run dist:win` | Portable Electron executable under `release/` | Windows desktop build |
@@ -329,7 +334,7 @@ executable validation, a Docker image build and a container smoke test.
 Production hosting must send the security headers used in Vite development and preview
 (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`) and should
 send the Content-Security-Policy as a response header. The checked-in Vercel and Docker
-configurations are the current examples; see [DEPLOYMENT.md](DEPLOYMENT.md) and
+configurations include the full audio pack and are the current examples; see [DEPLOYMENT.md](DEPLOYMENT.md) and
 [SECURITY.md](SECURITY.md).
 
 ## Tech stack

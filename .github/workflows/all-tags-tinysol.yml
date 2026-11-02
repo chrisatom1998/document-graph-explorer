@@ -14,6 +14,8 @@ permissions:
   contents: write
 
 env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
   APP_REF: ${{ inputs.app_ref || 'main' }}
   ONNXRUNTIME_NODE_INSTALL: skip
   DOCS: docs/evaluations/all-tags-2026-10-06
