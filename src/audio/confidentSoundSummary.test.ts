@@ -185,3 +185,6 @@ describe('ambience umbrella (Chris, 2026-11-01)',()=>{
   expect(confidentSoundSummary(a).map(s=>s.label)).toEqual(['rain ambience']);
  });
 });
+it('does not revive the retired texture head through a raw CLAP texture prompt (it would fold into atmospheric pad)',()=>{
+ expect(confidentSoundSummary(clapOnly('texture','production',.7))).toEqual([]);
+});

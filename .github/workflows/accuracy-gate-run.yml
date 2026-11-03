@@ -59,7 +59,7 @@ jobs:
       mtgkey_cached: ${{ steps.mtgkey-cache.outputs.cache-hit }}
       matrix: ${{ steps.m.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 2
       - name: Decide what to analyse
@@ -146,7 +146,7 @@ jobs:
     steps:
       # A local action is loaded from the runner's workspace. Without this checkout the job dies on
       # "Can't find action.yml" before the action's own checkout can run. The action then checks out the harness.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           sparse-checkout: .github/actions
       - uses: ./.github/actions/fetch-jamendo-shard
@@ -171,7 +171,7 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           sparse-checkout: .github/actions
       - uses: ./.github/actions/fetch-jamendo-shard
@@ -187,7 +187,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.plan.outputs.harness }}
       - name: Fetch and cut the held-out MTG key excerpts
@@ -343,7 +343,7 @@ jobs:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-19-of-20
           fail-on-cache-miss: true
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         if: steps.shared.outputs.cache-hit != 'true'
         with:
           sparse-checkout: ${{ env.DOCS }}/jamendo-manifest.json
@@ -383,10 +383,10 @@ jobs:
         include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     name: analyse (${{ matrix.side }} ${{ matrix.set }} ${{ matrix.shard }})
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ matrix.sha }}
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.plan.outputs.harness }}
           path: harness
@@ -409,7 +409,7 @@ jobs:
           node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync(process.argv[1])),gone=m.items.filter(i=>!fs.existsSync(`${process.argv[2]}/${i.id}.wav`));
             if(gone.length){console.error(`${gone.length} of ${m.items.length} tracks have no audio, e.g. ${gone[0].id}`);process.exit(1)}' \
             gate-manifests/${{ matrix.set }}.json gate-audio/${{ matrix.set }}
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -453,21 +453,21 @@ jobs:
         run: |
           echo "::error::An analysis job failed or was skipped, so the gate can't judge this change. Re-run the failed jobs."
           exit 1
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         if: needs.plan.outputs.run == 'true'
         with:
           ref: ${{ needs.plan.outputs.harness }}
           path: harness
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         if: needs.plan.outputs.run == 'true'
         with:
           path: app-head
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         if: needs.plan.outputs.run == 'true' && needs.plan.outputs.base != ''
         with:
           ref: ${{ needs.plan.outputs.base }}
           path: app-base
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         if: needs.plan.outputs.run == 'true'
         with:
           node-version: 24

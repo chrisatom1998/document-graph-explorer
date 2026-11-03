@@ -39,7 +39,7 @@ jobs:
     outputs:
       sha: ${{ steps.r.outputs.sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ env.APP_REF }}
       - id: r
@@ -53,7 +53,7 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Check the frozen selection against the pinned dataset metadata
         run: |
           M="$RUNNER_TEMP/mj"
@@ -83,10 +83,10 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.ref.outputs.sha }}
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           path: harness
       - uses: actions/download-artifact@v8
@@ -98,7 +98,7 @@ jobs:
         run: |
           cp harness/$DOCS/jamendo-val-manifest.json manifest.json
           git log -1 --format='app under test: %H %s'
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -131,13 +131,13 @@ jobs:
     if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.ref.outputs.sha }}
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           path: harness
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm

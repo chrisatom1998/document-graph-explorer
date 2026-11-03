@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 480
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Check the Hugging Face token
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
         run: |
