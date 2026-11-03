@@ -12,6 +12,7 @@
  */
 
 import { create } from 'zustand';
+import { setHiddenSoundTagsShown } from '../audio/hiddenSoundTagsSwitch';
 import {
   DEFAULT_OLLAMA_MODEL,
   DEFAULT_OPENROUTER_CHAT_MODEL,
@@ -57,6 +58,7 @@ export interface SettingsState extends PersistedSettings {
   setEmbeddingQueryStyle: (style: EmbeddingQueryStyle) => void;
   setOcrLanguage: (lang: OcrLanguageId) => void;
   setOcrMaxPages: (pages: OcrMaxPages) => void;
+  setShowHiddenSoundTags: (show: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -84,12 +86,15 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setEmbeddingQueryStyle: (embeddingQueryStyle) => set({ embeddingQueryStyle }),
   setOcrLanguage: (ocrLanguage) => set({ ocrLanguage }),
   setOcrMaxPages: (ocrMaxPages) => set({ ocrMaxPages }),
+  setShowHiddenSoundTags: (showHiddenSoundTags) => set({ showHiddenSoundTags }),
 }));
+setHiddenSoundTagsShown(useSettingsStore.getState().showHiddenSoundTags);
 
 // Persist on every change; the payload is small enough for a direct write.
 // Turning rememberOpenRouterKey off clears any previously stored key on the
 // next write.
 useSettingsStore.subscribe((s) => {
+  setHiddenSoundTagsShown(s.showHiddenSoundTags);
   try {
     const persisted: PersistedSettings = {
       graphClarity: s.graphClarity,
@@ -109,6 +114,7 @@ useSettingsStore.subscribe((s) => {
       embeddingQueryStyle: s.embeddingQueryStyle,
       ocrLanguage: s.ocrLanguage,
       ocrMaxPages: s.ocrMaxPages,
+      showHiddenSoundTags: s.showHiddenSoundTags,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
   } catch {

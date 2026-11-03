@@ -30,7 +30,7 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'production:closed hi-hat': { group: 'production', label: 'hi-hat' },
   'production:noise sweep': { group: 'production', label: 'filter sweep' },
   'production:stutter effect': { group: 'production', label: 'glitch effect' },
-  'production:synth drone': { group: 'production', label: 'ambient drone' },
+  'production:synth drone': { group: 'production', label: 'atmospheric pad' },
   'production:synth sequence': { group: 'production', label: 'synth arpeggio' },
   'production:reverse impact': { group: 'production', label: 'reverse effect' },
   'character:saturated': { group: 'character', label: 'distorted' },
@@ -57,9 +57,21 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'production:woodblock': { group: 'production', label: 'clave' },
   'production:hi-hat loop': { group: 'production', label: 'top loop' },
   'production:shaker loop': { group: 'production', label: 'percussion loop' },
-  'production:texture': { group: 'production', label: 'ambient drone' },
+  'production:texture': { group: 'production', label: 'atmospheric pad' },
   'character:echoing': { group: 'character', label: 'reverberant' },
   'character:rising': { group: 'production', label: 'riser' },
+  // Chris, 2026-11-02 ("Guitar + test 3 more", reports/tag-merge-2026-11-02): every acoustic and electric guitar test clip
+  // is already labelled guitar, and the tested guitar tagger decides the merged names inside its excerpt, so the guitar
+  // score does not change. The two heads failed alone, mostly on bass guitar notes.
+  'source:acoustic guitar': { group: 'source', label: 'guitar' },
+  'source:electric guitar': { group: 'source', label: 'guitar' },
+  // Same pick, measured before shipping ($0, reports/tag-merge-2026-11-02). Tested taggers decide hi-hat and percussion
+  // inside their excerpt, so those rows only gain the Listen clips of the old names (hi-hat 4 of 6 found, percussion 4 of
+  // 5, no false alarms). Atmospheric pad with ambient drone folded in: free-tag-set P 0.96 R 0.41 (was P 0.92 R 0.57).
+  // Synth drone and texture point straight at atmospheric pad because merges are looked up one step only.
+  'production:open hi-hat': { group: 'production', label: 'hi-hat' },
+  'production:percussion hit': { group: 'source', label: 'percussion' },
+  'production:ambient drone': { group: 'production', label: 'atmospheric pad' },
 };
 /** Drum-kit tags that also show the umbrella "drums" tag (Chris, 2026-10-31: "merge them all into one tag drums"; he
  * chose the umbrella so kick, snare and the rest keep showing and keep their own tested scores). Hand percussion
@@ -83,14 +95,23 @@ export const DJ_PICKER_LABELS: Record<DjGroup, readonly string[]> = { source: pi
  * 2026-10-10, reports/dj-tag-review-2026-10-10). They still run, show on clips and can be found by searching the
  * picker; they just aren't listed until searched for. On 2026-10-11 Chris brought back eleven of them, then the tag keep
  * list (reports/tag-keep-list-2026-10-11) hid syncopated, chorused and flanged again and merged rising and foley hit
- * away, leaving sound effect, percussion hit, staccato, plucked, pulsing and wobbling listed. */
+ * away, leaving sound effect, percussion hit, staccato, plucked, pulsing and wobbling listed. On 2026-11-01 Chris hid four
+ * failing tags we have no realistic training data for (wobbling among them), and on 2026-11-02 he hid cowbell and unhid
+ * bassoon (its RWC refit passes 60/60 on both held-out judges, docs/evaluations/rwc-woodwind-heads-2026-10-30). */
 export const DJ_HIDDEN_LABELS: ReadonlySet<string> = new Set([
-  ...['bassoon', 'oboe', 'clarinet', 'cello', 'double bass', 'banjo', 'mandolin', 'sitar', 'jaw harp',
+  ...['oboe', 'clarinet', 'cello', 'double bass', 'banjo', 'mandolin', 'sitar', 'jaw harp',
     'singing bowl', 'waterphone', 'kalimba', 'environmental sound',
     // Tag keep list (Chris, 2026-10-11): rare in DJ sample libraries and untested or unlearnable here.
     'ukulele', 'steel guitar', 'steel drum', 'tabla'].map(l => `source:${l}`),
-  ...['brass synth', 'string synth', 'fm synth', 'wind ambience'].map(l => `production:${l}`),
-  ...['sustained', 'rhythmic', 'rolling', 'gliding', 'percussive', 'swelling', 'syncopated', 'chorused', 'flanged'].map(l => `character:${l}`),
+  ...['brass synth', 'string synth', 'fm synth', 'wind ambience',
+    // No realistic training data (Chris, 2026-11-01; supply from docs/evaluations/data-gaps-2026-10-31/per-tag.csv):
+    // pitched vocal and vocal-like synth have 0 staged and 0 open Freesound clips, wobbling 7 and 3, and the only
+    // other "foghorn" clips are literal ship horns. Filter sweep, synth hit and vocal ad-lib wait for Splice credits.
+    'pitched vocal', 'vocal-like synth', 'foghorn bass',
+    // Cowbell (Chris, 2026-11-02): 4/17 on the app path and no realistic way to fix it, so it stops counting.
+    'cowbell'].map(l => `production:${l}`),
+  ...['sustained', 'rhythmic', 'rolling', 'gliding', 'percussive', 'swelling', 'syncopated', 'chorused', 'flanged',
+    'wobbling'].map(l => `character:${l}`),
 ]);
 export interface DjTag { group: DjGroup; label: string; score: number; model?: 'AudioSet AST' | 'MTG-Jamendo' | 'Music CLAP' | 'Reviewed examples' | 'Trained head' | 'Trained head (maybe)'; segments?: { start: number; end: number }[]; windowEvidence?: NativeWindowEvidence }
 export const DJ_TYPE_SOURCE: Record<string, string> = Object.fromEntries(

@@ -200,3 +200,16 @@ export function taggerDecisions(tagger: TaggerAnalysis | undefined, durationSeco
 export const isTaggerScores = (value: unknown): value is Record<string, number> => !!value && typeof value === 'object' && !Array.isArray(value)
   && TAGGER_POLICY.tags.every(tag => Object.hasOwn(value, tag.output))
   && Object.values(value).every(v => finite(v) && v >= 0 && v <= 1);
+/** A tested tagger output scoring under this share of its own threshold counts as the audio clearly saying "not this".
+ * A guess, not tuned: it only lets the audio overrule a file or folder name (filenameSoundFallback), never add a tag. */
+export const TAGGER_CLEAR_NO = 0.1;
+/** True when a tested tagger tag that decides this label scored the recording under TAGGER_CLEAR_NO of its threshold. */
+export function taggerClearlyAbsent(tagger: TaggerAnalysis | undefined, durationSeconds: number, dimension: TaggerTag['dimension'], label: string): boolean {
+  if (!tagger || tagger.revision !== TAGGER_REVISION) return false;
+  return TAGGER_POLICY.tags.some(tag => {
+    if (!tag.tested || (tag.label !== label || tag.dimension !== dimension) && !(tag.dimension === dimension && tag.decides.includes(label))) return false;
+    if (tag.minSeconds && !(Number.isFinite(durationSeconds) && durationSeconds >= tag.minSeconds - 1e-6)) return false;
+    const rule = ruleScore(tag, tagger, durationSeconds);
+    return !!rule && !rule.agree && rule.raw < rule.threshold * TAGGER_CLEAR_NO;
+  });
+}
