@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sound Spotter · Resonance demo</title>
+    <meta
+      name="description"
+      content="Drop a short audio clip and see what kind of sound it is, and why. A lightweight, private demo of the sound recognition ideas in Resonance."
+    />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #131a33;
+        --panel-2: #1a2342;
+        --line: #2a3562;
+        --text: #e9edfb;
+        --muted: #a5afd1;
+        --accent: #8d73ff;
+        --accent-strong: #6f4dff;
+        --good: #3ddcaa;
+        --warn: #ffbe5c;
+        --bad: #ff7b8a;
+        --radius: 14px;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f4f5fb;
+          --panel: #ffffff;
+          --panel-2: #eef0fa;
+          --line: #d3d8ee;
+          --text: #161b33;
+          --muted: #525c82;
+          --accent: #5a3df0;
+          --accent-strong: #4a2fd6;
+          --good: #0b8f68;
+          --warn: #a86400;
+          --bad: #c42b40;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        color-scheme: dark light;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.55 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      .wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 28px 16px 64px;
+      }
+      h1 {
+        font-size: clamp(1.7rem, 4vw, 2.4rem);
+        line-height: 1.15;
+        margin: 0 0 6px;
+      }
+      h2 {
+        font-size: 1.1rem;
+        margin: 0 0 12px;
+      }
+      .eyebrow {
+        color: var(--accent);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+      }
+      .lede {
+        color: var(--muted);
+        margin: 0 0 18px;
+        max-width: 60ch;
+      }
+      .note {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--warn);
+        border-radius: var(--radius);
+        padding: 12px 16px;
+        color: var(--muted);
+        font-size: 0.93rem;
+        margin-bottom: 26px;
+      }
+      .note strong {
+        color: var(--text);
+      }
+      section {
+        margin-bottom: 28px;
+      }
+      .samples {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+      }
+      button:focus-visible,
+      .drop:focus-within {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .sample {
+        text-align: left;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      .sample:hover {
+        border-color: var(--accent);
+        background: var(--panel-2);
+      }
+      .sample[aria-pressed='true'] {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+      }
+      .sample b {
+        display: block;
+      }
+      .sample span {
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+      .drop {
+        display: block;
+        text-align: center;
+        border: 2px dashed var(--line);
+        border-radius: var(--radius);
+        padding: 26px 16px;
+        background: var(--panel);
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      .drop:hover,
+      .drop.over {
+        border-color: var(--accent);
+        background: var(--panel-2);
+      }
+      .drop input {
+        position: absolute;
+        opacity: 0;
+        width: 1px;
+        height: 1px;
+      }
+      .drop small {
+        display: block;
+        color: var(--muted);
+      }
+      #result {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 18px;
+      }
+      #result[hidden] {
+        display: none;
+      }
+      .headline {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+      }
+      .headline.likely {
+        color: var(--good);
+      }
+      .headline.unsure {
+        color: var(--warn);
+      }
+      .headline.unclear,
+      .headline.silent {
+        color: var(--muted);
+      }
+      .source {
+        color: var(--muted);
+        margin: 2px 0 14px;
+        overflow-wrap: anywhere;
+      }
+      .bars {
+        list-style: none;
+        margin: 0 0 8px;
+        padding: 0;
+        display: grid;
+        gap: 8px;
+      }
+      .bars li {
+        display: grid;
+        grid-template-columns: minmax(120px, 190px) 1fr 3.5rem;
+        gap: 10px;
+        align-items: center;
+      }
+      .track {
+        background: var(--panel-2);
+        border-radius: 999px;
+        height: 12px;
+        overflow: hidden;
+      }
+      .fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 999px;
+      }
+      .pct {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+      }
+      .fine {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin: 0 0 14px;
+      }
+      .cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      @media (max-width: 720px) {
+        .cols {
+          grid-template-columns: 1fr;
+        }
+        .bars li {
+          grid-template-columns: 1fr 3.5rem;
+        }
+        .bars li .track {
+          grid-column: 1 / -1;
+          order: 3;
+        }
+      }
+      ul.why {
+        margin: 0 0 14px;
+        padding-left: 20px;
+      }
+      dl.facts {
+        margin: 0;
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 4px 14px;
+      }
+      dl.facts dt {
+        color: var(--muted);
+      }
+      dl.facts dd {
+        margin: 0;
+      }
+      canvas {
+        width: 100%;
+        height: 110px;
+        display: block;
+        background: var(--panel-2);
+        border-radius: 10px;
+      }
+      .cap {
+        color: var(--muted);
+        font-size: 0.82rem;
+        margin: 4px 0 12px;
+      }
+      .play {
+        background: var(--accent-strong);
+        color: #fff;
+        border: 0;
+        border-radius: 999px;
+        padding: 8px 18px;
+        font-weight: 600;
+      }
+      .play:hover {
+        filter: brightness(1.1);
+      }
+      .selfcheck {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+      }
+      .chips {
+        list-style: none;
+        margin: 10px 0 0;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .chips li {
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px 12px;
+        font-size: 0.88rem;
+      }
+      .chips li.ok::before {
+        content: '✓ ';
+        color: var(--good);
+        font-weight: 700;
+      }
+      .chips li.miss::before {
+        content: '✗ ';
+        color: var(--bad);
+        font-weight: 700;
+      }
+      details {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 12px 18px;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      details p,
+      details li {
+        color: var(--muted);
+      }
+      footer {
+        margin-top: 28px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 22px;
+        align-items: center;
+      }
+      a {
+        color: var(--accent);
+      }
+      .cta {
+        background: var(--accent-strong);
+        color: #fff;
+        border-radius: 999px;
+        padding: 9px 20px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .error {
+        color: var(--bad);
+        margin: 10px 0 0;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <p class="eyebrow">Resonance · Demo</p>
+      <h1>Sound Spotter</h1>
+      <p class="lede">
+        Pick a sound, or drop in a short clip. The page listens, says what kind of sound it is, and shows
+        its work in plain English.
+      </p>
+
+      <p class="note">
+        <strong>Honest label:</strong> this is a small, explainable demo that uses simple rules, not the AI model
+        inside the full Resonance app. Scores show how well a clip fits a description, not a probability and
+        not an accuracy claim. <strong>Your audio never leaves your device.</strong>
+      </p>
+
+      <noscript><p class="note">This demo needs JavaScript to listen to sounds.</p></noscript>
+
+      <section aria-labelledby="try-h">
+        <h2 id="try-h">1. Try a built-in sound</h2>
+        <div class="samples" id="samples"></div>
+      </section>
+
+      <section aria-labelledby="drop-h">
+        <h2 id="drop-h">2. Or drop in your own clip</h2>
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept="audio/*" />
+          <strong>Drop an audio file here, or click to choose one</strong>
+          <small>Short clips work best (a drum hit, a loop, a riff). Only the first 10 seconds are used. Max 25 MB.</small>
+        </label>
+        <p class="error" id="error" role="alert" hidden></p>
+      </section>
+
+      <section id="result" aria-live="polite" hidden>
+        <p class="headline" id="headline"></p>
+        <p class="source" id="source"></p>
+        <ul class="bars" id="bars"></ul>
+        <p class="fine" id="fine">Bars show how well the clip fits each description. They are not percentages of certainty.</p>
+        <div class="cols">
+          <div>
+            <h2>Why</h2>
+            <ul class="why" id="why"></ul>
+            <h2>What I measured</h2>
+            <dl class="facts" id="facts"></dl>
+          </div>
+          <div>
+            <h2>The sound</h2>
+            <canvas id="wave" role="img" aria-label="Waveform: how loud the clip is over time"></canvas>
+            <p class="cap">Loudness over time</p>
+            <canvas id="spec" role="img" aria-label="Spectrum: how much energy sits at each pitch, low to high"></canvas>
+            <p class="cap">Energy by pitch, deep on the left, bright on the right</p>
+            <button class="play" id="play" type="button">▶ Play</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="selfcheck" aria-labelledby="check-h">
+        <h2 id="check-h">Self-check</h2>
+        <p class="fine" id="check-summary">Checking the listener against the built-in sounds…</p>
+        <ul class="chips" id="chips"></ul>
+      </section>
+
+      <section>
+        <details>
+          <summary>How does it decide? (plain English)</summary>
+          <p>It measures a handful of things about a clip, then checks how well they match a short description of each sound type.</p>
+          <ul>
+            <li><b>How fast it starts.</b> A drum hit reaches full volume almost instantly. A pad fades in slowly.</li>
+            <li><b>How long it lasts.</b> Hats and kicks are over in a blink. Pads and bass notes hang around.</li>
+            <li><b>Deep or bright.</b> How much of the sound is deep bass (below 150 Hz) versus airy treble (above 6,000 Hz).</li>
+            <li><b>Musical or noisy.</b> A note concentrates its energy at a few pitches. Noise spreads it everywhere.</li>
+            <li><b>Building up.</b> Risers get louder and brighter toward the end.</li>
+          </ul>
+          <p>
+            Seven sound types are supported here: kick, bass, snare/clap, hi-hat, pluck/lead, pad and riser. Anything
+            else, like vocals, full songs or exotic instruments, may come back as "unclear". That is on purpose:
+            saying "I can't tell" beats a confident wrong answer.
+          </p>
+        </details>
+      </section>
+
+      <footer>
+        <a class="cta" href="/">Open the full Resonance app</a>
+        <a href="https://github.com/chrisatom1998/document-graph-explorer">Source on GitHub</a>
+      </footer>
+    </main>
+    <script type="module" src="/sound-demo/app.js"></script>
+  </body>
+</html>

@@ -55,7 +55,7 @@ jobs:
         run: |
           python3 scripts/dj-effects/mine.py "$RUNNER_TEMP/meta.parquet" "$RUNNER_TEMP/big.json"
           mkdir -p work; python3 scripts/dj-effects/grow.py "$BASE" "$RUNNER_TEMP/big.json" work/candidates.json 2
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: candidates
           path: work/candidates.json
@@ -70,7 +70,7 @@ jobs:
         shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: candidates
           path: work
@@ -98,7 +98,7 @@ jobs:
           except urllib.error.HTTPError as e: code = e.code
           print('freesound page status:', code); sys.exit(0 if code in (200, 404) else 1)
           PY
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -164,7 +164,7 @@ jobs:
           mkdir -p out; cp work/emb/*.jsonl out/
           cp work/fs/manifest.json out/manifest-${{ matrix.shard }}.json; cp work/fs/state.json out/state-${{ matrix.shard }}.json
           cp work/render/manifest.json out/renders-${{ matrix.shard }}.json; cp work/durations.json out/durations-${{ matrix.shard }}.json
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: shard-${{ matrix.shard }}
           path: out
@@ -179,7 +179,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -q numpy scipy scikit-learn
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: shard-*
           path: work/emb
