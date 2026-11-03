@@ -77,7 +77,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // reports/bass-acapella-rap-2026-11-02).
 // 147/148: a trained supersaw head replaces the raw-CLAP prompt that never showed it (app-path 60/30 on the fresh test sets,
 // docs/evaluations/rimshot-supersaw-heads-2026-10-31).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 148 : 147;
+// 149/150: drop the texture head (a maybe head that fired on 71% of FSD50K eval clips over 2.25 s and, after #299, showed
+// as atmospheric pad on them; reports/all-tags-plan-2026-11-02).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 150 : 149;
 export interface InstrumentEstimate {
   label: string;
   score: number;
