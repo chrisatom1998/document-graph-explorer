@@ -165,7 +165,7 @@ describe('GraphNavigator', () => {
     useUiStore.setState({ pathMode: true, pathEndpoints: [] });
     render(<GraphNavigator />);
     fireEvent.click(screen.getByRole('button', { name: 'Browse documents' }));
-    expect(screen.getByText('Choose a document as a path endpoint.')).toBeInTheDocument();
+    expect(screen.getByText(/Choose a document as a path endpoint\. Topic hubs can't be endpoints\./)).toBeInTheDocument();
 
     const list = screen.getByRole('listbox', { name: 'Graph nodes' });
     fireEvent.keyDown(list, { key: 'Enter' });
@@ -173,7 +173,9 @@ describe('GraphNavigator', () => {
     expect(useUiStore.getState().pendingFocus).toBeNull();
     expect(useUiStore.getState().cameraCommand).toBeNull();
 
-    // Topic hubs cannot be endpoints, so Enter on one changes nothing.
+    // Topic hubs cannot be endpoints: they announce as disabled and Enter on one changes nothing.
+    expect(screen.getByRole('option', { name: /Hub/ })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('option', { name: /Zeta/ })).not.toHaveAttribute('aria-disabled');
     fireEvent.keyDown(list, { key: 'End' });
     fireEvent.keyDown(list, { key: 'Enter' });
     expect(useUiStore.getState().pathEndpoints).toEqual(['alpha']);
@@ -181,6 +183,26 @@ describe('GraphNavigator', () => {
     fireEvent.click(screen.getByRole('option', { name: /Zeta/ }));
     expect(useUiStore.getState().pathEndpoints).toEqual(['alpha', 'zeta']);
     expect(useUiStore.getState().pendingFocus).toBeNull();
+  });
+
+  it('marks topic hubs unavailable only while a document is being picked', () => {
+    useGraphStore.setState({
+      nodes: [...nodes, { ...nodes[0], id: 'hub', title: 'Hub', kind: 'topic', cluster: -1 }],
+      nodeIndex: { zeta: 0, alpha: 1, hub: 2 },
+    });
+    render(<GraphNavigator embedded />);
+    const hub = () => screen.getByRole('option', { name: /Hub/ });
+    expect(hub()).not.toHaveAttribute('aria-disabled');
+    expect(screen.queryByText(/Topic hubs can't be/)).not.toBeInTheDocument();
+
+    act(() => useUiStore.setState({ compareLeftId: 'alpha', comparePick: 'right' }));
+    expect(hub()).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByText(/Topic hubs can't be compared\./)).toBeInTheDocument();
+    fireEvent.click(hub());
+    expect(useUiStore.getState().compareRightId).toBeNull();
+
+    act(() => useUiStore.setState({ comparePick: null }));
+    expect(hub()).not.toHaveAttribute('aria-disabled');
   });
 
   it('hops distinct clusters despite interleaved alphabetical ordering', () => {

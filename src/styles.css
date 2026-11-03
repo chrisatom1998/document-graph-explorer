@@ -435,6 +435,7 @@ textarea {
   box-shadow: inset 3px 0 0 var(--accent);
 }
 .graph-navigator__option:hover { background: var(--control-hover); }
+.graph-navigator__option[aria-disabled='true'] { color: var(--text-faint); cursor: default; }
 .graph-navigator__name { font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
 
 .graph-navigator__meta {

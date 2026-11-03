@@ -40,6 +40,8 @@ const SIMILARITY: { kind: EdgeKind; label: string }[] = [
 
 /** Sounds listed before "Show all". */
 const SOUNDS_SHOWN = 8;
+const LAST_KIND_HELP = 'At least one link type stays on';
+const LAST_KIND_HELP_ID = 'rs-similarity-last-kind-help';
 
 const TYPE_LABEL: Partial<Record<FileType, string>> = { audio: 'Audio', pdf: 'PDF', md: 'Markdown', txt: 'Text', html: 'HTML', docx: 'Word', pptx: 'Slides', xlsx: 'Sheets', code: 'Code' };
 
@@ -175,8 +177,8 @@ export default function ResonanceFilters() {
           <ul className="rs-checks">
             {(similarity.length ? similarity : SIMILARITY.slice(0, 5)).map(({ kind, label }) => (
               <li key={kind}>
-                <label title={lastTicked(kind) ? 'At least one link type stays on' : undefined}>
-                  <input type="checkbox" checked={checked(kind)} onChange={() => toggleKind(kind)} disabled={!kindsPresent.has(kind) || lastTicked(kind)} />
+                <label title={lastTicked(kind) ? LAST_KIND_HELP : undefined}>
+                  <input type="checkbox" checked={checked(kind)} onChange={() => toggleKind(kind)} disabled={!kindsPresent.has(kind) || lastTicked(kind)} aria-describedby={lastTicked(kind) ? LAST_KIND_HELP_ID : undefined} />
                   <span className="rs-check" aria-hidden="true" />
                   {label}
                 </label>
@@ -184,6 +186,8 @@ export default function ResonanceFilters() {
             ))}
           </ul>
         )}
+        {/* The title above only reaches pointer users; assistive tech gets the same reason through aria-describedby. */}
+        {similarityOpen && <p id={LAST_KIND_HELP_ID} className="sr-only">{LAST_KIND_HELP}</p>}
       </section>
 
       {(audio || audioFilterActive) && <>

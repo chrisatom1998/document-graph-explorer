@@ -74,6 +74,9 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
       : orderedNodes[0]?.id ?? null);
   }, [activeId, orderedNodes, selectedId]);
 
+  // Compare picks and path endpoints take documents only, so topic hubs stay
+  // listed (they still orient the reader) but announce as unavailable.
+  const documentsOnly = pathMode || comparePick !== null;
   const activeIndex = Math.max(0, orderedNodes.findIndex((node) => node.id === activeId));
   useActiveOptionScroll(orderedNodes.length > 0 ? optionId(activeIndex) : undefined);
   const documentCount = orderedNodes.filter((node) => node.kind === 'document').length;
@@ -168,6 +171,7 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
       <div id="graph-navigator-content" hidden={!expanded}>
         <p className="graph-navigator__instructions" id={INSTRUCTIONS_ID}>
           {pathMode ? 'Choose a document as a path endpoint.' : 'Choose a document to explore its connections.'}
+          {documentsOnly && topicCount > 0 && ` Topic hubs can't be ${pathMode ? 'endpoints' : 'compared'}.`}
           <span> ↑ ↓ to browse · PageUp / PageDown to hop clusters · {pathMode ? 'Enter to pick it for the path' : 'Enter to open'} · Esc to close</span>
         </p>
         {orderedNodes.length === 0 && <p role="status">No documents match the current filters.</p>}
@@ -191,6 +195,7 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
               className={`graph-navigator__option${index === activeIndex ? ' is-active' : ''}`}
               role="option"
               aria-selected={node.id === selectedId}
+              aria-disabled={documentsOnly && node.kind === 'topic' ? true : undefined}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
                 listRef.current?.focus();

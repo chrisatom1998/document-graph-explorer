@@ -211,7 +211,10 @@ describe('Similarity type filter', () => {
     expect(instruments).not.toBeChecked();
     expect(tempo).toBeChecked();
     // The last ticked kind is locked: an empty list would show every link again.
+    // The reason reaches assistive tech as the box's description, not just its title.
     expect(tempo).toBeDisabled();
+    expect(tempo).toHaveAccessibleDescription('At least one link type stays on');
+    expect(instruments).not.toHaveAccessibleDescription();
 
     fireEvent.click(instruments);
     // Every listed kind ticked again: back to the "all kinds" null form.
@@ -219,6 +222,7 @@ describe('Similarity type filter', () => {
     expect(instruments).toBeChecked();
     expect(tempo).toBeChecked();
     expect(tempo).toBeEnabled();
+    expect(tempo).not.toHaveAccessibleDescription();
   });
 
   it('keeps a saved explicit list and normalizes to null once every kind is ticked', () => {

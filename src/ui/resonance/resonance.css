@@ -330,6 +330,7 @@
 }
 .rs-library .graph-navigator__option:hover { background: var(--rs-raised); }
 .rs-library .graph-navigator__option.is-active { background: color-mix(in srgb, var(--rs-lime) 10%, transparent); box-shadow: inset 3px 0 0 var(--rs-lime); }
+.rs-library .graph-navigator__option[aria-disabled='true'] .graph-navigator__name { color: var(--rs-disabled); }
 .rs-library .graph-navigator__name { font-size: 14px; font-weight: 500; line-height: 1.4; color: var(--rs-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rs-library .graph-navigator__meta { font-size: 13px; line-height: 1.4; color: var(--rs-muted); }
 .rs-export .toolbar__menu { position: static; width: min(420px, 100%); margin: 0 auto; max-height: none; animation: none; }
@@ -684,6 +685,8 @@ body:has(.rs-root) .confirm-dialog .snapshot-btn:disabled { background: none; bo
   /* Phone top bar: five actions plus the 2D/3D switch leave little room, so the icons tighten and the pill keeps whatever is left. */
   .rs-top { padding: 8px 8px 0; }
   .rs-top .rs-icon { width: 32px; height: 32px; }
+  /* The audio-analysis chip carries a count, so it keeps its own width instead of the 32px icon box. */
+  .rs-top__actions .music-analysis-status-button { width: auto; min-width: 32px; padding: 0 8px; }
   .rs-top__actions .workspace-dims { height: 32px; padding: 2px; }
   .rs-top__actions .workspace-dims span { padding: 4px 6px; }
   .rs-corpus .corpus-switcher__trigger { padding: 0 8px; gap: 6px; }
