@@ -10,6 +10,7 @@ import { djReviewAllows, resolvedNonSourceLabels } from '../audio/soundReviewPol
 import { applySoundTagFixes, needsFixChip, type SoundTagFix } from '../audio/soundTagFixes';
 import { useState } from 'react';
 import SoundTagFixer from './SoundTagFixer';
+import { useSettingsStore } from '../store/settingsStore';
 
 /** The rule-measured words for how it sounds (timbreDescriptions.ts), as one plain line: not tags, no scores.
  * Words you rejected, and words already shown as tags, are left out; old analyses without a measurement show nothing. */
@@ -30,6 +31,8 @@ const DIMENSION_NAME = { source: 'Sound source', effect: 'Sound type', character
 export default function ConfidentSoundSummary({audio,mode,node,onFix}:{audio:MusicAnalysis;mode?:string;node?:Pick<DocNode, 'path' | 'title'>;
   /** Given only where a fix can be saved: shows "Not sure? Fix it" on possible and maybe tags. */
   onFix?:(fix:Omit<SoundTagFix,'at'>)=>Promise<unknown>}) {
+  // Re-render when the hidden-tags switch flips; confidentSoundSummary reads it.
+  useSettingsStore(s=>s.showHiddenSoundTags);
   const [fixing,setFixing]=useState<{dimension:SoundTagFix['dimension'];label:string}|null>(null);
   // Listener fixes override the shown tags for this file; scores and links are untouched.
   const scored=applySoundTagFixes(confidentSoundSummary(audio,mode),audio.soundTagFixes);

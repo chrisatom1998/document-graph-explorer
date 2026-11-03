@@ -46,7 +46,7 @@ jobs:
           done
           curl -fsSL --retry 6 -o holdout.json "$HOLDOUT"
           mkdir -p sel && python3 scripts/sound-alike/select-jamendo.py mj holdout.json sel/tracks.json --windows 3
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: sound-alike-tracks
           path: sel
@@ -67,7 +67,7 @@ jobs:
                  67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -81,7 +81,7 @@ jobs:
       - name: Fetch any model weights the cache lacks
         run: npm run setup:music
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: sound-alike-tracks
           path: sel
@@ -93,7 +93,7 @@ jobs:
           for k in 0 1; do THREADS=2 node scripts/embed-clap.mjs "$RUNNER_TEMP/a/manifest.json" emb/f$f-$k.jsonl $k 2 & done
           wait
           wc -l emb/*.jsonl
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sound-alike-emb-${{ matrix.folder }}
@@ -107,13 +107,13 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: sound-alike-tracks
           path: sel
           run-id: ${{ inputs.embeddings_run || github.run_id }}
           github-token: ${{ github.token }}
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: sound-alike-emb-*
           path: emb
@@ -125,7 +125,7 @@ jobs:
       - run: pip install -q numpy && pip install -q torch --index-url https://download.pytorch.org/whl/cpu
       - name: Pack fingerprints into one file
         run: python3 -c "import glob,gzip,shutil; out=gzip.open('fingerprints.jsonl.gz','wb'); [shutil.copyfileobj(open(f,'rb'),out) for f in sorted(glob.glob('emb/**/*.jsonl',recursive=True))]; out.close()"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: sound-alike-fingerprints
           path: |
@@ -139,7 +139,7 @@ jobs:
           pip install -q trackio==0.42.0 || echo "live charts off: trackio install failed"
           python3 scripts/sound-alike/train.py sel/tracks.json emb --out out | tee out.log
           mv out.log out/
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sound-alike-projection
