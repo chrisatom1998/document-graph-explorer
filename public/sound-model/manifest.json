@@ -7,7 +7,7 @@
     "preprocessor_config.json": "9739f58296aa6f9ac18008fd0150fb2649bc554985fbde86d0a4041c882ac753",
     "onnx/audio_model_quantized.onnx": "021dd4fb962b4ed20cc3a6730b09e0ccf9f9c49931047032118a3b64828513a6",
     "prompts.json": "ee2bb1b5a4ec64e57adae613fca200f36d8f5aba0a92e4638e12f84f7e44578e",
-    "learned.json": "3a5402303aae93a0b37fc2e740bea76eff8e2b939c2fcd94a1077a714304c7d8",
+    "learned.json": "6159b7d531aa21da731afb9f1cef0cbd8aca3ff0f5ae479e0e24da14a66e29e0",
     "short-clip.json": "403ecf67e2daedbc461c05ffc9e41c5e343b931c1db3f4fbac0f9415ec5aa351",
     "full-mix.json": "7ef3f82a8937f601ff68595cff2ec71d7bd2537257ad123d0814f004ee0c3c99"
   },
