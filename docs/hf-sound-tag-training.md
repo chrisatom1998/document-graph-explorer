@@ -48,10 +48,11 @@ Electric guitar on FSD50K eval is 0.92 / 0.72 (181 positives). The miss is NSynt
 | foghorn bass | production | 0.47 | 0.50 | CLAP head (maybe) | maybe | 53 | 16 | round 16 report |
 | glitch effect | production | 1.00 | 0.45 | CLAP head (maybe) | maybe | 79 | 20 | round 14 report |
 | vocal chops | production | 0.50 | 0.73 | CLAP head (maybe) | maybe | 115 | 78 | round 14 report |
-| bassoon | source | 0.91 | 0.47 | CLAP head (maybe) | maybe | 192 | 45 | round 23 report |
 | cello | source | 0.78 | 0.49 | CLAP head (maybe) | maybe | 340 | 121 | round 18 report |
 | electric piano | source | 0.85 | 0.46 | CLAP head (maybe) | maybe | 713 | 77 | round 18 report |
 | horn | source | 0.81 | 0.46 | CLAP head (maybe) | maybe | 947 | 316 | round 19 report |
+
+Bassoon left this table on 2026-10-30: its CLAP head was refit with RWC bassoon notes on box CPU and passes 50/50 and 60/60 on both held-out judges (0.93 / 0.62 on 45 real recordings, 0.64 / 0.96 on 120 notes from held-out RWC players; `docs/evaluations/rwc-woodwind-heads-2026-10-30`). Flute and oboe were refit the same way and failed, so they are unchanged.
 
 `distorted` is hidden until a detector passes on real clips. The 0.64 / 0.73 figure is NSynth effect renders, which this repo already refuses as ground truth. `falling` (shown as downlifter) was raised to 0.8101 because the output learned falling objects; real downlifter recall on the free-tag test stayed 0 (`docs/evaluations/dj-precision-2026-10-11`). Crowd ambience is still flagged as a normal head, while the clean-retrain FSD50K score is 0.92 / 0.49.
 
