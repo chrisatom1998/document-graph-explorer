@@ -197,13 +197,15 @@ it.each(['rejected', 'uncertain'] as const)('removes cymbal sound edges after a 
     djTags: [{ group: 'production', label: 'cymbal', score: .9, model: 'Trained head' }] } });
   const a = cymbal('a'), b = cymbal('b');
   const initial = musicPairEdges(a, b);
-  expect(initial).toMatchObject([{ kind: 'sound', weight: .7 }]);
+  // A shown cymbal also shows the drums umbrella, so the two tracks share an instrument too.
+  expect(initial).toMatchObject([{ kind: 'instrument', weight: .7 }, { kind: 'sound', weight: .7 }]);
   const blocked = { ...a, audio: { ...a.audio!, soundReviews: [{ dimension: 'source' as const, labelId: 'cymbals', decision,
     scope: 'track' as const, at: '2026-10-07T12:00:00Z', evidenceRunId: 'old' }] } };
   expect(musicPairEdges(blocked, b)).toEqual([]);
   expect(refreshMusicEdges([blocked, b], initial)).toEqual([]);
   const confirmed = { ...blocked, audio: { ...blocked.audio, soundReviews: [...blocked.audio.soundReviews,
     { ...blocked.audio.soundReviews[0], dimension: 'effect' as const, labelId: 'cymbal', decision: 'confirmed' as const }] } };
+  // A hand-confirmed cymbal shows as picked, without the drums umbrella; b's model cymbal still shows drums alone.
   expect(musicPairEdges(confirmed, b)).toMatchObject([{ kind: 'sound', weight: .7 }]);
 });
 it.each(['rejected', 'uncertain', 'confirmed'] as const)('preserves the latest %s cymbal review through analysis and graph round trips', decision => {
