@@ -35,6 +35,8 @@ describe('GraphNavigator', () => {
       compareRightId: null,
       comparePick: null,
       pendingFocus: null,
+      pathMode: false,
+      pathEndpoints: [],
     });
   });
 
@@ -153,6 +155,32 @@ describe('GraphNavigator', () => {
     expect(screen.getByRole('option')).toHaveTextContent('Zeta');
     fireEvent.keyDown(list, { key: 'Enter' });
     expect(useUiStore.getState().pendingFocus?.id).toBe('zeta');
+  });
+
+  it('picks path endpoints from Enter and row clicks while path mode is on', () => {
+    useGraphStore.setState({
+      nodes: [...nodes, { ...nodes[0], id: 'hub', title: 'Hub', kind: 'topic', cluster: -1 }],
+      nodeIndex: { zeta: 0, alpha: 1, hub: 2 },
+    });
+    useUiStore.setState({ pathMode: true, pathEndpoints: [] });
+    render(<GraphNavigator />);
+    fireEvent.click(screen.getByRole('button', { name: 'Browse documents' }));
+    expect(screen.getByText('Choose a document as a path endpoint.')).toBeInTheDocument();
+
+    const list = screen.getByRole('listbox', { name: 'Graph nodes' });
+    fireEvent.keyDown(list, { key: 'Enter' });
+    expect(useUiStore.getState().pathEndpoints).toEqual(['alpha']);
+    expect(useUiStore.getState().pendingFocus).toBeNull();
+    expect(useUiStore.getState().cameraCommand).toBeNull();
+
+    // Topic hubs cannot be endpoints, so Enter on one changes nothing.
+    fireEvent.keyDown(list, { key: 'End' });
+    fireEvent.keyDown(list, { key: 'Enter' });
+    expect(useUiStore.getState().pathEndpoints).toEqual(['alpha']);
+
+    fireEvent.click(screen.getByRole('option', { name: /Zeta/ }));
+    expect(useUiStore.getState().pathEndpoints).toEqual(['alpha', 'zeta']);
+    expect(useUiStore.getState().pendingFocus).toBeNull();
   });
 
   it('hops distinct clusters despite interleaved alphabetical ordering', () => {

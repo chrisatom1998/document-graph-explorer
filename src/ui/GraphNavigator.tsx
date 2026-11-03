@@ -29,6 +29,7 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
   const filter = useUiStore((state) => state.filter);
   const selectedId = useUiStore((state) => state.selectedId);
   const comparePick = useUiStore((state) => state.comparePick);
+  const pathMode = useUiStore((state) => state.pathMode);
   const listRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -86,6 +87,22 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
     if (node) setActiveId(node.id);
   };
 
+  // Enter and a row click do the same thing the WebGL node click does: a
+  // compare pick or a path endpoint while those modes are on, else focus.
+  const activate = (node: (typeof orderedNodes)[number]) => {
+    const ui = useUiStore.getState();
+    if (ui.comparePick) {
+      if (node.kind === 'document') applyComparePick(node.id);
+      return;
+    }
+    if (ui.pathMode) {
+      // Topic hubs can't be endpoints: pathfinding skips 'topic' edges.
+      if (node.kind === 'document') ui.addPathEndpoint(node.id);
+      return;
+    }
+    focusNode(node.id);
+  };
+
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'PageDown', 'PageUp', 'Home', 'End', 'Enter'].includes(event.key)) {
       event.preventDefault();
@@ -109,12 +126,7 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
       moveTo(orderedNodes.length - 1);
     } else if (event.key === 'Enter') {
       const node = orderedNodes[activeIndex];
-      if (!node) return;
-      if (useUiStore.getState().comparePick) {
-        if (node.kind === 'document') applyComparePick(node.id);
-        return;
-      }
-      focusNode(node.id);
+      if (node) activate(node);
     }
   };
 
@@ -155,8 +167,8 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
       </p>
       <div id="graph-navigator-content" hidden={!expanded}>
         <p className="graph-navigator__instructions" id={INSTRUCTIONS_ID}>
-          Choose a document to explore its connections.
-          <span> ↑ ↓ to browse · PageUp / PageDown to hop clusters · Enter to open · Esc to close</span>
+          {pathMode ? 'Choose a document as a path endpoint.' : 'Choose a document to explore its connections.'}
+          <span> ↑ ↓ to browse · PageUp / PageDown to hop clusters · {pathMode ? 'Enter to pick it for the path' : 'Enter to open'} · Esc to close</span>
         </p>
         {orderedNodes.length === 0 && <p role="status">No documents match the current filters.</p>}
         <div
@@ -183,11 +195,7 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
               onClick={() => {
                 listRef.current?.focus();
                 setActiveId(node.id);
-                if (useUiStore.getState().comparePick) {
-                  if (node.kind === 'document') applyComparePick(node.id);
-                  return;
-                }
-                focusNode(node.id);
+                activate(node);
               }}
             >
               <span className="graph-navigator__name">{node.id === selectedId ? selectedDocumentTitle(node) : node.title}</span>

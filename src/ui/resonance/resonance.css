@@ -122,6 +122,11 @@
 .rs-menu button:hover:not(:disabled) { background: var(--rs-line); }
 /* Disabled items dim to a colour that still reads, rather than fading out. */
 .rs-menu button:disabled, .rs-menu button:disabled svg { color: var(--rs-disabled); cursor: default; }
+/* Keyboard shortcut hint at the right edge of a menu item. */
+.rs-menu__kbd { margin-left: auto; padding: 1px 6px; border: 1px solid var(--rs-line-strong); border-radius: 5px; color: var(--rs-muted); font: inherit; font-size: 11px; }
+/* Minimized audio-analysis restore chip: the note glyph plus a count, as one 36px pill. */
+.rs-top__actions .music-analysis-status-button { display: inline-flex; gap: 4px; width: auto; padding: 0 10px; border: 1px solid var(--rs-line-strong); color: var(--rs-text); }
+.rs-top__actions .music-analysis-status-button:hover { border-color: var(--rs-lime); }
 
 /* ---- Left column -------------------------------------------------------- */
 .rs-sidebar {
@@ -282,6 +287,12 @@
 .rs-stage { grid-area: stage; position: relative; min-width: 0; min-height: 0; overflow: hidden; background: var(--rs-bg); }
 .rs-stage .nebula-canvas, .rs-stage .scene-loading { position: absolute !important; inset: 0 !important; }
 .rs-stage .webgl-fallback { position: absolute; inset: 0; }
+/* The minimap is anchored to the stage column instead of the viewport, so it
+   never lands on the filter column or the inspector; the classic layout's
+   side-panel offset does not apply here. */
+.rs-stage .minimap, .rs-stage .minimap--shifted { position: absolute; right: 18px; bottom: 18px; }
+/* Compare is still a viewport-wide overlay: step left by however much it spills past the inspector. */
+.rs-stage .minimap--compare-shifted { position: absolute; right: calc(max(0px, var(--compare-panel-width) - var(--rs-right)) + 18px); bottom: 18px; }
 .rs-stage__banner { position: absolute; top: 16px; left: 16px; right: 16px; z-index: var(--z-panel); display: flex; justify-content: center; pointer-events: none; }
 .rs-stage__banner .snapshot-diff-banner { position: static; transform: none; pointer-events: auto; max-width: 560px; background: var(--rs-raised); border: 1px solid var(--rs-line-strong); }
 .rs-library, .rs-export {
