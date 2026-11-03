@@ -50,7 +50,7 @@ jobs:
             python3 scripts/dj-clips/mtg-key.py "$RUNNER_TEMP/mk" audio
           fi
           git diff --exit-code -- "$R1" "$R2"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: tempo-${{ matrix.set }}-audio
           path: audio
@@ -67,11 +67,11 @@ jobs:
         shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: tempo-${{ matrix.set }}-audio
           path: audio
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -91,7 +91,7 @@ jobs:
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
           AUDIO_DIR=audio AUDIO_EXT=wav MANIFEST=${{ matrix.set == 'round1' && env.R1 || env.R2 }} SHARD=${{ matrix.shard }}/4 \
             node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: tempo-${{ matrix.set }}-export-${{ matrix.shard }}
@@ -104,12 +104,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: tempo-*-export-*
           path: exports
