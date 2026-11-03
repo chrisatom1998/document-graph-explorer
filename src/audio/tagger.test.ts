@@ -152,7 +152,8 @@ describe('trained tagger display', () => {
     const labels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
     expect(labels(track(4, { 'cat:hi-hat': .01, 'cat:percussion': .01 }, heads))).toEqual([]);
     const shown = confidentSoundSummary(track(4, { 'cat:hi-hat': threshold('cat:hi-hat'), 'cat:percussion': threshold('cat:percussion') }, heads));
-    expect(shown.map(s => s.label).sort()).toEqual(['hi-hat', 'percussion']);
+    // hi-hat is a drum-kit tag, so the drums umbrella shows beside it (#272).
+    expect(shown.map(s => s.label).sort()).toEqual(['drums', 'hi-hat', 'percussion']);
     for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
   });
   it('shows the ambient drone head as atmospheric pad', () => {
