@@ -32,7 +32,7 @@ jobs:
       matrix:
         set: [cal900]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Extract the 900 OpenMIC calibration clips
         if: matrix.set == 'cal900'
         run: |
@@ -63,12 +63,12 @@ jobs:
           - { set: cal900, shard: 3, of: 5 }
           - { set: cal900, shard: 4, of: 5 }
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - uses: actions/download-artifact@v8
         with:
           name: fix-${{ matrix.set }}-audio
           path: clips
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -100,8 +100,8 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm

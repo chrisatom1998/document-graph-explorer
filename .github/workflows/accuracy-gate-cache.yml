@@ -25,7 +25,7 @@ jobs:
     steps:
       # AUDIO_CACHE and EXPORTS_CACHE live in accuracy-gate-run.yml. Reading them here keeps this restore on the
       # same keys the gate writes; a copied literal would keep restoring a key the gate had stopped using.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Read the cache key prefixes
         id: keys
         run: |

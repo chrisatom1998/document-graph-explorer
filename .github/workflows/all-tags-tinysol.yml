@@ -37,7 +37,7 @@ jobs:
     outputs:
       sha: ${{ steps.r.outputs.sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ env.APP_REF }}
       - id: r
@@ -46,7 +46,7 @@ jobs:
   audio:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Fetch TinySOL and cut the frozen selection
         run: |
           curl -fsSL --retry 6 -o meta.csv "$TINYSOL/TinySOL_metadata.csv?download=1"
@@ -70,10 +70,10 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.ref.outputs.sha }}
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           path: harness
       - uses: actions/download-artifact@v8
@@ -84,7 +84,7 @@ jobs:
         run: |
           cp harness/$DOCS/tinysol-manifest.json manifest.json
           git log -1 --format='app under test: %H %s'
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -116,13 +116,13 @@ jobs:
     if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.ref.outputs.sha }}
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           path: harness
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm

@@ -25,7 +25,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
         with:
           persist-credentials: false
       - run: node --test scripts/production-mac-policy.test.cjs
@@ -65,7 +65,7 @@ jobs:
               });
               if (!['ahead', 'identical'].includes(data.status)) throw new Error('Source/workflow is not on trusted main history');
             }
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
         with:
           ref: ${{ github.workflow_sha }}
           persist-credentials: false
@@ -123,13 +123,13 @@ jobs:
       ONNXRUNTIME_NODE_INSTALL: skip
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
         with:
           ref: ${{ needs.prepare.outputs.sha }}
           persist-credentials: false
       - name: Verify exact production source
         run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           # Deliberately no cache writes or temporary Actions artifacts.
@@ -197,7 +197,7 @@ jobs:
       contents: write
       deployments: read
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
         with:
           ref: ${{ github.workflow_sha }}
           persist-credentials: false
