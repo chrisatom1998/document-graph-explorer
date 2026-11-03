@@ -10,6 +10,7 @@ import type { DocNode } from '../model/types';
 import { KEY_NAMES, keyName, type InstrumentEstimate } from '../audio/musicTypes';
 import { isBroadInstrument } from '../audio/instrumentLabels';
 import { useGraphStore } from '../store/graphStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { OtherModelGuesses, SoundExplanation } from './SoundIdentification';
 import { confidentSoundSummary } from '../audio/confidentSoundSummary';
 import { applySoundTagFixes, type SoundTagFix } from '../audio/soundTagFixes';
@@ -40,6 +41,7 @@ export default function MusicFeatures({ node, onSeek, onMessage, status }: { nod
   // Background analysis records a failure in node.warning without changing the
   // node's status, so the warning is shown here on its own merits.
   const statusText = [...new Set([feedback, node.warning].filter(Boolean))].join(' ');
+  useSettingsStore(s => s.showHiddenSoundTags); // re-render when the hidden-tags switch flips
   const analysis = node.audio;
   const confirmed = analysis ? confirmedInstrumentList(analysis) : undefined;
   const reviewedLabels = analysis ? resolvedNonSourceLabels(analysis) : [];

@@ -75,9 +75,11 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 145/146: trained acapella head (singing with no instruments; FSD50K dev train + AudioSet + Freesound training clips,
 // cutoff on FSD50K dev val, judged once on FSD50K eval: P 0.641 / R 0.843, no NSynth false alarms;
 // reports/bass-acapella-rap-2026-11-02).
-// 147/148: a reference-sound (neighbour) head for bitcrushed, cutoff set from training clips only (1% false alarms on
+// 147/148: a trained supersaw head replaces the raw-CLAP prompt that never showed it (app-path 60/30 on the fresh test sets,
+// docs/evaluations/rimshot-supersaw-heads-2026-10-31).
+// 149/150: a reference-sound (neighbour) head for bitcrushed, cutoff set from training clips only (1% false alarms on
 // held-out training negatives); fresh test sets 0/0 -> 1.00/0.80 on the free-tag-set (docs/evaluations/ref-blend-2026-10-31).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 148 : 147;
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 150 : 149;
 export interface InstrumentEstimate {
   label: string;
   score: number;
