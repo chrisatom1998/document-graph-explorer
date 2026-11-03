@@ -9,6 +9,7 @@ runs:
     - name: Read Playwright version
       id: playwright
       shell: bash
+      working-directory: ${{ github.workspace }}
       run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
 
     - name: Restore Playwright browsers
@@ -21,6 +22,7 @@ runs:
     - name: Install Playwright Chromium and system dependencies
       id: install
       shell: bash
+      working-directory: ${{ github.workspace }}
       env:
         CACHE_HIT: ${{ steps.cache.outputs.cache-hit }}
         PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: '60000'

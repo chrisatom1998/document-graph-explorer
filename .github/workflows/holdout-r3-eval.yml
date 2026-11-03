@@ -152,8 +152,14 @@ jobs:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
           restore-keys: music-models-
+      - name: Check out the Playwright setup action
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          path: ci-actions
+          sparse-checkout: .github/actions/setup-playwright
       - name: Install Playwright Chromium
-        uses: ./.github/actions/setup-playwright
+        uses: ./ci-actions/.github/actions/setup-playwright
       - name: Build
         run: npm run build
       - name: Record which Jamendo model was used

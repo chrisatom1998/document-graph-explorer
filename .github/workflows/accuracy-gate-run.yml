@@ -421,12 +421,21 @@ jobs:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
           restore-keys: music-models-
+      # The app under test is matrix.sha, which may be the base commit and
+      # therefore does not contain this workflow's action. Load the action
+      # from the commit that started the workflow.
+      - name: Check out the Playwright setup action
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          path: ci-actions
+          sparse-checkout: .github/actions/setup-playwright
       - name: Install Playwright Chromium
         # Fail at setup instead of consuming the whole two-hour analysis job
         # when an upstream browser or OS-package download stalls. The browser
         # archive is cached; this limit still covers a cold download.
         timeout-minutes: 10
-        uses: ./.github/actions/setup-playwright
+        uses: ./ci-actions/.github/actions/setup-playwright
       - name: Build
         run: npm run build
       - name: Analyse in the real app
