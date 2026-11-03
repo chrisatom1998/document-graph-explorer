@@ -50,7 +50,7 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Check the frozen selection against the pinned dataset metadata
         run: |
           M="$RUNNER_TEMP/mj"
@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Select and fetch the held-out MTG key excerpts
         run: |
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
@@ -122,10 +122,10 @@ jobs:
           - { set: mtgkey, shard: 2, of: 4 }
           - { set: mtgkey, shard: 3, of: 4 }
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ env.APP_REF }}
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           path: harness
       - uses: actions/download-artifact@v8
@@ -140,7 +140,7 @@ jobs:
           # The harness's driver handles both the old toolbar and the #137 layout; an app's own copy may not.
           cp harness/scripts/short-clip-upload-eval.mjs scripts/
           git log -1 --format='app under test: %H %s'
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -177,13 +177,13 @@ jobs:
     if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ env.APP_REF }}
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           path: harness
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm

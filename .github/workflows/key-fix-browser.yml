@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - run: git fetch -q origin "$HARNESS_SHA" && git checkout "$HARNESS_SHA" -- $HARNESS
@@ -54,7 +54,7 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - run: git fetch -q origin "$HARNESS_SHA" && git checkout "$HARNESS_SHA" -- $HARNESS
@@ -62,7 +62,7 @@ jobs:
         with:
           name: keyfix-mtgkey-audio
           path: audio
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -94,11 +94,11 @@ jobs:
     if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - run: git fetch -q origin "$HARNESS_SHA" && git checkout "$HARNESS_SHA" -- $HARNESS
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm

@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Fetch datasets and cut clips
         run: |
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
@@ -45,12 +45,12 @@ jobs:
         set: [tune, gtzan-test, holdout]
         shard: [0, 1, 2]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - uses: actions/download-artifact@v8
         with:
           name: tempo-clips
           path: tclips
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -69,7 +69,7 @@ jobs:
     if: ${{ !cancelled() && needs.features.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - uses: actions/download-artifact@v8
         with:
           pattern: tempo-f-*

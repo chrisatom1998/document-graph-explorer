@@ -47,7 +47,7 @@ jobs:
       audio_run: ${{ steps.config.outputs.audio_run }}
       results: ${{ steps.config.outputs.results }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Run settings (dispatch inputs, else scripts/soundcloud/run.json, since pushes carry no inputs)
         id: config
         env:
@@ -90,7 +90,7 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - uses: actions/download-artifact@v8
         with:
           name: sc-manifest
@@ -118,7 +118,7 @@ jobs:
         build: ${{ fromJSON(needs.freeze.outputs.builds) }}
         shard: [0, 1, 2, 3, 4, 5]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@v8
@@ -135,7 +135,7 @@ jobs:
       - name: Keep only tracks whose audio arrived
         run: |
           node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('m/manifest.json'));m.items=m.items.filter(i=>fs.existsSync('audio/'+i.id+'.mp3'));fs.writeFileSync('m/present.json',JSON.stringify(m));console.log(m.items.length+' tracks with audio')"
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -172,8 +172,8 @@ jobs:
     env:
       RESULTS: ${{ needs.freeze.outputs.results }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
