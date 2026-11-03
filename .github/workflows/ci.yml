@@ -23,9 +23,9 @@ env:
   # host has timed out npm ci on hosted runners more than once.
   ONNXRUNTIME_NODE_INSTALL: skip
   # Gitignored, checksum-verified optional weights fetched by `npm run models:audio`.
-  # Tried before essentia.upf.edu. One-time: upload the Jamendo ONNX files as
-  # assets on a GitHub Release tagged models-v1 (not Latest). Asset names match
-  # the manifest filenames. sha256 stays the manifest's.
+  # CI only. Local and Docker builds leave this unset and use the manifest host.
+  # One-time: upload the Jamendo ONNX files as assets on a GitHub Release tagged
+  # models-v1 (not Latest). Asset names match the manifest filenames.
   DGE_MODEL_MIRROR: https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1
   MUSIC_MODEL_PATHS: |
     public/audio-model-pack.json

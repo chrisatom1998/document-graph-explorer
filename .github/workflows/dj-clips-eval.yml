@@ -17,6 +17,7 @@ permissions:
 env:
   # These builds need the audio model pack.
   DGE_MODELS: full
+  DGE_MODEL_MIRROR: https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1
   ONNXRUNTIME_NODE_INSTALL: skip
   OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
   GIANTSTEPS: https://github.com/GiantSteps/giantsteps-tempo-dataset.git

@@ -11,6 +11,7 @@ permissions:
 env:
   # These builds need the audio model pack.
   DGE_MODELS: full
+  DGE_MODEL_MIRROR: https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1
 
 jobs:
   release:

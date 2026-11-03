@@ -15,6 +15,7 @@ permissions:
 env:
   # These builds need the audio model pack.
   DGE_MODELS: full
+  DGE_MODEL_MIRROR: https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1
   ONNXRUNTIME_NODE_INSTALL: skip
   FIX_SHA: 473946166e5481aab5fd28c86e67b8522c3c347f   # head of claude/project-thread-if86oo (PR #116) on 2026-10-06
   MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git

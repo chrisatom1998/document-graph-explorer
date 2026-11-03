@@ -108,6 +108,23 @@ runs:
         key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
         restore-keys: music-models-
 
+    # A prefix match is not the current manifest key. Check every restored file
+    # offline; a mismatch is re-fetched below, and a failed re-fetch fails the job.
+    - name: Checksum the last-chance audio model restore offline
+      id: sibling-check
+      if: steps.sibling.outputs.cache-matched-key != ''
+      continue-on-error: true
+      shell: bash
+      env:
+        DGE_MODEL_OFFLINE: '1'
+      run: npm run setup:music
+
+    - name: Re-fetch audio models that failed the restored checksum
+      id: refetch
+      if: steps.sibling-check.outcome == 'failure'
+      shell: bash
+      run: npm run setup:music
+
     - name: Require audio models from cache or a verified download
       if: steps.download.outcome == 'failure' && steps.sibling.outputs.cache-matched-key == ''
       shell: bash
@@ -116,7 +133,7 @@ runs:
         exit 1
 
     - name: Save audio model weights
-      if: inputs.save == 'true' && steps.music.outputs.cache-hit != 'true' && (steps.restored.outcome == 'success' || steps.download.outcome == 'success')
+      if: inputs.save == 'true' && steps.music.outputs.cache-hit != 'true' && (steps.restored.outcome == 'success' || steps.download.outcome == 'success' || steps.refetch.outcome == 'success')
       continue-on-error: true
       uses: actions/cache/save@v6
       with:

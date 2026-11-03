@@ -6,19 +6,17 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { AUDIO_MODEL_ROOTS, AUDIO_PACK_MARKER, selectModelCapabilities } from './model-packs.mjs';
 
 const checksum = data => createHash('sha256').update(data).digest('hex');
-// The manifest host (essentia.upf.edu for the Jamendo embeddings) is the last
-// resort. CI reads the same URL from DGE_MODEL_MIRROR. A GitHub Release asset
-// name cannot contain a slash, so nested paths use '__'.
-export const DEFAULT_MODEL_MIRROR =
-  'https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1';
+// CI workflows set DGE_MODEL_MIRROR. Leave it unset for local and Docker builds:
+// the GitHub release 404s until models-v1 exists, and those builds should use
+// the manifest host directly. A release asset name cannot contain a slash, so
+// nested paths use '__'.
 const MIRROR_ATTEMPTS = 2;
 const UPSTREAM_ATTEMPTS = 6;
 // Full-precision AST is 347 MB; 120 s only covers a sustained ~23 Mbps link.
 const FETCH_TIMEOUT_MS = 600_000;
 
 export function audioModelSourceUrls(name, primary, env = process.env) {
-  const configured = env.DGE_MODEL_MIRROR === undefined ? DEFAULT_MODEL_MIRROR : env.DGE_MODEL_MIRROR;
-  const base = configured.trim().replace(/\/$/, '');
+  const base = (env.DGE_MODEL_MIRROR ?? '').trim().replace(/\/$/, '');
   const urls = [];
   if (base) urls.push(`${base}/${name.split('/').join('__')}`);
   if (!urls.includes(primary)) urls.push(primary);

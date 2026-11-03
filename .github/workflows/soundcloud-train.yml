@@ -29,6 +29,7 @@ permissions:
 env:
   # These builds need the audio model pack.
   DGE_MODELS: full
+  DGE_MODEL_MIRROR: https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1
   ONNXRUNTIME_NODE_INSTALL: skip
   BASE_REF: 245c428d82fe0283f4d15ceb57bdd5ef4f90afda   # main when the SoundCloud fit was run
   DOCS: docs/evaluations/soundcloud-2026-10-06
