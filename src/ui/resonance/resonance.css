@@ -291,6 +291,13 @@
    never lands on the filter column or the inspector; the classic layout's
    side-panel offset does not apply here. */
 .rs-stage .minimap, .rs-stage .minimap--shifted { position: absolute; right: 18px; bottom: 18px; }
+/* The classic layout floats the minimap at --z-floating (30), which here would
+   outrank the top bar (--z-overlay) and so cover its open tool menu and the
+   corpus switcher. Nothing in the stage column is a stacking context, so the
+   minimap takes the top bar's layer minus one: above the canvas, below every
+   bar dropdown, the narrow-screen filter drop-down (z 19) and the app-level
+   panels (chat, compare, path, modals). */
+.rs-stage .minimap { z-index: calc(var(--z-overlay) - 1); }
 /* Compare is still a viewport-wide overlay: step left by however much it spills past the inspector. */
 .rs-stage .minimap--compare-shifted { position: absolute; right: calc(max(0px, var(--compare-panel-width) - var(--rs-right)) + 18px); bottom: 18px; }
 .rs-stage__banner { position: absolute; top: 16px; left: 16px; right: 16px; z-index: var(--z-panel); display: flex; justify-content: center; pointer-events: none; }
