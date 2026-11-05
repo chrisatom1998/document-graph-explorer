@@ -185,6 +185,57 @@ describe('restored and orphaned audio filters', () => {
   });
 });
 
+describe('Similarity type filter', () => {
+  beforeEach(() => {
+    useGraphStore.getState().reset();
+    useUiStore.setState({ filter: { ...DEFAULT_FILTER } });
+    useGraphStore.getState().addNodes([track('Alpha', 'a.wav'), track('Beta', 'b.wav')]);
+    useGraphStore.getState().setEdges([
+      { id: 'instrument', source: 'Alpha', target: 'Beta', kind: 'instrument', weight: 0.5, evidence: [] },
+      { id: 'tempo', source: 'Alpha', target: 'Beta', kind: 'tempo', weight: 0.9, evidence: [] },
+      { id: 'topic', source: 'Alpha', target: 'Beta', kind: 'topic', weight: 0.9, evidence: [] },
+    ]);
+  });
+  afterEach(() => { cleanup(); useGraphStore.getState().reset(); useUiStore.setState({ filter: { ...DEFAULT_FILTER } }); });
+
+  it('shows every present kind ticked while edgeKinds is null and hides only the unticked kind', () => {
+    render(<ResonanceFilters />);
+    const instruments = screen.getByRole('checkbox', { name: 'Instruments' });
+    const tempo = screen.getByRole('checkbox', { name: 'Tempo' });
+    expect(instruments).toBeChecked();
+    expect(tempo).toBeChecked();
+    expect(screen.queryByRole('checkbox', { name: 'Key' })).not.toBeInTheDocument();
+
+    fireEvent.click(instruments);
+    expect(useUiStore.getState().filter.edgeKinds).toEqual(['tempo']);
+    expect(instruments).not.toBeChecked();
+    expect(tempo).toBeChecked();
+    // The last ticked kind is locked: an empty list would show every link again.
+    // The reason reaches assistive tech as the box's description, not just its title.
+    expect(tempo).toBeDisabled();
+    expect(tempo).toHaveAccessibleDescription('At least one link type stays on');
+    expect(instruments).not.toHaveAccessibleDescription();
+
+    fireEvent.click(instruments);
+    // Every listed kind ticked again: back to the "all kinds" null form.
+    expect(useUiStore.getState().filter.edgeKinds).toBeNull();
+    expect(instruments).toBeChecked();
+    expect(tempo).toBeChecked();
+    expect(tempo).toBeEnabled();
+    expect(tempo).not.toHaveAccessibleDescription();
+  });
+
+  it('keeps a saved explicit list and normalizes to null once every kind is ticked', () => {
+    useUiStore.setState({ filter: { ...DEFAULT_FILTER, edgeKinds: ['instrument'] } });
+    render(<ResonanceFilters />);
+    expect(screen.getByRole('checkbox', { name: 'Instruments' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Tempo' })).not.toBeChecked();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Tempo' }));
+    expect(useUiStore.getState().filter.edgeKinds).toBeNull();
+  });
+});
+
 describe('File type filter', () => {
   afterEach(() => { cleanup(); useGraphStore.getState().reset(); useUiStore.setState({ filter: { ...DEFAULT_FILTER } }); });
   const doc = (id: string, fileType: DocNode['fileType']): DocNode => ({ ...clip(id, []), fileType, audio: undefined });

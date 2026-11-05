@@ -122,6 +122,11 @@
 .rs-menu button:hover:not(:disabled) { background: var(--rs-line); }
 /* Disabled items dim to a colour that still reads, rather than fading out. */
 .rs-menu button:disabled, .rs-menu button:disabled svg { color: var(--rs-disabled); cursor: default; }
+/* Keyboard shortcut hint at the right edge of a menu item. */
+.rs-menu__kbd { margin-left: auto; padding: 1px 6px; border: 1px solid var(--rs-line-strong); border-radius: 5px; color: var(--rs-muted); font: inherit; font-size: 11px; }
+/* Minimized audio-analysis restore chip: the note glyph plus a count, as one 36px pill. */
+.rs-top__actions .music-analysis-status-button { display: inline-flex; gap: 4px; width: auto; padding: 0 10px; border: 1px solid var(--rs-line-strong); color: var(--rs-text); }
+.rs-top__actions .music-analysis-status-button:hover { border-color: var(--rs-lime); }
 
 /* ---- Left column -------------------------------------------------------- */
 .rs-sidebar {
@@ -282,6 +287,19 @@
 .rs-stage { grid-area: stage; position: relative; min-width: 0; min-height: 0; overflow: hidden; background: var(--rs-bg); }
 .rs-stage .nebula-canvas, .rs-stage .scene-loading { position: absolute !important; inset: 0 !important; }
 .rs-stage .webgl-fallback { position: absolute; inset: 0; }
+/* The minimap is anchored to the stage column instead of the viewport, so it
+   never lands on the filter column or the inspector; the classic layout's
+   side-panel offset does not apply here. */
+.rs-stage .minimap, .rs-stage .minimap--shifted { position: absolute; right: 18px; bottom: 18px; }
+/* The classic layout floats the minimap at --z-floating (30), which here would
+   outrank the top bar (--z-overlay) and so cover its open tool menu and the
+   corpus switcher. Nothing in the stage column is a stacking context, so the
+   minimap takes the top bar's layer minus one: above the canvas, below every
+   bar dropdown, the narrow-screen filter drop-down (z 19) and the app-level
+   panels (chat, compare, path, modals). */
+.rs-stage .minimap { z-index: calc(var(--z-overlay) - 1); }
+/* Compare is still a viewport-wide overlay: step left by however much it spills past the inspector. */
+.rs-stage .minimap--compare-shifted { position: absolute; right: calc(max(0px, var(--compare-panel-width) - var(--rs-right)) + 18px); bottom: 18px; }
 .rs-stage__banner { position: absolute; top: 16px; left: 16px; right: 16px; z-index: var(--z-panel); display: flex; justify-content: center; pointer-events: none; }
 .rs-stage__banner .snapshot-diff-banner { position: static; transform: none; pointer-events: auto; max-width: 560px; background: var(--rs-raised); border: 1px solid var(--rs-line-strong); }
 .rs-library, .rs-export {
@@ -319,6 +337,7 @@
 }
 .rs-library .graph-navigator__option:hover { background: var(--rs-raised); }
 .rs-library .graph-navigator__option.is-active { background: color-mix(in srgb, var(--rs-lime) 10%, transparent); box-shadow: inset 3px 0 0 var(--rs-lime); }
+.rs-library .graph-navigator__option[aria-disabled='true'] .graph-navigator__name { color: var(--rs-disabled); }
 .rs-library .graph-navigator__name { font-size: 14px; font-weight: 500; line-height: 1.4; color: var(--rs-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rs-library .graph-navigator__meta { font-size: 13px; line-height: 1.4; color: var(--rs-muted); }
 .rs-export .toolbar__menu { position: static; width: min(420px, 100%); margin: 0 auto; max-height: none; animation: none; }
@@ -673,6 +692,8 @@ body:has(.rs-root) .confirm-dialog .snapshot-btn:disabled { background: none; bo
   /* Phone top bar: five actions plus the 2D/3D switch leave little room, so the icons tighten and the pill keeps whatever is left. */
   .rs-top { padding: 8px 8px 0; }
   .rs-top .rs-icon { width: 32px; height: 32px; }
+  /* The audio-analysis chip carries a count, so it keeps its own width instead of the 32px icon box. */
+  .rs-top__actions .music-analysis-status-button { width: auto; min-width: 32px; padding: 0 8px; }
   .rs-top__actions .workspace-dims { height: 32px; padding: 2px; }
   .rs-top__actions .workspace-dims span { padding: 4px 6px; }
   .rs-corpus .corpus-switcher__trigger { padding: 0 8px; gap: 6px; }

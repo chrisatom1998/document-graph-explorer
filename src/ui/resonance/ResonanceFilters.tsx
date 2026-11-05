@@ -40,6 +40,8 @@ const SIMILARITY: { kind: EdgeKind; label: string }[] = [
 
 /** Sounds listed before "Show all". */
 const SOUNDS_SHOWN = 8;
+const LAST_KIND_HELP = 'At least one link type stays on';
+const LAST_KIND_HELP_ID = 'rs-similarity-last-kind-help';
 
 const TYPE_LABEL: Partial<Record<FileType, string>> = { audio: 'Audio', pdf: 'PDF', md: 'Markdown', txt: 'Text', html: 'HTML', docx: 'Word', pptx: 'Slides', xlsx: 'Sheets', code: 'Code' };
 
@@ -118,11 +120,20 @@ export default function ResonanceFilters() {
     setFilter({ sounds: next.length ? next : null });
   };
 
-  const checked = (kind: EdgeKind) => filter.edgeKinds !== null && filter.edgeKinds.includes(kind);
+  // edgeKinds: null means every kind shows, so every present kind reads as ticked.
+  // Unticking one keeps the rest (an explicit array of the other present kinds);
+  // once every present kind is ticked again the filter normalizes back to null,
+  // so saved views and persisted filters keep their meaning either way.
+  const checked = (kind: EdgeKind) => filter.edgeKinds === null ? kindsPresent.has(kind) : filter.edgeKinds.includes(kind);
+  // The last ticked kind stays locked: an empty list reads as "no filter" downstream,
+  // which would show every link under a row of unticked boxes.
+  const lastTicked = (kind: EdgeKind) => checked(kind) && similarity.filter(s => checked(s.kind)).length === 1;
   const toggleKind = (kind: EdgeKind) => {
-    const current = filter.edgeKinds ?? [];
+    // The listed kinds only: topic links keep their own visibility toggle.
+    const all = similarity.map(s => s.kind);
+    const current = filter.edgeKinds ?? all;
     const next = current.includes(kind) ? current.filter(k => k !== kind) : [...current, kind];
-    setFilter({ edgeKinds: next.length ? next : null });
+    setFilter({ edgeKinds: all.every(k => next.includes(k)) ? null : next });
   };
   const range = filter.bpmRange ?? [bpmMin, bpmMax];
   const setRange = (lo: number, hi: number) => {
@@ -166,8 +177,8 @@ export default function ResonanceFilters() {
           <ul className="rs-checks">
             {(similarity.length ? similarity : SIMILARITY.slice(0, 5)).map(({ kind, label }) => (
               <li key={kind}>
-                <label>
-                  <input type="checkbox" checked={checked(kind)} onChange={() => toggleKind(kind)} disabled={!kindsPresent.has(kind)} />
+                <label title={lastTicked(kind) ? LAST_KIND_HELP : undefined}>
+                  <input type="checkbox" checked={checked(kind)} onChange={() => toggleKind(kind)} disabled={!kindsPresent.has(kind) || lastTicked(kind)} aria-describedby={lastTicked(kind) ? LAST_KIND_HELP_ID : undefined} />
                   <span className="rs-check" aria-hidden="true" />
                   {label}
                 </label>
@@ -175,6 +186,8 @@ export default function ResonanceFilters() {
             ))}
           </ul>
         )}
+        {/* The title above only reaches pointer users; assistive tech gets the same reason through aria-describedby. */}
+        {similarityOpen && <p id={LAST_KIND_HELP_ID} className="sr-only">{LAST_KIND_HELP}</p>}
       </section>
 
       {(audio || audioFilterActive) && <>
