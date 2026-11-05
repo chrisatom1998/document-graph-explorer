@@ -1,0 +1,161 @@
+{
+  "baseline": {
+    "eval-vcsl": {
+      "cat:glockenspiel": {
+        "threshold": 0.3828,
+        "positives": 27,
+        "negatives": 392,
+        "truePositives": 1,
+        "falseDetections": 0,
+        "precision": 1.0,
+        "recall": 0.037037037037037035,
+        "f1": 0.07142857142857142
+      }
+    },
+    "run9-positive-subset": {
+      "cat:foley": {
+        "threshold": 0.2941,
+        "positives": 122,
+        "negatives": 0,
+        "truePositives": 44,
+        "recall": 0.36065573770491804
+      },
+      "cat:vocal shout": {
+        "threshold": 0.1989,
+        "positives": 92,
+        "negatives": 0,
+        "truePositives": 16,
+        "recall": 0.17391304347826086
+      },
+      "cat:glockenspiel": {
+        "threshold": 0.3828,
+        "positives": 14,
+        "negatives": 0,
+        "truePositives": 4,
+        "recall": 0.2857142857142857
+      }
+    }
+  },
+  "candidate": {
+    "eval-vcsl": {
+      "cat:glockenspiel": {
+        "threshold": 0.2462,
+        "positives": 27,
+        "negatives": 392,
+        "truePositives": 1,
+        "falseDetections": 0,
+        "precision": 1.0,
+        "recall": 0.037037037037037035,
+        "f1": 0.07142857142857142
+      }
+    },
+    "run9-positive-subset": {
+      "cat:foley": {
+        "threshold": 0.4054,
+        "positives": 122,
+        "negatives": 0,
+        "truePositives": 65,
+        "recall": 0.5327868852459017
+      },
+      "cat:vocal shout": {
+        "threshold": 0.3786,
+        "positives": 92,
+        "negatives": 0,
+        "truePositives": 32,
+        "recall": 0.34782608695652173
+      },
+      "cat:glockenspiel": {
+        "threshold": 0.2462,
+        "positives": 14,
+        "negatives": 0,
+        "truePositives": 4,
+        "recall": 0.2857142857142857
+      }
+    }
+  },
+  "baseline-app-policy": {
+    "run9-positive-subset": {
+      "cat:foley": {
+        "threshold": 0.15,
+        "positives": 122,
+        "negatives": 0,
+        "truePositives": 66,
+        "recall": 0.5409836065573771
+      },
+      "cat:vocal shout": {
+        "threshold": 0.03,
+        "positives": 92,
+        "negatives": 0,
+        "truePositives": 37,
+        "recall": 0.40217391304347827
+      },
+      "cat:glockenspiel": {
+        "threshold": 0.3828,
+        "positives": 14,
+        "negatives": 0,
+        "truePositives": 4,
+        "recall": 0.2857142857142857
+      }
+    }
+  },
+  "method": {
+    "dateUTC": "2026-11-05",
+    "runtime": "ONNX Runtime 1.31.1 CPUExecutionProvider, NumPy 2.5.4",
+    "threads": 4,
+    "batchSize": 1,
+    "input": "Cached int16 mono 32 kHz, 320000 samples divided by 32768 to float32; no augmentation or calibration",
+    "baselineModelSHA256": "14f80825ba22af6048b62ad8c4dbddd0977eccffa66247b4ee657e9f15e62a56",
+    "candidateModelSHA256": "ee2dfc127e077f69c479b27735270f94638598442e438dcf1b21322694645c03",
+    "vcslItems": 419,
+    "run9SubsetItems": 228,
+    "run9SubsetRule": "Union of all rows explicitly labelled present for cat:foley, cat:vocal shout or cat:glockenspiel, preserving original order; recall only on each tag's own positives",
+    "notes": [
+      "Each ONNX SHA256 checked against model.json before inference",
+      "Run9 pinned-revision bytes equal the evaluated subset byte-for-byte",
+      "Run9 weak absences excluded; precision and F1 intentionally omitted",
+      "Measures frozen tagger outputs, not the complete app detector/display pipeline",
+      "No independent improvement or complete ancestry validation established"
+    ]
+  },
+  "cache": {
+    "repo": "cmjatom/dge-tagger-data",
+    "revision": "092291d29c8d89f1c83eed99d0728c1f992d1219",
+    "assets": [
+      {
+        "path": "prep-cache/src/vcsl/572f1334e98a8284/eval-vcsl.json",
+        "size": 458898,
+        "oid": "57afa4b59773f70a09d2917584cf6be642ddac46"
+      },
+      {
+        "path": "prep-cache/src/vcsl/572f1334e98a8284/eval-vcsl.npy",
+        "size": 268160128,
+        "oid": "861f6348372d4c8dccaa7ba184d2702c9eb799d6",
+        "lfs": {
+          "oid": "79ccfefbbd01140dadac539710cbd15903b29ea8c334c6cc938b46e7dc556167",
+          "size": 268160128,
+          "pointerSize": 134
+        }
+      },
+      {
+        "path": "prep-cache/src/run9/18dba7d760651845/eval-run9.json",
+        "size": 36465516,
+        "oid": "a5e2c7b0cfda4dcf8005af4a540ef649da8ff367",
+        "lfs": {
+          "oid": "557f368c08e01773d3777bb536af54d8782ccb962e5efc99a3fbd64095e88273",
+          "size": 36465516,
+          "pointerSize": 133
+        }
+      },
+      {
+        "path": "prep-cache/src/run9/18dba7d760651845/eval-run9.npy",
+        "size": 3204480128,
+        "oid": "88ebd2e0c8c2beea23f663bbc374f274567e6367",
+        "lfs": {
+          "oid": "3df72c7edb9aa54f5a6521152895546111f3591610b65a494730509295cbeba9",
+          "size": 3204480128,
+          "pointerSize": 135
+        }
+      }
+    ]
+  }
+}

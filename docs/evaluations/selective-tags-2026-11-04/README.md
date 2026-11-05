@@ -1,6 +1,6 @@
 # Selective tag adoption review — November 4, 2026
 
-Status: **validation blocked; no candidate outputs adopted**. This is a draft evidence record, not a model release.
+Status: **no candidate has passed the available checks; no candidate outputs adopted**. This is a draft evidence record, not a model release.
 The checked-in `public/tagger-model/model.json` exactly matches the shipped HF revision below. The browser weights,
 policy, thresholds, parity fixtures and combine request are unchanged. Newer r26–r28 runs are outside this review.
 
@@ -32,7 +32,7 @@ the larger FSD50K results below are **not an independent confirmation** of the j
 | bell | eval-fsd50k (all) | 206 / 4678 | 0.718 / 0.617 / 0.663 | 0.717 / 0.602 / 0.654 |
 | foley | eval-fsd50k (all) | 763 / 4121 | 0.714 / 0.626 / 0.668 | 0.703 / 0.659 / 0.681 |
 
-## Adoption decisions
+## Decisions from the stored evaluations
 
 - **Piano: retain shipped output.** DJ round 1 is unchanged; round 2 recall drops .933 to .867. Round 3 strict recall
   drops .871 to .686. Round 3 has no labelled negatives for piano, so its perfect precision cannot establish low false
@@ -44,6 +44,78 @@ the larger FSD50K results below are **not an independent confirmation** of the j
   respectively. Glockenspiel F1 improves, vocal shout recall improves with worse precision, and foley improves slightly.
   All seven app outputs have no paired non-FSD50K rows here except piano. These gains therefore do not satisfy this
   review's independent-data requirement. Do not force them through `--pin` using these numbers.
+
+## Fresh local checks — November 5, 2026
+
+See [local-paired-eval.json](local-paired-eval.json) for confusion counts, frozen thresholds, model checksums and cache
+references, and [ancestry-audit.json](ancestry-audit.json) for the aggregate lineage audit. The checks below were
+actually run locally on CPU; they are not a proposal for a future paid evaluation.
+
+The existing cache was accessible with the authorized HF credential. Downloaded VCSL metadata/audio and run 9
+metadata match their pinned Hub Git/LFS hashes at dataset revision `092291d29c8d89f1c83eed99d0728c1f992d1219`.
+The run 9 subset was retrieved by HTTP byte ranges and independently retrieved again at that immutable revision;
+the two 228-row arrays are byte-identical. No raw audio or private clip IDs are committed here.
+
+Both the exact shipped ONNX and candidate ONNX were loaded with ONNX Runtime 1.31.1, CPUExecutionProvider, four
+intra-op threads, batch size one. Every cached clip is already a padded 10-second, 32 kHz mono int16 window. Inputs
+were converted to float32 and divided by 32768, as `evaluate.py` does. Model SHA256s were verified before inference.
+No threshold was fitted, swept or changed. These are tagger-output checks, not end-to-end measurements of the app
+with other detectors, short-clip overrides or long-recording rules.
+
+| Tag | Set | Baseline at DGE cutoff | Candidate at its frozen cutoff | Result |
+|---|---|---|---|---|
+| glockenspiel | VCSL: 27 positives, 392 explicit negatives | 1 TP, 0 FP; P 1.000, R .037, F1 .071 | 1 TP, 0 FP; P 1.000, R .037, F1 .071 | Unchanged |
+| glockenspiel | run 9: all 14 positives | 4 TP; recall .286 | 4 TP; recall .286 | Unchanged |
+| foley | run 9: all 122 positives | 66 TP; recall .541 | 65 TP; recall .533 | Lower recall |
+| vocal shout | run 9: all 92 positives | 37 TP; recall .402 | 32 TP; recall .348 | Lower recall |
+
+**The actual app cutoff matters.** `src/audio/taggerPolicy.json` uses .15 for foley and .03 for vocal shout, rather
+than the old calibration file's .2941 and .1989. Using those calibration cutoffs would make baseline recall look
+like .361 and .174, and would incorrectly suggest large candidate recall gains against the shipped app. The source
+artifact comparison above uses the archived calibration cutoffs; the fresh app-cutoff comparison is the appropriate
+one for deciding whether to replace these outputs. Glockenspiel uses .3828 in both; the candidate uses .2462.
+
+The 228-row subset is the union of **every** run 9 positive for these three tags, chosen only by existing labels,
+not by model results. Other tags' absences are weak, so this subset supplies zero explicit negatives for these outputs.
+Precision and F1 on it would be misleading and are omitted. Original run 9 metadata says the clips are unreviewed;
+its positive labels are inherited dataset/uploader annotations, not fresh human validation. The stored candidate
+true-positive counts (65, 32, 4) exactly match the fresh inference. VCSL counts also match both runs' archived reports.
+
+### What ancestry checks established
+
+For the candidate and available run 7/8/9/10/11/recall2 manifests, the listed training/validation IDs have **zero
+exact-ID intersections** with either 419 VCSL evaluation IDs or 5,007 run 9 evaluation IDs. The candidate lists 36,547
+training/validation IDs across these fields. `run9Ids["eval-run9"]` is explicitly an evaluation list and is excluded
+from training-ID checks. VCSL held-folder lists match the candidate across the available ancestors; run 9 held-ID
+lists match for the manifests that contain them. These checks do not establish audio-hash, render-family or uploader
+deduplication across sources whose full metadata is absent.
+
+### Exact remaining evidence gaps
+
+Access to the cached audio and CPU inference is working; **there is no current sign-in or compute blocker**.
+What is missing before a defensible adoption is:
+
+- In private `cmjatom/dge-instrument-tagger@29090c5d7f26daad8b9bf3cc9dc079161a4809de`,
+  `all-tags/data-manifest.json` and `all-tags-run5/data-manifest.json` both return HTTP 404. Their `log.json` files
+  contain no training repository commit or full input ID/group/hash manifest. Run 5 initializes from
+  `init/all-tags-run4/model.pt`, adding another ancestor to resolve. These manifests or equivalent historical
+  training/validation input records are needed, not a new HF login.
+- Several existing manifests use `@main` for initialization instead of an immutable parent revision. Recover the exact
+  parent-weight hashes/revisions for run 7 -> run 5, run 10 -> run 7, and recall2 -> run 10, plus run 5 -> run 4.
+- Full training/validation clip IDs, original-source IDs, uploader/performer/pack groups and audio fingerprints are
+  absent for the source names listed in `missingFullIDLists` in `ancestry-audit.json` (including FSD50K, Freesound,
+  round10 and several rendered/labelled sources). The current cache alone is not tied to every historical run.
+  Those records are needed to exclude aliases, re-hosts and related renders across the whole initialization chain.
+- Run 9 has no explicit negative labels for these three outputs. A reviewed, balanced replacement label file for
+  `prep-cache/src/run9/18dba7d760651845/eval-run9.json`, or another appropriate independent set with strong
+  positive **and** negative labels, is needed to measure false alarms. Preserve existing split/family reservations;
+  do not turn its evaluation clips into training or calibration data. VCSL supplies strong negatives for glockenspiel,
+  but both models are unchanged and miss 26/27 positives there.
+
+These available comparisons do not validate any of the three remaining candidates. Piano and vinyl scratch already
+regress on the paired reports above; bell and machine ambience do not improve the existing combiner criterion.
+A documentation PR is **not completed integration**: production remains on the current outputs, and no model upgrade
+is being claimed. New r26–r28 candidates, once separately verified, may change which outputs merit evaluation.
 
 ## Remaining validation before integration
 
