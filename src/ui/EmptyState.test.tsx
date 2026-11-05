@@ -4,14 +4,17 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { openFilePicker } from '../ingest/DropZone';
 import { openFolderPicker } from '../ingest/folderPicker';
-import { loadDemoCorpus } from '../pipeline/coordinatorLazy';
+import { loadDemoAudio, loadDemoCorpus } from '../pipeline/coordinatorLazy';
 import { useUiStore } from '../store/uiStore';
 import { openGraphJsonPicker } from './ExportImportMenu';
 import EmptyState from './EmptyState';
 
 vi.mock('../ingest/DropZone', () => ({ openFilePicker: vi.fn() }));
 vi.mock('../ingest/folderPicker', () => ({ openFolderPicker: vi.fn() }));
-vi.mock('../pipeline/coordinatorLazy', () => ({ loadDemoCorpus: vi.fn(async () => {}) }));
+vi.mock('../pipeline/coordinatorLazy', () => ({
+  loadDemoCorpus: vi.fn(async () => {}),
+  loadDemoAudio: vi.fn(async () => {}),
+}));
 vi.mock('./ExportImportMenu', () => ({
   openGraphJsonPicker: vi.fn(),
   importGraphJsonFileWithToast: vi.fn(),
@@ -40,19 +43,24 @@ describe('EmptyState', () => {
     render(<EmptyState />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'See how sounds and documents relate.' })).toBeVisible();
-    expect(screen.getByText(/100 sample documents, not audio/)).toBeVisible();
+    expect(screen.getByText(/100 sample documents/)).toBeVisible();
+    expect(screen.getByText(/8 generated clips/)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'In the workspace' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('heading', { name: 'Graph and Library' })).not.toBeInTheDocument();
     expect(screen.getByText(/Nothing is uploaded unless you turn on a cloud AI provider/)).toBeVisible();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(screen.queryByText(/sign in/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/serato/i)).not.toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('button', { name: 'In the workspace' }));
+    expect(screen.getByRole('button', { name: 'In the workspace' })).toHaveAttribute('aria-expanded', 'true');
     for (const name of WORKSPACE_TOOLS) {
       expect(screen.getByRole('heading', { name })).toBeVisible();
     }
     expect(screen.getByRole('region', { name: 'In the workspace' })).toHaveTextContent('Sample assistant');
     expect(screen.getByRole('region', { name: 'In the workspace' })).toHaveTextContent('Ask about your library');
     expect(screen.getByRole('region', { name: 'In the workspace' })).toHaveTextContent('Rekordbox');
-    expect(screen.getByRole('region', { name: 'In the workspace' })).toHaveTextContent(/Add files, load the demo, or import a graph/);
+    expect(screen.getByRole('region', { name: 'In the workspace' })).toHaveTextContent(/Add files, load a demo, or import a graph/);
 
     expect(await screen.findByRole('button', { name: /Current corpus/ })).toBeVisible();
 
@@ -68,7 +76,7 @@ describe('EmptyState', () => {
   it('opens the file pickers, demo, importer, settings and help', async () => {
     render(<EmptyState />);
 
-    const names = ['Add files', 'Add a folder', 'Load demo corpus', 'Import a graph', 'Settings', 'Help'];
+    const names = ['Add files', 'Load demo corpus', 'Load audio demo', 'Add a folder', 'Import a graph', 'Settings', 'Help'];
     for (const name of names) {
       const button = screen.getByRole('button', { name });
       expect(button).toBeEnabled();
@@ -84,6 +92,10 @@ describe('EmptyState', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Load demo corpus' }));
     await waitFor(() => expect(loadDemoCorpus).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Load audio demo' })).toBeEnabled());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load audio demo' }));
+    await waitFor(() => expect(loadDemoAudio).toHaveBeenCalledTimes(1));
 
     fireEvent.click(screen.getByRole('button', { name: 'Import a graph' }));
     await waitFor(() => expect(openGraphJsonPicker).toHaveBeenCalledTimes(1));
