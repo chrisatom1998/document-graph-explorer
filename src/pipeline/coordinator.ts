@@ -129,6 +129,7 @@ import {
 import { addToSemanticIndex, edgesFromIndex, type SemanticIndex } from './similarity';
 import { synthesizeTopicNodes } from './topicNodes';
 import { selectFallbackTopics } from './topics';
+import { createAudioDemoFiles } from '../demo/audioDemo';
 import { createGeneratedDemoDocuments } from '../demo/generatedDocuments';
 import { fetchDemoManifest } from '../demo/manifest';
 
@@ -1922,6 +1923,12 @@ export async function loadDemoCorpus(): Promise<void> {
       ? createGeneratedDemoDocuments(generatedCount)
       : [];
   const files = [...fetched.filter((f): f is IngestFile => f !== null), ...generated];
+  if (files.length > 0) await ingestFiles(files);
+}
+
+/** Synthesizes a short clip pack in the browser and ingests it. */
+export async function loadDemoAudio(): Promise<void> {
+  const files = createAudioDemoFiles();
   if (files.length > 0) await ingestFiles(files);
 }
 

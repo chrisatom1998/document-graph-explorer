@@ -1,7 +1,37 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { corpusCount, details, openChat, openFiles, openTab, toolMenu, waitForGraphReady } from './resonance';
+
+/** Session save is debounced, so "ready" on screen can still reload as an empty welcome. */
+async function waitForSavedDocuments(page: Page, count: number): Promise<void> {
+  await page.waitForFunction(async (expected) => {
+    try {
+      const known = await indexedDB.databases();
+      if (!known.some((entry) => entry.name === 'knowledge-nebula')) return false;
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('knowledge-nebula');
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+      });
+      try {
+        if (!db.objectStoreNames.contains('corpora')) return false;
+        const records = await new Promise<Array<{ exportData?: { nodes?: Array<{ kind?: string }> } }>>((resolve, reject) => {
+          const request = db.transaction('corpora', 'readonly').objectStore('corpora').getAll();
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => resolve(request.result as Array<{ exportData?: { nodes?: Array<{ kind?: string }> } }>);
+        });
+        return records.some((record) =>
+          (record.exportData?.nodes ?? []).filter((node) => node.kind === 'document').length >= expected,
+        );
+      } finally {
+        db.close();
+      }
+    } catch {
+      return false;
+    }
+  }, count, { timeout: 120_000 });
+}
 
 function tone(frequency: number) {
   const wav = Buffer.alloc(44 + 16000 * 2);
@@ -99,14 +129,18 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     await (await again).setFiles(folder);
     await expect(corpusCount(page)).toContainText('4 clips',{ timeout: 120000 });
     await waitForGraphReady(page, 120_000);
+    await waitForSavedDocuments(page, 4);
     // A restored workspace with audio warms every audio model at open (#131).
     // On a CPU-rendered CI runner those four model workers starve SwiftShader
     // and the screenshots below time out waiting for a frame. This scenario
     // checks the restored interface, not the warmup, so keep the models out.
-    await page.route(/\/(music-model|sound-model|jamendo-model)\/.*\.onnx/, route => route.abort('failed'));
+    await page.route(/\/(music-model|sound-model|jamendo-model|tagger-model)\/.*\.onnx/, route => route.abort('failed'));
     await page.reload();
     await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(11, 11, 17)');
-    await expect(corpusCount(page)).toContainText('4 clips');
+    // The phone resize below reflows the WebGL scene on the software renderer
+    // and can stall the main thread past the 30s default.
+    page.setDefaultTimeout(120_000);
+    await expect(corpusCount(page)).toContainText('4 clips', { timeout: 120_000 });
     await page.setViewportSize({ width: 390, height: 844 });
     await openFiles(page);
     await expect(page.getByRole('listbox', { name: 'Graph nodes' })).toBeVisible();

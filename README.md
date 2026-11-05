@@ -102,7 +102,8 @@ every export and import action.
 ### Try it in the browser
 
 Open the **[live app](https://document-graph-explorer.vercel.app)** and choose **Load demo corpus**
-to explore immediately, or **Add files** / **Add a folder** to use your own. Processing happens in
+for sample documents, **Load audio demo** for a short pack of generated clips, or **Add files** /
+**Add a folder** to use your own. Processing happens in
 that browser tab; adding files does not upload them to the host. Workspaces, notes and tags are saved
 locally and reopen after a reload.
 

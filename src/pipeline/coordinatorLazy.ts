@@ -13,6 +13,7 @@ export {
   setAudioTagFix,
   setAudioDjTags,
   loadDemoCorpus,
+  loadDemoAudio,
   rebuildEmbeddings,
   reconcileWatchedFiles,
   resetCorpus,

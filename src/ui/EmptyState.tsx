@@ -1,4 +1,5 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
+import { AUDIO_DEMO_CLIPS } from '../demo/audioDemo';
 import { openFilePicker } from '../ingest/DropZone';
 import { openFolderPicker } from '../ingest/folderPicker';
 import { useGraphStore } from '../store/graphStore';
@@ -48,17 +49,21 @@ const WORKSPACE_FEATURES = [
 
 /** The local-first welcome workspace shown before a corpus is loaded. */
 export default function EmptyState() {
-  // The demo fetches its manifest and every sample file before the pipeline
-  // phase changes (which is what swaps this screen for the progress strip),
-  // so without a busy state the button looks dead for seconds on a slow
-  // connection — and a second click would queue a second ingest.
-  const [demoLoading, setDemoLoading] = useState(false);
-  const loadDemo = () => {
-    if (demoLoading) return;
-    setDemoLoading(true);
+  // The document demo fetches its manifest before the pipeline phase changes
+  // (which is what swaps this screen for the progress strip), so without a
+  // busy state the button looks dead for seconds — and a second click would
+  // queue another ingest. The audio demo is generated locally, but analysis
+  // still takes long enough that both entries share one lock.
+  const demoLock = useRef<'docs' | 'audio' | null>(null);
+  const [demoLoading, setDemoLoading] = useState<'docs' | 'audio' | null>(null);
+  const [featuresOpen, setFeaturesOpen] = useState(false);
+  const loadDemo = (kind: 'docs' | 'audio') => {
+    if (demoLock.current) return;
+    demoLock.current = kind;
+    setDemoLoading(kind);
     rememberCenterOrigin();
     import('../pipeline/coordinatorLazy')
-      .then(({ loadDemoCorpus }) => loadDemoCorpus())
+      .then((mod) => (kind === 'docs' ? mod.loadDemoCorpus() : mod.loadDemoAudio()))
       .then(() => {
         // Only show the guide when the demo actually produced a graph; a
         // mid-run cancellation resolves the promise but leaves nodes empty.
@@ -67,10 +72,15 @@ export default function EmptyState() {
         }
       })
       .catch((err) => {
-        console.warn('demo corpus load failed', err);
-        useUiStore.getState().pushToast("Couldn't load the demo corpus.");
+        console.warn(kind === 'docs' ? 'demo corpus load failed' : 'audio demo load failed', err);
+        useUiStore.getState().pushToast(
+          kind === 'docs' ? "Couldn't load the demo corpus." : "Couldn't load the audio demo.",
+        );
       })
-      .finally(() => setDemoLoading(false));
+      .finally(() => {
+        demoLock.current = null;
+        setDemoLoading(null);
+      });
   };
 
   const importGraph = () => {
@@ -132,7 +142,29 @@ export default function EmptyState() {
               </button>
               <button
                 type="button"
-                className="empty-state__secondary-action"
+                className="empty-state__primary-action"
+                aria-describedby="empty-start-hint"
+                aria-busy={demoLoading === 'docs'}
+                disabled={demoLoading !== null}
+                onClick={() => loadDemo('docs')}
+              >
+                {demoLoading === 'docs' ? 'Loading demo…' : 'Load demo corpus'}
+              </button>
+              <button
+                type="button"
+                className="empty-state__primary-action"
+                aria-describedby="empty-start-hint"
+                aria-busy={demoLoading === 'audio'}
+                disabled={demoLoading !== null}
+                onClick={() => loadDemo('audio')}
+              >
+                {demoLoading === 'audio' ? 'Loading audio demo…' : 'Load audio demo'}
+              </button>
+            </div>
+            <div className="empty-state__links">
+              <button
+                type="button"
+                className="empty-state__link"
                 aria-describedby="empty-start-hint"
                 onClick={openFolderPicker}
               >
@@ -140,17 +172,7 @@ export default function EmptyState() {
               </button>
               <button
                 type="button"
-                className="empty-state__secondary-action"
-                aria-describedby="empty-start-hint"
-                aria-busy={demoLoading}
-                disabled={demoLoading}
-                onClick={loadDemo}
-              >
-                {demoLoading ? 'Loading demo…' : 'Load demo corpus'}
-              </button>
-              <button
-                type="button"
-                className="empty-state__secondary-action"
+                className="empty-state__link"
                 onClick={importGraph}
               >
                 Import a graph
@@ -158,7 +180,8 @@ export default function EmptyState() {
             </div>
             <p className="empty-state__hint" id="empty-start-hint">
               Drag files or folders here. A folder includes subfolders and follows
-              .gitignore. Load demo corpus opens 100 sample documents, not audio.
+              .gitignore. Load demo corpus opens 100 sample documents. Load audio
+              demo opens {AUDIO_DEMO_CLIPS.length} generated clips on this device.
             </p>
           </div>
 
@@ -201,21 +224,34 @@ export default function EmptyState() {
         </div>
 
         <section className="empty-state__features" aria-labelledby="empty-features-title">
-          <div className="empty-state__features-head">
-            <h2 className="empty-state__section-label" id="empty-features-title">In the workspace</h2>
-            <p>
-              These controls are in the top bar and sidebars once a graph is open.
-              Add files, load the demo, or import a graph to reach them.
-            </p>
-          </div>
-          <ul className="empty-state__feature-list">
-            {WORKSPACE_FEATURES.map((feature) => (
-              <li key={feature.title}>
-                <h3>{feature.title}</h3>
-                <p>{feature.body}</p>
-              </li>
-            ))}
-          </ul>
+          <h2 className="empty-state__features-heading">
+            <button
+              type="button"
+              className="empty-state__disclosure-summary"
+              id="empty-features-title"
+              aria-expanded={featuresOpen}
+              aria-controls="empty-features-panel"
+              onClick={() => setFeaturesOpen((open) => !open)}
+            >
+              In the workspace
+            </button>
+          </h2>
+          {featuresOpen && (
+            <div id="empty-features-panel">
+              <p>
+                These controls are in the top bar and sidebars once a graph is open.
+                Add files, load a demo, or import a graph to reach them.
+              </p>
+              <ul className="empty-state__feature-list">
+                {WORKSPACE_FEATURES.map((feature) => (
+                  <li key={feature.title}>
+                    <h3>{feature.title}</h3>
+                    <p>{feature.body}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
       </div>
     </section>
