@@ -12,6 +12,7 @@ permissions:
 env:
   # These builds need the audio model pack.
   DGE_MODELS: full
+  DGE_MODEL_MIRROR: https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1
   ONNXRUNTIME_NODE_INSTALL: skip
   HARNESS_SHA: f691fa915b88796516d010a1b4b83f2c089e2c3a   # head of claude/project-thread-unl6fy (PR #119) on 2026-10-06
   HARNESS: scripts/dj-clips scripts/short-clip-upload-eval.mjs docs/evaluations/dj-clips-round2-2026-10-06/mtg-key-manifest.json
@@ -74,7 +75,7 @@ jobs:
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
           restore-keys: music-models-
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        uses: ./.github/actions/setup-playwright
       - name: Build
         run: npm run build
       - name: Analyse in the real app

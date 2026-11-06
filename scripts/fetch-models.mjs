@@ -6,26 +6,68 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { AUDIO_MODEL_ROOTS, AUDIO_PACK_MARKER, selectModelCapabilities } from './model-packs.mjs';
 
 const checksum = data => createHash('sha256').update(data).digest('hex');
-const ATTEMPTS = 6;
+// CI workflows set DGE_MODEL_MIRROR. Leave it unset for local and Docker builds:
+// the GitHub release 404s until models-v1 exists, and those builds should use
+// the manifest host directly. A release asset name cannot contain a slash, so
+// nested paths use '__'.
+const MIRROR_ATTEMPTS = 2;
+const UPSTREAM_ATTEMPTS = 6;
 // Full-precision AST is 347 MB; 120 s only covers a sustained ~23 Mbps link.
 const FETCH_TIMEOUT_MS = 600_000;
 
-async function download(url, expectedHash) {
-  for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
-    let data;
+export function audioModelSourceUrls(name, primary, env = process.env) {
+  const base = (env.DGE_MODEL_MIRROR ?? '').trim().replace(/\/$/, '');
+  const urls = [];
+  if (base) urls.push(`${base}/${name.split('/').join('__')}`);
+  if (!urls.includes(primary)) urls.push(primary);
+  return urls;
+}
+
+function failover(message) {
+  const error = new Error(message);
+  error.failover = true;
+  return error;
+}
+
+async function downloadUrl(url, expectedHash, attempts, fetchImpl, wait) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+      const response = await fetchImpl(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+      // A missing mirror or a checksum miss will not start working on retry.
+      if (response.status === 404 || response.status === 410) throw failover(`HTTP ${response.status}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      data = Buffer.from(await response.arrayBuffer());
+      const data = Buffer.from(await response.arrayBuffer());
+      if (checksum(data) !== expectedHash) throw failover(`Audio model checksum mismatch: ${url}`);
+      return data;
     } catch (error) {
-      if (attempt === ATTEMPTS - 1) throw new Error(`Model download failed after ${ATTEMPTS} attempts: ${url}`, { cause: error });
+      if (error.failover || attempt === attempts - 1) throw error;
       console.warn(`Model download attempt ${attempt + 1} failed; retrying ${url}`);
-      await delay(Math.min(30_000, 2000 * 2 ** attempt));
-      continue;
+      await wait(Math.min(30_000, 2000 * 2 ** attempt));
     }
-    if (checksum(data) !== expectedHash) throw new Error(`Audio model checksum mismatch: ${url}`);
-    return data;
   }
+  throw new Error(`Model download failed: ${url}`);
+}
+
+export async function downloadVerified(urls, expectedHash, options = {}) {
+  const fetchImpl = options.fetch ?? fetch;
+  const wait = options.wait ?? delay;
+  const attemptsFor = options.attemptsFor ?? ((index, count) => index === count - 1 ? UPSTREAM_ATTEMPTS : MIRROR_ATTEMPTS);
+  let lastError;
+  for (let index = 0; index < urls.length; index++) {
+    const url = urls[index];
+    try {
+      console.log(`Downloading ${url}`);
+      return await downloadUrl(url, expectedHash, attemptsFor(index, urls.length), fetchImpl, wait);
+    } catch (error) {
+      lastError = error;
+      const final = index === urls.length - 1;
+      console.warn(final
+        ? `Model download failed: ${url}`
+        : `Model source failed (${error.message}); trying next source after ${url}`);
+      if (final) throw new Error(`Model download failed from ${urls.length} source(s): ${urls.join(', ')}`, { cause: error });
+    }
+  }
+  throw lastError;
 }
 
 async function audioManifestEntries() {
@@ -37,6 +79,7 @@ async function audioManifestEntries() {
     manifests.push(manifestText);
     for (const name of Object.keys(manifest.sha256).filter(name => name !== 'prompts.json')) {
       entries.push({
+        name,
         path: join(root, name),
         url: manifest.sources?.[name] ?? `https://huggingface.co/${manifest.repository}/resolve/${manifest.revision}/${name}`,
         hash: manifest.sha256[name],
@@ -60,7 +103,12 @@ async function verifiedAudioPack(downloadMissing) {
     }
     if (valid) continue;
     if (!downloadMissing) return null;
-    const data = await download(entry.url, entry.hash);
+    // A restore-keys cache hit already has the bytes. Callers set this so a
+    // prefix match is not a live fetch; a real gap still fails closed.
+    if (process.env.DGE_MODEL_OFFLINE === '1') {
+      throw new Error(`Audio model is missing or failed checksum, and live download is disabled: ${entry.path}`);
+    }
+    const data = await downloadVerified(audioModelSourceUrls(entry.name, entry.url), entry.hash);
     await mkdir(dirname(entry.path), { recursive: true });
     await writeFile(entry.path, data);
     bytes += data.byteLength;

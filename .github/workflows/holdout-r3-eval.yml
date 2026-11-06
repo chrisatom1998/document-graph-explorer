@@ -26,6 +26,7 @@ permissions:
 env:
   # These builds need the audio model pack.
   DGE_MODELS: full
+  DGE_MODEL_MIRROR: https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1
   APP_REF: ${{ inputs.app_ref || (startsWith(github.ref_name, 'holdout-r3/') && github.sha) || 'main' }}
   ONNXRUNTIME_NODE_INSTALL: skip
   DOCS: docs/evaluations/holdout-r3-2026-10-06
@@ -151,8 +152,14 @@ jobs:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
           restore-keys: music-models-
+      - name: Check out the Playwright setup action
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          path: ci-actions
+          sparse-checkout: .github/actions/setup-playwright
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        uses: ./ci-actions/.github/actions/setup-playwright
       - name: Build
         run: npm run build
       - name: Record which Jamendo model was used
