@@ -3028,5 +3028,185 @@
     "group": "dj-acapella",
     "label": null,
     "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": "gunshot",
+    "prompt": "A gunshot or burst of gunfire."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": "footsteps",
+    "prompt": "Footsteps of a person walking."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable gunshot sound."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-gunshot",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable footsteps sound."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-footsteps",
+    "label": null,
+    "prompt": "A vocal chop loop."
   }
 ]

@@ -81,7 +81,10 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // as atmospheric pad on them; reports/all-tags-plan-2026-11-02).
 // 151/152: a reference-sound (neighbour) head for bitcrushed, cutoff set from training clips only (1% false alarms on
 // held-out training negatives); fresh test sets 0/0 -> 1.00/0.80 on the free-tag-set (docs/evaluations/ref-blend-2026-10-31).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 152 : 151;
+// 153/154: trained gunshot and footsteps heads (FSD50K dev train after the private exclude list, cutoffs on FSD50K dev val,
+// judged once on FSD50K eval: gunshot P 0.684 / R 0.903, footsteps P 0.757 / R 0.522; NSynth false alarms 2 and 0 of 4,096;
+// reports/new-tags-2026-11-02).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 154 : 153;
 export interface InstrumentEstimate {
   label: string;
   score: number;

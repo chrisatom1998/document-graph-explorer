@@ -194,6 +194,13 @@ describe('the 50/50 shipping bar', () => {
     expect(head('acapella').maybe).toBeUndefined();
     expect(head('acapella').threshold).toBeCloseTo(.92, 4);
   });
+  // Trained on FSD50K dev train clips, cutoffs set on FSD50K dev val, judged once on FSD50K eval: gunshot P 0.684 / R 0.903,
+  // footsteps P 0.757 / R 0.522, at most 2 NSynth false alarms in 4,096. reports/new-tags-2026-11-02.
+  it.each([['gunshot', .78], ['footsteps', .88]] as const)('ships the %s head as a normal tag at its dev-val cutoff', (label, threshold) => {
+    expect(head(label)).toMatchObject({ group: 'production' });
+    expect(head(label).maybe).toBeUndefined();
+    expect(head(label).threshold).toBeCloseTo(threshold, 4);
+  });
   it('ships the rimshot head on short clips at its out-of-fold cutoff', () => {
     expect(head('rimshot')).toMatchObject({ group: 'production', oneShot: true });
     expect(head('rimshot').maybe).toBeUndefined();
