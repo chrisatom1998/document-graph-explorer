@@ -195,11 +195,16 @@ describe('the 50/50 shipping bar', () => {
     expect(head('acapella').threshold).toBeCloseTo(.92, 4);
   });
   // Trained on FSD50K dev train clips, cutoffs set on FSD50K dev val, judged once on FSD50K eval: gunshot P 0.684 / R 0.903,
-  // footsteps P 0.757 / R 0.522, at most 2 NSynth false alarms in 4,096. reports/new-tags-2026-11-02.
-  it.each([['gunshot', .78], ['footsteps', .88]] as const)('ships the %s head as a normal tag at its dev-val cutoff', (label, threshold) => {
-    expect(head(label)).toMatchObject({ group: 'production' });
+  // footsteps P 0.757 / R 0.522, at most 2 NSynth false alarms in 4,096. They also run on clips of 2.25 s or less (oneShot):
+  // on dev val that lifts gunshot recall 0.42 -> 0.90 at P 0.65. docs/evaluations/sfx-tags-2026-11-06.
+  it.each([
+    ['gunshot', .78, 'd247254af8d214c6bfab6d36009ee143be02277dd7796175228d9e897b0c958b'],
+    ['footsteps', .88, 'd7dfdf5e12bf1e8f2cd35cb3cbbf9da6b23ee875fdc56fb4bc031a34adf6814f'],
+  ] as const)('ships the %s head as a normal tag on clips of any length at its dev-val cutoff', (label, threshold, digest) => {
+    expect(head(label)).toMatchObject({ group: 'production', oneShot: true });
     expect(head(label).maybe).toBeUndefined();
     expect(head(label).threshold).toBeCloseTo(threshold, 4);
+    expect(coefficientDigest(head(label))).toBe(digest);
   });
   it('ships the rimshot head on short clips at its out-of-fold cutoff', () => {
     expect(head('rimshot')).toMatchObject({ group: 'production', oneShot: true });
