@@ -1569,6 +1569,33 @@
       "axis": "dj-ambience"
     },
     {
+      "group": "production",
+      "family": "texture",
+      "label": "gunshot",
+      "source": "sound effect",
+      "description": "A gunshot or burst of gunfire.",
+      "aliases": [
+        "gunshots",
+        "gunfire",
+        "gun shot"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-gunshot"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "footsteps",
+      "source": "sound effect",
+      "description": "Footsteps of a person walking.",
+      "aliases": [
+        "footstep",
+        "walking"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-footsteps"
+    },
+    {
       "group": "character",
       "family": "timbre",
       "label": "airy",
