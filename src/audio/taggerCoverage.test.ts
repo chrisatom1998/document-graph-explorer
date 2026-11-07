@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { confidentSoundSummary as fullSummary, FULL_MIX_JAMENDO_SCORE } from './confidentSoundSummary';
 import { createRecognition, recordEvidence } from './recognition';
 import { sanitizeMusicAnalysis, type MusicAnalysis } from './musicTypes';
-import { TAGGER_REVISION } from './tagger';
+import { TAGGER_POLICY, TAGGER_REVISION, type TaggerTrust } from './tagger';
 import { DjTagEvidence, selectDjTags } from './djTags';
 import { mergeDjTags } from './djClassification';
 import { FULL_MIX_REVISION, FullMixEvidence, type FullMixModel } from './fullMixHeads';
@@ -297,4 +297,46 @@ it('the ambience umbrella carries the child tag\'s tier and unknown coverage', (
   const [child, umbrella] = fullSummary(a);
   expect(child).toMatchObject({ label: 'rain ambience' });
   expect(umbrella).toEqual({ ...child, label: 'ambience' });
+});
+
+describe('per-tag trust (taggerPolicy trust)', () => {
+  const withTrust = <T>(output: string, trust: TaggerTrust | undefined, run: () => T): T => {
+    const tag = TAGGER_POLICY.tags.find(t => t.output === output)!, before = tag.trust;
+    if (trust) tag.trust = trust; else delete tag.trust;
+    try { return run(); } finally { if (before) tag.trust = before; else delete tag.trust; }
+  };
+  // A 15 s clip: the tagger hears 0-10 s only, a native rain detection sits in the unheard tail.
+  const tail = (taggerScore: number) => {
+    const a = native(audio(15, [{ start: 0, end: 10 }], 1), 'rain ambience', [{ start: 10, end: 15 }]);
+    a.tagger!.scores['cat:rain ambience'] = taggerScore; return a;
+  };
+  it("default keeps a native positive in the unheard tail of a short clip", () => {
+    expect(withTrust('cat:rain ambience', undefined, () => shown(tail(0)))).toEqual(['effect:rain ambience']);
+  });
+  it("'sole' lets the tagger's no stand for the whole clip up to 30 s", () => {
+    expect(withTrust('cat:rain ambience', 'sole', () => shown(tail(0)))).toEqual([]);
+    expect(withTrust('cat:rain ambience', 'sole', () => shown(tail(.99)))).toEqual(['effect:rain ambience']);
+  });
+  it("'sole' does not reach past 30 s, where the tagger only hears the middle", () => {
+    expect(withTrust('cat:rain ambience', 'sole', () => shown(native(audio(), 'rain ambience', [{ start: 0, end: 10 }])))).toEqual(['effect:rain ambience']);
+  });
+  it("'either' keeps a native positive inside the excerpt when the tagger says no", () => {
+    const inside = () => shown(native(audio(), 'rain ambience', [{ start: 75, end: 85 }]));
+    expect(withTrust('cat:rain ambience', undefined, inside)).toEqual([]);
+    expect(withTrust('cat:rain ambience', 'either', inside)).toEqual(['effect:rain ambience']);
+  });
+  it("'both' needs the tagger and the other detectors to agree", () => {
+    const clip = (nativeToo: boolean) => { const a = audio(8, [{ start: 0, end: 8 }], 1); a.tagger!.scores['cat:rain ambience'] = .99; return nativeToo ? native(a, 'rain ambience') : a; };
+    expect(withTrust('cat:rain ambience', 'both', () => shown(clip(false)))).toEqual([]);
+    expect(withTrust('cat:rain ambience', 'both', () => shown(clip(true)))).toEqual(['effect:rain ambience']);
+  });
+});
+
+describe("'both' when the tagger says no", () => {
+  it('drops a native positive in the unheard tail too', () => {
+    const tag = TAGGER_POLICY.tags.find(t => t.output === 'cat:rain ambience')!, before = tag.trust;
+    tag.trust = 'both';
+    try { expect(shown(native(audio(15, [{ start: 0, end: 10 }], 1), 'rain ambience', [{ start: 10, end: 15 }]))).toEqual([]); }
+    finally { if (before) tag.trust = before; else delete tag.trust; }
+  });
 });

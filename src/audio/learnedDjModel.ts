@@ -98,6 +98,9 @@ export interface LearnedDjHead {
   /** Also tested on held-out whole clips of at most the one-shot length (scripts/dj-effects/oneshot.py), so it still
    *  scores those clips; other heads stay off them and only the one-shot heads (short-clip.json) apply. */
   oneShot?: boolean;
+  /** Sustained sounds (instruments, ambiences): on a recording scored in at least this many CLAP windows, the head's tag
+   *  needs this many firing windows, so one spike in a long recording does not tag it. Chosen per tag on held-out halves. */
+  minWindows?: number;
 }
 const groups: ReviewedGroup[] = ['source', 'production', 'character'];
 interface ReviewedIndex { group: ReviewedGroup; label: string; decisions: Int8Array }
@@ -141,7 +144,7 @@ export function sanitizeLearnedDjModel(raw: unknown): LearnedDjModel | undefined
   if (model.heads !== undefined && (!Array.isArray(model.heads) || model.heads.length > 2000 || model.heads.some(h =>
     !h || !groups.includes(h.group) || typeof h.label !== 'string' || !h.label || h.label.length > 80 ||
     !Array.isArray(h.weights) || h.weights.length !== 512 || !h.weights.every(Number.isFinite) ||
-    !Number.isFinite(h.bias) || !Number.isFinite(h.threshold) || h.threshold < .5 || h.threshold > 1 || (h.maybe !== undefined && typeof h.maybe !== 'boolean') || (h.oneShot !== undefined && typeof h.oneShot !== 'boolean')))) return;
+    !Number.isFinite(h.bias) || !Number.isFinite(h.threshold) || h.threshold < .5 || h.threshold > 1 || (h.maybe !== undefined && typeof h.maybe !== 'boolean') || (h.oneShot !== undefined && typeof h.oneShot !== 'boolean') || (h.minWindows !== undefined && (!Number.isInteger(h.minWindows) || h.minWindows < 2 || h.minWindows > 4))))) return;
   const neighbours = sanitizeNeighbours(model.neighbours);
   if (neighbours === null) return;
   return {version:1,encoder:model.encoder,revision:model.revision,examples,...(model.heads ? {heads:model.heads} : {}),...(neighbours ? {neighbours} : {})};
@@ -205,7 +208,7 @@ export function learnedDjScores(embedding: ArrayLike<number>, model: LearnedDjMo
     const sibling = gate ? raw.get(`${gate.group}:${gate.sibling}`) : undefined;
     // Missing sibling means that head is not in this model: nothing to compare, so the cutoff stands.
     if (sibling !== undefined && !(score > sibling)) continue;
-    results.push({group:'dj-learned',label:head.label,score,learnedGroup:head.group,decision:'include',basis:'head',...(head.maybe ? {maybe:true} : {})});
+    results.push({group:'dj-learned',label:head.label,score,learnedGroup:head.group,decision:'include',basis:'head',...(head.maybe ? {maybe:true} : {}),...(head.minWindows ? {minWindows:head.minWindows} : {})});
   }
   // Neighbour heads were checked like trained heads (held-out precision >= 0.60, recall >= 0.30) and add their tag
   // the same way. The score is a 0-1 squash of the margin over the cutoff (0.5 at the cutoff), not a probability.

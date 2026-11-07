@@ -9,7 +9,7 @@ import calibratedLabelList from './calibratedLabels.json';
 import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 import { FULL_MIX_FAMILY, FULL_MIX_REVISION } from './fullMixHeads';
-import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, taggerDecisions, taggerIntervals, type TaggerTag } from './tagger';
+import { TAGGER_MAX_WINDOWS, TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, TAGGER_WINDOW_SECONDS, taggerDecisions, taggerIntervals, type TaggerTag } from './tagger';
 import { nativeScoreOutside, type NativeWindowEvidence } from './nativeWindowEvidence';
 import { isRuleDescribedLabel } from './timbreDescriptions';
 
@@ -91,17 +91,20 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   const result=new Map<string,DisplaySound>();
   const tagger=taggerDecisions(audio.tagger,audio.durationSeconds);
   const coverage=taggerIntervals(audio.tagger,audio.durationSeconds);
-  const covered=({start,end}:Interval)=>{
+  // A tag marked `tail` also heard the extra window over a short clip's tail (taggerTailStart).
+  const tailCoverage=audio.tagger?.tail&&coverage.length?[...coverage,{start:audio.tagger.tail.start,end:audio.tagger.tail.end}]:coverage;
+  const coveredBy=(list:Interval[])=>({start,end}:Interval)=>{
     if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>audio.durationSeconds+1e-6)return false;
     let through=start;
-    for(const interval of coverage){
+    for(const interval of list){
       if(interval.end<=through)continue;
       if(interval.start>through+1e-6)return false;
       through=interval.end;if(through>=end-1e-6)return true;
     }
     return false;
   };
-  const coversRecording=covered({start:0,end:audio.durationSeconds});
+  const covered=coveredBy(coverage),coveredTail=coveredBy(tailCoverage);
+  const coversRecording=covered({start:0,end:audio.durationSeconds}),coversRecordingTail=coveredTail({start:0,end:audio.durationSeconds});
   // Keep each model's score supported outside the excerpt separate from its recording-wide maximum. A louder
   // in-excerpt false alarm must not be revived by a weaker observation elsewhere. Missing ranges cannot prove coverage.
   const outsideTagger=new Map<string,Map<string,number>>();
@@ -114,6 +117,15 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     ||(TESTED_SCORES.has(model)&&score>=(fullMix&&dimension==='source'?FULL_MIX_MIN_TESTED_SCORE[label]??floor:floor)));
   const confirmed=confirmedInstrumentList(audio);
   const canonical=(dimension:Dimension,label:string)=>dimension==='character'?canonicalDjLabel('character',label)??label:dimension==='effect'?canonicalDjLabel('production',label)??label:label;
+  const tagKeys=(tag:TaggerTag)=>[...tag.decides.map(label=>({dimension:tag.dimension,label})),...(tag.alsoDecides??[])]
+    .flatMap(({dimension,label})=>{
+      const name=canonical(dimension,label),group=GROUP_OF[dimension],merged=group?mergedDjLabel(group,name):undefined;
+      // Replacement applies to the stored identity, its surviving display identity and the names merged into it,
+      // so an untested old name (foley hit) cannot revive a sound the tagger decided against before the final fold.
+      const survivor=merged?`${DIMENSION_OF[merged.group]}:${merged.label}`:undefined;
+      return [`${dimension}:${name}`,...(survivor?[survivor,...(mergedInto().get(survivor)??[])]:[])];
+    });
+  const tailKeys=new Set(TAGGER_POLICY.tags.filter(t=>t.tail&&audio.tagger?.tail?.scores[t.output]!==undefined).flatMap(tagKeys));
   const allowed=(dimension:Dimension,label:string)=>{
     if(dimension==='source')return sourceReviewAllows(audio,label);
     if(dimension==='character')return djReviewAllows(audio,'character',label);
@@ -136,8 +148,9 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     const item=old??{dimension,label,origin:'model estimate' as const,scores:[]};
     item.scores??=[];delete item.coverageUnknown;
     model=profileNames[model]??model;
-    if(tagger?.length&&!coversRecording&&model!==TAGGER_SCORE&&model!==TAGGER_MAYBE_SCORE){
-      const outside=nativeScoreOutside(windowEvidence,covered);
+    const tail=tailKeys.has(key);
+    if(tagger?.length&&!(tail?coversRecordingTail:coversRecording)&&model!==TAGGER_SCORE&&model!==TAGGER_MAYBE_SCORE){
+      const outside=nativeScoreOutside(windowEvidence,tail?coveredTail:covered);
       if(validScore(outside.score)){
         const scores=outsideTagger.get(key)??new Map<string,number>();
         scores.set(model,Math.max(scores.get(model)??0,outside.score));outsideTagger.set(key,scores);
@@ -184,14 +197,6 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   // The trained tagger replaces evidence inside its excerpt. Native positives from unscored sections remain;
   // a recording-wide negative would claim the tagger listened to audio it never received.
   // An 'agree' rule (long recordings) also needs the existing detectors to show the tag: they are asked without the tagger.
-  const tagKeys=(tag:TaggerTag)=>[...tag.decides.map(label=>({dimension:tag.dimension,label})),...(tag.alsoDecides??[])]
-    .flatMap(({dimension,label})=>{
-      const name=canonical(dimension,label),group=GROUP_OF[dimension],merged=group?mergedDjLabel(group,name):undefined;
-      // Replacement applies to the stored identity, its surviving display identity and the names merged into it,
-      // so an untested old name (foley hit) cannot revive a sound the tagger decided against before the final fold.
-      const survivor=merged?`${DIMENSION_OF[merged.group]}:${merged.label}`:undefined;
-      return [`${dimension}:${name}`,...(survivor?[survivor,...(mergedInto().get(survivor)??[])]:[])];
-    });
   let detectors:Set<string>|undefined;
   const detectorsShow=(tag:TaggerTag)=>{
     detectors??=new Set(confidentSoundSummary({...audio,tagger:undefined},fusionMode).map(s=>`${s.dimension}:${s.label}`));
@@ -204,11 +209,19 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     if(review&&review.decision!=='confirmed'){for(const key of keys)result.delete(key);continue;}
     const confirmedAlias=[...keys].some(key=>result.get(key)?.origin==='confirmed by you');
     const agreed=shown&&!confirmedAlias&&(!needsAgreement||detectorsShow(tag));
+    // 'sole' (taggerPolicy trust) covers recordings up to the tagger's 30 s reach, the lengths it was picked on; on a
+    // longer one the tagger hears only the middle, so native positives outside it still stand.
+    const sole=tag.trust==='sole'&&audio.durationSeconds<=TAGGER_MAX_WINDOWS*TAGGER_WINDOW_SECONDS+1e-6;
+    // 'both' is an intersection: a tagger "no" also stands for sections it did not hear, at any length.
+    const whole=sole||tag.trust==='both';
+    // 'either' (taggerPolicy trust): a tagger "no" leaves the other detectors' positives in place.
+    if(tag.trust==='either'&&!agreed&&!confirmedAlias)continue;
     for(const key of keys){
       const item=result.get(key);if(item?.origin!=='model estimate')continue;
       if(confirmedAlias||(agreed&&key!==primary)){result.delete(key);continue;}
-      const outside=outsideTagger.get(key);
-      const unknown=item.scores?.some(s=>unknownOutsideTagger.get(key)?.has(s.model));
+      // 'sole': the tagger's answer stands for the whole recording, including sections it did not score.
+      const outside=whole?undefined:outsideTagger.get(key);
+      const unknown=!whole&&item.scores?.some(s=>unknownOutsideTagger.get(key)?.has(s.model));
       item.scores=(item.scores??[]).flatMap(s=>outside?.has(s.model)?[{model:s.model,score:outside.get(s.model)!}]:[]);
       if(unknown&&!item.scores.some(s=>qualifies(item.dimension,item.label,s.model,s.score))){delete item.scores;item.coverageUnknown=true;item.tier='possible';}
       else if(!item.scores.length)result.delete(key);
