@@ -1,11 +1,9 @@
-import { lazy, Suspense, useRef, useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { AUDIO_DEMO_CLIPS } from '../demo/audioDemo';
 import { openFilePicker } from '../ingest/DropZone';
 import { openFolderPicker } from '../ingest/folderPicker';
-import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
-import { rememberCenterOrigin } from '../scene/ingestGesture';
+import { useDemoLoader } from './useDemoLoader';
 import heroPng960 from '../assets/hero/hero-lime-960.png';
 import heroPng1920 from '../assets/hero/hero-lime-1920.png';
 import heroWebp960 from '../assets/hero/hero-lime-960.webp';
@@ -49,39 +47,8 @@ const WORKSPACE_FEATURES = [
 
 /** The local-first welcome workspace shown before a corpus is loaded. */
 export default function EmptyState() {
-  // The document demo fetches its manifest before the pipeline phase changes
-  // (which is what swaps this screen for the progress strip), so without a
-  // busy state the button looks dead for seconds — and a second click would
-  // queue another ingest. The audio demo is generated locally, but analysis
-  // still takes long enough that both entries share one lock.
-  const demoLock = useRef<'docs' | 'audio' | null>(null);
-  const [demoLoading, setDemoLoading] = useState<'docs' | 'audio' | null>(null);
+  const { loading: demoLoading, load: loadDemo } = useDemoLoader();
   const [featuresOpen, setFeaturesOpen] = useState(false);
-  const loadDemo = (kind: 'docs' | 'audio') => {
-    if (demoLock.current) return;
-    demoLock.current = kind;
-    setDemoLoading(kind);
-    rememberCenterOrigin();
-    import('../pipeline/coordinatorLazy')
-      .then((mod) => (kind === 'docs' ? mod.loadDemoCorpus() : mod.loadDemoAudio()))
-      .then(() => {
-        // Only show the guide when the demo actually produced a graph; a
-        // mid-run cancellation resolves the promise but leaves nodes empty.
-        if (useGraphStore.getState().nodes.length > 0) {
-          window.dispatchEvent(new Event(FIRST_RUN_GUIDE_REOPEN_EVENT));
-        }
-      })
-      .catch((err) => {
-        console.warn(kind === 'docs' ? 'demo corpus load failed' : 'audio demo load failed', err);
-        useUiStore.getState().pushToast(
-          kind === 'docs' ? "Couldn't load the demo corpus." : "Couldn't load the audio demo.",
-        );
-      })
-      .finally(() => {
-        demoLock.current = null;
-        setDemoLoading(null);
-      });
-  };
 
   const importGraph = () => {
     void import('./ExportImportMenu').then(({ importGraphJsonFileWithToast, openGraphJsonPicker }) => {

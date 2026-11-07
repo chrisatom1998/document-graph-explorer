@@ -1,3 +1,4 @@
+import { assertNoInference } from '../e2e/noInference';
 import { musicWorkerCapacity } from './musicWorkerRetention';
 import { DecodedMusicCache, musicDecoderFromSnapshot } from './musicDecodedCache';
 import { loadBuiltInFusion, supportsFusionInput, fusionConfiguration } from './fusionRelease';
@@ -93,6 +94,7 @@ function stopSpeculativePreload(): void {
  * warmup (app open, no audio yet) can be stopped by stopSpeculativeAudioPreload until audio
  * actually needs the models; a non-speculative call claims the workers for real use. */
 export function preloadMusicModels(mode: AnalysisOptions['mode'] = 'fast', options: { speculative?: boolean } = {}): Promise<void> {
+  assertNoInference('preloadMusicModels');
   if (typeof Worker === 'undefined' || workerCapacity() < PRELOAD_FAMILIES.length) return Promise.resolve();
   if (!options.speculative) { setSpeculativePreloadStop(null); rememberAudioAnalysisUsed(); }
   else if (!preloading) setSpeculativePreloadStop(stopSpeculativePreload);
@@ -177,6 +179,7 @@ function runRequest<T>(message: Record<string, unknown>, transfer: Transferable[
 
 /** Preview the folder while capable hosts pipeline deeper checks through retained family workers. */
 export function analyzeMusic(blob: Blob, name: string, options: Options = {}): Promise<MusicAnalysis> {
+  assertNoInference('analyzeMusic');
   const mode = options.mode ?? 'fast';
   const context = options.cacheContext ?? createMusicCacheContext();
   const injectedFusion = options.fusion;

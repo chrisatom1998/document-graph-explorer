@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocNode } from '../../model/types';
 import { useGraphStore } from '../../store/graphStore';
 import { useUiStore } from '../../store/uiStore';
+import { useViewStore } from '../../store/viewStore';
 
 vi.mock('./ResonanceFilters', () => ({ default: () => <aside>Filters</aside> }));
 vi.mock('./ConnectedClips', () => ({ default: () => <aside>Connected documents</aside> }));
@@ -16,6 +17,9 @@ vi.mock('../ExportImportMenu', () => ({ default: () => <div>Export contents</div
 vi.mock('../CorpusSwitcher', () => ({ default: () => <span>Corpus</span> }));
 vi.mock('../SavedViewsSection', () => ({ default: () => null }));
 vi.mock('../Minimap', () => ({ default: () => <div>Minimap</div> }));
+vi.mock('./ForYou', () => ({ default: () => <section>For you contents</section> }));
+vi.mock('./Transport', () => ({ default: () => <footer>Transport</footer> }));
+vi.mock('../../ingest/folderPicker', () => ({ openFolderPicker: vi.fn() }));
 
 import ResonanceShell from './ResonanceShell';
 import { useMusicJobs } from '../../store/musicJobs';
@@ -40,6 +44,7 @@ describe('ResonanceShell progressive usability', () => {
     useGraphStore.getState().addNodes([documentNode]);
     useGraphStore.setState({ phase: 'embedding', graphUsable: true });
     useUiStore.setState({ searchOpen: false, pathMode: false });
+    useViewStore.setState({ tab: 'graph' });
   });
 
   afterEach(cleanup);
@@ -48,8 +53,8 @@ describe('ResonanceShell progressive usability', () => {
     render(<ResonanceShell><div>Graph</div></ResonanceShell>);
 
     expect(screen.getByRole('status')).toHaveTextContent('Refining connections…');
-    const search = screen.getByRole('button', { name: 'Search documents' });
-    expect(search).toBeEnabled();
+    const search = screen.getByRole('button', { name: /^Search documents/ });
+    expect(search).toHaveAttribute('aria-disabled', 'false');
     expect(screen.getByRole('button', { name: 'Library' })).toBeEnabled();
 
     fireEvent.click(search);
@@ -59,7 +64,7 @@ describe('ResonanceShell progressive usability', () => {
     expect(screen.getByRole('menuitem', { name: /find a path/i })).toBeDisabled();
 
     act(() => useGraphStore.setState({ graphUsable: false }));
-    expect(screen.getByRole('button', { name: 'Search documents' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Search documents/ })).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByRole('status')).toHaveTextContent('Building your graph…');
   });
 
@@ -68,7 +73,7 @@ describe('ResonanceShell progressive usability', () => {
     render(<ResonanceShell><div>Graph</div></ResonanceShell>);
 
     expect(screen.getByRole('status')).toHaveTextContent('Building your graph…');
-    expect(screen.getByRole('button', { name: 'Search documents' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^Search documents/ })).toHaveAttribute('aria-disabled', 'false');
 
     act(() => useGraphStore.setState({ phase: 'linking' }));
     expect(screen.getByRole('status')).toHaveTextContent('Building your graph…');
@@ -85,6 +90,7 @@ describe('ResonanceShell stage controls', () => {
     useGraphStore.setState({ phase: 'ready', graphUsable: true });
     useUiStore.setState({ searchOpen: false, pathMode: false, cameraCommand: null });
     useMusicJobs.setState({ jobs: {}, minimized: false });
+    useViewStore.setState({ tab: 'graph' });
   });
 
   afterEach(() => {
@@ -140,5 +146,75 @@ describe('ResonanceShell stage controls', () => {
     fireEvent.click(restore);
     expect(useMusicJobs.getState().minimized).toBe(false);
     expect(screen.queryByRole('button', { name: 'Show audio analysis details' })).not.toBeInTheDocument();
+  });
+});
+
+describe('ResonanceShell For you view', () => {
+  beforeEach(() => {
+    useGraphStore.getState().reset();
+    useUiStore.setState({ searchOpen: false });
+    useViewStore.setState({ tab: 'foryou' });
+  });
+  afterEach(cleanup);
+
+  it('lists the four views with For you current, and keeps the player and folder action on screen', async () => {
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+    const nav = screen.getByRole('navigation', { name: 'Views' });
+    expect(within(nav).getAllByRole('button').map(b => b.textContent)).toEqual(['For you', 'Graph', 'Library', 'Export']);
+    expect(within(nav).getByRole('button', { name: 'For you' })).toHaveAttribute('aria-current', 'page');
+    expect(await screen.findByText('For you contents')).toBeInTheDocument();
+    expect(await screen.findByText('Transport')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add a folder' })).toBeInTheDocument();
+    expect(screen.queryByText('Filters')).not.toBeInTheDocument();
+    expect(screen.queryByText('Connected documents')).not.toBeInTheDocument();
+  });
+
+  it('opens the folder picker from the top-bar pill', async () => {
+    const { openFolderPicker } = await import('../../ingest/folderPicker');
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+    fireEvent.click(screen.getByRole('button', { name: 'Add a folder' }));
+    expect(openFolderPicker).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not open search before there is anything to search', () => {
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+    fireEvent.click(screen.getByRole('button', { name: /^Search documents/ }));
+    expect(useUiStore.getState().searchOpen).toBe(false);
+  });
+
+  it('names the folder button even where its text is hidden', () => {
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+    expect(screen.getByRole('button', { name: 'Add a folder' })).toHaveAttribute('aria-label', 'Add a folder');
+  });
+
+  it.each([
+    ['a search result or chat citation starting a focus', () => useUiStore.setState({ pendingFocus: { id: 'doc' } as never })],
+    ['an insights jump highlighting documents', () => useUiStore.getState().setSearchResults(['doc'], 'insights')],
+    ['a path highlight', () => useUiStore.getState().setSearchResults(['doc'], 'path')],
+  ])('brings the Graph forward when %s navigates from For you', (_name, run) => {
+    useGraphStore.getState().addNodes([documentNode]);
+    useGraphStore.setState({ phase: 'ready', graphUsable: true });
+    useUiStore.setState({ pendingFocus: null, selectedId: null, searchResults: null, highlightOwner: null });
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+    expect(useViewStore.getState().tab).toBe('foryou');
+    act(() => run());
+    expect(useViewStore.getState().tab).toBe('graph');
+  });
+
+  it('does not leave For you for the search overlay\'s own live highlight', () => {
+    useGraphStore.getState().addNodes([documentNode]);
+    useGraphStore.setState({ phase: 'ready', graphUsable: true });
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+    act(() => useUiStore.getState().setSearchResults(['doc'], 'search'));
+    expect(useViewStore.getState().tab).toBe('foryou');
+  });
+
+  it('switching to Graph shows the filters and the canvas instead of For you', () => {
+    useGraphStore.getState().addNodes([documentNode]);
+    useGraphStore.setState({ phase: 'ready', graphUsable: true });
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Views' })).getByRole('button', { name: 'Graph' }));
+    expect(screen.queryByText('For you contents')).not.toBeInTheDocument();
+    expect(screen.getByText('Filters')).toBeInTheDocument();
   });
 });

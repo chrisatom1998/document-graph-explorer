@@ -8,6 +8,7 @@ import { fusionConfiguration, installedFusionIdentity } from '../audio/fusionRel
 import { recognitionConfiguration } from '../audio/recognition';
 import { INSTRUMENT_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION } from '../audio/musicTypes';
 import { assertAudioContent } from '../audio/parseAudio';
+import { E2E_NO_INFERENCE, e2eCounters } from '../e2e/noInference';
 /**
  * THE ORCHESTRATOR (main thread). Drives the full ingest flow:
  *
@@ -1974,6 +1975,7 @@ export function resetCorpus(): void {
 }
 
 function preloadAudioModels(): void {
+  if (E2E_NO_INFERENCE) { e2eCounters().skippedPreload += 1; return; }
   const mode = useSettingsStore.getState().musicAnalysisMode;
   void import('../audio/analyzeMusic').then(m => m.preloadMusicModels(mode)).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
 }
@@ -2011,6 +2013,8 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
   const mode = useSettingsStore.getState().musicAnalysisMode;
   const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!forceIds.length || forceIds.includes(n.id)) && (!scope || scope.has(n.id)) && (!useMusicJobs.getState().jobs[n.id] || mode==='full' || forceIds.includes(n.id)) && (forceIds.includes(n.id) || audioUnfinished(n) || (!scope && audioOutdated(n, mode))));
   if (!nodes.length) return;
+  // Browser-test build: audio keeps its saved original and graph node, but no analysis or model preload runs.
+  if (E2E_NO_INFERENCE) { e2eCounters().skippedAnalysis += nodes.length; return; }
   const { analyzeMusic, preloadMusicModels } = await import('../audio/analyzeMusic');
   const cacheContext = createMusicCacheContext();
   // Reanalysis after a reload starts cold; load every family while the first file decodes.

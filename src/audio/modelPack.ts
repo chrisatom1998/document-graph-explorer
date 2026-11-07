@@ -1,3 +1,5 @@
+import { E2E_NO_INFERENCE } from '../e2e/noInference';
+
 interface AudioPackMarker {
   schema: 1;
   capability: 'audio';
@@ -37,6 +39,8 @@ export async function audioModelPackInstalled(): Promise<boolean> {
 
 /** Verify that the same-origin audio model pack is installed. */
 export async function authorizeAudioModelPack(): Promise<AudioPackAuthorization> {
+  // Browser-test build: the pack is deliberately absent and nothing loads from it, but audio files must still be accepted and stored.
+  if (E2E_NO_INFERENCE) return 'ready';
   const marker = await loadAudioPackMarker();
   if (!marker) {
     window.alert(

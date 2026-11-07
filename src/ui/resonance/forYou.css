@@ -1,0 +1,220 @@
+/* ==========================================================================
+   Resonance "For you": a dark purple-black page, a violet-to-blue sound-map
+   hero, a coral crate panel, gradient sound cards, lime tags and a fixed
+   transport. Layered over resonance.css; only the workspace chrome is
+   re-tinted here so the Graph, Library and Export tabs keep their layouts.
+   ========================================================================== */
+:root {
+  --rs-bg: #0d0916;
+  --rs-panel: #120c20;
+  --rs-raised: #1a1230;
+  --rs-line: #261b40;
+  --rs-line-strong: #382a5c;
+  --rs-muted: #b3adc6;
+  --rs-faint: #a39db8;
+  --rs-disabled: #8a84a0;
+  --rs-lime: #c8f55a;
+  --rs-transport: 84px;
+  --fy-coral-a: #ff8a3d;
+  --fy-coral-b: #ff3d8b;
+}
+
+.rs-root { padding-bottom: var(--rs-transport); box-sizing: border-box; }
+.rs-root--foryou {
+  grid-template-columns: 1fr; grid-template-rows: var(--rs-top) minmax(0, 1fr); grid-template-areas: 'top' 'stage';
+  background: linear-gradient(180deg, #3c1d7f 0, #26124f 220px, #150c2a 520px, #0d0916 100%) fixed;
+}
+.app-root:has(.rs-root--foryou) { --rs-left: 0px; --rs-right: 0px; }
+.rs-root--foryou .rs-top { background: transparent; border-bottom: 0; }
+.rs-root--foryou .rs-stage { background: transparent; overflow-y: auto; overflow-x: hidden; }
+/* The graph keeps running underneath but is neither seen nor reachable here. */
+.rs-root--foryou .rs-stage > :not(.fy) { visibility: hidden; pointer-events: none; }
+
+/* ---- Top bar additions --------------------------------------------------- */
+.rs-tabs button { flex: none; white-space: nowrap; border-radius: 999px; height: 36px; align-self: center; padding: 0 16px; font-weight: 600; background: #ffffff14; color: #ddd6f3; }
+.rs-tabs { gap: 8px; }
+.rs-tabs button[aria-current='page'] { background: #fff; color: #1a1030; }
+.rs-tabs button[aria-current='page']::after, .rs-tabs button i { display: none; }
+.rs-tabs button:not(:disabled):hover { background: #ffffff26; }
+.rs-tabs button[aria-current='page']:hover { background: #fff; }
+.rs-tabs button:disabled { background: #ffffff0a; color: #9b94b3; }
+.rs-search {
+  display: flex; align-items: center; gap: 10px; flex: 0 1 auto; width: clamp(170px, 18vw, 300px); height: 40px; padding: 0 14px;
+  border: 1px solid #ffffff1f; border-radius: 999px; background: #0d0916cc; color: #cfc8e6; font: inherit; font-size: 13px; cursor: pointer;
+}
+.rs-search svg { width: 16px; height: 16px; flex: none; }
+.rs-search span { flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rs-search kbd { font: inherit; font-size: 12px; color: #a39db8; }
+.rs-search:hover:not([aria-disabled='true']) { border-color: #ffffff55; color: #fff; }
+.rs-search[aria-disabled='true'] { cursor: default; color: #a39db8; }
+.rs-addfolder {
+  display: flex; align-items: center; gap: 8px; flex: none; white-space: nowrap; height: 40px; padding: 0 18px; border: 0; border-radius: 999px;
+  background: var(--rs-lime); color: var(--rs-lime-ink); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.rs-addfolder svg { width: 16px; height: 16px; }
+.rs-addfolder:hover { filter: brightness(1.06); }
+.rs-top__actions { gap: 10px; }
+/* The brand cell grows with the workspace picker; fixed-width columns let it run under the tabs. */
+@media (min-width: 1101px) {
+  .rs-root .rs-top { grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 16px; }
+  .rs-root .rs-tabs { justify-content: flex-start; margin-right: 0; }
+}
+.rs-icon--fit { display: none; }
+.rs-root:not(.rs-root--foryou) .rs-icon--fit { display: inline-flex; }
+:where(.rs-root) :is(button, [role='slider']):focus-visible { outline: 3px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 5px #6a3dff; }
+
+/* The Graph, Library and Export bars carry extra controls (fit, 2D/3D), so the search pill gives way to its icon. */
+@media (min-width: 1101px) and (max-width: 1700px) {
+  .rs-root:not(.rs-root--foryou) .rs-search { width: 40px; padding: 0; justify-content: center; }
+  .rs-root:not(.rs-root--foryou) .rs-search span, .rs-root:not(.rs-root--foryou) .rs-search kbd { display: none; }
+}
+
+/* ---- For you page -------------------------------------------------------- */
+.fy { position: absolute; inset: 0; overflow-y: auto; padding: 8px 40px 32px; color: #fff; scrollbar-color: #4a3b72 transparent; }
+.fy > * { max-width: 1440px; margin-inline: auto; }
+.fy h1, .fy h2, .fy p { margin: 0; }
+.fy-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 0.31fr); gap: 16px; }
+.fy-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.8; }
+
+.fy-map {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 0.8fr); grid-template-rows: 1fr auto; gap: 8px 24px;
+  min-height: 244px; padding: 28px 28px 24px; border-radius: 28px; overflow: hidden;
+  background:
+    radial-gradient(ellipse 40% 60% at 62% 55%, #1fa6b866, transparent 70%),
+    radial-gradient(ellipse 50% 90% at 0% 10%, #d13a9a99, transparent 65%),
+    linear-gradient(120deg, #7b2d9e 0, #43358f 45%, #2a4ca3 100%);
+}
+.fy-map__copy { grid-column: 1; }
+.fy-map__title { margin-top: 14px; font-size: clamp(28px, 3.4vw, 44px); line-height: 1.06; font-weight: 800; letter-spacing: -0.02em; max-width: 14ch; text-wrap: balance; }
+.fy-map__lede { margin-top: 12px; max-width: 34ch; font-size: 15px; line-height: 1.45; color: #ece6fb; }
+.fy-art { grid-column: 2; grid-row: 1 / 3; align-self: center; width: 100%; height: auto; max-height: 220px; overflow: visible; }
+.fy-art__link { stroke: #ffffff8c; stroke-width: 1; }
+.fy-art__halo { fill: #ff4fa133; }
+.fy-art__ghost { fill: none; stroke: #ffffff59; stroke-width: 1.5; stroke-dasharray: 3 3; }
+.fy-art__ghost-link { stroke: #ffffff33; stroke-dasharray: 4 5; }
+.fy-map__actions { grid-column: 1; display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.fy-map .workspace-dims { display: inline-flex; align-items: center; gap: 2px; flex: none; width: auto; min-width: 0; height: 44px; padding: 4px; border-radius: 999px; background: #ffffff1f; border: 1px solid #ffffff2e; cursor: pointer; }
+.fy-map .workspace-dims span { padding: 7px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; color: #e8e2fa; }
+.fy-map .workspace-dims .is-current { background: var(--rs-lime); color: var(--rs-lime-ink); }
+.fy-map .workspace-dims:hover { border-color: #fff; }
+
+.fy-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 22px; border-radius: 999px; border: 1px solid transparent; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.fy-btn--white { background: #fff; color: #1a1030; }
+.fy-btn--lime { background: var(--rs-lime); color: var(--rs-lime-ink); }
+.fy-btn--ghost { background: #ffffff14; color: #fff; border-color: #ffffff33; }
+.fy-btn:disabled { opacity: 0.6; cursor: default; }
+.fy-btn:not(:disabled):hover { filter: brightness(1.08); }
+
+.fy-mix {
+  position: relative; display: flex; flex-direction: column; padding: 28px; border-radius: 28px; min-height: 244px; color: #1b0b1e;
+  background: linear-gradient(150deg, var(--fy-coral-a) 0, #ff6a5e 50%, var(--fy-coral-b) 100%);
+}
+.fy-mix .fy-kicker { color: #3a0d27; opacity: 0.85; }
+.fy-mix__title { margin-top: 14px; font-size: clamp(22px, 2.1vw, 28px); line-height: 1.1; font-weight: 800; letter-spacing: -0.01em; color: #fff; }
+.fy-mix__body { margin-top: 10px; font-size: 14px; line-height: 1.45; color: #fff; max-width: 32ch; }
+.fy-swatches { display: flex; gap: 8px; margin-top: auto; padding-top: 16px; }
+.fy-swatch { width: 38px; height: 38px; border-radius: 10px; border: 2px solid #ffffff59; cursor: pointer; padding: 0; }
+.fy-swatch--empty { background: #ffffff2e; border: 2px dashed #ffffff80; cursor: default; }
+.fy-mix__play { position: absolute; right: 24px; bottom: 24px; display: grid; place-items: center; width: 52px; height: 52px; border: 0; border-radius: 50%; background: #0d0916; color: #fff; cursor: pointer; }
+.fy-mix__play:disabled { opacity: 0.55; cursor: default; }
+.fy-mix__play svg { width: 18px; height: 18px; fill: currentColor; }
+
+.fy-row-head { display: flex; align-items: baseline; justify-content: space-between; margin-top: 34px; }
+.fy-row-title { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+.fy-link { background: none; border: 0; padding: 4px; font: inherit; font-size: 14px; font-weight: 600; color: #d8d1ee; cursor: pointer; }
+.fy-link:hover { color: #fff; text-decoration: underline; }
+.fy-tags { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.fy-tags__label { font-size: 13px; font-weight: 600; color: #cfc8e6; }
+.fy-tags__hint { font-size: 13px; color: #cfc8e6; }
+.fy-tags ul { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.fy-tag { padding: 7px 16px; border-radius: 999px; background: var(--rs-lime); color: var(--rs-lime-ink); font-size: 13px; font-weight: 700; }
+.fy-tag--small { padding: 4px 10px; font-size: 12px; }
+/* Uncertain or name-derived tags are outlined, not solid, so they never read as measured. */
+.fy-tag--possible, .fy-tag--name { background: transparent; color: var(--rs-lime); box-shadow: inset 0 0 0 1.5px var(--rs-lime); font-weight: 600; }
+.fy-tag--name { box-shadow: none; border: 1.5px dashed var(--rs-lime); padding-block: 5.5px; }
+
+.fy-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 180px)); justify-content: start; gap: 16px; list-style: none; margin: 18px auto 0; padding: 0; }
+.fy-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fy-card__art { position: relative; aspect-ratio: 1.3; border-radius: 18px; }
+.fy-card.is-playing .fy-card__art { outline: 3px solid var(--rs-lime); outline-offset: 2px; }
+.fy-card__type { position: absolute; left: 14px; bottom: 12px; font-size: 13px; font-weight: 800; color: #1b0b1e; opacity: 0.7; }
+.fy-card__play { position: absolute; right: 12px; bottom: 12px; display: grid; place-items: center; width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--rs-lime); color: var(--rs-lime-ink); cursor: pointer; }
+.fy-card__play svg { width: 14px; height: 14px; fill: currentColor; }
+.fy-card__title { align-self: flex-start; max-width: 100%; padding: 0; border: 0; background: none; color: #fff; font: inherit; font-size: 15px; font-weight: 700; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.fy-card__title:hover { text-decoration: underline; }
+.fy-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fy-chip { padding: 5px 11px; border-radius: 999px; background: #ffffff1a; color: #f1edfb; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fy-chip--muted { color: #cfc8e6; font-weight: 500; }
+.fy-chip--dark { background: #26203a; }
+.fy-cards--empty .fy-card__art { background: linear-gradient(140deg, #ffffff14, #ffffff08); border: 1px dashed #ffffff33; }
+.fy-skel { display: block; height: 12px; width: 70%; border-radius: 6px; background: #ffffff14; }
+.fy-skel--short { width: 40%; }
+.fy-empty { margin: 22px auto 0; padding: 20px 24px; border-radius: 20px; background: #ffffff0f; border: 1px solid #ffffff1f; }
+.fy-empty p { max-width: 62ch; font-size: 15px; line-height: 1.5; color: #ece6fb; }
+.fy-empty__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.fy-note { margin-top: 16px; max-width: 70ch; font-size: 13px; line-height: 1.5; color: #cfc8e6; }
+
+/* ---- Fixed transport ------------------------------------------------------ */
+.fy-transport {
+  position: absolute; left: 0; right: 0; bottom: 0; height: var(--rs-transport); z-index: var(--z-overlay);
+  display: grid; grid-template-columns: minmax(180px, 0.9fr) auto minmax(120px, 2fr) auto; align-items: center; gap: 20px; padding: 0 24px;
+  background: #0a0711; border-top: 1px solid #ffffff12; color: #fff;
+}
+.fy-transport__now { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.fy-transport__art { width: 52px; height: 52px; flex: none; border-radius: 10px; }
+.fy-transport__art--idle { background: #1d1730; border: 1px dashed #4a3b72; }
+.fy-transport__titles { display: flex; flex-direction: column; min-width: 0; }
+.fy-transport__titles strong { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fy-transport__titles small { color: #b3adc6; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fy-transport__controls { display: flex; align-items: center; gap: 10px; }
+.fy-tbtn { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%; background: none; color: #e8e2fa; cursor: pointer; }
+.fy-tbtn svg { width: 18px; height: 18px; }
+.fy-tbtn:disabled { color: #7d7694; cursor: default; }
+.fy-tbtn--main { width: 48px; height: 48px; background: #fff; color: #1a1030; }
+.fy-tbtn--main:disabled { background: #3a3150; color: #9d96b3; }
+.fy-tbtn--loop.is-on { color: var(--rs-lime); }
+.fy-transport__wave { height: 40px; min-width: 0; cursor: pointer; }
+.fy-transport__wave svg { display: block; width: 100%; height: 100%; }
+.fy-transport__wave[aria-disabled='true'] { cursor: default; }
+.fy-transport__meta { display: flex; align-items: center; gap: 8px; }
+.fy-time { font-size: 12px; color: #b3adc6; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ---- Floating cards from the rest of the app ------------------------------
+   Neither may cover the headline, the crate panel or the transport. The graph
+   tour describes the map, so it waits for the Graph tab; the "What we found"
+   summary keeps its actions but sits bottom-right, clear of the transport. */
+.app-root:has(.rs-root--foryou) .first-run-guide { display: none; }
+.app-root:has(.rs-root--foryou) .insights-digest-layer {
+  top: auto; left: auto; right: 16px; bottom: calc(var(--rs-transport) + 16px); max-width: 260px; z-index: calc(var(--z-overlay) + 1);
+}
+
+/* ---- Responsive ----------------------------------------------------------- */
+@media (max-width: 1100px) {
+  .rs-search { width: 40px; padding: 0; justify-content: center; max-width: none; }
+  .rs-search span, .rs-search kbd { display: none; }
+  .rs-addfolder { padding: 0 12px; }
+  .fy { padding-inline: 20px; }
+  .fy-top { grid-template-columns: 1fr; }
+  .fy-transport { grid-template-columns: minmax(140px, 1fr) auto minmax(80px, 1.4fr); }
+  .fy-transport__meta { display: none; }
+}
+@media (max-width: 700px) {
+  :root { --rs-transport: 116px; }
+  .rs-addfolder span { display: none; }
+  .rs-addfolder { width: 40px; padding: 0; justify-content: center; }
+  .fy { padding: 4px 14px 24px; }
+  .fy-map { grid-template-columns: 1fr; grid-template-rows: auto auto auto; padding: 22px 20px 20px; border-radius: 22px; }
+  .fy-art { grid-column: 1; grid-row: 2; max-height: 150px; }
+  .fy-map__actions { grid-row: 3; }
+  .fy-mix { border-radius: 22px; padding: 22px 20px; min-height: 0; }
+  .fy-mix__body { max-width: none; padding-right: 64px; }
+  .fy-row-title { font-size: 19px; }
+  .fy-tags { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .fy-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  /* On a phone the page is taller than the screen, so any floating card would sit on the coral panel or the cards.
+     The summary waits (it is not dismissed) and appears on the Graph tab; Insights stays in More tools. */
+  .app-root:has(.rs-root--foryou) .insights-digest-layer { display: none; }
+  .fy-transport { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; row-gap: 6px; padding: 10px 14px; }
+  .fy-transport__wave { grid-column: 1 / -1; grid-row: 2; height: 28px; }
+}
+@media (prefers-reduced-motion: reduce) { .fy *, .fy-transport * { transition: none !important; animation: none !important; } }
