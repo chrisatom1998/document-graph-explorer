@@ -84,7 +84,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 153/154: trained gunshot and footsteps heads (FSD50K dev train after the private exclude list, cutoffs on FSD50K dev val,
 // judged once on FSD50K eval: gunshot P 0.684 / R 0.903, footsteps P 0.757 / R 0.522; NSynth false alarms 2 and 0 of 4,096;
 // both also run on short one-shot clips; docs/evaluations/sfx-tags-2026-11-06).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 154 : 153;
+// 155/156: trained clock and chimes heads (same recipe, oneShot; judged once on FSD50K eval: clock P 0.654 / R 0.918,
+// chimes P 0.912 / R 0.608; no NSynth false alarms; docs/evaluations/sfx-tags-2026-11-06).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 156 : 155;
 export interface InstrumentEstimate {
   label: string;
   score: number;

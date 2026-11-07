@@ -200,6 +200,9 @@ describe('the 50/50 shipping bar', () => {
   it.each([
     ['gunshot', .78, 'd247254af8d214c6bfab6d36009ee143be02277dd7796175228d9e897b0c958b'],
     ['footsteps', .88, 'd7dfdf5e12bf1e8f2cd35cb3cbbf9da6b23ee875fdc56fb4bc031a34adf6814f'],
+    // Second batch (same recipe): clock P 0.654 / R 0.918, chimes P 0.912 / R 0.608, no NSynth false alarms.
+    ['clock', .71, '76934099decd926c9ac3f1583efb59e70b9b6e738a5904461dc6f94dcd6fa313'],
+    ['chimes', .98, '76bcd1bd14c0ff0cc92a1fc640920a3112809a0575be0f5078b6c196efb46446'],
   ] as const)('ships the %s head as a normal tag on clips of any length at its dev-val cutoff', (label, threshold, digest) => {
     expect(head(label)).toMatchObject({ group: 'production', oneShot: true });
     expect(head(label).maybe).toBeUndefined();
