@@ -20,12 +20,19 @@ python3 - "$KEY" $RUNS <<'PY'
 import os, sys
 from huggingface_hub import HfApi, snapshot_download
 key, runs = sys.argv[1], sys.argv[2:]
-api = HfApi(); data = api.whoami()['name'] + '/dge-tagger-data'; base = f'prep-cache/{key}'
+api = HfApi(); data = api.whoami()['name'] + '/dge-tagger-data'
+# A training-only prepare change (e.g. #278 in prepare-freesound.py) moves the key while the held-out sets stay the same.
+# Then fall back to the one cached key that has them, and say so.
+have = [f.path.split('/')[-1] for f in api.list_repo_tree(data, repo_type='dataset', path_in_repo='prep-cache') if f.path.split('/')[-1] != 'src']
+if key not in have:
+    assert len(have) == 1, f'prep-cache key {key} missing and no single fallback: {have}'
+    print(f'NOTE: prep-cache/{key} not built; using held-out sets from prep-cache/{have[0]}', flush=True); key = have[0]
+open('prep-key.txt', 'w').write(key); base = f'prep-cache/{key}'
 snapshot_download(data, repo_type='dataset', local_dir='cache', max_workers=16,
                   allow_patterns=[f'{base}/{p}' for p in ('prep/eval-round*', 'holdout/*', 'fsdprep/eval-*', 'nsprep/eval-*', 'fsprep/eval-*')])
 snapshot_download(os.environ['HF_REPO'], local_dir='runs', allow_patterns=[f'{r}/{f}' for r in runs for f in ('model.pt', 'log.json', 'thresholds.json', 'eval.json')])
 PY
-C=cache/prep-cache/$KEY
+KEY=$(cat prep-key.txt); C=cache/prep-cache/$KEY
 # Re-score every input with the same FSD50K labels before comparing old and new runs.
 # Keep each run's frozen thresholds and all other benchmark rows.
 python3 $S/refresh-fsd50k-eval.py $C/fsdprep/eval-fsd50k $(for r in $RUNS; do echo runs/$r; done)

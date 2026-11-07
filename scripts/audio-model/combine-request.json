@@ -56,7 +56,6 @@
       "bass",
       "cat:acid synth",
       "cat:bird ambience",
-      "cat:bright",
       "cat:choir",
       "cat:conga",
       "cat:crash cymbal",
@@ -134,6 +133,7 @@
     ],
     "all-tags-recall2": [
       "cat:atmospheric pad",
+      "cat:bright",
       "cat:clap",
       "cat:drums",
       "cat:finger snap",
@@ -156,7 +156,7 @@
   "license": "cc-by-nc-sa-4.0",
   "flavor": "cpu-xl",
   "timeout": "3h",
-  "attempt": 17,
+  "attempt": 18,
   "allow_hand_picks": true,
-  "hand_picks_why": "Nov 7 2026, Chris chose \"Ship EP now (allow hand picks)\": every tagger output keeps the run it has in the live model 410638a (pinned so validation-only picks do not move them; those picks are flagged as test-chosen in reports/model-selection-leak-2026-11-07), and only cat:electric piano moves, to all-tags-r29 (Chris shipped it under his own exception to the 60% line)."
+  "hand_picks_why": "Nov 7 2026, Chris chose \"Ship EP now (allow hand picks)\": every tagger output keeps the run it has in the live model 410638a (pinned so validation-only picks do not move them; those picks are flagged as test-chosen in reports/model-selection-leak-2026-11-07), and only cat:electric piano moves, to all-tags-r29 (Chris shipped it under his own exception to the 60% line). Also cat:bright moves to all-tags-recall2: picked on NSynth validation only by a rule written down before grading (reports/bright-honest-2026-11-07/PREREGISTERED.md, thread \"Get bright tag passing honestly\"); app cutoff 0.7245."
 }
