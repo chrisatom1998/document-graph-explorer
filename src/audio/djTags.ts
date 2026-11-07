@@ -1,5 +1,5 @@
 import type { DescriptionScore } from './profileDescriptions';
-import { appendNativeWindow, sanitizeNativeWindowEvidence, type NativeWindowEvidence } from './nativeWindowEvidence';
+import { appendNativeWindow, sanitizeNativeWindowEvidence, sustainedHeadMissing, type NativeWindowEvidence } from './nativeWindowEvidence';
 
 import catalog from './djCatalog.json';
 
@@ -113,7 +113,7 @@ export const DJ_HIDDEN_LABELS: ReadonlySet<string> = new Set([
   ...['sustained', 'rhythmic', 'rolling', 'gliding', 'percussive', 'swelling', 'syncopated', 'chorused', 'flanged',
     'wobbling'].map(l => `character:${l}`),
 ]);
-export interface DjTag { group: DjGroup; label: string; score: number; model?: 'AudioSet AST' | 'MTG-Jamendo' | 'Music CLAP' | 'Reviewed examples' | 'Trained head' | 'Trained head (maybe)'; segments?: { start: number; end: number }[]; windowEvidence?: NativeWindowEvidence }
+export interface DjTag { group: DjGroup; label: string; score: number; model?: 'AudioSet AST' | 'MTG-Jamendo' | 'Music CLAP' | 'Reviewed examples' | 'Trained head' | 'Trained head (maybe)'; segments?: { start: number; end: number }[]; windowEvidence?: NativeWindowEvidence; /** From a sustained-sound head: see LearnedDjHead.minWindows. */ minWindows?: number }
 export const DJ_TYPE_SOURCE: Record<string, string> = Object.fromEntries(
   DJ_CATALOG.filter(c => c.group === 'production' && c.source).map(c => [c.label, c.source!]),
 );
@@ -188,7 +188,9 @@ export function selectDjTags(scores: DescriptionScore[]): DjTag[] {
 /** Store bounded examples of accepted tags instead of averaging brief sounds away. */
 export class DjTagEvidence {
   private tags = new Map<string,DjTag>();
+  private windows = 0;
   add(tags: DjTag[], start: number, end: number) {
+    this.windows++;
     for (const tag of tags) {
       const key=`${tag.group}:${tag.label}`; const existing=this.tags.get(key);
       if (!existing) this.tags.set(key,{...tag,segments:[{start,end}],windowEvidence:{windows:[{start,end,score:tag.score}],complete:true}});
@@ -201,7 +203,7 @@ export class DjTagEvidence {
       }
     }
   }
-  results() { return [...this.tags.values()].sort((a,b)=>b.score-a.score); }
+  results() { return [...this.tags.values()].filter(t=>!sustainedHeadMissing(t.minWindows,this.windows,t.windowEvidence)).sort((a,b)=>b.score-a.score); }
 }
 
 /** How much a tag's model has been checked: the user's own examples, then held-out-tested heads, then untested
@@ -236,7 +238,7 @@ export function applyReviewedDecisions(tags: DjTag[], scores: DescriptionScore[]
       // A trained head already cleared its own measured threshold. It adds a tag under its own name and
       // replaces untested guesses for the same label, but never a user-reviewed example or a stronger tested tag.
       const tag: DjTag = {group:score.learnedGroup,label:score.label,score:score.score,model:score.maybe?'Trained head (maybe)':'Trained head',
-        ...(score.windowEvidence ? { windowEvidence: score.windowEvidence } : {})};
+        ...(score.windowEvidence ? { windowEvidence: score.windowEvidence } : {}),...(score.minWindows ? { minWindows: score.minWindows } : {})};
       if (score.decision === 'include' && outranksDjTag(tag, result.get(key))) result.set(key,tag);
       continue;
     }

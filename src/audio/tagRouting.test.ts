@@ -47,9 +47,9 @@ const CASES: Case[] = [
 /** The sound lasts this long when it sits at the start or end of a recording. */
 const EVENT_SECONDS = 4;
 
-interface Detectors { heads: { group: DjGroup; label: string; threshold: number; maybe?: boolean }[]; short: { group: DjGroup; label: string; threshold: number; maybe?: boolean }[]; tagger: string[] }
+interface Detectors { heads: { group: DjGroup; label: string; threshold: number; maybe?: boolean; minWindows?: number }[]; short: { group: DjGroup; label: string; threshold: number; maybe?: boolean }[]; tagger: string[] }
 function detectorsFor(key: string): Detectors {
-  const heads = [...(learned.heads ?? []).map(h => ({ group: h.group, label: h.label, threshold: h.threshold, maybe: h.maybe })),
+  const heads = [...(learned.heads ?? []).map(h => ({ group: h.group, label: h.label, threshold: h.threshold, maybe: h.maybe, minWindows: h.minWindows })),
     ...(learned.neighbours?.heads ?? []).map(h => ({ group: h.group, label: h.label, threshold: .5 }))].filter(h => shownAs(h.group, h.label) === key);
   const short = shortClip.heads.filter(h => shownAs(h.group, h.label) === key).map(h => ({ group: h.group, label: h.label, threshold: h.threshold, maybe: h.maybe }));
   const tagger = TAGGER_POLICY.tags.filter(t => [...t.decides.map(label => ({ dimension: t.dimension, label })), ...(t.alsoDecides ?? [])]
@@ -58,7 +58,7 @@ function detectorsFor(key: string): Detectors {
 }
 
 const fired = (h: Detectors['heads'][number]): DescriptionScore =>
-  ({ group: 'dj-learned', label: h.label, score: Math.min(1, h.threshold + .01), learnedGroup: h.group, decision: 'include', basis: 'head', ...(h.maybe ? { maybe: true } : {}) });
+  ({ group: 'dj-learned', label: h.label, score: Math.min(1, h.threshold + .01), learnedGroup: h.group, decision: 'include', basis: 'head', ...(h.maybe ? { maybe: true } : {}), ...(h.minWindows ? { minWindows: h.minWindows } : {}) });
 
 /** What the Sounds row lists when only this tag's detectors fire, in the windows that hear the sound. */
 function shown(d: Detectors, c: Case): Map<string, boolean> {
