@@ -1624,6 +1624,72 @@
       "axis": "dj-chimes"
     },
     {
+      "group": "production",
+      "family": "texture",
+      "label": "cat meow",
+      "source": "sound effect",
+      "description": "A cat meowing.",
+      "aliases": [
+        "meow",
+        "cat",
+        "cats"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-cat"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "applause",
+      "source": "sound effect",
+      "description": "An audience applauding and clapping.",
+      "aliases": [
+        "clapping crowd",
+        "audience applause"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-applause"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "knock",
+      "source": "sound effect",
+      "description": "Knocking on a door or wooden surface.",
+      "aliases": [
+        "door knock",
+        "knocking"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-knock"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "typing",
+      "source": "sound effect",
+      "description": "Typing on a computer keyboard or typewriter.",
+      "aliases": [
+        "keyboard typing",
+        "typewriter"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-typing"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "train",
+      "source": "sound effect",
+      "description": "A train passing or rolling on rails.",
+      "aliases": [
+        "railway",
+        "train horn"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-train"
+    },
+    {
       "group": "character",
       "family": "timbre",
       "label": "airy",

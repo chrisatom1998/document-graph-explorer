@@ -86,7 +86,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // both also run on short one-shot clips; docs/evaluations/sfx-tags-2026-11-06).
 // 155/156: trained clock and chimes heads (same recipe, oneShot; judged once on FSD50K eval: clock P 0.654 / R 0.918,
 // chimes P 0.912 / R 0.608; no NSynth false alarms; docs/evaluations/sfx-tags-2026-11-06).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 156 : 155;
+// 157/158: trained cat meow, applause, knock, typing and train heads (same recipe, oneShot; judged once on FSD50K eval,
+// no NSynth false alarms; docs/evaluations/sfx-tags-2026-11-06).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 158 : 157;
 export interface InstrumentEstimate {
   label: string;
   score: number;

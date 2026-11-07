@@ -67,3 +67,30 @@ should show.
 | fire | none | – | – | – | – | fail: no dev-val cutoff |
 
 The app path (`eval-tag --decide-only` with the shipped heads) gives the same numbers for clock and chimes.
+
+## Third batch (2026-11-06): dog bark, cat meow, applause, knock, typing, train
+None of these labels had been graded before, so FSD50K eval is unseen for them. The recipe is the same and `oneShot` is
+on. The rules were fixed before any score was computed:
+- dog bark = `Bark`. Clips with `Dog` but no `Bark` are skipped.
+- cat meow = `Meow`. Clips with `Cat` but no `Meow` are skipped.
+- applause = `Applause`. Clips with `Clapping` but no `Applause` are skipped.
+- knock = `Knock`.
+- typing = `Typing`.
+- train = `Train`. Clips with `Rail_transport` but no `Train` are skipped.
+
+The training set has 14,539 clips: the earlier batches' clips plus 1,077 more dev-train clips.
+
+| tag | cutoff | P | R | tp / fp / pos | NSynth FA | result |
+|---|---|---|---|---|---|---|
+| typing | 0.73 | 0.778 | 0.842 | 123 / 35 / 146 | 0 | pass (70/70 too) |
+| knock | 0.86 | 0.724 | 0.816 | 84 / 32 / 103 | 0 | pass (70/70 too) |
+| applause | 0.29 | 0.659 | 0.940 | 141 / 73 / 150 | 0 | pass (60/60 too) |
+| cat meow | 0.29 | 0.645 | 1.000 | 78 / 43 / 78 | 0 | pass (60/60 too) |
+| train | 0.93 | 0.620 | 0.838 | 93 / 57 / 111 | 0 | pass (60/60 too) |
+| dog bark | 0.15 | 0.452 | 0.844 | 103 / 125 / 122 | 0 | fail: precision |
+
+The app path (`eval-tag --decide-only` with the shipped heads) gives identical numbers.
+
+The app's model loader rejects any head with a cutoff below 0.5, and when it does it drops every learned head, not just
+that one. Cat meow and applause were cut at 0.29 on dev val. Their shipped bias therefore adds logit(0.29) = ln(0.71/0.29),
+so they cut at 0.5 and make the same decisions.
