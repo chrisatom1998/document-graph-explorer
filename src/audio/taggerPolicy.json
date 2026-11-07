@@ -52,8 +52,7 @@
    ],
    "tested": false,
    "long": {
-    "rule": "detectors",
-    "afterSeconds": 30
+    "rule": "detectors"
    }
   },
   {
