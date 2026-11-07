@@ -15,6 +15,7 @@ import { initChatHistorySync } from './persistence/chatHistorySync';
 import { useSettingsStore } from './store/settingsStore';
 import { audioAnalysisUsedBefore } from './audio/speculativePreload';
 import { audioModelPackInstalled } from './audio/modelPack';
+import { initialDesign } from './design/designMode';
 import './styles.css';
 
 /** Fetch and warm the audio models once a restored graph that contains audio has
@@ -77,6 +78,9 @@ const DjAssistant = lazy(() => import('./ui/DjAssistant'));
 const MusicBackgroundStatus = lazy(() => import('./ui/MusicBackgroundStatus'));
 const ChatPanel = lazy(() => import('./ui/ChatPanel'));
 const HelpPopover = lazy(() => import('./ui/HelpPopover'));
+// Design explorations load only when the URL asks for them (?design=a|b|c).
+const DesignLayer = lazy(() => import('./design/DesignLayer'));
+const designChoice = initialDesign();
 
 function hasSavedDims(): boolean {
   try { return localStorage.getItem('knowledge-nebula-dims') !== null; } catch { return true; }
@@ -385,6 +389,9 @@ export default function App() {
         <Suspense fallback={null}><HelpPopover /></Suspense>
       )}
       <ToastHost />
+      {designChoice && (
+        <Suspense fallback={null}><DesignLayer initial={designChoice} /></Suspense>
+      )}
       {RetrievalBenchmarkPanel && new URLSearchParams(window.location.search).get('eval') === 'retrieval' && (
         <Suspense fallback={null}><RetrievalBenchmarkPanel /></Suspense>
       )}

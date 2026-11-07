@@ -24,7 +24,8 @@ import * as THREE from 'three';
 import { useUiStore } from '../store/uiStore';
 import { dismissGraphFocus } from './cameraFocusPolicy';
 import { registerSceneCapture } from './sceneCapture';
-import { FLAT_BG, VOID } from './palette';
+import { FLAT_BG, FLAT_GRID_FADE, VOID } from './palette';
+import { SCENE_THEMES, useDesignStore } from '../design/designMode';
 import {
   BACKDROP_RENDER_ORDER,
   BACKDROP_SIZE,
@@ -114,7 +115,14 @@ export default function NebulaCanvas() {
   // 2D constellation mode: flat ink background, no starfield/clouds/core —
   // the graph reads as a star chart, not a nebula (see palette FLAT_* tokens).
   const flat = useUiStore((s) => s.dims === 2);
-  const bg = flat ? FLAT_BG : VOID;
+  // A ?design= exploration retints the backdrop; without one this is the shipped palette.
+  const design = useDesignStore((s) => s.design);
+  const theme = design ? SCENE_THEMES[design] : null;
+  const bg = flat ? (theme?.flat ?? FLAT_BG) : (theme?.void ?? VOID);
+  useEffect(() => {
+    flatBackdropMaterial.uniforms.uOuter.value.set(theme?.flat ?? FLAT_BG);
+    flatBackdropMaterial.uniforms.uInner.value.set(theme?.flatInner ?? FLAT_GRID_FADE);
+  }, [theme]);
 
   if (!webglSupported) return <WebGLFallback />;
 
