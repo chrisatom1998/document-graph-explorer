@@ -212,6 +212,12 @@ describe('the 50/50 shipping bar', () => {
     ['knock', .86, '027736acb00a3ca1e59cecadf5ccbc70acab897d3ccb0478597780db2baa4203'],
     ['typing', .73, '84c4d07944b40d543752cc009cdbe59c24fe9ffeaf3c869c9a7b5ce205f0ea60'],
     ['train', .93, 'f72237eeefaf79674c2a1787420f3b2ebc39393482fc486758d7f4128e579c33'],
+    // Fresh-set retry (heads and cutoffs frozen on dev val, judged once on the fresh BBC + ESC-50 set): thunder P 0.630 /
+    // R 0.750, phone ring P 0.966 / R 0.757, explosion P 0.797 / R 0.596; NSynth-valid false alarms 0 / 7 / 15 of 4,096.
+    // thunder was cut at 0.32 on dev val, so its bias carries logit(0.32) and it cuts at 0.5 with the same decisions.
+    ['thunder', .5, '92d88fd5efbdcf0f8c287d7b02997d596255010ea5f4ea05b25364ce0376a4e3'],
+    ['phone ring', .99, 'b06a9b6919db74db6c91c49a22b2ded21683820fe3ed8ff46b41e55e29d90c25'],
+    ['explosion', .72, '0686b128dcfd4b6bd4bb2cd8d2b50d02b976963a123ae9e5a1d6e6b07721a0e1'],
   ] as const)('ships the %s head as a normal tag on clips of any length at its dev-val cutoff', (label, threshold, digest) => {
     expect(head(label)).toMatchObject({ group: 'production', oneShot: true });
     expect(head(label).maybe).toBeUndefined();

@@ -1690,6 +1690,46 @@
       "axis": "dj-train"
     },
     {
+      "group": "production",
+      "family": "texture",
+      "label": "thunder",
+      "source": "sound effect",
+      "description": "Thunder rumbling or cracking in a storm.",
+      "aliases": [
+        "thunderclap",
+        "storm thunder"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-thunder"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "phone ring",
+      "source": "sound effect",
+      "description": "A telephone ringing.",
+      "aliases": [
+        "telephone ring",
+        "ringtone",
+        "phone ringing"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-phone"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "explosion",
+      "source": "sound effect",
+      "description": "An explosion or blast with a boom.",
+      "aliases": [
+        "blast",
+        "boom explosion"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-explosion"
+    },
+    {
       "group": "character",
       "family": "timbre",
       "label": "airy",
