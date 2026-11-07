@@ -9,7 +9,7 @@ import calibratedLabelList from './calibratedLabels.json';
 import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 import { FULL_MIX_FAMILY, FULL_MIX_REVISION } from './fullMixHeads';
-import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, taggerDecisions, taggerIntervals, type TaggerTag } from './tagger';
+import { TAGGER_MAX_WINDOWS, TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, TAGGER_WINDOW_SECONDS, taggerDecisions, taggerIntervals, type TaggerTag } from './tagger';
 import { nativeScoreOutside, type NativeWindowEvidence } from './nativeWindowEvidence';
 import { isRuleDescribedLabel } from './timbreDescriptions';
 
@@ -209,11 +209,19 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     if(review&&review.decision!=='confirmed'){for(const key of keys)result.delete(key);continue;}
     const confirmedAlias=[...keys].some(key=>result.get(key)?.origin==='confirmed by you');
     const agreed=shown&&!confirmedAlias&&(!needsAgreement||detectorsShow(tag));
+    // 'sole' (taggerPolicy trust) covers recordings up to the tagger's 30 s reach, the lengths it was picked on; on a
+    // longer one the tagger hears only the middle, so native positives outside it still stand.
+    const sole=tag.trust==='sole'&&audio.durationSeconds<=TAGGER_MAX_WINDOWS*TAGGER_WINDOW_SECONDS+1e-6;
+    // 'both' is an intersection: a tagger "no" also stands for sections it did not hear, at any length.
+    const whole=sole||tag.trust==='both';
+    // 'either' (taggerPolicy trust): a tagger "no" leaves the other detectors' positives in place.
+    if(tag.trust==='either'&&!agreed&&!confirmedAlias)continue;
     for(const key of keys){
       const item=result.get(key);if(item?.origin!=='model estimate')continue;
       if(confirmedAlias||(agreed&&key!==primary)){result.delete(key);continue;}
-      const outside=outsideTagger.get(key);
-      const unknown=item.scores?.some(s=>unknownOutsideTagger.get(key)?.has(s.model));
+      // 'sole': the tagger's answer stands for the whole recording, including sections it did not score.
+      const outside=whole?undefined:outsideTagger.get(key);
+      const unknown=!whole&&item.scores?.some(s=>unknownOutsideTagger.get(key)?.has(s.model));
       item.scores=(item.scores??[]).flatMap(s=>outside?.has(s.model)?[{model:s.model,score:outside.get(s.model)!}]:[]);
       if(unknown&&!item.scores.some(s=>qualifies(item.dimension,item.label,s.model,s.score))){delete item.scores;item.coverageUnknown=true;item.tier='possible';}
       else if(!item.scores.length)result.delete(key);

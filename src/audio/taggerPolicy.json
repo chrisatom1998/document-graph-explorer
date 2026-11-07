@@ -310,7 +310,8 @@
    "decides": [
     "rain ambience"
    ],
-   "tested": true
+   "tested": true,
+   "trust": "sole"
   },
   {
    "output": "cat:vocal breath",
@@ -665,7 +666,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "trust": "sole"
   },
   {
    "output": "cat:laser",

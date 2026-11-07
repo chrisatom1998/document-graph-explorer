@@ -34,7 +34,16 @@ export interface TaggerTag {
   /** Also listens to the tail of a 10-30 s clip that whole 10 s windows leave unheard (taggerTailStart): its best window and
    * its coverage then include one more window ending at the end of the clip. Set per tag where that measured better. */
   tail?: boolean;
+  /** Which model to trust for this tag where the tagger listened (default: the tagger replaces the other detectors there,
+   * but their positives in sections it never scored stand). 'sole': the tagger's answer covers the whole recording, so
+   * other detectors' positives in unscored sections (e.g. the tail of a 15 s clip) are dropped too; only on recordings up
+   * to 30 s (TAGGER_MAX_WINDOWS windows), the lengths it was picked on. 'either': the tagger
+   * can add the tag, but its "no" does not remove the other detectors' positives. 'both': the tag shows only when the
+   * tagger and the other detectors both show it (a tagger "no" also covers sections it did not hear). Picked per tag on one half of a group split, checked on the other
+   * (docs/evaluations/tagger-trust-2026-11-07). The long rules still decide whether the tagger is asked at all. */
+  trust?: TaggerTrust;
 }
+export type TaggerTrust = 'sole' | 'either' | 'both';
 /** Long-recording rules. 'max': the best window passes `threshold`. 'windows': at least `windows` windows pass it.
  * 'mean': the windows' mean passes it. 'agree': the best window passes it and the existing detectors show the tag too.
  * 'detectors': the existing detectors decide the tag, as if the tagger did not cover it. `threshold` defaults to the
@@ -232,7 +241,7 @@ export function taggerDecisions(tagger: TaggerAnalysis | undefined, durationSeco
     const { raw, threshold } = rule;
     const shown = raw >= threshold;
     const score = shown ? Math.min(1, Math.round((0.5 + 0.5 * (raw - threshold) / (1 - threshold)) * 1e4) / 1e4) : 0;
-    return [rule.agree ? { tag, shown, score, needsAgreement: true } : { tag, shown, score }];
+    return [rule.agree || tag.trust === 'both' ? { tag, shown, score, needsAgreement: true } : { tag, shown, score }];
   });
 }
 
