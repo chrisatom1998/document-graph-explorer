@@ -1,7 +1,7 @@
 {
  "version": 1,
- "revision": "all-tags-recall2-2026-10-11-r1+tail-2026-11-07",
- "modelSha256": "14f80825ba22af6048b62ad8c4dbddd0977eccffa66247b4ee657e9f15e62a56",
+ "revision": "all-tags-ep-bright-2026-11-07-r1+tail-2026-11-07",
+ "modelSha256": "2bec1c8ab2f0765d5bbc5684585f79fd9f08fdacbb8ea8bf58de9ce0524e1f6f",
  "input": {
   "name": "samples32k",
   "output": "scores",
@@ -39,6 +39,20 @@
    "minSeconds": 10,
    "long": {
     "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:electric piano",
+   "label": "electric piano",
+   "dimension": "source",
+   "threshold": 0.3535,
+   "decides": [
+    "electric piano"
+   ],
+   "tested": false,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
    }
   },
   {
@@ -256,7 +270,7 @@
    "output": "cat:bright",
    "label": "bright",
    "dimension": "character",
-   "threshold": 0.4432,
+   "threshold": 0.7245,
    "decides": [
     "bright"
    ],

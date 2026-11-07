@@ -31,7 +31,7 @@ describe('trained tagger policy', () => {
     const decided = new Set(TAGGER_POLICY.tags.flatMap(t => t.decides));
     expect(decided.has('cello')).toBe(false);
     expect(TAGGER_POLICY.tags.filter(t => t.dimension === 'source').map(t => t.output).sort())
-      .toEqual(['bass', 'cat:animal sound', 'cat:bass guitar', 'cat:bell', 'cat:environmental sound', 'cat:flute', 'cat:foley', 'cat:glockenspiel', 'cat:gong', 'cat:guitar',
+      .toEqual(['bass', 'cat:animal sound', 'cat:bass guitar', 'cat:bell', 'cat:electric piano', 'cat:environmental sound', 'cat:flute', 'cat:foley', 'cat:glockenspiel', 'cat:gong', 'cat:guitar',
         'cat:marimba', 'cat:organ', 'cat:percussion', 'cat:turntable', 'cat:vibraphone', 'cat:violin / fiddle', 'cat:voice', 'cat:whistle', 'cymbals', 'drums', 'piano', 'saxophone',
         'synthesizer', 'trumpet']);
   });
@@ -352,7 +352,7 @@ describe('trained tagger long-recording rules', () => {
       'cat:bass guitar': { rule: 'detectors', afterSeconds: 30 }, 'cat:machine ambience': { rule: 'detectors', afterSeconds: 30 },
       'cat:pitched vocal': { rule: 'detectors' }, 'cat:hi-hat': { rule: 'detectors', afterSeconds: 30 }, 'cat:siren': { rule: 'detectors', afterSeconds: 30 },
       'cat:flute': { rule: 'detectors', afterSeconds: 30 }, 'cat:marimba': { rule: 'detectors', afterSeconds: 30 }, 'cat:vibraphone': { rule: 'detectors', afterSeconds: 30 },
-      'cat:crash cymbal': { rule: 'detectors', afterSeconds: 30 }, 'cat:whisper': { rule: 'detectors', afterSeconds: 30 },
+      'cat:crash cymbal': { rule: 'detectors', afterSeconds: 30 }, 'cat:electric piano': { rule: 'detectors', afterSeconds: 30 }, 'cat:whisper': { rule: 'detectors', afterSeconds: 30 },
       'cat:voice': { rule: 'detectors', afterSeconds: 30 }, 'cat:kick': { rule: 'detectors', afterSeconds: 30 }, 'cat:clap': { rule: 'detectors', afterSeconds: 30 },
       'cat:organ': { rule: 'detectors', afterSeconds: 30 }, 'cat:gong': { rule: 'detectors', afterSeconds: 30 },
       'cat:laser': { rule: 'detectors', afterSeconds: 30 }, 'cat:riser': { rule: 'detectors', afterSeconds: 30 },
