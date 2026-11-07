@@ -18,7 +18,7 @@ import { musicRuntimeIdentity } from './musicRuntime';
 import { FullMixEvidence, type FullMixModel } from './fullMixHeads';
 import { computeVersionPrint, VERSION_PRINT_SAMPLE_RATE } from './versionPrint';
 import { computeTimbre, TIMBRE_SAMPLE_RATE } from './timbre';
-import { TAGGER_REVISION, TAGGER_SAMPLE_RATE, TAGGER_UNAVAILABLE, TAGGER_WINDOW_SECONDS, TaggerEvidence, taggerWindow, taggerWindowStarts } from './tagger';
+import { TAGGER_REVISION, TAGGER_SAMPLE_RATE, TAGGER_UNAVAILABLE, TAGGER_WINDOW_SECONDS, TAGGER_TAIL_OUTPUTS, TaggerEvidence, taggerTailStart, taggerWindow, taggerWindowStarts } from './tagger';
 import { createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
@@ -352,12 +352,13 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
       return undefined;
     }
   }
-  /** The trained tagger (src/audio/tagger.ts): whole 10 s windows at 32 kHz, cut as its held-out scorer cut them.
+  /** The trained tagger (src/audio/tagger.ts): whole 10 s windows at 32 kHz, cut as its held-out scorer cut them, plus the tail window (taggerTailStart) for `tail` tags.
    * All windows or nothing: a failure leaves every tag to the other detectors and keeps the result out of the cache. */
   async function taggerPass(): Promise<{ tagger?: MusicAnalysis['tagger']; unavailable?: true }> {
     try {
       const evidence = new TaggerEvidence();
-      for (const start of taggerWindowStarts(duration)) {
+      const tailStart = TAGGER_TAIL_OUTPUTS.size ? taggerTailStart(duration) : undefined;
+      for (const start of [...taggerWindowStarts(duration), ...(tailStart === undefined ? [] : [tailStart])]) {
         check();
         const seconds = Math.min(TAGGER_WINDOW_SECONDS, duration - start);
         options.onProgress?.(`trained tagger: ${Math.floor(start)}–${Math.ceil(start + seconds)}s of ${Math.ceil(duration)}s`);
@@ -371,7 +372,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
           scores = await request<Record<string, number>>({ kind: 'tagger', samples: input }, [input.buffer]);
           check(); cache.set(key, scores);
         }
-        evidence.add(scores, { start, end: start + seconds });
+        // The tail window comes last and only feeds the outputs marked `tail` (src/audio/tagger.ts).
+        if (start === tailStart) evidence.addTail(scores, { start, end: start + seconds }); else evidence.add(scores, { start, end: start + seconds });
       }
       return { tagger: evidence.results() };
     } catch (error) {
