@@ -274,7 +274,7 @@
    "decides": [
     "bright"
    ],
-   "tested": false
+   "tested": true
   },
   {
    "output": "cat:dark",
