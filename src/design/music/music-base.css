@@ -1,0 +1,158 @@
+/* ==========================================================================
+   Shared base for the music design explorations (?design=a|b|c).
+   The Resonance shell stays mounted (it owns the graph canvas); its own
+   chrome is hidden and the whole shell is pinned over the design's graph
+   slot. Every rule is scoped to :root[data-design].
+   ========================================================================== */
+:root[data-design] {
+  --rs-top: 0px;
+  --rs-left: 0px;
+  --rs-right: 0px;
+  --mx-player-h: 0px;
+}
+:root[data-design] .rs-top,
+:root[data-design] .rs-sidebar,
+:root[data-design] .rs-inspector,
+:root[data-design] .empty-state-layer,
+:root[data-design] .insights-digest-layer,
+:root[data-design] .first-run-guide,
+:root[data-design] .first-run-spotlight { display: none !important; }
+
+:root[data-design] .rs-root {
+  position: fixed;
+  inset: auto;
+  left: var(--mx-slot-x, 0);
+  top: var(--mx-slot-y, 0);
+  width: var(--mx-slot-w, 0);
+  height: var(--mx-slot-h, 0);
+  grid-template-rows: 1fr;
+  grid-template-columns: 1fr;
+  grid-template-areas: 'stage';
+  z-index: 5;
+  overflow: hidden;
+  border-radius: var(--mx-slot-radius, 0);
+  clip-path: inset(var(--mx-slot-clip, 0px) round var(--mx-slot-radius, 0px));
+  background: transparent;
+  transition: none;
+}
+:root[data-design][data-graph-slot='off'] .rs-root,
+:root[data-design]:not([data-graph-slot]) .rs-root { visibility: hidden; }
+:root[data-design] .rs-stage { background: transparent; }
+:root[data-design] .rs-stage .minimap { transform: scale(0.6); transform-origin: right bottom; }
+
+.mx-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  font-family: var(--mx-font);
+  color: var(--mx-text);
+  background: var(--mx-bg);
+  -webkit-font-smoothing: antialiased;
+}
+.mx-shell button { font: inherit; color: inherit; }
+.mx-shell :focus-visible { outline: 2px solid var(--mx-accent); outline-offset: 2px; }
+.mx-muted { color: var(--mx-muted); }
+.mx-shell svg.mx-fill { fill: currentColor; stroke: none; }
+
+/* ---- Cover art, chips, play button, scrubber --------------------------- */
+.mx-cover { display: block; width: 100%; height: auto; aspect-ratio: 1; }
+.mx-chips { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.mx-chip {
+  display: inline-flex; align-items: center; height: 24px; padding: 0 9px;
+  border-radius: 999px; background: var(--mx-chip-bg); color: var(--mx-chip-text, var(--mx-text));
+  font-size: 12px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.mx-chip--key { background: var(--mx-key-bg, var(--mx-chip-bg)); color: var(--mx-key-text, var(--mx-chip-text, var(--mx-text))); }
+.mx-chip--bpm { background: var(--mx-bpm-bg, var(--mx-chip-bg)); color: var(--mx-bpm-text, var(--mx-chip-text, var(--mx-text))); }
+.mx-play {
+  display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--mx-accent); color: var(--mx-accent-ink) !important; cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+.mx-play svg { width: 20px; height: 20px; fill: currentColor; }
+.mx-play:hover { transform: scale(1.05); }
+.mx-scrub { flex: 1; min-width: 0; height: 32px; padding: 0; border: 0; background: none; cursor: pointer; }
+.mx-scrub svg { display: block; width: 100%; height: 100%; }
+
+/* ---- Tags: every category visible as readable chips --------------------- */
+.mx-tags { display: flex; flex-direction: column; gap: 10px; }
+.mx-tags__head { margin: 0; font-size: 14px; font-weight: 700; }
+.mx-tags__list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.mx-tag {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 12px 0 10px;
+  border-radius: 999px; background: var(--mx-tag-bg, var(--mx-chip-bg)); color: var(--mx-text);
+  font-size: 14px; font-weight: 600; line-height: 1.2;
+}
+.mx-tag__group { color: var(--mx-muted); font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.mx-tag--key, .mx-tag--tempo { background: var(--mx-tag-strong-bg, var(--mx-chip-bg)); }
+.mx-tags__none { margin: 0; color: var(--mx-muted); font-size: 14px; }
+
+/* ---- Graph card --------------------------------------------------------- */
+.mx-map { display: flex; flex-direction: column; min-height: 0; }
+.mx-map__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; padding: 14px 16px 10px; }
+.mx-map__titles { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mx-map__titles strong { font-size: 18px; font-weight: 700; }
+.mx-map__titles small { color: var(--mx-muted); font-size: 13px; }
+.mx-map__tools { display: flex; align-items: center; gap: 8px; flex: none; }
+.mx-map__slot { flex: 1; min-height: 0; }
+.mx-map__fit, .mx-map .workspace-dims {
+  display: inline-flex; align-items: center; gap: 2px; height: 32px; padding: 0 12px; width: auto;
+  border: 1px solid var(--mx-line); border-radius: 999px; background: none; color: var(--mx-text);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.mx-map .workspace-dims { padding: 3px; }
+.mx-map .workspace-dims span { padding: 3px 10px; border-radius: 999px; color: var(--mx-muted); }
+.mx-map .workspace-dims span.is-current { background: var(--mx-accent); color: var(--mx-accent-ink); }
+
+/* ---- Shipped detail panel re-pointed at the design palette -------------- */
+.mx-details {
+  border-color: var(--mx-line) !important;
+  --rs-raised: var(--mx-surface);
+  --rs-panel: var(--mx-surface);
+  --rs-bg: var(--mx-surface-2);
+  --rs-line: var(--mx-line);
+  --rs-line-strong: var(--mx-line);
+  --rs-text: var(--mx-text);
+  --rs-muted: var(--mx-muted);
+  --rs-faint: var(--mx-muted);
+  --rs-lime: var(--mx-accent);
+  --rs-lime-ink: var(--mx-accent-ink);
+  --bg-glass: var(--mx-surface);
+  --bg-glass-strong: var(--mx-surface);
+  --panel-bg: var(--mx-surface);
+  --surface: var(--mx-surface);
+  --surface-raised: var(--mx-surface);
+  --surface-inset: var(--mx-surface-2);
+  --border-glass: var(--mx-line);
+  --border-glass-strong: var(--mx-line);
+  --text-primary: var(--mx-text);
+  --text-secondary: var(--mx-muted);
+  --text-faint: var(--mx-muted);
+  --text: var(--mx-text);
+  --text-muted: var(--mx-muted);
+  --accent: var(--mx-accent);
+  --accent-strong: var(--mx-accent);
+  --accent-fill: var(--mx-accent);
+  --accent-foreground: var(--mx-accent-ink);
+  --accent-soft: color-mix(in srgb, var(--mx-accent) 18%, transparent);
+  --focus: var(--mx-accent);
+  font-family: var(--mx-font);
+}
+
+/* ---- Legacy overlays (search, progress, dialogs) on the design palette --- */
+:root[data-design] .app-root:has(.rs-root) .progress-strip-layer { left: 0; right: 0; bottom: calc(var(--mx-player-h) + 16px); padding-inline: 16px; }
+:root[data-design] .progress-strip,
+:root[data-design] .progress-strip-restore {
+  background: var(--mx-surface-raised); border-color: var(--mx-line); color: var(--mx-text);
+  font-family: var(--mx-font); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  --text-primary: var(--mx-text); --text-secondary: var(--mx-muted); --text-faint: var(--mx-muted);
+}
+:root[data-design] .progress-strip::before { display: none; }
+:root[data-design] .progress-strip__bar-fill, :root[data-design] .model-progress__bar-fill { background: var(--mx-accent); }
+:root[data-design] .file-chip { background: var(--mx-chip-bg); border-color: transparent; color: var(--mx-text); }
+:root[data-design] .app-root:has(.rs-root) .search-overlay {
+  background: var(--mx-surface-raised); border-color: var(--mx-line); font-family: var(--mx-font);
+  --text-primary: var(--mx-text); --text-secondary: var(--mx-muted);
+}
+:root[data-design] .app-root:has(.rs-root) .search-overlay__input-row { background: transparent; }
+:root[data-design] .app-root:has(.rs-root) .search-result-row.is-active { background: color-mix(in srgb, var(--mx-accent) 14%, transparent); box-shadow: inset 3px 0 var(--mx-accent); }

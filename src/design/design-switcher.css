@@ -1,0 +1,45 @@
+/* Design-exploration picker. Neutral on purpose so it reads as tooling, not
+   as part of any of the designs it switches between. */
+.design-switcher {
+  position: fixed;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  z-index: calc(var(--z-dropzone) + 1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid #3a3a3a;
+  border-radius: 999px;
+  background: #1b1b1b;
+  color: #f2f2f2;
+  font: 500 12px/1 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+.design-switcher__label { color: #bdbdbd; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; }
+.design-switcher__options { display: flex; gap: 2px; padding: 2px; border-radius: 999px; background: #2a2a2a; }
+.design-switcher__options button,
+.design-switcher__hide,
+.design-switcher--collapsed {
+  min-width: 32px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: #e6e6e6;
+  font: inherit;
+  cursor: pointer;
+}
+.design-switcher__options button:hover { background: #3a3a3a; }
+.design-switcher__options button[aria-checked='true'] { background: #f2f2f2; color: #111; }
+.design-switcher__name { color: #d6d6d6; white-space: nowrap; }
+.design-switcher__hide { min-width: 28px; padding: 0; color: #bdbdbd; font-size: 16px; }
+.design-switcher__hide:hover { background: #2a2a2a; color: #fff; }
+.design-switcher--collapsed { top: auto; left: 12px; bottom: calc(var(--mx-player-h, 0px) + 12px); transform: none; height: 28px; padding: 0 12px; border: 1px solid #3a3a3a; background: #1b1b1b; font-size: 12px; }
+.design-switcher :focus-visible { outline: 2px solid #7cc4ff; outline-offset: 2px; }
+@media (max-width: 860px) {
+  .design-switcher:not(.design-switcher--collapsed) { top: auto; bottom: 8px; }
+  .design-switcher__name { display: none; }
+}
