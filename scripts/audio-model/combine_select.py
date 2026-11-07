@@ -26,9 +26,10 @@ def val_rows(th_row):
         return {}
     out = {}
     for k, v in th_row.items():
-        if k.endswith('Val') and isinstance(v, dict) and v.get('precision') is not None and v.get('recall') is not None \
+        # calibrate.py writes precision null when the cutoff flags no clip: that source scores 0, it is not left out.
+        if k.endswith('Val') and isinstance(v, dict) and v.get('recall') is not None \
                 and v.get('positives', 0) >= MIN_POS and v.get('negatives', 0) >= MIN_NEG:
-            out[k[:-3]] = (float(v['precision']), float(v['recall']))
+            out[k[:-3]] = (float(v['precision'] or 0.0), float(v['recall']))
     return out
 
 
@@ -48,7 +49,12 @@ def choose(tags, runs, keep=(), only=None, pin=None):
             picks[tag] = {'run': pin[tag], 'why': 'pinned by hand', 'val': val}
             continue
         # The baseline is the shipped run, or for an output only newer runs have, the first run that has it.
-        b0 = next((k for k, run in enumerate(runs) if tag in run['th']), 0)
+        allowed = lambda run: run['name'] not in only or tag in only[run['name']]
+        if tag in runs[0]['th']:
+            b0 = 0
+        else:
+            b0 = next((k for k, run in enumerate(runs) if tag in run['th'] and allowed(run)), None)
+            assert b0 is not None, f'{tag}: no run allowed by --only has this output'
         base = val_rows(runs[b0]['th'].get(tag)); best, why = b0, 'shipped run' if b0 == 0 else 'first run with this output'
         if tag in keep:
             why = 'kept (long-recording threshold tuned on the shipped run)'
@@ -58,7 +64,7 @@ def choose(tags, runs, keep=(), only=None, pin=None):
             passed = {n for n, (p, r) in base.items() if p >= FLOOR and r >= FLOOR}
             top = None
             for k, run in enumerate(runs[b0 + 1:], b0 + 1):
-                if run['name'] in only and tag not in only[run['name']]:
+                if not allowed(run):
                     continue
                 rs = val_rows(run['th'].get(tag)); common = set(rs) & set(base)
                 if not common:

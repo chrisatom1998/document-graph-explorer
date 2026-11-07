@@ -68,6 +68,17 @@ class ChooseTests(unittest.TestCase):
         runs = [run('ship', {'cat:x': {'enabled': False, 'reason': '3 validation positives'}}), run('new', {'cat:x': th(f=(.9, .9))})]
         self.assertEqual(cs.choose(['cat:x'], runs)['cat:x']['run'], 'ship')
 
+    def test_no_prediction_source_counts_as_zero(self):
+        new = th(nsynth=(.9, .9)); new['fsd50kVal'] = {'precision': None, 'recall': 0.0, 'positives': 50, 'negatives': 500}
+        runs = [run('ship', {'cat:x': th(fsd50k=(.8, .8), nsynth=(.4, .4))}), run('new', {'cat:x': new})]
+        self.assertEqual(cs.choose(['cat:x'], runs)['cat:x']['run'], 'ship')
+
+    def test_new_output_respects_only(self):
+        runs = [run('ship', {'cat:y': th(f=(.5, .5))}), run('a', {'cat:x': th(f=(.6, .6))}), run('b', {'cat:x': th(f=(.5, .5))})]
+        self.assertEqual(cs.choose(['cat:x'], runs, only={'a': {'cat:y'}})['cat:x']['run'], 'b')
+        with self.assertRaises(AssertionError):
+            cs.choose(['cat:x'], runs, only={'a': {'cat:y'}, 'b': {'cat:y'}})
+
 
 if __name__ == '__main__':
     unittest.main()
