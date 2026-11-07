@@ -86,7 +86,10 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // both also run on short one-shot clips; docs/evaluations/sfx-tags-2026-11-06).
 // 155/156: trained clock and chimes heads (same recipe, oneShot; judged once on FSD50K eval: clock P 0.654 / R 0.918,
 // chimes P 0.912 / R 0.608; no NSynth false alarms; docs/evaluations/sfx-tags-2026-11-06).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 156 : 155;
+// 157/158: five heads also score whole clips of 2.25 s or less (oneShot): trumpet, strings, viola, harmonica, crowd ambience.
+// Chosen on one uploader half of saved FSD50K eval scores, confirmed on the other: trumpet R 0.446 -> 0.732, strings
+// R 0.671 -> 0.829 (docs/evaluations/oneshot-heads-2026-11-07).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 158 : 157;
 export interface InstrumentEstimate {
   label: string;
   score: number;
