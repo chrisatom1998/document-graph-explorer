@@ -203,6 +203,15 @@ describe('the 50/50 shipping bar', () => {
     // Second batch (same recipe): clock P 0.654 / R 0.918, chimes P 0.912 / R 0.608, no NSynth false alarms.
     ['clock', .71, '76934099decd926c9ac3f1583efb59e70b9b6e738a5904461dc6f94dcd6fa313'],
     ['chimes', .98, '76bcd1bd14c0ff0cc92a1fc640920a3112809a0575be0f5078b6c196efb46446'],
+    // Third batch: cat meow P 0.645 / R 1.000, applause P 0.659 / R 0.940, knock P 0.724 / R 0.816,
+    // typing P 0.778 / R 0.842, train P 0.620 / R 0.838; no NSynth false alarms.
+    // cat meow and applause were cut at 0.29 on dev val; the loader rejects cutoffs under 0.5, so their bias carries
+    // logit(0.29) and they cut at 0.5 with the same decisions.
+    ['cat meow', .5, '96ffcf969d4dacbe3bcc9d10dfebee16d60b40d0193db64de9eb76610a643e3d'],
+    ['applause', .5, 'f4c4a475aa922a88459e13fc15635b109ce0d4e9c99f69510af27fe369c4d2b7'],
+    ['knock', .86, '027736acb00a3ca1e59cecadf5ccbc70acab897d3ccb0478597780db2baa4203'],
+    ['typing', .73, '84c4d07944b40d543752cc009cdbe59c24fe9ffeaf3c869c9a7b5ce205f0ea60'],
+    ['train', .93, 'f72237eeefaf79674c2a1787420f3b2ebc39393482fc486758d7f4128e579c33'],
   ] as const)('ships the %s head as a normal tag on clips of any length at its dev-val cutoff', (label, threshold, digest) => {
     expect(head(label)).toMatchObject({ group: 'production', oneShot: true });
     expect(head(label).maybe).toBeUndefined();
