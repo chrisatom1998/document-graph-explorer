@@ -146,6 +146,13 @@ export function sanitizeLearnedDjModel(raw: unknown): LearnedDjModel | undefined
   if (neighbours === null) return;
   return {version:1,encoder:model.encoder,revision:model.revision,examples,...(model.heads ? {heads:model.heads} : {}),...(neighbours ? {neighbours} : {})};
 }
+/** A whole clip short enough for the one-shot heads (short-clip.json): heads trained on longer audio were never validated on
+ *  one-shots (several misfired, e.g. loop tags), so only heads marked oneShot keep their positives. Reviewed-example matches
+ *  still apply. The worker, scripts/eval-tag.ts and tagRouting.test.ts all route through this one function. */
+export function oneShotClipScores(scores: DescriptionScore[], model: LearnedDjModel | undefined): DescriptionScore[] {
+  const oneShotHeads = new Set(model?.heads?.filter(h => h.oneShot).map(h => `${h.group}:${h.label}`));
+  return scores.filter(s => s.basis !== 'head' || oneShotHeads.has(`${s.learnedGroup}:${s.label}`));
+}
 /** On a recording shorter than the 10 s CLAP window, these heads stay quiet unless they outscore the sibling
  *  they are regularly confused with. A 10 s mix window can contain both, so it is not gated. Measured on the
  *  NSynth test notes (instruments held out of training): electric guitar kept every true positive that already
