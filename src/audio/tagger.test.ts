@@ -4,7 +4,7 @@ import { confidentSoundSummary } from './confidentSoundSummary';
 import { sanitizeMusicAnalysis, type MusicAnalysis } from './musicTypes';
 import { dimensionLabels } from './recognition';
 import { canonicalDjLabel } from './djTags';
-import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, TAGGER_UNAVAILABLE, TaggerEvidence, isTaggerScores, sanitizeTaggerAnalysis, taggerDecisions, taggerWindowStarts, type TaggerTag } from './tagger';
+import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, TAGGER_UNAVAILABLE, TaggerEvidence, isTaggerScores, sanitizeTaggerAnalysis, taggerDecisions, taggerTailStart, taggerWindowStarts, type TaggerTag } from './tagger';
 
 const threshold = (output: string) => TAGGER_POLICY.tags.find(t => t.output === output)!.threshold;
 const track = (seconds: number, scores: Record<string, number>, djTags: NonNullable<MusicAnalysis['soundProfile']>['djTags'] = []): MusicAnalysis => ({
@@ -89,6 +89,22 @@ describe('trained tagger windows and storage', () => {
     expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { drums: 1 } }, 30)!.find(d => d.tag.output === 'drums')!.score).toBe(1);
     expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { drums: t - 1e-3 } }, 30)!.find(d => d.tag.output === 'drums')!.shown).toBe(false);
     expect(taggerDecisions({ revision: 'older', windows: 1, scores: { drums: 1 } }, 30)).toBeUndefined();
+  });
+});
+
+describe('trained tagger tail window', () => {
+  it('adds one window ending at the end of a 10-30 s clip that whole windows leave unheard', () => {
+    expect([5, 10, 15, 20, 25, 30, 47].map(taggerTailStart)).toEqual([undefined, undefined, 5, undefined, 15, undefined, undefined]);
+  });
+  it('a tail tag reads the tail window; a 15 s clip keeps the one-window rule (drums: own cutoff, not the long one)', () => {
+    const drums = TAGGER_POLICY.tags.find(t => t.output === 'drums')!;
+    expect(drums.tail && drums.long?.threshold).toBeGreaterThan(drums.threshold);
+    const e = new TaggerEvidence();
+    e.add({ drums: .1 }, { start: 0, end: 10 }); e.addTail({ drums: (drums.threshold + drums.long!.threshold!) / 2, piano: .99 }, { start: 5, end: 15 });
+    const t = e.results()!;
+    expect(t.tail?.scores).toEqual({ drums: (drums.threshold + drums.long!.threshold!) / 2 });
+    expect(sanitizeTaggerAnalysis(JSON.parse(JSON.stringify(t)), 15)).toEqual(t);
+    expect(taggerDecisions(t, 15)!.find(d => d.tag.output === 'drums')!.shown).toBe(true);
   });
 });
 

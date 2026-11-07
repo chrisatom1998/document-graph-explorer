@@ -39,8 +39,7 @@
    "minSeconds": 10,
    "long": {
     "rule": "detectors"
-   },
-   "tail": true
+   }
   },
   {
    "output": "cat:guitar",
@@ -160,7 +159,8 @@
    "tested": true,
    "long": {
     "rule": "detectors"
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:animal sound",
@@ -173,7 +173,8 @@
    "tested": true,
    "long": {
     "rule": "detectors"
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:glockenspiel",

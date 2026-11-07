@@ -11,8 +11,9 @@ retrained and no cutoff was tuned: every part is a yes/no per tag.
    clip. Files longer than 30 s and single-window clips keep the old rule (the vote was only measured up to 30 s).
 3. **The tagger hears the end of 10-30 s clips:** whole 10 s windows left the last seconds of a 15 s or 25 s clip
    unheard. One more tagger window, ending at the clip's end (`taggerTailStart`), now feeds the policy outputs marked
-   `tail` in `taggerPolicy.json`: clap, crash cymbal, machine ambience, organ, siren, vocal shout, voice, water ambience,
-   whisper, drums, piano. It costs one extra tagger run on such clips (about 0.2 s per clip on the container's CPU).
+   `tail` in `taggerPolicy.json`: animal sound, clap, crash cymbal, machine ambience, organ, percussion, siren, vocal
+   shout, voice, water ambience, whisper, drums. The tail adds coverage only: the long-recording rule is still chosen by
+   the scorer's window count, so a 15 s clip keeps its one-window rule. It costs one extra tagger run on such clips (about 0.2 s per clip on the container's CPU).
 
 ## How each part was chosen
 - Data: the saved app-path model outputs of the Nov 2 FSD50K eval rescore (10,231 clips, CLAP fingerprints and tagger
@@ -21,15 +22,14 @@ retrained and no cutoff was tuned: every part is a yes/no per tag.
   container (nothing uploaded, no audio in this repo).
 - Split: uploader groups hashed into two halves (as `eval-tag.ts` does). A part stays on for a tag only when that tag's
   F1 rose on **both** halves. Tags it hurt on either half were switched off: window vote off for bird ambience, bell,
-  trumpet, mallet instrument, accordion, harp, piano, crowd ambience; tail window off for the outputs behind animal sound, bass
-  guitar, bell, bird ambience, breath, cymbal, finger snap, foley, glockenspiel, gong, guitar, hi-hat, kick, percussion,
-  rain ambience, tambourine, trumpet, vinyl scratch, vocal scream, falling, laser and riser, and off for the 33 outputs
-  this set cannot measure.
+  trumpet, mallet instrument, accordion, harp, piano, crowd ambience; tail window off for the outputs behind bass guitar, bell,
+  bird ambience, breath, cymbal, finger snap, foley, glockenspiel, gong, guitar, hi-hat, kick, piano, rain ambience,
+  trumpet, vinyl scratch, falling, laser and riser, and off for the outputs this set cannot measure or did not move.
 - Because the check half was used to drop parts, it is not an untouched holdout. The other counted sets (free-tag-set,
   NSynth) were not re-scored on the app path; NSynth (4 s notes) is not touched by any part.
 
 ## Result on the FSD50K eval app path (precision / recall, main -> this change)
-Passing tags (60/30 on all clips): **28 -> 35** of the labelled tags. No tag's F1 went down on either half, on short
+Passing tags (60/30 on all clips): **28 -> 34** of the labelled tags. No tag's F1 went down on either half, on short
 clips or on longer clips. Some tags trade recall for much higher precision (voice, siren, whisper, water ambience).
 
 | tag | pick half | check half | all | 60/30 | short clips | longer clips |
@@ -43,18 +43,24 @@ clips or on longer clips. Some tags trade recall for much higher precision (voic
 | vocal shout | 0.440 / 0.515 -> 0.469 / 0.535 | 0.301 / 0.397 -> 0.320 / 0.397 | 0.374 / 0.463 -> 0.400 / 0.475 | fail | 27/36 found, 30 false -> 27/36 found, 30 false | 55/141 found, 107 false -> 57/141 found, 96 false |
 | water ambience | 0.531 / 0.789 -> 0.636 / 0.689 | 0.477 / 0.755 -> 0.586 / 0.637 | 0.505 / 0.773 -> 0.612 / 0.664 | **fail -> pass** | 42/48 found, 12 false -> 42/48 found, 12 false | 292/384 found, 316 false -> 245/384 found, 170 false |
 | whisper | 0.203 / 0.500 -> 0.688 / 0.393 | 0.364 / 0.766 -> 0.833 / 0.638 | 0.298 / 0.667 -> 0.788 / 0.547 | **fail -> pass** | 12/15 found, 7 false -> 12/15 found, 7 false | 38/60 found, 111 false -> 29/60 found, 4 false |
-| drums | 0.059 / 1.000 -> 0.071 / 0.967 | 0.065 / 0.967 -> 0.081 / 0.967 | 0.062 / 0.983 -> 0.076 / 0.967 | fail | 10/11 found, 100 false -> 10/11 found, 100 false | 49/49 found, 800 false -> 48/49 found, 608 false |
+| animal sound | 0.802 / 0.530 -> 0.803 / 0.540 | 0.817 / 0.559 -> 0.808 / 0.571 | 0.810 / 0.545 -> 0.806 / 0.556 | pass | 96/127 found, 40 false -> 96/127 found, 40 false | 494/955 found, 98 false -> 506/955 found, 105 false |
+| drums | 0.059 / 1.000 -> 0.067 / 1.000 | 0.065 / 0.967 -> 0.073 / 0.967 | 0.062 / 0.983 -> 0.070 / 0.983 | fail | 10/11 found, 100 false -> 10/11 found, 100 false | 49/49 found, 800 false -> 49/49 found, 689 false |
 | gong | 0.571 / 0.718 -> 0.651 / 0.718 | 0.558 / 0.727 -> 0.571 / 0.727 | 0.565 / 0.722 -> 0.612 / 0.722 | **fail -> pass** | 0/4 found, 0 false -> 0/4 found, 0 false | 52/68 found, 40 false -> 52/68 found, 33 false |
 | harmonica | 0.528 / 0.950 -> 0.588 / 1.000 | 0.708 / 0.895 -> 0.735 / 0.947 | 0.631 / 0.914 -> 0.675 / 0.966 | pass | 0/3 found, 0 false -> 3/3 found, 0 false | 53/55 found, 31 false -> 53/55 found, 27 false |
 | organ | 0.545 / 0.667 -> 0.750 / 0.667 | 0.471 / 0.308 -> 0.889 / 0.308 | 0.500 / 0.400 -> 0.824 / 0.400 | **fail -> pass** | 0/4 found, 0 false -> 0/4 found, 0 false | 14/31 found, 14 false -> 14/31 found, 3 false |
-| piano | 0.145 / 0.808 -> 0.583 / 0.808 | 0.193 / 0.740 -> 0.739 / 0.680 | 0.172 / 0.763 -> 0.671 / 0.724 | **fail -> pass** | 19/19 found, 2 false -> 19/19 found, 2 false | 39/57 found, 277 false -> 36/57 found, 25 false |
+| percussion | 0.658 / 0.745 -> 0.672 / 0.751 | 0.748 / 0.700 -> 0.766 / 0.700 | 0.706 / 0.719 -> 0.721 / 0.721 | pass | 210/277 found, 58 false -> 210/277 found, 58 false | 383/548 found, 189 false -> 385/548 found, 172 false |
 | strings | 0.857 / 0.645 -> 0.909 / 0.860 | 0.791 / 0.723 -> 0.878 / 0.766 | 0.832 / 0.671 -> 0.899 / 0.829 | pass | 0/26 found, 0 false -> 22/26 found, 2 false | 94/114 found, 19 false -> 94/114 found, 11 false |
 | trumpet | 0.625 / 0.263 -> 0.850 / 0.895 | 0.833 / 0.541 -> 0.857 / 0.649 | 0.781 / 0.446 -> 0.854 / 0.732 | pass | 0/18 found, 0 false -> 16/18 found, 0 false | 25/38 found, 7 false -> 25/38 found, 7 false |
 | voice | 0.637 / 0.552 -> 0.947 / 0.491 | 0.702 / 0.579 -> 0.939 / 0.508 | 0.672 / 0.567 -> 0.942 / 0.500 | pass | 194/259 found, 21 false -> 194/259 found, 21 false | 732/1374 found, 430 false -> 623/1374 found, 29 false |
 
 All other labelled tags are unchanged. On the scoreboard's app-path line (tagger tags measured at the shipped cutoff,
 FSD50K row from this rescore), clap, siren, water ambience, whisper, gong and organ now pass every counted set: the
-app-path count goes 80 -> 86. Piano passes FSD50K now but still fails free-tag-set and NSynth.
+app-path count goes 80 -> 86.
+
+A first version also flipped piano, but only by accident: the tail window made a 15 s clip count as two windows, which
+switched piano to its long-recording rule ('detectors'). With that fixed (review on this PR), the tail window hurts
+piano, so it is off for piano. Letting the other detectors decide piano on 10-20 s clips did measure much better
+(precision .17 -> .67); that is a policy change worth its own test, not part of this fix.
 
 ## Pinned by tests
 - `src/audio/tagRouting.expected.json`: strings, viola, trumpet, harmonica and crowd ambience now show on 0.5-2.25 s
