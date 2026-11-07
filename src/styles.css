@@ -312,7 +312,6 @@ textarea {
 /* Counters and metrics align digit columns wherever numbers tick over. */
 .side-panel__stats,
 .chat-panel__doc-count,
-.chat-bubble-btn__badge,
 .path-panel__hop-count,
 .edge-kind-badge {
   font-variant-numeric: tabular-nums;
@@ -4664,7 +4663,6 @@ details.settings-section > summary {
   .ignored-tray__toggle,
   .progress-strip__minimize,
   .progress-strip__cancel { min-height: 40px; }
-  .chat-bubble-btn { width: 58px; height: 58px; }
 }
 
 /* ==========================================================================
@@ -4996,58 +4994,8 @@ details.settings-section > summary {
 }
 
 /* ==========================================================================
-   Chat / RAG AI Panel & Bubble
+   Chat / RAG AI Panel
    ========================================================================== */
-
-.chat-bubble-btn {
-  position: fixed;
-  bottom: 24px;
-  left: 24px;
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  z-index: var(--z-floating);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border-glass-strong);
-  background: var(--bg-glass-strong);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: var(--text-primary);
-  cursor: pointer;
-  pointer-events: auto;
-  box-shadow: 0 0 16px rgba(143, 123, 255, 0.16), var(--shadow-glass);
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
-}
-.chat-bubble-btn:hover {
-  transform: scale(1.08);
-  border-color: var(--accent);
-  box-shadow: 0 0 20px rgba(143, 123, 255, 0.3), var(--shadow-glass);
-  color: var(--accent-strong);
-}
-.chat-bubble-btn:active {
-  transform: scale(0.96);
-}
-.chat-bubble-btn svg {
-  width: 22px;
-  height: 22px;
-}
-
-.chat-bubble-btn__badge {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  background: var(--accent);
-  color: #ffffff;
-  font-family: var(--font-ui);
-  font-size: 9px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
 
 .chat-panel {
   position: fixed;
@@ -6183,10 +6131,7 @@ input {
 .audio-time { flex-shrink: 0; white-space: nowrap; font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .audio-controls .audio-volume { width: 76px; }
 
-/* Sample search and corpus chat are separate actions; give both a clear target. */
-.app-root:has(.dj-launch) .chat-bubble-btn { left: 270px; }
 @media (max-width: 640px) {
-  .app-root:has(.dj-launch) .chat-bubble-btn { left: auto; right: 18px; }
   /* A visible tour uses the lower half; notices occupy the gap below Browse. */
   .app-root:has(.first-run-guide) .toast-host {
     top: 132px;

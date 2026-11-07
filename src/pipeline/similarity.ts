@@ -71,8 +71,25 @@ function pairCountFor(n: number): number {
   return n < 2 ? 0 : (n * (n - 1)) / 2;
 }
 
-function shouldYield(progress: SemanticProgress, chunkSize: number): boolean {
-  return progress.processed > 0 && progress.processed % chunkSize === 0;
+/**
+ * Give the worker's event loop a turn (progress posts, cancel messages).
+ * A MessageChannel round-trip is used instead of `setTimeout(0)` because
+ * browsers clamp nested zero-delay timers to ≥4 ms: at one yield per ≤2048
+ * pairs, that clamp — not the dot products — dominated the semantic pass on
+ * large corpora.
+ */
+function yieldToEventLoop(): Promise<void> {
+  if (typeof MessageChannel === 'undefined') {
+    return new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return new Promise((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => {
+      channel.port1.close();
+      resolve();
+    };
+    channel.port2.postMessage(null);
+  });
 }
 
 function progressFor(processed: number, total: number): SemanticProgress {
@@ -185,9 +202,12 @@ export async function buildSemanticIndexChunked(
         considerPair(ids, vectors, dims, top, nearest, duplicates, params, i, j);
         processedPairs += 1;
 
-        if (onProgress && shouldYield(progressFor(processedPairs, totalPairs), progressChunk)) {
+        // Cheap modulo check first: the progress object and its localized
+        // note string are only built when a report is actually due, not for
+        // every one of the O(n²) pairs.
+        if (onProgress && processedPairs % progressChunk === 0) {
           onProgress(progressFor(processedPairs, totalPairs));
-          await new Promise((resolve) => setTimeout(resolve, 0));
+          await yieldToEventLoop();
         }
       }
     }
@@ -253,7 +273,6 @@ export function addToSemanticIndex(
   return { ids, vectors, dims, top, nearest, duplicates };
 }
 
-/** Derive mutual-top-k semantic edges (spec §5.2) from a bounded top-k index. */
 /**
  * Semantic edges from an index. A pair links when each doc is in the other's
  * top-k (above `threshold`) AND the pair is nearly as close as either doc's
