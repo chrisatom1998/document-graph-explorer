@@ -45,3 +45,25 @@ the app path:
 
 With the flag set, the app scores every clip the way the judge script did, so the judge numbers above are what the app
 should show.
+
+## Second batch (2026-11-06): explosion, glass break, clock, chimes, fire
+- **Recipe:** the same, with `oneShot` set from the start.
+- **Rules:** fixed in `rules.py` before any batch-2 score was computed.
+  - explosion = `Explosion`. Clips that are only gunshots (`Gunshot_and_gunfire` without `Boom` or `Fireworks`) are
+    skipped, because the gunshot tag owns those.
+  - glass break = `Shatter`.
+  - clock = `Clock`. Clips with `Tick` but no `Clock` are skipped.
+  - chimes = `Chime`, which includes `Wind_chime`.
+  - fire = `Fire`.
+- **Training clips:** 13,463. That is the first batch's set plus 1,512 more dev-train clips that hold the new classes
+  or their confusables, with the exclude list applied.
+
+| tag | cutoff | P | R | tp / fp / pos | NSynth FA | result |
+|---|---|---|---|---|---|---|
+| clock | 0.71 | 0.654 | 0.918 | 89 / 47 / 97 | 0 | pass (60/60 too) |
+| chimes | 0.98 | 0.912 | 0.608 | 62 / 6 / 102 | 0 | pass (60/60 too) |
+| explosion | 0.72 | 0.571 | 0.890 | 121 / 91 / 136 | 7 | fail: precision |
+| glass break | 0.22 | 0.543 | 0.990 | 95 / 80 / 96 | 0 | fail: precision |
+| fire | none | – | – | – | – | fail: no dev-val cutoff |
+
+The app path (`eval-tag --decide-only` with the shipped heads) gives the same numbers for clock and chimes.

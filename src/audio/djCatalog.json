@@ -1596,6 +1596,34 @@
       "axis": "dj-footsteps"
     },
     {
+      "group": "production",
+      "family": "texture",
+      "label": "clock",
+      "source": "sound effect",
+      "description": "A ticking clock.",
+      "aliases": [
+        "ticking clock",
+        "clock ticking",
+        "tick-tock"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-clock"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "chimes",
+      "source": "sound effect",
+      "description": "Wind chimes or chime bells ringing.",
+      "aliases": [
+        "chime",
+        "wind chimes",
+        "wind chime"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-chimes"
+    },
+    {
       "group": "character",
       "family": "timbre",
       "label": "airy",
