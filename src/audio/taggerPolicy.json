@@ -39,7 +39,8 @@
    "minSeconds": 10,
    "long": {
     "rule": "detectors"
-   }
+   },
+   "trust": "both"
   },
   {
    "output": "cat:guitar",
