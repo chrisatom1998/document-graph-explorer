@@ -89,7 +89,7 @@
 
 /* ---- Graph card --------------------------------------------------------- */
 .mx-map { display: flex; flex-direction: column; min-height: 0; }
-.mx-map__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px 10px; }
+.mx-map__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; padding: 14px 16px 10px; }
 .mx-map__titles { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .mx-map__titles strong { font-size: 18px; font-weight: 700; }
 .mx-map__titles small { color: var(--mx-muted); font-size: 13px; }

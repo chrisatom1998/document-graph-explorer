@@ -115,9 +115,12 @@ for (const design of targets) {
   await pick(page, design);
   await shot(page, dir, 'desktop-4-selected-tags', 2000);
 
+  // For You keeps its map in a feed card; its 3D shot uses the expanded Sound Map.
+  if (design === 'c') await page.getByRole('button', { name: 'Expand' }).click();
   await setDims(page, 3);
   await shot(page, dir, 'desktop-5-3d-view', 3000);
   await setDims(page, 2);
+  if (design === 'c') await page.getByRole('button', { name: 'Close map' }).click();
 
   await openDetails(page, design);
   await shot(page, dir, 'desktop-6-details');
