@@ -88,7 +88,10 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // chimes P 0.912 / R 0.608; no NSynth false alarms; docs/evaluations/sfx-tags-2026-11-06).
 // 157/158: trained cat meow, applause, knock, typing and train heads (same recipe, oneShot; judged once on FSD50K eval,
 // no NSynth false alarms; docs/evaluations/sfx-tags-2026-11-06).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 158 : 157;
+// 159/160: one combined fix for every clip length: five heads also score whole clips of 2.25 s or less (oneShot), eight
+// sustained-sound heads need two firing windows on 12-30 s clips (minWindows), and the tagger hears the tail of 10-30 s
+// clips for 12 outputs (docs/evaluations/super-fix-2026-11-07).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 160 : 159;
 export interface InstrumentEstimate {
   label: string;
   score: number;

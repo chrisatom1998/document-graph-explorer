@@ -1,6 +1,6 @@
 {
  "version": 1,
- "revision": "all-tags-recall2-2026-10-11-r1",
+ "revision": "all-tags-recall2-2026-10-11-r1+tail-2026-11-07",
  "modelSha256": "14f80825ba22af6048b62ad8c4dbddd0977eccffa66247b4ee657e9f15e62a56",
  "input": {
   "name": "samples32k",
@@ -24,7 +24,8 @@
    "long": {
     "rule": "max",
     "threshold": 0.5757
-   }
+   },
+   "tail": true
   },
   {
    "output": "piano",
@@ -158,7 +159,8 @@
    "tested": true,
    "long": {
     "rule": "detectors"
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:animal sound",
@@ -171,7 +173,8 @@
    "tested": true,
    "long": {
     "rule": "detectors"
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:glockenspiel",
@@ -419,7 +422,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:bell",
@@ -473,7 +477,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:pitched vocal",
@@ -514,7 +519,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:flute",
@@ -570,7 +576,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:whisper",
@@ -584,7 +591,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:voice",
@@ -598,7 +606,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:kick",
@@ -626,7 +635,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:organ",
@@ -640,7 +650,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:gong",
@@ -870,7 +881,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:staccato",
