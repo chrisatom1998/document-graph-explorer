@@ -43,7 +43,7 @@ import { mergeDjTags } from '../src/audio/djClassification';
 import { combineSoundModels } from '../src/audio/ensemble';
 import { confidentSoundSummary } from '../src/audio/confidentSoundSummary';
 import { DescriptionAccumulator, descriptionScores, type DescriptionPrompt, type DescriptionScore } from '../src/audio/profileDescriptions';
-import { learnedDjScores, sanitizeLearnedDjModel, type LearnedDjModel } from '../src/audio/learnedDjModel';
+import { learnedDjScores, oneShotClipScores, sanitizeLearnedDjModel, type LearnedDjModel } from '../src/audio/learnedDjModel';
 import { sanitizeShortClipModel, shortClipScores, SHORT_CLIP_MAX_SECONDS, type ShortClipModel } from '../src/audio/shortClipModel';
 import { instrumentWindowStarts } from '../src/audio/instrumentEvidence';
 import { TAGGER_POLICY, TAGGER_SAMPLE_RATE, TAGGER_WINDOW_SAMPLES, TaggerEvidence, taggerWindow, taggerWindowStarts, type TaggerTag } from '../src/audio/tagger';
@@ -339,13 +339,12 @@ function decide(rec: CachedClip, o: Overrides): Map<string, Shown> {
   const learnedModel = withHeads(learned!, o.headThreshold), shortModel = withShort(shortClip!, o.shortThreshold);
   return withPolicy(o, () => {
     const descriptions = new DescriptionAccumulator(), djEvidence = new DjTagEvidence();
-    const oneShotHeads = new Set(learnedModel.heads?.filter(h => h.oneShot).map(h => `${h.group}:${h.label}`));
     for (const w of rec.clap) {
       if (!w.embedding) { descriptions.add([], w); continue; }
       let learnedScores = learnedDjScores(w.embedding, learnedModel, { shortRecording: rec.duration < 10 - 1e-3 });
       const short = w.start === 0 && w.end >= rec.duration - 1e-6 && rec.duration <= SHORT_CLIP_MAX_SECONDS && w.end - w.start <= shortModel.maxSeconds;
       const oneShot = short ? shortClipScores(shortModel, { clapRepeat: w.embedding }).scores : [];
-      if (short) learnedScores = learnedScores.filter(s => s.basis !== 'head' || oneShotHeads.has(`${s.learnedGroup}:${s.label}`));
+      if (short) learnedScores = oneShotClipScores(learnedScores, learnedModel);
       const scores = [...promptScores(w.embedding), ...learnedScores, ...oneShot];
       descriptions.add(scores, w);
       djEvidence.add(selectDjTags(scores), w.start, w.end);
