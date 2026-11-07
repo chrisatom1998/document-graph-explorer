@@ -90,7 +90,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // no NSynth false alarms; docs/evaluations/sfx-tags-2026-11-06).
 // 159/160: trained thunder, phone ring and explosion heads (same recipe, oneShot; heads and cutoffs frozen on FSD50K dev val,
 // judged once on the fresh BBC + ESC-50 test set and 4,096 NSynth-valid notes; docs/evaluations/sfx-tags-2026-11-06).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 160 : 159;
+// 161/162: thunder and explosion demoted to maybe heads (passed the fresh set, missed FSD50K eval), so analyses
+// written at 159/160 with them as full tags are redone.
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 162 : 161;
 export interface InstrumentEstimate {
   label: string;
   score: number;
