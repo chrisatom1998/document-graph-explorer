@@ -127,3 +127,7 @@ Two caveats:
 
 Thunder was cut at 0.32 on dev val. Its shipped bias therefore adds logit(0.32), so it cuts at 0.5 and makes the same
 decisions.
+
+**Decision (Chris, Nov 6 2026 PT):** thunder and explosion ship as `maybe` heads, which the app shows faded. They become
+normal tags only after a second held-out set confirms them. Phone ring ships as a normal tag. On FSD50K eval, the one-shot
+subsets are small: thunder R 1.0 on 4 clips and explosion R 0.909 on 11 clips.
