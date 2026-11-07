@@ -43,9 +43,21 @@ describe('tagger coverage in the displayed sounds', () => {
   it('keeps a native window that only partly overlaps the sampled excerpt', () => {
     expect(shown(native(audio(), 'rain ambience', [{ start: 70, end: 80 }]))).toEqual(['effect:rain ambience']);
   });
-  it('keeps an instrument in the unsampled tail of a 19.9 s clip', () => {
+  it('keeps an instrument in the unsampled tail of a 19.9 s clip (default trust)', () => {
+    const piano = TAGGER_POLICY.tags.find(t => t.output === 'piano')!, before = piano.trust;
+    delete piano.trust;
+    try {
+      const a = native(audio(19.9, [{ start: 0, end: 10 }], 1), 'piano', [{ start: 9.9, end: 19.9 }], 'source');
+      expect(shown(a)).toEqual(['source:piano']);
+    } finally { if (before) piano.trust = before; }
+  });
+  it("needs the tagger to agree on piano in a 10-20 s clip (trust 'both', docs/evaluations/piano-agree-2026-11-07)", () => {
+    expect(TAGGER_POLICY.tags.find(t => t.output === 'piano')!.trust).toBe('both');
     const a = native(audio(19.9, [{ start: 0, end: 10 }], 1), 'piano', [{ start: 9.9, end: 19.9 }], 'source');
-    expect(shown(a)).toEqual(['source:piano']);
+    expect(shown(a)).toEqual([]);
+    const b = native(audio(19.9, [{ start: 0, end: 10 }], 1), 'piano', [{ start: 9.9, end: 19.9 }], 'source');
+    b.tagger!.scores.piano = .9;
+    expect(shown(b)).toEqual(['source:piano']);
   });
   it('uses the score supported outside coverage, without reviving a stronger score from inside it', () => {
     const a = audio(); a.recognition = createRecognition(180, 'full');
