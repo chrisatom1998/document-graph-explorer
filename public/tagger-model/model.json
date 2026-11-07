@@ -276,7 +276,7 @@
   "name": "scores",
   "activation": "sigmoid"
  },
- "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
+ "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
  "runs": [
   "all-tags",
   "all-tags-run5",
@@ -285,7 +285,8 @@
   "all-tags-run9",
   "all-tags-run11",
   "all-tags-run10",
-  "all-tags-recall2"
+  "all-tags-recall2",
+  "all-tags-r29"
  ],
  "outputRun": {
   "accordion": "all-tags",
@@ -371,7 +372,7 @@
   "cat:brass synth": "all-tags",
   "cat:breakbeat": "all-tags",
   "cat:breath": "all-tags",
-  "cat:bright": "all-tags",
+  "cat:bright": "all-tags-recall2",
   "cat:cajon": "all-tags",
   "cat:cello": "all-tags",
   "cat:chiptune synth": "all-tags",
@@ -399,7 +400,7 @@
   "cat:dry": "all-tags",
   "cat:echoing": "all-tags",
   "cat:electric guitar": "all-tags",
-  "cat:electric piano": "all-tags",
+  "cat:electric piano": "all-tags-r29",
   "cat:environmental sound": "all-tags",
   "cat:falling": "all-tags-run10",
   "cat:filter sweep": "all-tags",
@@ -555,8 +556,8 @@
   "cat:vocal harmony": "all-tags-run9"
  },
  "sha256": {
-  "model.onnx": "14f80825ba22af6048b62ad8c4dbddd0977eccffa66247b4ee657e9f15e62a56"
+  "model.onnx": "2bec1c8ab2f0765d5bbc5684585f79fd9f08fdacbb8ea8bf58de9ce0524e1f6f"
  },
- "bytes": 505027133,
+ "bytes": 573976253,
  "maxAbsErrorVsPyTorch": 1.9669532775878906e-06
 }

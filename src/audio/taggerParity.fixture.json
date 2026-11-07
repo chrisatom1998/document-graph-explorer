@@ -1,5 +1,5 @@
 {
- "model": "14f80825ba22af6048b62ad8c4dbddd0977eccffa66247b4ee657e9f15e62a56",
+ "model": "2bec1c8ab2f0765d5bbc5684585f79fd9f08fdacbb8ea8bf58de9ce0524e1f6f",
  "sampleRate": 32000,
  "cases": [
   {
@@ -10,6 +10,7 @@
    "scores": {
     "drums": 0.067266,
     "piano": 0.469858,
+    "cat:electric piano": 0.00167,
     "cat:guitar": 1.2e-05,
     "cymbals": 0.001272,
     "cat:violin / fiddle": 0.00018,
@@ -26,7 +27,7 @@
     "cat:wobbling": 0.000533,
     "cat:falling": 0.006163,
     "cat:pulsing": 0.00058,
-    "cat:bright": 0.493322,
+    "cat:bright": 0.017921,
     "cat:dark": 0.254654,
     "cat:distorted": 0.030455,
     "cat:reverse effect": 0.027068,
@@ -84,6 +85,7 @@
    "scores": {
     "drums": 0.031419,
     "piano": 0.377605,
+    "cat:electric piano": 0.027931,
     "cat:guitar": 0.002055,
     "cymbals": 0.001421,
     "cat:violin / fiddle": 0.001162,
@@ -100,7 +102,7 @@
     "cat:wobbling": 0.002585,
     "cat:falling": 0.009566,
     "cat:pulsing": 0.00371,
-    "cat:bright": 0.221341,
+    "cat:bright": 0.027827,
     "cat:dark": 0.096244,
     "cat:distorted": 0.085727,
     "cat:reverse effect": 0.015564,
@@ -159,6 +161,7 @@
    "scores": {
     "drums": 0.034065,
     "piano": 0.51203,
+    "cat:electric piano": 0.027931,
     "cat:guitar": 0.002055,
     "cymbals": 0.001796,
     "cat:violin / fiddle": 0.001332,
@@ -175,7 +178,7 @@
     "cat:wobbling": 0.002585,
     "cat:falling": 0.009566,
     "cat:pulsing": 0.042752,
-    "cat:bright": 0.306447,
+    "cat:bright": 0.027827,
     "cat:dark": 0.096244,
     "cat:distorted": 0.085727,
     "cat:reverse effect": 0.015564,
@@ -235,6 +238,7 @@
    "scores": {
     "drums": 0.190864,
     "piano": 0.594748,
+    "cat:electric piano": 0.018692,
     "cat:guitar": 0.00429,
     "cymbals": 0.004164,
     "cat:violin / fiddle": 0.001479,
@@ -251,7 +255,7 @@
     "cat:wobbling": 0.003153,
     "cat:falling": 0.010684,
     "cat:pulsing": 0.209255,
-    "cat:bright": 0.380922,
+    "cat:bright": 0.010251,
     "cat:dark": 0.088681,
     "cat:distorted": 0.103696,
     "cat:reverse effect": 0.007465,
