@@ -1,7 +1,7 @@
 import { loadPinnedSoundAsset } from './pinnedSoundAsset';
 import { musicInferenceThreads, musicRuntimeDiagnostics, musicRuntimeIdentity, THREADED_RUNTIME_STALLED, switchToSingleThreadRuntime } from './musicRuntime';
 import soundManifest from '../../public/sound-model/manifest.json';
-import { learnedDjScores, sanitizeLearnedDjModel, type LearnedDjModel } from './learnedDjModel';
+import { learnedDjScores, oneShotClipScores, sanitizeLearnedDjModel, type LearnedDjModel } from './learnedDjModel';
 import { sanitizeShortClipModel, shortClipScores, type ShortClipModel } from './shortClipModel';
 import { eventFeatures } from './eventFeatures';
 import { cachedAudioInference, isAudioEmbedding, isScoreMap } from './audioInferenceCache';
@@ -213,12 +213,8 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
       // A whole short clip arrives with its 16 kHz copy: score it with heads trained on one-shots.
       const short = data.samples16 && shortClip && data.samples.length <= shortClip.maxSeconds * 48000 ? shortClip : undefined;
       const oneShot = short ? await shortClipProfile(short, data.samples, data.samples16!, embedding) : [];
-      if (short) {
-        // Heads trained on longer audio were never validated on one-shots (several misfired, e.g. loop tags):
-        // only the one-shot heads, and heads also tested on one-shots, tag these clips. Reviewed examples still apply.
-        const oneShotHeads = new Set(learned?.heads?.filter(h => h.oneShot).map(h => `${h.group}:${h.label}`));
-        learnedScores = learnedScores.filter(s => s.basis !== 'head' || oneShotHeads.has(`${s.learnedGroup}:${s.label}`));
-      }
+      // Only the one-shot heads, and heads also tested on one-shots, tag these clips (oneShotClipScores).
+      if (short) learnedScores = oneShotClipScores(learnedScores, learned);
       await postResult([...descriptionScores(embedding, prompts), ...learnedScores, ...oneShot, { group: 'embedding', label: null, score: 0, embedding: embedding.map(v => Math.round(v * 1e4) / 1e4) }]);
       return;
     }
