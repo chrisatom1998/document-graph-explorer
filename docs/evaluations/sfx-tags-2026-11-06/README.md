@@ -94,3 +94,40 @@ The app path (`eval-tag --decide-only` with the shipped heads) gives identical n
 The app's model loader rejects any head with a cutoff below 0.5, and when it does it drops every learned head, not just
 that one. Cat meow and applause were cut at 0.29 on dev val. Their shipped bias therefore adds logit(0.29) = ln(0.71/0.29),
 so they cut at 0.5 and make the same decisions.
+
+## Fresh-set retry (2026-11-06): vehicle, thunder, phone ring, explosion, fire
+These five failed on FSD50K eval, so they were not graded on FSD50K eval again. Instead they were judged once on a new,
+private test set: 1,063 BBC Sound Effects and ESC-50 clips that no training or test list had used before. The audio and
+the lists stay private and are not in this repo. Glass break was skipped because the fresh set has only 5 positives.
+
+The rules were fixed before any fresh clip was scored, and every choice below was made on FSD50K dev val only:
+- Candidate A is the frozen head from its batch.
+- Candidate B uses the same recipe, retrained on all our dev-train clips plus FSD50K eval. Eval no longer judges these
+  tags, and it was not used for any choice.
+- The cutoff is picked the same way as in the earlier batches. Each tag keeps whichever candidate has the higher dev-val F1.
+  Fire found no cutoff with either candidate, so it was dropped.
+- Pass needs all three: P >= 0.6 and R >= 0.3 on all fresh clips; the same on the strong-label clips; and false alarms of
+  1% or less on 4,096 random NSynth **valid** notes. NSynth test had already been used, so the valid notes are new music
+  negatives.
+
+| tag | head | cutoff | all P / R | strong P / R | unseen-CD P / R | NSynth-valid FA | result |
+|---|---|---|---|---|---|---|---|
+| phone ring | B | 0.99 | 0.966 / 0.757 | 0.966 / 0.778 | 1.000 / 0.812 | 7 / 4,096 | pass (7 source groups only) |
+| explosion | A | 0.72 | 0.797 / 0.596 | 0.762 / 0.658 | 0.667 / 0.500 | 15 / 4,096 | pass |
+| thunder | A | 0.32 | 0.630 / 0.750 | 0.602 / 0.903 | 0.625 / 0.909 | 0 / 4,096 | pass (narrow) |
+| vehicle | B | 0.52 | 0.648 / 0.735 | 0.622 / 0.827 | 0.610 / 0.825 | 72 / 4,096 (1.8%) | fail: music false alarms |
+| fire | – | – | – | – | – | – | fail: no dev-val cutoff |
+
+The app path (`eval-tag --decide-only` with the shipped heads) gives identical numbers on the fresh set and on NSynth valid.
+
+Two caveats:
+- Thunder and explosion ship the same heads that missed on FSD50K eval: thunder had P 0.557 there and explosion 0.571.
+  They have now passed one clean, unseen test and failed one, so treat both as borderline.
+- The fresh set has no clips of 2.25 s or less, so the one-shot path was only tested on FSD50K.
+
+Thunder was cut at 0.32 on dev val. Its shipped bias therefore adds logit(0.32), so it cuts at 0.5 and makes the same
+decisions.
+
+**Decision (Chris, Nov 6 2026 PT):** thunder and explosion ship as `maybe` heads, which the app shows faded. They become
+normal tags only after a second held-out set confirms them. Phone ring ships as a normal tag. On FSD50K eval, the one-shot
+subsets are small: thunder R 1.0 on 4 clips and explosion R 0.909 on 11 clips.

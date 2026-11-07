@@ -91,7 +91,10 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 159/160: one combined fix for every clip length: five heads also score whole clips of 2.25 s or less (oneShot), eight
 // sustained-sound heads need two firing windows on 12-30 s clips (minWindows), and the tagger hears the tail of 10-30 s
 // clips for 12 outputs (docs/evaluations/super-fix-2026-11-07).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 160 : 159;
+// 161/162: trained thunder, phone ring and explosion heads (same recipe, oneShot; heads and cutoffs frozen on FSD50K dev
+// val, judged once on the fresh BBC + ESC-50 test set and 4,096 NSynth-valid notes). Thunder and explosion ship as maybe
+// heads (passed the fresh set, missed FSD50K eval); docs/evaluations/sfx-tags-2026-11-06.
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 162 : 161;
 export interface InstrumentEstimate {
   label: string;
   score: number;
