@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Combine several tagger runs into the one browser model the app loads (combine.py: per tag, the run that scored best on
-# held-out audio), score the result on the same held-out sets, write the browser parity reference, and publish it to the
+# validation clips), score the result once on the held-out test sets, write the browser parity reference, and publish it to the
 # public model repo $PUBLIC_REPO under $LICENSE. Launched by .github/workflows/tagger-combine.yml through hf-launch.py
 # (JOB_SCRIPT=hf-combine-job.sh). Env: REPO_SHA, HF_REPO (private runs), RUNS (folders of HF_REPO, the shipped run
-# first), KEEP, ONLY (optional: RUN=output,output entries separated by ';', the only outputs each named run may take), PIN (same format: outputs forced to a named run),
+# first), KEEP, ALLOW_HAND_PICKS (1 to accept ONLY/PIN), ONLY (optional: RUN=output,output entries separated by ';', the only outputs each named run may take), PIN (same format: outputs forced to a named run),
 # PUBLIC_REPO, LICENSE, HF_TOKEN (secret).
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
@@ -33,6 +33,8 @@ mkdir -p out
 ONLY_ARGS=()
 if [ -n "${ONLY:-}" ]; then IFS=';' read -ra ONLY_PARTS <<< "$ONLY"; for o in "${ONLY_PARTS[@]}"; do ONLY_ARGS+=(--only "$o"); done; fi
 if [ -n "${PIN:-}" ]; then IFS=';' read -ra PIN_PARTS <<< "$PIN"; for o in "${PIN_PARTS[@]}"; do ONLY_ARGS+=(--pin "$o"); done; fi
+# combine.py picks on validation clips only and refuses hand picks unless the request opts in (allow_hand_picks).
+if [ "${ALLOW_HAND_PICKS:-}" = 1 ]; then ONLY_ARGS+=(--allow-hand-picks); fi
 python3 $S/combine.py out $W/dge/src/audio/taggerPolicy.json $(for r in $RUNS; do echo runs/$r; done) --keep "${KEEP:-}" "${ONLY_ARGS[@]}" | tee out/combine.txt
 python3 $S/evaluate.py out/model.onnx out/thresholds.json out/eval.json $C/prep/eval-round1 $C/prep/eval-round2 $C/holdout/holdout-r3 \
   $C/fsdprep/eval-fsd50k $C/nsprep/eval-nsynth-test $C/nsprep/eval-nsynth-test-fx $C/fsprep/eval-freesound | tee out/eval.txt
@@ -51,7 +53,7 @@ tags: [audio-classification, onnx, efficientat]
 
 The sound tagger of [Document Graph Explorer](https://github.com/chrisatom1998/document-graph-explorer): EfficientAT
 networks fine-tuned by `scripts/audio-model/`, combined by `combine.py` so each of the app's tags comes from the run that
-scored best on held-out audio. Runs: {', '.join(m['runs'])}. `picks.json` lists every tag's held-out numbers and choice,
+scored best on validation clips (the held-out sets are scored once, after choosing). Runs: {', '.join(m['runs'])}. `picks.json` lists every tag's choice and validation numbers,
 `eval.txt` the combined model's held-out scores. Input: 10 s of 32 kHz mono (`samples32k`); output: `scores` (sigmoid).
 
 Base networks and AudioSet weights: EfficientAT (Florian Schmid et al.), MIT.
