@@ -146,14 +146,8 @@
     }
   },
   "overrides": {
-    "@electron/universal": {
-      "minimatch": "^11.0.5"
-    },
-    "app-builder-lib": {
-      "minimatch": "^11.0.5"
-    },
-    "@typescript-eslint/typescript-estree": {
-      "minimatch": "^11.0.5"
-    }
+    "minimatch@^9.0.3": "^11.0.5",
+    "minimatch@^10.2.2": "^11.0.5",
+    "minimatch@^10.2.5": "^11.0.5"
   }
 }
