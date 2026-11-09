@@ -31,8 +31,8 @@ describe('trained tagger policy', () => {
     const decided = new Set(TAGGER_POLICY.tags.flatMap(t => t.decides));
     expect(decided.has('cello')).toBe(false);
     expect(TAGGER_POLICY.tags.filter(t => t.dimension === 'source').map(t => t.output).sort())
-      .toEqual(['bass', 'cat:animal sound', 'cat:bass guitar', 'cat:bell', 'cat:electric piano', 'cat:environmental sound', 'cat:flute', 'cat:foley', 'cat:glockenspiel', 'cat:gong', 'cat:guitar',
-        'cat:marimba', 'cat:organ', 'cat:percussion', 'cat:turntable', 'cat:vibraphone', 'cat:violin / fiddle', 'cat:voice', 'cat:whistle', 'cymbals', 'drums', 'piano', 'saxophone',
+      .toEqual(['bass', 'cat:animal sound', 'cat:bass guitar', 'cat:bell', 'cat:cymbal', 'cat:electric piano', 'cat:environmental sound', 'cat:flute', 'cat:foley', 'cat:glockenspiel', 'cat:gong', 'cat:guitar',
+        'cat:marimba', 'cat:organ', 'cat:percussion', 'cat:turntable', 'cat:vibraphone', 'cat:violin / fiddle', 'cat:voice', 'cat:whistle', 'drums', 'piano', 'saxophone',
         'synthesizer', 'trumpet']);
   });
 });
@@ -223,7 +223,7 @@ describe('trained tagger display', () => {
     const shownLabels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
     const heads = [...['wind ambience', 'vocal shout'].map(label => ({ group: 'production' as const, label, score: .9, model: 'Trained head' as const })),
       { group: 'source' as const, label: 'cymbals', score: .9, model: 'Trained head' as const }];
-    const outputs = ['cymbals', 'cat:wind ambience', 'cat:vocal shout'];
+    const outputs = ['cat:cymbal', 'cat:wind ambience', 'cat:vocal shout'];
     const low = shownLabels(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads));
     for (const label of ['cymbals', 'wind ambience', 'vocal shout']) expect(low).not.toContain(label);
     const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads))
@@ -358,7 +358,7 @@ describe('trained tagger long-recording rules', () => {
   it('installs the rules picked on the full-song tuning set', () => {
     expect(Object.fromEntries(TAGGER_POLICY.tags.filter(t => t.long).map(t => [t.output, t.long]))).toEqual({
       drums: { rule: 'max', threshold: .5757 }, trumpet: { rule: 'max' }, piano: { rule: 'detectors' }, 'cat:guitar': { rule: 'detectors', afterSeconds: 30 },
-      cymbals: { rule: 'detectors', afterSeconds: 30 }, 'cat:violin / fiddle': { rule: 'detectors', afterSeconds: 30 }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' },
+      'cat:cymbal': { rule: 'detectors', afterSeconds: 30 }, 'cat:violin / fiddle': { rule: 'detectors', afterSeconds: 30 }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' },
       synthesizer: { rule: 'max' }, 'cat:percussion': { rule: 'detectors' }, 'cat:animal sound': { rule: 'detectors' },
       'cat:glockenspiel': { rule: 'detectors' }, 'cat:whistle': { rule: 'detectors' }, 'cat:tambourine': { rule: 'detectors' },
       'cat:vocal scream': { rule: 'detectors' }, 'cat:environmental sound': { rule: 'detectors', afterSeconds: 30 },
@@ -399,7 +399,7 @@ describe('trained tagger long-recording rules', () => {
   it.each(['cat:environmental sound', 'cat:foley', 'cat:turntable', 'cat:finger snap', 'cat:water ambience', 'cat:guitar', 'cat:violin / fiddle', 'cat:siren',
     'cat:flute', 'cat:marimba', 'cat:vibraphone', 'cat:crash cymbal', 'cat:whisper', 'cat:voice', 'cat:kick', 'cat:clap',
     'cat:organ', 'cat:gong', 'cat:laser', 'cat:riser', 'cat:reverberant', 'cat:conga', 'cat:vocal chant', 'cat:static noise', 'cat:acid synth', 'cat:vocal phrase',
-    'cat:synth lead', 'cat:vocoder vocal', 'cat:record stop', 'cat:glitch effect', 'cat:choir', 'cymbals', 'cat:hi-hat', 'cat:wind ambience', 'cat:vocal shout',
+    'cat:synth lead', 'cat:vocoder vocal', 'cat:record stop', 'cat:glitch effect', 'cat:choir', 'cat:cymbal', 'cat:hi-hat', 'cat:wind ambience', 'cat:vocal shout',
     'cat:staccato', 'cat:reese bass'])(
     'keeps the tagger deciding %s up to 30 s, as the held-out scorer did, and defers on longer recordings', output => {
       const at = (duration: number, windows: number) => taggerDecisions({ revision: TAGGER_REVISION, windows, scores: { [output]: threshold(output) } }, duration)!
