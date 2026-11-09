@@ -32,6 +32,7 @@ permissions:
 env:
   # These builds need the audio model pack.
   DGE_MODELS: full
+  DGE_MODEL_MIRROR: https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1
   ONNXRUNTIME_NODE_INSTALL: skip
   DOCS: docs/evaluations/holdout-r3-2026-10-06
   JAMENDO_META: https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/cafd8e20c265ed84f1e61f1c875327971f43a62f
@@ -420,13 +421,21 @@ jobs:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
           restore-keys: music-models-
+      # The app under test is matrix.sha, which may be the base commit and
+      # therefore does not contain this workflow's action. Load the action
+      # from the commit that started the workflow.
+      - name: Check out the Playwright setup action
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          path: ci-actions
+          sparse-checkout: .github/actions/setup-playwright
       - name: Install Playwright Chromium
         # Fail at setup instead of consuming the whole two-hour analysis job
-        # when an upstream browser or OS-package download stalls.
+        # when an upstream browser or OS-package download stalls. The browser
+        # archive is cached; this limit still covers a cold download.
         timeout-minutes: 10
-        env:
-          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: 60000
-        run: npx playwright install --with-deps chromium
+        uses: ./ci-actions/.github/actions/setup-playwright
       - name: Build
         run: npm run build
       - name: Analyse in the real app

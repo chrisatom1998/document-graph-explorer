@@ -13,6 +13,7 @@ on:
 env:
   # These builds need the audio model pack.
   DGE_MODELS: full
+  DGE_MODEL_MIRROR: https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1
   ONNXRUNTIME_NODE_INSTALL: skip
   BASE_REF: 18a3f34d8dfdd922169a1425a2effc92cfe05336  # main before the style-blended sound-alike score
   OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
@@ -126,7 +127,7 @@ jobs:
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
           restore-keys: music-models-
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        uses: ./.github/actions/setup-playwright
       - uses: actions/download-artifact@v8
         with:
           name: sound-links-data

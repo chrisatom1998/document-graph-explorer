@@ -22,6 +22,7 @@ concurrency:
 
 env:
   ONNXRUNTIME_NODE_INSTALL: skip
+  DGE_MODEL_MIRROR: https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1
   META_URL: https://huggingface.co/datasets/Chr0my/freesound.org/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet
   # The dump is third-party data: pin it so a changed file cannot reach the scripts below.
   META_SHA256: fdc81269e2ddcf0bffffc05f01c55509d9c772f43b90f6d96fac325f9facdc8d

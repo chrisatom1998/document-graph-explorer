@@ -10,6 +10,7 @@ on:
 env:
   # These builds need the audio model pack.
   DGE_MODELS: full
+  DGE_MODEL_MIRROR: https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1
   ONNXRUNTIME_NODE_INSTALL: skip
   BASE_REF: d1b7b05928804975802348288f29384ce5a40245
   MUSIC_MODEL_PATHS: |
@@ -42,10 +43,10 @@ jobs:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
           restore-keys: music-models-
-      - name: Install ffmpeg + Playwright Chromium
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-          npx playwright install --with-deps chromium
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Install Playwright Chromium
+        uses: ./.github/actions/setup-playwright
       - name: Fetch benchmark audio
         run: python3 scripts/short-clip-fetch-audio.py "$RUNNER_TEMP/clips" ${{ matrix.split }} "$RUNNER_TEMP/sources"
       - name: Use the base app source

@@ -15,6 +15,7 @@ permissions:
 env:
   # These builds need the audio model pack.
   DGE_MODELS: full
+  DGE_MODEL_MIRROR: https://github.com/chrisatom1998/document-graph-explorer/releases/download/models-v1
   ONNXRUNTIME_NODE_INSTALL: skip
   GIANTSTEPS: https://github.com/GiantSteps/giantsteps-tempo-dataset.git
   GIANTSTEPS_REF: d51ab2422e76abacfaa86616a57054bc222ec9fd
@@ -83,7 +84,7 @@ jobs:
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
           restore-keys: music-models-
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        uses: ./.github/actions/setup-playwright
       - name: Build
         run: npm run build
       - name: Analyse in the real app
