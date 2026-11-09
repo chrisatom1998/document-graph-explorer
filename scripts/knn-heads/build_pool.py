@@ -1,6 +1,6 @@
 """Join round 11 CLAP/CED training features with their labels into one example pool (training data only).
 Writes pool.npz (pool_id, clap, ced, tags) and pool.csv (original manifest columns + pool_id) for filter_training.py."""
-import csv, glob, json, os, sys
+import csv, glob, os
 import numpy as np
 WORK = os.environ.get('KNN_WORK', '/tmp/knn')  # container scratch: features, test embeddings, model files
 csv.field_size_limit(1 << 30)

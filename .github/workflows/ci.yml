@@ -216,14 +216,37 @@ jobs:
           path: coverage
           retention-days: 14
 
-  # Keeps the single `build-and-test` check, green only when lint, builds and both unit-test parts passed.
-  build-and-test:
-    if: always()
-    needs: [lint-and-build, unit-tests]
+  # The Python training, evaluation and tooling scripts: a check for real mistakes (undefined names, unused imports;
+  # rules in ruff.toml) and their own test files. Before this job only four of those test files ran, through Vitest.
+  python-checks:
+    name: python checks
     runs-on: ubuntu-latest
     steps:
-      - name: Require lint, builds and both unit-test parts to pass
-        run: test "${{ needs.lint-and-build.result }}" = success && test "${{ needs.unit-tests.result }}" = success
+      - uses: actions/checkout@v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install the checker and NumPy
+        run: python3 -m pip install -r scripts/requirements-dev.txt
+
+      - name: Lint
+        run: ruff check
+
+      - name: Test
+        run: python3 scripts/run_python_tests.py
+
+  # Keeps the single `build-and-test` check, green only when lint, builds, both unit-test parts and the Python
+  # checks passed.
+  build-and-test:
+    if: always()
+    needs: [lint-and-build, unit-tests, python-checks]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require lint, builds, both unit-test parts and the Python checks to pass
+        run: test "${{ needs.lint-and-build.result }}" = success && test "${{ needs.unit-tests.result }}" = success && test "${{ needs.python-checks.result }}" = success
 
   # Whether this change can affect the built app at all. Browser tests and the Docker image only exercise the build,
   # so a PR that touches nothing but documentation, Python training code or other workflows gets the same result as

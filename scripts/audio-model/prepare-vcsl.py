@@ -15,7 +15,7 @@ sides. One folder (by hash) of every label with two or more folders is held out,
 folder in TEST_ONLY (labels with no other test audio yet: woodblock, whistle). A label whose only folders are all held out
 trains on other sources (Iowa woodblocks; Freesound whistles).
 """
-import argparse, hashlib, json, os, re, subprocess, sys, time, urllib.parse, urllib.request, warnings
+import argparse, hashlib, json, os, subprocess, sys, time, urllib.parse, urllib.request, warnings
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 warnings.filterwarnings('ignore')

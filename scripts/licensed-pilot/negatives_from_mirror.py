@@ -12,8 +12,8 @@ test split); title, tags and description name none of the pilot labels or their 
 uploader, and the uploader is the fold group. These are tag-evidenced negatives (an uploader not naming a sound is weak
 evidence it is absent), so each row says which labels it is a negative for and why.
 """
-import csv, hashlib, json, os, re, subprocess, sys, io
-from collections import Counter, defaultdict
+import csv, hashlib, json, os, re, subprocess, sys
+from collections import Counter
 import pyarrow.parquet as pq
 
 EXCL, NOSRC, OUT, *SHARDS = sys.argv[1:]

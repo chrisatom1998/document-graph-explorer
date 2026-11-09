@@ -17,7 +17,7 @@ Usage: python3 -I fair-judge.py <emb dir> <learned-main.json> <clean heads.json>
   half. A head passes when both directions pass.
 - Each result includes a digest of the evaluated input bias and weights. Carry this digest into any derived shipped-head
   report; do not backfill older reports from the shipped asset (that would not establish evaluation provenance)."""
-import csv, glob, hashlib, json, os, struct, sys
+import csv, hashlib, json, os, struct, sys
 import numpy as np
 emb, old_p, new_p, board_p, out = sys.argv[1:6]
 SETS = '/mnt/project-files/datasets/fresh-tests-2026-10-11/sets'

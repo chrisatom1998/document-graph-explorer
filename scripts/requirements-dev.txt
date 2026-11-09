@@ -1,0 +1,6 @@
+# What the Python checks need: `npm run lint:python` and `npm run test:python`.
+#   python3 -m pip install -r scripts/requirements-dev.txt
+# This is not what the training scripts need. Each of those installs its own packages where it runs
+# (see the workflow or job script that starts it).
+numpy==2.3.5
+ruff==0.16.9

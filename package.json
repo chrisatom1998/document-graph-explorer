@@ -26,6 +26,8 @@
     "test:coverage": "vitest run --coverage --testTimeout=30000",
     "test:watch": "vitest",
     "lint": "eslint .",
+    "lint:python": "ruff check",
+    "test:python": "python3 scripts/run_python_tests.py",
     "bench:layout": "vite-node scripts/bench-layout.mjs",
     "check:bundle": "node scripts/check-bundle.mjs dist && node scripts/check-bundle.mjs dist-airgap",
     "prebuild": "node scripts/stage-audio-runtime.mjs && node scripts/fetch-models.mjs",

@@ -1,0 +1,11 @@
+# Python checks for the training, evaluation and tooling scripts. Run: ruff check
+#
+# Only rules that point at real mistakes: syntax errors, undefined names, unused imports and variables.
+# No formatting or style rules: these are research scripts, and restyling 270 of them would bury their history.
+target-version = "py312"
+
+# docs/evaluations holds scripts saved next to the results they produced. They are records, not live code.
+extend-exclude = ["docs/evaluations"]
+
+[lint]
+select = ["E9", "F"]
