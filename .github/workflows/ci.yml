@@ -158,8 +158,10 @@ jobs:
   # How much of src/ the unit tests reach. Report only: it is not part of build-and-test and never blocks a merge.
   # It is a job of its own because measuring slows the tests enough that a few time out at the normal 5 s limit, so
   # the pass/fail run above stays unmeasured and this one gets a longer limit (see test:coverage in package.json).
+  # It runs the unit suite a second time, so only on pushes to main: pull requests stay on the fast path.
   coverage:
     name: unit test coverage (report only)
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
