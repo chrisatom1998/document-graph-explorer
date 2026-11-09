@@ -243,7 +243,7 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   if(voiceHeads.length&&Math.max(...voiceHeads)<FULL_MIX_VOICE_VETO&&!taggerShown.has('source:voice')&&result.get('source:voice')?.origin==='model estimate')result.delete('source:voice');
   const testedBest=(s:DisplaySound)=>Math.max(...s.scores!.filter(x=>TESTED_SCORES.has(x.model)).map(x=>x.score));
   const raised=(s:DisplaySound)=>fullMix&&s.dimension==='source'&&FULL_MIX_MIN_TESTED_SCORE[s.label]!==undefined&&testedBest(s)<FULL_MIX_MIN_TESTED_SCORE[s.label];
-  return withoutHiddenTags(shortPianoVeto(drumsUmbrella(ambienceUmbrella(foldMerged([...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
+  return withoutHiddenTags(shortHeadVetoes(drumsUmbrella(ambienceUmbrella(foldMerged([...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
     :HIDDEN_UNTIL_TESTED.has(s.label)?[]
     :s.coverageUnknown?[s]
     :s.scores?.some(x=>TESTED_SCORES.has(x.model))?raised(s)?[]:[tiered(s,m=>TESTED_SCORES.has(m))]
@@ -297,21 +297,28 @@ function drumsUmbrella(sounds:DisplaySound[],canEstimate:()=>boolean):DisplaySou
  *  keyboards that are not pianos (NSynth test: precision 0.37). The tagger's existing piano cutoff, already used
  *  from 10 s up, has to agree. A missing or older tagger result leaves the head alone. Piano backed by any other
  *  evidence (reviewed examples, baseline fallback) is not touched. */
-function shortPianoVeto(sounds: DisplaySound[], audio: MusicAnalysis): DisplaySound[] {
-  const piano = TAGGER_POLICY.tags.find(tag => tag.output === 'piano');
-  const min = piano?.minSeconds;
-  if (!piano || !min || !(audio.durationSeconds > SHORT_CLIP_MAX_SECONDS) || !(audio.durationSeconds < min - 1e-6)) return sounds;
+function shortHeadVetoes(sounds: DisplaySound[], audio: MusicAnalysis): DisplaySound[] {
+  return shortHeadVeto(shortHeadVeto(sounds, audio, 'piano', SHORT_CLIP_MAX_SECONDS), audio, 'synthesizer', SYNTH_VETO_FROM_SECONDS);
+}
+/** Synthesizer gets the same rule as piano below the tagger's 10 s handoff: the CLAP synthesizer head alone fired on
+ *  2.4% of IDMT bass guitar notes (cap 1%); with the tagger's shipped synthesizer cutoff agreeing, 0.64%. Unlike piano
+ *  it also covers one-shots, where no short-clip head decides synthesizer (docs/evaluations/synth-short-veto-2026-11-09). */
+const SYNTH_VETO_FROM_SECONDS = 0;
+function shortHeadVeto(sounds: DisplaySound[], audio: MusicAnalysis, label: string, fromSeconds: number): DisplaySound[] {
+  const policy = TAGGER_POLICY.tags.find(tag => tag.output === label);
+  const min = policy?.minSeconds;
+  if (!policy || !min || !(audio.durationSeconds > fromSeconds) || !(audio.durationSeconds < min - 1e-6)) return sounds;
   const tagger = audio.tagger;
   if (!tagger || tagger.revision !== TAGGER_REVISION) return sounds;
-  const score = tagger.scores.piano;
-  if (typeof score !== 'number' || score >= piano.threshold) return sounds;
-  // Only the trained head's piano is vetoed. Piano from reviewed examples or any other model keeps its own rules.
+  const score = tagger.scores[label];
+  if (typeof score !== 'number' || score >= policy.threshold) return sounds;
+  // Only the trained head's tag is vetoed. The tag from reviewed examples or any other model keeps its own rules.
   // Untested scores (AST, Jamendo, CLAP similarity) ride along on the row but never decided it, so they do not count.
   const headOnly = (s: DisplaySound) => {
     const deciding = (s.scores ?? []).filter(x => TESTED_SCORES.has(x.model) || MAYBE_SCORES.has(x.model));
     return deciding.length > 0 && deciding.every(x => TRAINED_HEAD_SCORES.has(x.model));
   };
-  return sounds.filter(s => s.origin === 'confirmed by you' || s.dimension !== 'source' || s.label !== 'piano' || !headOnly(s));
+  return sounds.filter(s => s.origin === 'confirmed by you' || s.dimension !== 'source' || s.label !== label || !headOnly(s));
 }
 const GROUP_OF:Partial<Record<Dimension,DjGroup>>={source:'source',effect:'production',character:'character'};
 const DIMENSION_OF:Record<DjGroup,Dimension>={source:'source',production:'effect',character:'character'};
