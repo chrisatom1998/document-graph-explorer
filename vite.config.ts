@@ -161,5 +161,15 @@ export default defineConfig(({ mode }) => ({
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}', 'agent/**/*.test.js'],
     setupFiles: ['src/test/setup.ts'],
+    // `npm run test:coverage` reports which app code the unit tests reach. Report only: no thresholds yet, the
+    // first runs are to learn the baseline. Bundled test corpora and demo data are not app logic. Measuring slows
+    // the tests, so that script raises the per-test time limit; `npm test` stays unmeasured.
+    coverage: {
+      provider: 'v8',
+      reportOnFailure: true,
+      reporter: ['text-summary', 'json-summary', 'html'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/eval/corpus/**', 'src/demo/**', 'src/**/*.d.ts'],
+    },
   },
 }));

@@ -23,6 +23,7 @@
     "typecheck": "tsc --noEmit && tsc -p e2e --noEmit",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage --testTimeout=30000",
     "test:watch": "vitest",
     "lint": "eslint .",
     "bench:layout": "vite-node scripts/bench-layout.mjs",
@@ -85,6 +86,7 @@
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.187.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "@vitest/coverage-v8": "^5.0.5",
     "electron": "43.8.4",
     "electron-builder": "^26.18.0",
     "esbuild": "^0.28.2",
@@ -139,6 +141,17 @@
       "target": [
         "AppImage"
       ]
+    }
+  },
+  "overrides": {
+    "@electron/universal": {
+      "minimatch": "^11.0.5"
+    },
+    "app-builder-lib": {
+      "minimatch": "^11.0.5"
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.5"
     }
   }
 }
