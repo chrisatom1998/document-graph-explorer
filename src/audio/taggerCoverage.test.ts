@@ -19,7 +19,7 @@ function audio(durationSeconds = 180, intervals: Interval[] | undefined = middle
   return {
     version: 2, durationSeconds, analyzedSeconds: Math.min(durationSeconds, 60), instruments: [], notes: [],
     soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false, djTags: [] },
-    tagger: { revision: TAGGER_REVISION, windows, scores: { 'cat:rain ambience': 0, piano: 0, drums: 0, cymbals: 0 },
+    tagger: { revision: TAGGER_REVISION, windows, scores: { 'cat:rain ambience': 0, piano: 0, drums: 0, 'cat:cymbal': 0 },
       ...(intervals ? { intervals } : {}) },
   };
 }
@@ -243,17 +243,17 @@ describe('cymbal aliases across source and effect dimensions', () => {
     expect(shown(cymbal())).toEqual([]);
   });
   it('shows one canonical label when both the native and tagger detectors report cymbals', () => {
-    const a = cymbal(); a.tagger!.scores.cymbals = 1;
+    const a = cymbal(); a.tagger!.scores['cat:cymbal'] = 1;
     expect(confidentSoundSummary(a)).toMatchObject([{ dimension: 'source', label: 'cymbals', scores: [{ model: 'Trained tagger score', score: 1 }] }]);
     expect(shown(a)).toEqual(['source:cymbals']);
   });
   it.each(['rejected', 'uncertain'] as const)('respects a listener %s decision on the effect alias', decision => {
-    const a = cymbal(); a.tagger!.scores.cymbals = 1;
+    const a = cymbal(); a.tagger!.scores['cat:cymbal'] = 1;
     a.soundReviews = [{ dimension: 'effect', labelId: 'cymbal', decision, scope: 'track', at: 'now', evidenceRunId: 'r' }];
     expect(shown(a)).toEqual([]);
   });
   it('keeps a confirmed effect alias without adding a duplicate source estimate', () => {
-    const a = cymbal(); a.tagger!.scores.cymbals = 1;
+    const a = cymbal(); a.tagger!.scores['cat:cymbal'] = 1;
     a.soundReviews = [{ dimension: 'effect', labelId: 'cymbal', decision: 'confirmed', scope: 'track', at: 'now', evidenceRunId: 'r' }];
     expect(confidentSoundSummary(a)).toEqual([{ dimension: 'effect', label: 'cymbal', origin: 'confirmed by you' }]);
   });
