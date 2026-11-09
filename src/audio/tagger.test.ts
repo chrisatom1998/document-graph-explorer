@@ -147,6 +147,22 @@ describe('trained tagger display', () => {
     const ast = [{ group: 'source' as const, label: 'piano', score: .9, model: 'AudioSet AST' as 'Trained head' }];
     expect(sources(track(4, { piano: 0 }, [...head, ...ast]))).toEqual([]);
   });
+  it('hides the CLAP synthesizer head under 10 s, one-shots included, unless the tagger synthesizer score clears its cutoff', () => {
+    const head = [{ group: 'source' as const, label: 'synthesizer', score: .9, model: 'Trained head' as const }];
+    expect(sources(track(3, { synthesizer: threshold('synthesizer') - 1e-4 }, head))).toEqual([]);
+    expect(sources(track(2, { synthesizer: 0 }, head))).toEqual([]);
+    expect(sources(track(3, { synthesizer: threshold('synthesizer') }, head))).toEqual(['synthesizer']);
+    // From 10 s the tagger decides synthesizer itself, as before. A listener confirmation is never removed.
+    expect(sources(track(10, { synthesizer: threshold('synthesizer') }, head))).toEqual(['synthesizer']);
+    const confirmed = track(3, { synthesizer: 0 }, head);
+    confirmed.confirmedInstruments = ['synthesizer'];
+    expect(sources(confirmed)).toEqual(['synthesizer']);
+    const older = track(3, { synthesizer: 0 }, head);
+    older.tagger = { revision: 'older', windows: 1, scores: { synthesizer: 0 } };
+    expect(sources(older)).toEqual(['synthesizer']);
+    // Piano keeps its own rule: one-shots are not vetoed there.
+    expect(sources(track(2, { piano: 0, synthesizer: 0 }, [{ group: 'source', label: 'piano', score: .9, model: 'Trained head' }]))).toEqual(['piano']);
+  });
   it('decides its sound-type and effect tags at any length, and leaves other tags alone', () => {
     const a = track(4, { 'cat:percussive': .99, 'cat:dark': .01 }, [
       { group: 'character', label: 'dark', score: .9, model: 'Trained head' }, { group: 'character', label: 'bright', score: .9, model: 'Trained head' },
