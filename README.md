@@ -283,6 +283,8 @@ Methodology and caveats are in [docs/benchmarks.md](docs/benchmarks.md).
 | `npm run typecheck` | Run TypeScript over the app and the e2e suite without emitting files |
 | `npm run lint` | Run ESLint across the repository |
 | `npm test` / `npm run test:watch` | Run the Vitest suite once, or in watch mode |
+| `npm run lint:python` / `npm run test:python` | Check and test the Python scripts under `scripts/` (first: `python3 -m pip install -r scripts/requirements-dev.txt`) |
+| `npm run test:coverage` | Run the suite and report how much of `src/` the tests reach (HTML report in `coverage/`) |
 | `npm run preview` | Preview the production build locally |
 | `npm run check:bundle` | Enforce eager-JavaScript limits for normal and air-gapped builds |
 | `npm run bench:layout` | Layout-convergence benchmark against the production worker |

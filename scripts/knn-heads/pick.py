@@ -3,7 +3,7 @@ loses no line against the board's base. Writes picks.json (every pick) and, with
 picks that gain a line and fire on at most 1% of negatives in each set with 50+ negatives (the board's false-alarm cap).
 Note: when both cutoff styles qualify, the judge half breaks the tie (Chris's "best of both" rule), so a tie-broken
 number is slightly optimistic; for the Oct 11 picks both styles passed the same lines (see the evaluation note)."""
-import json, os, sys
+import json, os
 ONLY = os.environ.get('ONLY')  # e.g. 'or': the app adds a head's tag to the tagger's (a union)
 P = json.load(open(os.environ.get('PF', 'final-p.json'))); Bm = json.load(open(os.environ.get('BF', 'final-b.json')))
 L = ['50/50', '60/60', '70/70', '50/30', '60/30']

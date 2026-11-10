@@ -16,7 +16,7 @@ Removed before staging (each count is printed):
 Audio is each sound's public preview MP3 (first ~15 s). Writes OUT/audio/<id>.mp3 and OUT/manifest.csv
 (id, username, split, tags) and refuses to upload unless the repo is private.
 """
-import csv, hashlib, io, json, os, re, sys, tempfile, time, urllib.parse, urllib.request
+import csv, hashlib, json, os, re, sys, tempfile, time, urllib.parse, urllib.request
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from huggingface_hub import HfApi, hf_hub_download

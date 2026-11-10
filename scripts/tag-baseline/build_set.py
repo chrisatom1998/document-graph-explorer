@@ -21,7 +21,7 @@ the tag has --per-tag positives, at most --per-uploader clips per uploader per t
 none of the mapped classes, so every tag has clean absences.
 """
 import argparse, csv, hashlib, json, os, sys
-from collections import Counter, defaultdict
+from collections import Counter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
