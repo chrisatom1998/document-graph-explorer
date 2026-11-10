@@ -27,7 +27,7 @@ async function loadGraph(page: Page, firstVisit = true) {
     Object.defineProperty(element, 'files', { configurable: true, value: transfer.files });
     element.dispatchEvent(new Event('change', { bubbles: true }));
   }, graph);
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled({ timeout: 120_000 });
+  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
 }
 
 async function pixelRatio(page: Page) {

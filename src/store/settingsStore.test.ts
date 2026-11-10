@@ -233,15 +233,3 @@ describe('storage and recognition settings', () => {
     useSettingsStore.getState().setOcrMaxPages(20);
   });
 });
-
-describe('showHiddenSoundTags switch', () => {
-  it('defaults on, persists, and drives the sound-tag filter', async () => {
-    const { useSettingsStore } = await import('./settingsStore');
-    const { areHiddenSoundTagsShown } = await import('../audio/hiddenSoundTagsSwitch');
-    expect(useSettingsStore.getState().showHiddenSoundTags).toBe(true);
-    useSettingsStore.getState().setShowHiddenSoundTags(false);
-    expect(areHiddenSoundTagsShown()).toBe(false);
-    useSettingsStore.getState().setShowHiddenSoundTags(true);
-    expect(areHiddenSoundTagsShown()).toBe(true);
-  });
-});

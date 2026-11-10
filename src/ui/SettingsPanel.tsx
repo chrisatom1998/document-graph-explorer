@@ -1,14 +1,4 @@
 import MusicAnalysisMode from './MusicAnalysisMode';
-
-/** On/off switch for tags hidden from the picker (DJ_HIDDEN_LABELS): mostly tags that haven't passed testing. */
-function HiddenSoundTagsSwitch() {
-  const show = useSettingsStore(s => s.showHiddenSoundTags);
-  const setShow = useSettingsStore(s => s.setShowHiddenSoundTags);
-  return <label className="settings-check" title="Hidden tags are ones we left out of the tag list, mostly because they haven't passed testing on real clips yet. Turn this off to stop them showing on clips too. Tags you confirmed yourself always show.">
-    <input type="checkbox" checked={show} onChange={e => setShow(e.target.checked)} />
-    Show hidden sound tags on clips
-  </label>;
-}
 import LibrarySettings from './LibrarySettings';
 /**
  * Settings modal: AI provider config (OpenRouter / Ollama), export options,
@@ -351,7 +341,7 @@ export default function SettingsPanel() {
           </label>
         </section>
 
-        <section className="settings-section"><h3 className="settings-section__heading">Music analysis</h3><MusicAnalysisMode /><HiddenSoundTagsSwitch /></section>
+        <section className="settings-section"><h3 className="settings-section__heading">Music analysis</h3><MusicAnalysisMode /></section>
         {AIRGAP && (
           <section className="settings-section">
             <h3 className="settings-section__heading">AI</h3>
@@ -538,6 +528,10 @@ export default function SettingsPanel() {
             disabled={enriching || enrichBlocked || offlineMode}
             title={enrichHint}
             className="settings-btn"
+            style={{
+              opacity: enriching || enrichBlocked || offlineMode ? 0.55 : 1,
+              cursor: enriching || enrichBlocked || offlineMode ? 'default' : 'pointer',
+            }}
           >
             {enriching ? 'Enriching…' : 'Enrich now'}
           </button>
@@ -720,7 +714,7 @@ export default function SettingsPanel() {
                   onClick={onClearAll}
                   disabled={clearing}
                   title="Permanently clear everything"
-                  className="settings-btn settings-btn--danger"
+                  className="settings-btn settings-btn--danger" style={{ opacity: clearing ? 0.6 : 1 }}
                 >
                   {clearing ? 'Clearing…' : 'Yes, clear everything'}
                 </button>

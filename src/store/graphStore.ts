@@ -16,8 +16,6 @@ interface GraphState {
   edges: Edge[];
   clusterNames: Record<number, string>;
   phase: PipelinePhase;
-  /** Lexical metadata and links have committed, so read-only graph tools are safe. */
-  graphUsable: boolean;
   fileStatuses: Record<string, FileStatus>;
   ignoredFiles: { name: string; reason: string }[];
   modelProgress: PipelineTaskProgress | null;
@@ -48,7 +46,6 @@ interface GraphState {
   setEdges: (edges: Edge[]) => void;
   setClusterNames: (names: Record<number, string>) => void;
   setPhase: (phase: PipelinePhase) => void;
-  setGraphUsable: (usable: boolean) => void;
   setFileStatus: (status: FileStatus) => void;
   setFileStatuses: (statuses: FileStatus[]) => void;
   addIgnored: (name: string, reason: string) => void;
@@ -81,7 +78,6 @@ export const useGraphStore = create<GraphState>((set) => ({
   edges: [],
   clusterNames: {},
   phase: 'idle',
-  graphUsable: false,
   fileStatuses: {},
   ignoredFiles: [],
   modelProgress: null,
@@ -155,7 +151,6 @@ export const useGraphStore = create<GraphState>((set) => ({
 
   setClusterNames: (clusterNames) => set({ clusterNames }),
   setPhase: (phase) => set({ phase }),
-  setGraphUsable: (graphUsable) => set({ graphUsable }),
   setFileStatus: (status) =>
     set((s) => ({ fileStatuses: { ...s.fileStatuses, [status.fileId]: status } })),
   setFileStatuses: (statuses) =>
@@ -184,7 +179,6 @@ export const useGraphStore = create<GraphState>((set) => ({
       edges: [],
       clusterNames: {},
       phase: 'idle',
-      graphUsable: false,
       fileStatuses: {},
       ignoredFiles: [],
       modelProgress: null,

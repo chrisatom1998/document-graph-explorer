@@ -39,7 +39,7 @@ npm install
 npm run dev
 ```
 
-Open the printed local URL. Click **Load demo corpus** for sample documents or **Load audio demo** for generated clips, or drag your own files or folders onto the window.
+Open the printed local URL. Click **Load demo corpus** on the welcome screen to explore instantly, or drag your own files or folders onto the window.
 
 ### Run without dev tools
 
@@ -90,7 +90,7 @@ There are five ways to get documents in:
 2. The **Add files** button on the welcome screen (multi-select file picker for individual files).
 3. The **Add a folder** button on the welcome screen — pick one folder and every relevant file inside it is pulled in automatically, subfolders included, with no need to drill into them (like adding a folder in Google Drive). Browsers with the File System Access API get the native directory picker; everywhere else a standard folder-upload picker is used, still recursive.
 4. The **＋ Add files** and **Add folder** buttons on the toolbar — the same two pickers, available once a graph is loaded.
-5. **Load demo corpus** on the welcome screen, for an instant tour with sample documents. **Load audio demo** does the same for sound: eight short clips generated in the browser.
+5. **Load demo corpus** on the welcome screen, for an instant tour with sample documents.
 
 **Supported formats:** `txt`, `log`, `md`/`mdx`/`rmd`, `pdf`, `html`/`htm`, `docx`/`docm`, `pptx`/`pptm`, `xlsx`/`xlsm`, `json`/`ipynb`, `yaml`/`yml`, `csv`, and source code (`ts`/`tsx`/`js`/`jsx`/`py`/`go`/`rs`/`java`/`kt`/`c`/`cpp`, plus Elixir, Haskell, Julia, PowerShell, Prisma, Astro, Dockerfiles, Makefiles, and many other text-based languages). Selected code documents show the language (`ts`, `py`, `js`, …) on the name and reader card. Anything else lands in the collapsible **ignored tray** with a reason rather than failing silently. Dotfiles, lockfiles, minified bundles, and development directories (`node_modules`, `.git`, `dist`, `build`, `vendor`, `target`, `.venv`, …) are skipped automatically when dropping folders — and the same filters apply when adding a folder through **Add a folder**. If the folder contains a `.gitignore`, those patterns are applied too — so dropping (or picking) a git checkout indexes the project, not its build output.
 

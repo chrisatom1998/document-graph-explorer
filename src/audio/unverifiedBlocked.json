@@ -2,7 +2,6 @@
  "floor": 0.5,
  "rule": "blocked when >= 15 firings on the 9,000-clip sample and < 10% agree with the clip labels",
  "blocked": [
-  "ambience",
   "bass pluck",
   "dry",
   "echoing",
@@ -14,10 +13,6 @@
   "supersaw",
   "syncopated",
   "synth bass",
-  "synth stab",
-  "texture"
- ],
- "umbrellaOnly": {
-  "ambience": "Shown only as the umbrella of the ambience tags (Chris, 2026-11-01); its raw CLAP prompt is never shown on its own."
- }
+  "synth stab"
+ ]
 }

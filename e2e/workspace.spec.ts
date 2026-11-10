@@ -30,18 +30,10 @@ test('classic graph controls and music copilot work on desktop and mobile', asyn
   await expect(page.locator('.rs-top').getByRole('button', { name: /^Current corpus:/ })).toHaveCount(1);
   // Filters live in the left sidebar now, not behind a toolbar disclosure.
   await expect(page.getByRole('heading', { name: 'Filters', exact: true })).toBeVisible();
-  // The sidebar lists only the link kinds that exist: the fixture's key edges plus
-  // the instrument and tempo links the import derives from the clips' analysis.
-  // No link-kind filter means every present kind shows, so each box starts ticked
-  // and ticking "Key" is a no-op; unticking it is what activates a filter, and
-  // Clear all brings the kind back.
+  // The fixture only has key edges, and the sidebar lists kinds that exist.
   await similarityFilter(page, 'Key');
-  await expect(page.getByRole('button', { name: 'Clear all', exact: true })).toBeDisabled();
-  await similarityFilter(page, 'Key', false);
   await expect(page.getByRole('button', { name: 'Clear all', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Clear all', exact: true }).click();
-  await expect(page.getByRole('checkbox', { name: 'Key', exact: true })).toBeChecked();
-  await expect(page.getByRole('button', { name: 'Clear all', exact: true })).toBeDisabled();
   await toolMenu(page, 'Insights');
   await expect(page.getByRole('dialog', { name: 'Corpus insights', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Close insights', exact: true }).click();

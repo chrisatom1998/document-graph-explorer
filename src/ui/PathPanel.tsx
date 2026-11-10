@@ -21,8 +21,6 @@ export default function PathPanel() {
   const setPathMode = useUiStore((s) => s.setPathMode);
   const setSearchResults = useUiStore((s) => s.setSearchResults);
   const sendCamera = useUiStore((s) => s.sendCamera);
-  const addPathEndpoint = useUiStore((s) => s.addPathEndpoint);
-  const selectedId = useUiStore((s) => s.selectedId);
 
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
@@ -60,55 +58,16 @@ export default function PathPanel() {
     setPathMode(false);
   };
 
-  // Keyboard route to an endpoint: the node currently selected (via the
-  // navigator, search or the inspector) can be taken as the next endpoint
-  // without a canvas click. Topic hubs are skipped, as in the canvas handler.
-  const selectedNode = selectedId ? nodes[nodeIndex[selectedId]] : undefined;
-  const pickable = selectedNode && selectedNode.kind === 'document' && !pathEndpoints.includes(selectedNode.id)
-    ? selectedNode
-    : null;
-  const pickLabel = pathEndpoints.length === 0
-    ? 'as the start'
-    : pathEndpoints.length === 1
-      ? 'as the end'
-      : 'to start a new path';
-  const pickButton = pickable && (
-    <button
-      type="button"
-      className="path-panel__pick"
-      onClick={() => addPathEndpoint(pickable.id)}
-    >
-      Use “{pickable.title}” {pickLabel}
-    </button>
-  );
-
-  // Spoken confirmation of each endpoint pick, whichever control made it.
-  let announcement = '';
-  if (pathEndpoints.length === 1) {
-    announcement = `Path start: ${titleOf(pathEndpoints[0])}. Choose an end node.`;
-  } else if (pathEndpoints.length === 2) {
-    const hops = path ? path.length - 1 : 0;
-    announcement = path
-      ? `Path end: ${titleOf(pathEndpoints[1])}. ${hops} ${hops === 1 ? 'hop' : 'hops'} from ${titleOf(pathEndpoints[0])}.`
-      : `Path end: ${titleOf(pathEndpoints[1])}. No connection found.`;
-  }
-
   let body: ReactNode;
   if (pathEndpoints.length === 0) {
-    body = (
-      <>
-        <p className="path-panel__hint">Choose a node to start a path.</p>
-        {pickButton}
-      </>
-    );
+    body = <p className="path-panel__hint">Click a node to start a path.</p>;
   } else if (pathEndpoints.length === 1) {
     body = (
       <>
         <div className="path-panel__chip-row">
           <span className="path-panel__chip">{titleOf(pathEndpoints[0])}</span>
         </div>
-        <p className="path-panel__hint">Choose a second node.</p>
-        {pickButton}
+        <p className="path-panel__hint">Click a second node.</p>
       </>
     );
   } else if (path) {
@@ -137,15 +96,11 @@ export default function PathPanel() {
             </div>
           ))}
         </div>
-        {pickButton}
       </>
     );
   } else {
     body = (
-      <>
-        <p className="path-panel__hint">No connection found between these documents.</p>
-        {pickButton}
-      </>
+      <p className="path-panel__hint">No connection found between these documents.</p>
     );
   }
 
@@ -160,7 +115,6 @@ export default function PathPanel() {
         />
       </div>
       <div className="path-panel__body">{body}</div>
-      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</p>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { confirmedInstrumentList, sourceReviewAllows } from './instrumentEvidence';
-import { AMBIENCE_KIDS, AMBIENCE_UMBRELLA, canonicalDjLabel, DJ_HIDDEN_LABELS, DRUM_KIT_LABELS, DRUMS_UMBRELLA, MERGED_DJ_LABELS, mergedDjLabel, type DjGroup } from './djTags';
+import { canonicalDjLabel, MERGED_DJ_LABELS, mergedDjLabel, type DjGroup } from './djTags';
 import { fusionPresentation } from './fusionPresentation';
-import { areHiddenSoundTagsShown } from './hiddenSoundTagsSwitch';
 import type { MusicAnalysis } from './musicTypes';
 import { dimensionLabels, type Dimension, type Interval } from './recognition';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
@@ -9,17 +8,16 @@ import calibratedLabelList from './calibratedLabels.json';
 import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 import { FULL_MIX_FAMILY, FULL_MIX_REVISION } from './fullMixHeads';
-import { TAGGER_MAX_WINDOWS, TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, TAGGER_WINDOW_SECONDS, taggerDecisions, taggerIntervals, type TaggerTag } from './tagger';
+import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_SCORE, taggerDecisions, taggerIntervals, type TaggerTag } from './tagger';
 import { nativeScoreOutside, type NativeWindowEvidence } from './nativeWindowEvidence';
 import { isRuleDescribedLabel } from './timbreDescriptions';
 
 /** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
  * musicLinks), so a display change also changes which instrument links a track can form, by design. */
-export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v16';
+export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v13';
 /** The shipping bar (Chris, 2026-10-10): a detector shows as a normal tag when its held-out precision AND recall on clips and
  * samples are both at least this; below it, a useful detector shows as a faded "maybe". Full songs are a no-regression check
- * only. scripts/head-scorecard.py and scripts/dj-effects/ship.py use the same bar; the tagger's `tested` flags use the 60/30
- * ship line since 2026-10-11 (see TaggerTag.tested). */
+ * only. scripts/head-scorecard.py, scripts/dj-effects/ship.py and the tagger's `tested` flags use the same bar. */
 export const SOUND_TAG_BAR = .5;
 /** A detector score at or above this shows as "likely" (and is the only floor for short clips). */
 export const LIKELY_SOUND_CUTOFF = .5;
@@ -52,7 +50,6 @@ const profileNames:Record<string,string>={'AudioSet AST':'AST score','MTG-Jamend
 /** Only these scores come from detectors that passed held-out testing; other models still show under Model scores. */
 export const TESTED_SCORES=new Set(['Trained head score','Baseline fallback score']);
 const MAYBE_SCORES=new Set(['Trained head score (maybe)',TAGGER_MAYBE_SCORE]);
-const TRAINED_HEAD_SCORES=new Set(['Trained head score','Trained head score (maybe)']);
 /** The trained tagger (src/audio/tagger.ts) passed held-out testing on the tags it decides; below SOUND_TAG_BAR it shows as "maybe". */
 TESTED_SCORES.add(TAGGER_SCORE);
 /** Jamendo (music-trained) window scores that passed a held-out full-mix check: thresholds were picked on half the
@@ -91,20 +88,17 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   const result=new Map<string,DisplaySound>();
   const tagger=taggerDecisions(audio.tagger,audio.durationSeconds);
   const coverage=taggerIntervals(audio.tagger,audio.durationSeconds);
-  // A tag marked `tail` also heard the extra window over a short clip's tail (taggerTailStart).
-  const tailCoverage=audio.tagger?.tail&&coverage.length?[...coverage,{start:audio.tagger.tail.start,end:audio.tagger.tail.end}]:coverage;
-  const coveredBy=(list:Interval[])=>({start,end}:Interval)=>{
+  const covered=({start,end}:Interval)=>{
     if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>audio.durationSeconds+1e-6)return false;
     let through=start;
-    for(const interval of list){
+    for(const interval of coverage){
       if(interval.end<=through)continue;
       if(interval.start>through+1e-6)return false;
       through=interval.end;if(through>=end-1e-6)return true;
     }
     return false;
   };
-  const covered=coveredBy(coverage),coveredTail=coveredBy(tailCoverage);
-  const coversRecording=covered({start:0,end:audio.durationSeconds}),coversRecordingTail=coveredTail({start:0,end:audio.durationSeconds});
+  const coversRecording=covered({start:0,end:audio.durationSeconds});
   // Keep each model's score supported outside the excerpt separate from its recording-wide maximum. A louder
   // in-excerpt false alarm must not be revived by a weaker observation elsewhere. Missing ranges cannot prove coverage.
   const outsideTagger=new Map<string,Map<string,number>>();
@@ -117,15 +111,6 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     ||(TESTED_SCORES.has(model)&&score>=(fullMix&&dimension==='source'?FULL_MIX_MIN_TESTED_SCORE[label]??floor:floor)));
   const confirmed=confirmedInstrumentList(audio);
   const canonical=(dimension:Dimension,label:string)=>dimension==='character'?canonicalDjLabel('character',label)??label:dimension==='effect'?canonicalDjLabel('production',label)??label:label;
-  const tagKeys=(tag:TaggerTag)=>[...tag.decides.map(label=>({dimension:tag.dimension,label})),...(tag.alsoDecides??[])]
-    .flatMap(({dimension,label})=>{
-      const name=canonical(dimension,label),group=GROUP_OF[dimension],merged=group?mergedDjLabel(group,name):undefined;
-      // Replacement applies to the stored identity, its surviving display identity and the names merged into it,
-      // so an untested old name (foley hit) cannot revive a sound the tagger decided against before the final fold.
-      const survivor=merged?`${DIMENSION_OF[merged.group]}:${merged.label}`:undefined;
-      return [`${dimension}:${name}`,...(survivor?[survivor,...(mergedInto().get(survivor)??[])]:[])];
-    });
-  const tailKeys=new Set(TAGGER_POLICY.tags.filter(t=>t.tail&&audio.tagger?.tail?.scores[t.output]!==undefined).flatMap(tagKeys));
   const allowed=(dimension:Dimension,label:string)=>{
     if(dimension==='source')return sourceReviewAllows(audio,label);
     if(dimension==='character')return djReviewAllows(audio,'character',label);
@@ -148,9 +133,8 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     const item=old??{dimension,label,origin:'model estimate' as const,scores:[]};
     item.scores??=[];delete item.coverageUnknown;
     model=profileNames[model]??model;
-    const tail=tailKeys.has(key);
-    if(tagger?.length&&!(tail?coversRecordingTail:coversRecording)&&model!==TAGGER_SCORE&&model!==TAGGER_MAYBE_SCORE){
-      const outside=nativeScoreOutside(windowEvidence,tail?coveredTail:covered);
+    if(tagger?.length&&!coversRecording&&model!==TAGGER_SCORE&&model!==TAGGER_MAYBE_SCORE){
+      const outside=nativeScoreOutside(windowEvidence,covered);
       if(validScore(outside.score)){
         const scores=outsideTagger.get(key)??new Map<string,number>();
         scores.set(model,Math.max(scores.get(model)??0,outside.score));outsideTagger.set(key,scores);
@@ -197,11 +181,18 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   // The trained tagger replaces evidence inside its excerpt. Native positives from unscored sections remain;
   // a recording-wide negative would claim the tagger listened to audio it never received.
   // An 'agree' rule (long recordings) also needs the existing detectors to show the tag: they are asked without the tagger.
+  const tagKeys=(tag:TaggerTag)=>[...tag.decides.map(label=>({dimension:tag.dimension,label})),...(tag.alsoDecides??[])]
+    .flatMap(({dimension,label})=>{
+      const name=canonical(dimension,label),group=GROUP_OF[dimension],merged=group?mergedDjLabel(group,name):undefined;
+      // Replacement applies to the stored identity, its surviving display identity and the names merged into it,
+      // so an untested old name (foley hit) cannot revive a sound the tagger decided against before the final fold.
+      const survivor=merged?`${DIMENSION_OF[merged.group]}:${merged.label}`:undefined;
+      return [`${dimension}:${name}`,...(survivor?[survivor,...(mergedInto().get(survivor)??[])]:[])];
+    });
   let detectors:Set<string>|undefined;
   const detectorsShow=(tag:TaggerTag)=>{
     detectors??=new Set(confidentSoundSummary({...audio,tagger:undefined},fusionMode).map(s=>`${s.dimension}:${s.label}`));
     return tagKeys(tag).some(key=>detectors!.has(key));};
-  const taggerShown=new Set<string>();
   if(tagger)for(const{tag,shown,score,needsAgreement}of tagger){
     const keys=new Set(tagKeys(tag)),primary=`${tag.dimension}:${canonical(tag.dimension,tag.label)}`;
     // The latest listener decision applies to the same sound even when an older detector used another dimension.
@@ -209,24 +200,16 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     if(review&&review.decision!=='confirmed'){for(const key of keys)result.delete(key);continue;}
     const confirmedAlias=[...keys].some(key=>result.get(key)?.origin==='confirmed by you');
     const agreed=shown&&!confirmedAlias&&(!needsAgreement||detectorsShow(tag));
-    // 'sole' (taggerPolicy trust) covers recordings up to the tagger's 30 s reach, the lengths it was picked on; on a
-    // longer one the tagger hears only the middle, so native positives outside it still stand.
-    const sole=tag.trust==='sole'&&audio.durationSeconds<=TAGGER_MAX_WINDOWS*TAGGER_WINDOW_SECONDS+1e-6;
-    // 'both' is an intersection: a tagger "no" also stands for sections it did not hear, at any length.
-    const whole=sole||tag.trust==='both';
-    // 'either' (taggerPolicy trust): a tagger "no" leaves the other detectors' positives in place.
-    if(tag.trust==='either'&&!agreed&&!confirmedAlias)continue;
     for(const key of keys){
       const item=result.get(key);if(item?.origin!=='model estimate')continue;
       if(confirmedAlias||(agreed&&key!==primary)){result.delete(key);continue;}
-      // 'sole': the tagger's answer stands for the whole recording, including sections it did not score.
-      const outside=whole?undefined:outsideTagger.get(key);
-      const unknown=!whole&&item.scores?.some(s=>unknownOutsideTagger.get(key)?.has(s.model));
+      const outside=outsideTagger.get(key);
+      const unknown=item.scores?.some(s=>unknownOutsideTagger.get(key)?.has(s.model));
       item.scores=(item.scores??[]).flatMap(s=>outside?.has(s.model)?[{model:s.model,score:outside.get(s.model)!}]:[]);
       if(unknown&&!item.scores.some(s=>qualifies(item.dimension,item.label,s.model,s.score))){delete item.scores;item.coverageUnknown=true;item.tier='possible';}
       else if(!item.scores.length)result.delete(key);
     }
-    if(agreed){estimate(tag.dimension,tag.label,score,tag.tested?TAGGER_SCORE:TAGGER_MAYBE_SCORE);taggerShown.add(primary);}}
+    if(agreed)estimate(tag.dimension,tag.label,score,tag.tested?TAGGER_SCORE:TAGGER_MAYBE_SCORE);}
   // Alias identity belongs to the sound, not to whether the tagger happens to decide it on this recording.
   // In particular, a long-recording 'detectors' rule or unavailable tagger cannot revive a rejected cymbal alias.
   for(const tag of TAGGER_POLICY.tags.filter(t=>t.alsoDecides?.length)){
@@ -239,86 +222,17 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   const long=floor===TRACK_SOUND_FLOOR;
   const voiceHeads=fullMix&&fusion?.qualified?fusion.windows.filter(w=>w.status==='complete'&&w.end-w.start>=FULL_MIX_MIN_SECONDS-1e-6)
     .flatMap(w=>w.decisions.filter(d=>d.label==='voice'&&typeof d.headProbability==='number').map(d=>d.headProbability as number)):[];
-  // A voice the tagger decided (clips up to its 30 s handoff) was tested on its own and is not vetoed.
-  if(voiceHeads.length&&Math.max(...voiceHeads)<FULL_MIX_VOICE_VETO&&!taggerShown.has('source:voice')&&result.get('source:voice')?.origin==='model estimate')result.delete('source:voice');
+  if(voiceHeads.length&&Math.max(...voiceHeads)<FULL_MIX_VOICE_VETO&&result.get('source:voice')?.origin==='model estimate')result.delete('source:voice');
   const testedBest=(s:DisplaySound)=>Math.max(...s.scores!.filter(x=>TESTED_SCORES.has(x.model)).map(x=>x.score));
   const raised=(s:DisplaySound)=>fullMix&&s.dimension==='source'&&FULL_MIX_MIN_TESTED_SCORE[s.label]!==undefined&&testedBest(s)<FULL_MIX_MIN_TESTED_SCORE[s.label];
-  return withoutHiddenTags(shortHeadVetoes(drumsUmbrella(ambienceUmbrella(foldMerged([...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
+  return foldMerged([...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
     :HIDDEN_UNTIL_TESTED.has(s.label)?[]
     :s.coverageUnknown?[s]
     :s.scores?.some(x=>TESTED_SCORES.has(x.model))?raised(s)?[]:[tiered(s,m=>TESTED_SCORES.has(m))]
     :s.scores?.some(x=>MAYBE_SCORES.has(x.model))?[{...tiered(s,m=>MAYBE_SCORES.has(m)),maybe:true}]
     :long&&!CALIBRATED_LABELS.has(s.label)&&!UNVERIFIED_BLOCKED.has(s.label)&&catalogClap.has(`${s.dimension}:${s.label}`)&&s.scores?.some(x=>x.model==='CLAP similarity'&&x.score>=UNVERIFIED_SOUND_FLOOR)?[{...s,tier:'possible' as const,uncalibrated:true}]:[]),
     // Merged estimates obey the destination's hidden-label policy and listener choices.
-    (dimension,label)=>!HIDDEN_UNTIL_TESTED.has(label)&&allowed(dimension,label)&&(dimension==='source'?confirmed===undefined:audio.confirmedDjTags===undefined)),
-    // The umbrella is an estimate under ambience, so it obeys the same rules as any effect estimate.
-    ()=>!HIDDEN_UNTIL_TESTED.has(AMBIENCE_UMBRELLA.label)&&allowed(DIMENSION_OF[AMBIENCE_UMBRELLA.group],AMBIENCE_UMBRELLA.label)&&audio.confirmedDjTags===undefined),
-    // The umbrella is an estimate under drums, so it obeys the same rules as any source estimate.
-    ()=>!HIDDEN_UNTIL_TESTED.has(DRUMS_UMBRELLA.label)&&allowed('source',DRUMS_UMBRELLA.label)&&confirmed===undefined), audio));
-}
-/** With the hidden-tags switch off, model estimates of a DJ_HIDDEN_LABELS tag are dropped; hand-confirmed tags stay. */
-function withoutHiddenTags(sounds:DisplaySound[]):DisplaySound[]{
-  if(areHiddenSoundTagsShown())return sounds;
-  const group=(d:Dimension):DjGroup|undefined=>d==='source'?'source':d==='effect'?'production':d==='character'?'character':undefined;
-  return sounds.filter(s=>{const g=group(s.dimension);return s.origin==='confirmed by you'||!g||!DJ_HIDDEN_LABELS.has(`${g}:${s.label}`);});
-}
-/** Any shown background-ambience tag (AMBIENCE_KIDS) also shows "ambience", unless ambience already shows at least as
- * strongly. The child tag stays. A listener who rejected ambience, or confirmed their sound tags, gets no umbrella;
- * neither does a child tag the listener confirmed by hand. */
-function ambienceUmbrella(sounds:DisplaySound[],canEstimate:()=>boolean):DisplaySound[]{
-  const kids=sounds.filter(s=>s.origin==='model estimate'&&s.dimension==='effect'&&AMBIENCE_KIDS.has(`production:${s.label}`));
-  if(!kids.length||!canEstimate())return sounds;
-  const target=`${DIMENSION_OF[AMBIENCE_UMBRELLA.group]}:${AMBIENCE_UMBRELLA.label}`,key=(s:DisplaySound)=>`${s.dimension}:${s.label}`;
-  let best=sounds.find(s=>key(s)===target);
-  for(const s of kids){
-    const item:DisplaySound={...s,dimension:DIMENSION_OF[AMBIENCE_UMBRELLA.group],label:AMBIENCE_UMBRELLA.label};
-    if(!best||stronger(item,best))best=item;
-  }
-  const at=sounds.findIndex(s=>key(s)===target);
-  return at<0?[...sounds,best!]:sounds.map((s,i)=>i===at?best!:s);
-}
-/** Any shown drum-kit tag (DRUM_KIT_LABELS) also shows drums, unless drums already shows at least as strongly. The kit
- * tag itself stays. A listener who rejected drums, or confirmed their instrument list, gets no umbrella; neither does a
- * kit tag the listener confirmed by hand. */
-function drumsUmbrella(sounds:DisplaySound[],canEstimate:()=>boolean):DisplaySound[]{
-  // Only model estimates: a tag the listener confirmed by hand shows exactly as they picked it.
-  const kit=sounds.filter(s=>s.origin==='model estimate'&&s.dimension==='effect'&&DRUM_KIT_LABELS.has(`production:${s.label}`));
-  if(!kit.length||!canEstimate())return sounds;
-  const key=(s:DisplaySound)=>`${s.dimension}:${s.label}`,drums=`${DIMENSION_OF[DRUMS_UMBRELLA.group]}:${DRUMS_UMBRELLA.label}`;
-  let best=sounds.find(s=>key(s)===drums);
-  for(const s of kit){
-    const item:DisplaySound={...s,dimension:DIMENSION_OF[DRUMS_UMBRELLA.group],label:DRUMS_UMBRELLA.label};
-    if(!best||stronger(item,best))best=item;
-  }
-  const at=sounds.findIndex(s=>key(s)===drums);
-  return at<0?[...sounds,best!]:sounds.map((s,i)=>i===at?best!:s);
-}
-/** Between a one-shot and the tagger's 10 s piano handoff, the CLAP piano head is the only decider and it fires on
- *  keyboards that are not pianos (NSynth test: precision 0.37). The tagger's existing piano cutoff, already used
- *  from 10 s up, has to agree. A missing or older tagger result leaves the head alone. Piano backed by any other
- *  evidence (reviewed examples, baseline fallback) is not touched. */
-function shortHeadVetoes(sounds: DisplaySound[], audio: MusicAnalysis): DisplaySound[] {
-  return shortHeadVeto(shortHeadVeto(sounds, audio, 'piano', SHORT_CLIP_MAX_SECONDS), audio, 'synthesizer', SYNTH_VETO_FROM_SECONDS);
-}
-/** Synthesizer gets the same rule as piano below the tagger's 10 s handoff: the CLAP synthesizer head alone fired on
- *  2.4% of IDMT bass guitar notes (cap 1%); with the tagger's shipped synthesizer cutoff agreeing, 0.64%. Unlike piano
- *  it also covers one-shots, where no short-clip head decides synthesizer (docs/evaluations/synth-short-veto-2026-11-09). */
-const SYNTH_VETO_FROM_SECONDS = 0;
-function shortHeadVeto(sounds: DisplaySound[], audio: MusicAnalysis, label: string, fromSeconds: number): DisplaySound[] {
-  const policy = TAGGER_POLICY.tags.find(tag => tag.output === label);
-  const min = policy?.minSeconds;
-  if (!policy || !min || !(audio.durationSeconds > fromSeconds) || !(audio.durationSeconds < min - 1e-6)) return sounds;
-  const tagger = audio.tagger;
-  if (!tagger || tagger.revision !== TAGGER_REVISION) return sounds;
-  const score = tagger.scores[label];
-  if (typeof score !== 'number' || score >= policy.threshold) return sounds;
-  // Only the trained head's tag is vetoed. The tag from reviewed examples or any other model keeps its own rules.
-  // Untested scores (AST, Jamendo, CLAP similarity) ride along on the row but never decided it, so they do not count.
-  const headOnly = (s: DisplaySound) => {
-    const deciding = (s.scores ?? []).filter(x => TESTED_SCORES.has(x.model) || MAYBE_SCORES.has(x.model));
-    return deciding.length > 0 && deciding.every(x => TRAINED_HEAD_SCORES.has(x.model));
-  };
-  return sounds.filter(s => s.origin === 'confirmed by you' || s.dimension !== 'source' || s.label !== label || !headOnly(s));
+    (dimension,label)=>!HIDDEN_UNTIL_TESTED.has(label)&&allowed(dimension,label)&&(dimension==='source'?confirmed===undefined:audio.confirmedDjTags===undefined));
 }
 const GROUP_OF:Partial<Record<Dimension,DjGroup>>={source:'source',effect:'production',character:'character'};
 const DIMENSION_OF:Record<DjGroup,Dimension>={source:'source',production:'effect',character:'character'};

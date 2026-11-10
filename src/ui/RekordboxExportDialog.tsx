@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { DocNode } from '../model/types';
 import { dateStamp, downloadBlob } from '../persistence/exportImport';
@@ -26,6 +26,10 @@ function saveFolders(folders: Record<string, string>): void {
     // Remembering the folder is a convenience only.
   }
 }
+
+const panelStyle: CSSProperties = { width: 'min(480px, 92vw)', padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 12 };
+const textStyle: CSSProperties = { margin: 0, fontSize: 13, lineHeight: 1.55, opacity: 0.78 };
+const inputStyle: CSSProperties = { width: '100%', boxSizing: 'border-box', marginTop: 4 };
 
 export default function RekordboxExportDialog({ nodes, onClose }: { nodes: DocNode[]; onClose: () => void }) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -60,19 +64,20 @@ export default function RekordboxExportDialog({ nodes, onClose }: { nodes: DocNo
     <div className="settings-backdrop" onClick={onClose}>
       <div
         ref={dialogRef}
-        className="glass-panel confirm-dialog confirm-dialog--wide"
+        className="glass-panel"
         role="dialog"
         aria-modal="true"
         aria-label="Export for Rekordbox"
+        style={panelStyle}
         onClick={e => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
       >
-        <h2 className="confirm-dialog__title">Export for Rekordbox</h2>
-        <p className="confirm-dialog__text">
+        <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Export for Rekordbox</h2>
+        <p style={textStyle}>
           Writes each track's BPM, key and sound tags to a Rekordbox collection XML. The Camelot key and tags go in
           Comments. Beat grids are left to Rekordbox, since this app doesn't find the first downbeat.
         </p>
-        <p className="confirm-dialog__text">
+        <p style={textStyle}>
           The browser only sees folder names, so paste where each folder is on your computer. Rekordbox finds the
           files by that full path.
         </p>
@@ -81,28 +86,29 @@ export default function RekordboxExportDialog({ nodes, onClose }: { nodes: DocNo
           const invalid = value.trim() !== '' && !folderPathMatchesRoot(value, root);
           const label = root ? `Full path of the folder “${root}”` : 'Folder holding the files you added on their own';
           return (
-            <label key={root} className="confirm-dialog__field">
+            <label key={root} style={{ fontSize: 13 }}>
               {label} ({count} track{count === 1 ? '' : 's'})
               <input
                 type="text"
+                style={inputStyle}
                 spellCheck={false}
                 placeholder={root ? `/Users/you/Music/${root}` : '/Users/you/Music'}
                 value={value}
                 aria-invalid={invalid}
                 onChange={e => setFolders(prev => ({ ...prev, [root]: e.target.value }))}
               />
-              {invalid && <span className="confirm-dialog__field-error">
+              {invalid && <span style={{ display: 'block', color: 'var(--danger, #e66)', marginTop: 2 }}>
                 {root ? `Use the full path, ending in /${root}.` : 'Use the full path, starting with / or a drive letter.'}
               </span>}
             </label>
           );
         })}
-        <p className="confirm-dialog__text">
+        <p style={textStyle}>
           In Rekordbox, open Preferences › Advanced › Database, set “rekordbox xml” to this file, then find the
           playlist under “rekordbox xml” in the tree. Serato has no file to import BPM and key from: it reads
           them from tags inside the audio files, which a browser can't rewrite, so Serato will analyse the files itself.
         </p>
-        <div className="confirm-dialog__actions">
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <button type="button" className="snapshot-btn" onClick={onClose}>Cancel</button>
           <button type="button" className="snapshot-btn snapshot-btn--load" disabled={ready.length === 0} onClick={exportXml}>
             Export XML

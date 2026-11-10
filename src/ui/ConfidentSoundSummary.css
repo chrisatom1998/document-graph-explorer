@@ -86,7 +86,7 @@
 .model-scores__bar > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
 .model-scores__value { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 .model-scores__item--untested { opacity: .55; }
-.model-scores__item--untested .model-scores__bar > span { background: #5b6288; }
+.model-scores__item--untested .model-scores__bar > span { background: var(--text-faint); }
 .model-scores__flag { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; }
 .model-scores__note { margin: 6px 0 0; font-size: 11px; color: var(--text-faint); }
 .model-scores h5 small { text-transform: none; letter-spacing: 0; }
@@ -136,28 +136,3 @@
 /* When the name tag and the audio estimate disagree, the audio value sits under the shown one. */
 .music-features .music-stats__audio { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 400; color: var(--warning); white-space: nowrap; }
 .music-features .music-stats .camelot { vertical-align: 2px; }
-
-/* "Not sure? Fix it": a quiet chip on possible/maybe tags only, and one small panel for the tag being fixed.
-   Scoped under .sound-tags so the panel's generic `.audio-preview button` styling does not inflate it. */
-.sound-tags .sound-tag__fix {
-  margin: 0 -6px 0 0; padding: 1px 7px; border: 1px solid var(--border-glass); border-radius: 999px;
-  background: transparent; color: var(--text-faint); font: inherit; font-size: 10.5px; line-height: 1.4; cursor: pointer; white-space: nowrap;
-}
-.sound-tags .sound-tag__fix:hover, .sound-tags .sound-tag__fix:focus-visible, .sound-tags .sound-tag__fix[aria-expanded="true"] { color: var(--accent-strong); border-color: var(--accent-strong); }
-.sound-tag--maybe:has(.sound-tag__fix:hover) { opacity: 1; }
-.sound-tags .sound-tag-fixer {
-  margin: 8px 0 0; padding: 8px 10px; border: 1px solid var(--border-glass); border-radius: 10px;
-  background: var(--surface-inset); font-size: 12px;
-}
-.sound-tag-fixer__question { margin: 0 0 6px; color: var(--text-secondary); }
-.sound-tag-fixer__question strong { color: var(--text-primary); font-weight: 500; }
-.sound-tag-fixer__actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.sound-tags .sound-tag-fixer__actions button, .sound-tags .sound-tag-fixer__actions select {
-  margin: 0; padding: 3px 10px; border: 1px solid var(--border-glass); border-radius: 999px; background: transparent;
-  color: var(--text-primary); font: inherit; font-size: 12px; line-height: 1.4; cursor: pointer;
-}
-.sound-tags .sound-tag-fixer__actions select { max-width: 100%; background: var(--surface-inset); }
-.sound-tags .sound-tag-fixer__actions button:hover:not(:disabled) { border-color: var(--accent-strong); color: var(--accent-strong); }
-.sound-tags .sound-tag-fixer__actions button:disabled, .sound-tags .sound-tag-fixer__actions select:disabled { opacity: .5; cursor: default; }
-.sound-tags .sound-tag-fixer__actions .sound-tag-fixer__close { border-color: transparent; color: var(--text-faint); }
-.sound-tag-fixer__error { margin: 6px 0 0; color: var(--warning); }

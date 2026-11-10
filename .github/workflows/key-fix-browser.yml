@@ -10,8 +10,6 @@ permissions:
   contents: write
 
 env:
-  # These builds need the audio model pack.
-  DGE_MODELS: full
   ONNXRUNTIME_NODE_INSTALL: skip
   HARNESS_SHA: f691fa915b88796516d010a1b4b83f2c089e2c3a   # head of claude/project-thread-unl6fy (PR #119) on 2026-10-06
   HARNESS: scripts/dj-clips scripts/short-clip-upload-eval.mjs docs/evaluations/dj-clips-round2-2026-10-06/mtg-key-manifest.json
@@ -30,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - run: git fetch -q origin "$HARNESS_SHA" && git checkout "$HARNESS_SHA" -- $HARNESS
@@ -39,7 +37,7 @@ jobs:
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
           git clone -q "$MTGKEY" "$RUNNER_TEMP/mk" && git -C "$RUNNER_TEMP/mk" checkout -q "$MTGKEY_REF"
           python3 scripts/dj-clips/mtg-key.py "$RUNNER_TEMP/mk" audio
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v6
         with:
           name: keyfix-mtgkey-audio
           path: audio
@@ -54,15 +52,15 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - run: git fetch -q origin "$HARNESS_SHA" && git checkout "$HARNESS_SHA" -- $HARNESS
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@v7
         with:
           name: keyfix-mtgkey-audio
           path: audio
-      - uses: actions/setup-node@v7.1.0
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -82,7 +80,7 @@ jobs:
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
           AUDIO_DIR=audio AUDIO_EXT=wav MANIFEST=$DOCS/mtg-key-manifest.json SHARD=${{ matrix.shard }}/4 \
             node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: keyfix-mtgkey-export-${{ matrix.shard }}
@@ -94,16 +92,16 @@ jobs:
     if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - run: git fetch -q origin "$HARNESS_SHA" && git checkout "$HARNESS_SHA" -- $HARNESS
-      - uses: actions/setup-node@v7.1.0
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@v7
         with:
           pattern: keyfix-mtgkey-export-*
           path: exports

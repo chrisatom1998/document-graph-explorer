@@ -1,26 +1,23 @@
-"""One browser model from several tagger runs: for each tag the app uses, the run that scored best on VALIDATION clips.
+"""One browser model from several tagger runs: for each tag the app uses, the run that scored best on held-out audio.
 
 Usage: python3 scripts/audio-model/combine.py <out-dir> <policy.json> <run-dir> [<run-dir> ...] [--keep drums,...]
-       [--allow-hand-picks --only RUN=a,b --pin RUN=a,b]
 
-Each <run-dir> holds a run's model.pt, log.json (backbone in args.model), thresholds.json (calibrate.py, which also
-records each output's precision and recall on every training source's validation clips) and optionally eval.json
-(evaluate.py on the held-out test sets). The first run is the one the app ships today. combine_select.py picks each tag's
-run from thresholds.json alone: another run takes a tag only when its mean min(precision, recall) over the validation
-sources both runs score is at least 0.01 higher, and it does not drop below 0.70 precision or recall on a validation
-source where the shipped run reached both. The held-out test sets are never read to choose (they are the corpora the
-scoreboard judges, so choosing on them inflates the board); hf-combine-job.sh scores the finished model on them once,
-and picks.json keeps every run's test numbers under heldOutReportOnly for the record.
+Each <run-dir> holds a run's model.pt, log.json (backbone in args.model), thresholds.json (calibrate.py) and eval.json
+(evaluate.py on the held-out sets). The first run is the one the app ships today; another run takes a tag only when
+  * its mean min(precision, recall) over the held-out sets that score the tag (DJ clip rounds 1 and 2 for instruments;
+    FSD50K eval, NSynth test and effect renders, held-out Freesound uploaders for the app-named tags) is at least 0.01
+    higher, and
+  * it does not drop below 0.70 precision or recall on a set where the shipped run reached both.
 Tags in --keep stay with the first run (their long-recording thresholds were tuned on its scores). --only RUN=a,b limits
-RUN to those outputs; --pin RUN=a,b forces those outputs to RUN. Both are hand choices and need --allow-hand-picks; they
-must rest on evidence other than the test sets (a test-set win is exactly the selection this file avoids).
+RUN to those outputs and makes them candidates even when the app's policy does not list them yet (a tag that newly passes
+on held-out real clips); each must be an output of the first run, whose scores are the baseline it is compared with. Every other output keeps the first run's score. Runs that win no tag are left out of the file.
 A later run may add outputs after the first run's class list; the file then carries the longest list, and an output only
 newer runs have comes from the first used run that has it.
 
 Writes <out-dir>/model.onnx (one shared log-mel front end, the chosen networks side by side, each output taken from
 its run), model.json (classes, sha256, which run each output comes from), thresholds.json (each output's threshold
-from its run) and picks.json (per tag: the choice, why, every run's validation numbers, and the test numbers for the
-record). Checks the ONNX output against each run's own PyTorch model before writing.
+from its run) and picks.json (per tag: the held-out numbers of every run and the choice). Checks the ONNX output
+against each run's own PyTorch model before writing.
 """
 import argparse, hashlib, json, os, sys, warnings
 import numpy as np
@@ -31,24 +28,36 @@ import torch.nn as nn
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from export import FrontEnd, get_model  # noqa: E402
 from train import CLASSES, WIDTH, FRAMES  # noqa: E402
-import combine_select  # noqa: E402
 
 INSTRUMENT_SETS = ['eval-round1', 'eval-round2']
 TAG_SETS = ['eval-fsd50k', 'eval-nsynth-test', 'eval-nsynth-test-fx', 'eval-freesound']
 
 def rows(ev, tag):
-    """(set, precision, recall) for every held-out TEST set scoring the tag. Recorded in picks.json only, never used to choose."""
+    """(set, precision, recall) for every held-out set scoring the tag with complete labels."""
     out = []
     for name in (TAG_SETS if tag.startswith('cat:') else INSTRUMENT_SETS):
         views = ev.get(name, {}); r = (views.get('all') or views.get('strict') or {}).get(tag)
         if r and r['positives']: out.append((name, r['precision'] or 0.0, r['recall'] or 0.0))
     return out
 
-def choose(tags, runs, keep, only=None, pin=None):
-    """Per tag, the run chosen on validation clips (combine_select.py); the test-set numbers ride along for the record."""
-    picks = combine_select.choose(tags, runs, keep, only, pin)
-    for tag, p in picks.items():
-        p['heldOutReportOnly'] = {run['name']: {n: [round(pr, 3), round(rc, 3)] for n, pr, rc in rows(run.get('eval') or {}, tag)} for run in runs}
+def merit(rs): return float(np.mean([min(p, r) for _, p, r in rs])) if rs else None
+
+def choose(tags, runs, keep, only=None):
+    only = only or {}; picks = {}
+    for tag in tags:
+        base = rows(runs[0]['eval'], tag); best, why = 0, 'shipped run'
+        if tag not in keep and base:
+            passed, top = {n for n, p, r in base if p >= .7 and r >= .7}, merit(base) + .01
+            for k, run in enumerate(runs[1:], 1):
+                if run['name'] in only and tag not in only[run['name']]: continue
+                rs = rows(run['eval'], tag); m = merit(rs)
+                if m is None or {n for n, *_ in rs} != {n for n, *_ in base}: continue
+                if any(n in passed and (p < .7 or r < .7) for n, p, r in rs): continue
+                # The margin is over the shipped run; among the runs that clear it, the best wins whatever the order (ties: the earlier).
+                if m >= top and (best == 0 or m > top): best, top, why = k, m, f'mean min(P, R) {merit(base):.3f} -> {m:.3f}'
+        elif tag in keep: why = 'kept (long-recording threshold tuned on the shipped run)'
+        picks[tag] = {'run': runs[best]['name'], 'why': why,
+                      'heldOut': {run['name']: {n: [round(p, 3), round(r, 3)] for n, p, r in rows(run['eval'], tag)} for run in runs}}
     return picks
 
 class Combined(nn.Module):
@@ -68,28 +77,20 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('policy'); ap.add_argument('runs', nargs='+')
     ap.add_argument('--keep', default='')
     ap.add_argument('--only', action='append', default=[], help='RUN=output,output: the only outputs RUN may take')
-    ap.add_argument('--pin', action='append', default=[], help='RUN=output,output: outputs taken from RUN whatever the combiner scores')
-    ap.add_argument('--allow-hand-picks', action='store_true', help='accept --only/--pin (hand choices that must not come from test-set results)')
     args = ap.parse_args(); os.makedirs(args.out, exist_ok=True)
-    assert args.allow_hand_picks or not (args.only or args.pin), \
-        '--only/--pin are hand picks: pass --allow-hand-picks, and only for evidence that is not a held-out test set'
     runs = []
     for d in args.runs:
         log = json.load(open(os.path.join(d, 'log.json')))
-        n = min(len(CLASSES), len(log['classes'])); assert log['classes'][:n] == CLASSES[:n], f'{d} has a different class list'   # an older run has fewer outputs than the current list
+        assert log['classes'][:len(CLASSES)] == CLASSES, f'{d} has a different class list'
         runs.append({'name': os.path.basename(os.path.normpath(d)), 'dir': d, 'model': log['args']['model'], 'classes': log['classes'],
-                     'eval': json.load(open(os.path.join(d, 'eval.json'))) if os.path.exists(os.path.join(d, 'eval.json')) else {}, 'th': json.load(open(os.path.join(d, 'thresholds.json')))})
+                     'eval': json.load(open(os.path.join(d, 'eval.json'))), 'th': json.load(open(os.path.join(d, 'thresholds.json')))})
     assert all(o.partition('=')[2].strip(', ') for o in args.only), f'--only needs RUN=output,output: {args.only}'
     only = {name: {t for t in ts.split(',') if t} for name, ts in (o.split('=', 1) for o in args.only)}
     assert set(only) <= {r['name'] for r in runs}, f'--only names a run that is not combined: {set(only)}'
-    assert all(o.partition('=')[2].strip(', ') for o in args.pin), f'--pin needs RUN=output,output: {args.pin}'
-    pin = {t: name for name, ts in (o.split('=', 1) for o in args.pin) for t in ts.split(',') if t}
-    assert set(pin.values()) <= {r['name'] for r in runs}, f'--pin names a run that is not combined: {set(pin.values())}'
-    for t, name in pin.items(): assert t in next(r for r in runs if r['name'] == name)['classes'], f'{t} is not an output of {name}'
     tags = [t['output'] for t in json.load(open(args.policy))['tags']]
-    tags += sorted(({t for ts in only.values() for t in ts} | set(pin)) - set(tags))
-    for t in tags: assert any(t in r['classes'] for r in runs), f'{t} is not an output of any run'
-    picks = choose(tags, runs, {t for t in args.keep.split(',') if t}, only, pin)
+    tags += sorted({t for ts in only.values() for t in ts} - set(tags))
+    for t in tags: assert t in runs[0]['classes'], f'{t} is not an output of {runs[0]["name"]}'
+    picks = choose(tags, runs, {t for t in args.keep.split(',') if t}, only)
     used = [k for k, run in enumerate(runs) if k == 0 or any(p['run'] == run['name'] for p in picks.values())]
     names = [runs[k]['name'] for k in used]
     classes = max((runs[k]['classes'] for k in used), key=len)

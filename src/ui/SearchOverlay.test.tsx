@@ -43,12 +43,7 @@ describe('SearchOverlay', () => {
   beforeEach(() => {
     docVectorStore.clear();
     useGraphStore.getState().reset();
-    useGraphStore.setState({
-      nodes: [documentNode()],
-      nodeIndex: { architecture: 0 },
-      phase: 'ready',
-      graphUsable: true,
-    });
+    useGraphStore.setState({ nodes: [documentNode()], nodeIndex: { architecture: 0 } });
     useUiStore.setState({
       searchOpen: true,
       searchResults: null,
@@ -100,27 +95,6 @@ describe('SearchOverlay', () => {
     await waitFor(() => expect(screen.getByRole('option')).toHaveTextContent('Architecture Overview'));
     expect(mockSearchCorpusLexical).toHaveBeenCalledWith('architecture', undefined);
     expect(mockSearchCorpus).toHaveBeenCalledWith('architecture', undefined);
-    expect(useUiStore.getState().searchResults).toEqual(['architecture']);
-  });
-
-  it('searches lexical data before vectors exist without starting semantic search', async () => {
-    useGraphStore.setState({ phase: 'embedding', graphUsable: true });
-    mockSearchCorpusLexical.mockResolvedValue([{
-      id: 'architecture',
-      score: 1,
-      matchKind: 'title',
-      snippet: 'Architecture details',
-    }]);
-
-    render(<SearchOverlay />);
-    fireEvent.change(
-      screen.getByRole('combobox', { name: /search your documents/i }),
-      { target: { value: 'architecture' } },
-    );
-
-    await waitFor(() => expect(screen.getByRole('option')).toHaveTextContent('Architecture Overview'));
-    expect(mockSearchCorpusLexical).toHaveBeenCalledWith('architecture', undefined);
-    expect(mockSearchCorpus).not.toHaveBeenCalled();
     expect(useUiStore.getState().searchResults).toEqual(['architecture']);
   });
 

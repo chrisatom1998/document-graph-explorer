@@ -29,7 +29,6 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
   const filter = useUiStore((state) => state.filter);
   const selectedId = useUiStore((state) => state.selectedId);
   const comparePick = useUiStore((state) => state.comparePick);
-  const pathMode = useUiStore((state) => state.pathMode);
   const listRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -74,9 +73,6 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
       : orderedNodes[0]?.id ?? null);
   }, [activeId, orderedNodes, selectedId]);
 
-  // Compare picks and path endpoints take documents only, so topic hubs stay
-  // listed (they still orient the reader) but announce as unavailable.
-  const documentsOnly = pathMode || comparePick !== null;
   const activeIndex = Math.max(0, orderedNodes.findIndex((node) => node.id === activeId));
   useActiveOptionScroll(orderedNodes.length > 0 ? optionId(activeIndex) : undefined);
   const documentCount = orderedNodes.filter((node) => node.kind === 'document').length;
@@ -88,22 +84,6 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
   const moveTo = (index: number) => {
     const node = orderedNodes[Math.max(0, Math.min(index, orderedNodes.length - 1))];
     if (node) setActiveId(node.id);
-  };
-
-  // Enter and a row click do the same thing the WebGL node click does: a
-  // compare pick or a path endpoint while those modes are on, else focus.
-  const activate = (node: (typeof orderedNodes)[number]) => {
-    const ui = useUiStore.getState();
-    if (ui.comparePick) {
-      if (node.kind === 'document') applyComparePick(node.id);
-      return;
-    }
-    if (ui.pathMode) {
-      // Topic hubs can't be endpoints: pathfinding skips 'topic' edges.
-      if (node.kind === 'document') ui.addPathEndpoint(node.id);
-      return;
-    }
-    focusNode(node.id);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -129,7 +109,12 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
       moveTo(orderedNodes.length - 1);
     } else if (event.key === 'Enter') {
       const node = orderedNodes[activeIndex];
-      if (node) activate(node);
+      if (!node) return;
+      if (useUiStore.getState().comparePick) {
+        if (node.kind === 'document') applyComparePick(node.id);
+        return;
+      }
+      focusNode(node.id);
     }
   };
 
@@ -170,9 +155,8 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
       </p>
       <div id="graph-navigator-content" hidden={!expanded}>
         <p className="graph-navigator__instructions" id={INSTRUCTIONS_ID}>
-          {pathMode ? 'Choose a document as a path endpoint.' : 'Choose a document to explore its connections.'}
-          {documentsOnly && topicCount > 0 && ` Topic hubs can't be ${pathMode ? 'endpoints' : 'compared'}.`}
-          <span> ↑ ↓ to browse · PageUp / PageDown to hop clusters · {pathMode ? 'Enter to pick it for the path' : 'Enter to open'} · Esc to close</span>
+          Choose a document to explore its connections.
+          <span> ↑ ↓ to browse · PageUp / PageDown to hop clusters · Enter to open · Esc to close</span>
         </p>
         {orderedNodes.length === 0 && <p role="status">No documents match the current filters.</p>}
         <div
@@ -195,12 +179,15 @@ export default function GraphNavigator({ embedded = false }: { embedded?: boolea
               className={`graph-navigator__option${index === activeIndex ? ' is-active' : ''}`}
               role="option"
               aria-selected={node.id === selectedId}
-              aria-disabled={documentsOnly && node.kind === 'topic' ? true : undefined}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
                 listRef.current?.focus();
                 setActiveId(node.id);
-                activate(node);
+                if (useUiStore.getState().comparePick) {
+                  if (node.kind === 'document') applyComparePick(node.id);
+                  return;
+                }
+                focusNode(node.id);
               }}
             >
               <span className="graph-navigator__name">{node.id === selectedId ? selectedDocumentTitle(node) : node.title}</span>

@@ -203,16 +203,6 @@ async function createExtractor(): Promise<FeatureExtractionPipeline> {
   // which Vite bundles as a same-origin asset.
   if (env?.backends?.onnx?.wasm) {
     env.backends.onnx.wasm.wasmPaths = undefined;
-    // Left unset, ORT uses min(4, cores / 2) threads, so a 4-core machine
-    // embedded on 2 threads while the parse workers sat idle. Use cores - 1,
-    // capped at 4 (the music runtime's cap): one core stays free for the UI.
-    // 8+ cores already got 4. Measured on the 100-PDF demo corpus, 4 cores:
-    // graph ready 64s -> 56s with main-thread long tasks unchanged. All 4
-    // cores reached 46s but roughly doubled main-thread long-task time.
-    const cores = navigator.hardwareConcurrency;
-    if (self.crossOriginIsolated && typeof SharedArrayBuffer !== 'undefined' && cores >= 1) {
-      env.backends.onnx.wasm.numThreads = Math.min(4, Math.max(1, Math.floor(cores) - 1));
-    }
   }
   // ZERO NETWORK: the model ships in /public/models — never touch HF Hub.
   // allowLocalModels defaults to false in browser builds, so set it

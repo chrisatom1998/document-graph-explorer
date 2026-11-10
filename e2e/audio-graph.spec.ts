@@ -77,10 +77,8 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  await fitAll(page);
  await page.screenshot({path:testInfo.outputPath('audio-graph-desktop.png')});
  // Link kinds are a sidebar checkbox now; the embedded Advanced panel no longer repeats them.
- // Every present kind starts ticked (no filter), so untick first to hide that kind, then
- // tick it back to clear the filter; ticking first would be a no-op under these semantics.
- await similarityFilter(page,'Sound properties',false);
  await similarityFilter(page,'Sound properties');
+ await similarityFilter(page,'Sound properties',false);
  await advancedFilters(page);
  await expect(page.getByRole('button',{name:'More filters',exact:true})).toBeVisible();
  await advancedFilters(page,false);
