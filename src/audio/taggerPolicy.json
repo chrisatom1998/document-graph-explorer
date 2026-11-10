@@ -1,6 +1,6 @@
 {
  "version": 1,
- "revision": "all-tags-ep-bright-2026-11-07-r1+tail-2026-11-07+cymbal-2026-11-09",
+ "revision": "all-tags-ep-bright-2026-11-07-r1+tail-2026-11-07+cymbal-2026-11-09+shout-2026-11-10",
  "modelSha256": "2bec1c8ab2f0765d5bbc5684585f79fd9f08fdacbb8ea8bf58de9ce0524e1f6f",
  "input": {
   "name": "samples32k",
@@ -889,7 +889,7 @@
    "output": "cat:vocal shout",
    "label": "vocal shout",
    "dimension": "effect",
-   "threshold": 0.03,
+   "threshold": 0.07,
    "decides": [
     "vocal shout"
    ],
