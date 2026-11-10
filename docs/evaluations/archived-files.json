@@ -1,0 +1,292 @@
+{
+ "dataset": "cmjatom/dge-evaluation-archive",
+ "revision": "f992fa26adba0022479f87865c44e2adbc3443ec",
+ "sourceCommit": "a7d1a7fe023f8e1edefafea5768b05867a3c5d9d",
+ "files": [
+  {
+   "path": "all-tags-2026-10-06/jamendo-val-manifest.json",
+   "bytes": 3582327,
+   "sha256": "4089dbd51523791a71c85afbd65d69c7e39c80d0912bbf7f083b3b94e507a637"
+  },
+  {
+   "path": "all-tags-2026-10-06/judge/branch/r1-giantsteps.json",
+   "bytes": 198576,
+   "sha256": "d624bad9f96a4cb4426c5903144ddac48fd4e71dd92cb3be4ed706e0e64d6042"
+  },
+  {
+   "path": "all-tags-2026-10-06/judge/branch/r1-openmic-records.json",
+   "bytes": 1704854,
+   "sha256": "c9404b84bd9341c7a667ae7c7b0c6f47b31bdc4e0ccbb266256ce3067cd9426a"
+  },
+  {
+   "path": "all-tags-2026-10-06/judge/branch/r2-mtgkey.json",
+   "bytes": 260079,
+   "sha256": "4292c5a78c63c7b8d12ec4d8355dbd61f25142efd37841689422a8d05d91f4f7"
+  },
+  {
+   "path": "all-tags-2026-10-06/judge/branch/r2-openmic-records.json",
+   "bytes": 1703917,
+   "sha256": "24ed9422ecc964b97e9d518baa226957b255cdd8dfe9128c444c0ad2dddcd07b"
+  },
+  {
+   "path": "all-tags-2026-10-06/judge/main/r1-giantsteps.json",
+   "bytes": 198676,
+   "sha256": "d3b4665a4552f6f6de4dc213211677d6c357cf84ee4e3f01221471f6d76c651b"
+  },
+  {
+   "path": "all-tags-2026-10-06/judge/main/r1-openmic-records.json",
+   "bytes": 1710458,
+   "sha256": "d1c07cdfe6b0ee6898c91bd1e942acd64bacd466e90123e0d6c9cf2d79114a86"
+  },
+  {
+   "path": "all-tags-2026-10-06/judge/main/r2-mtgkey.json",
+   "bytes": 260199,
+   "sha256": "0ea104fdc3f8f6e0a80ecbb36c4c43434d11d448f6a0afefa6cbad00955f633a"
+  },
+  {
+   "path": "all-tags-2026-10-06/judge/main/r2-openmic-records.json",
+   "bytes": 1709541,
+   "sha256": "55663cdd4074a367e5ffe2f9c72eac4af43db5a980585d4bb0b417b2b089d415"
+  },
+  {
+   "path": "all-tags-2026-10-06/results/jamendo-main-f299e13/records.json",
+   "bytes": 2442988,
+   "sha256": "499349164fb7faf96cb000923dd3dde0e5529deb5ba72c262a41ac48b7a4b98e"
+  },
+  {
+   "path": "all-tags-2026-10-06/results/tinysol-main-b232c07/records.json",
+   "bytes": 2579308,
+   "sha256": "2d6f762f952803b70d434ce361ce7ecd1d959dcf9508828fc7ba615e00bf4707"
+  },
+  {
+   "path": "all-tags-2026-10-06/tinysol-manifest.json",
+   "bytes": 2096386,
+   "sha256": "2a7f338639acd81cbf6d1ebdafe7ed68d593d9072eb9120ddf01b7cd4b0b9725"
+  },
+  {
+   "path": "dj-clips-round2-2026-10-06/mtg-key-manifest.json",
+   "bytes": 415467,
+   "sha256": "353aaef24c1539fc8ca0a52fd1528289a5f7bbaaea9427089ed92904f8470f6a"
+  },
+  {
+   "path": "dj-clips-round2-2026-10-06/results/mtg-key.json",
+   "bytes": 260301,
+   "sha256": "63874462b0f1d4bfd317280b540b25135602f5ca1f3e0fbff2df1b038db72feb"
+  },
+  {
+   "path": "dj-clips-round2-2026-10-06/results/openmic-clips.json",
+   "bytes": 799468,
+   "sha256": "0c4b0cfd5f9e6b905667521154de85d55d1f9090b8988804bdd7961a635cc4f1"
+  },
+  {
+   "path": "dj-clips-round2-2026-10-06/results/tempo-fix-116/mtg-key.json",
+   "bytes": 260329,
+   "sha256": "e491468375e27b0f3f969858ce3d105136e42d3ca7c7d810468ac50b6ef32469"
+  },
+  {
+   "path": "dj-fix-2026-10-06/calibration/cal900-records.json",
+   "bytes": 2988859,
+   "sha256": "9bcc6aaf089cff986f709df4121cd0b3f03f2adaf42ba8483e7ecc63e3721746"
+  },
+  {
+   "path": "dj-fix-2026-10-06/judge/branch/r1-giantsteps.json",
+   "bytes": 198178,
+   "sha256": "fee4a91e717870bb119c94c58a77bdf024479677d390a8d25cc20b1b5598a6ec"
+  },
+  {
+   "path": "dj-fix-2026-10-06/judge/branch/r1-openmic-records.json",
+   "bytes": 1710458,
+   "sha256": "d1c07cdfe6b0ee6898c91bd1e942acd64bacd466e90123e0d6c9cf2d79114a86"
+  },
+  {
+   "path": "dj-fix-2026-10-06/judge/branch/r2-mtgkey.json",
+   "bytes": 259847,
+   "sha256": "f996d0dfd5ab01a62909caf508d7c4324efe7d0adbc9034feb403ae7348d167f"
+  },
+  {
+   "path": "dj-fix-2026-10-06/judge/branch/r2-openmic-records.json",
+   "bytes": 1709541,
+   "sha256": "55663cdd4074a367e5ffe2f9c72eac4af43db5a980585d4bb0b417b2b089d415"
+  },
+  {
+   "path": "dj-fix-2026-10-06/judge/main/r1-giantsteps.json",
+   "bytes": 198608,
+   "sha256": "93d2122f25aa1bde5f084c7f6af66d3b1b6d41595dc4171eac9a85a332d03f1b"
+  },
+  {
+   "path": "dj-fix-2026-10-06/judge/main/r1-openmic-records.json",
+   "bytes": 1679097,
+   "sha256": "9fd48e50b85af2de31c5c0f4da4e80568d546d138068c695dd871917f6ae8191"
+  },
+  {
+   "path": "dj-fix-2026-10-06/judge/main/r2-mtgkey.json",
+   "bytes": 259949,
+   "sha256": "46a97897bc98330d7c748f8b19f00eb4d91c7da11ee6e97663f1f783293c38eb"
+  },
+  {
+   "path": "dj-fix-2026-10-06/judge/main/r2-openmic-records.json",
+   "bytes": 1685343,
+   "sha256": "b867ce4c089d970279a421bd20916a45f9b886d10f90055d5ef80d16f3603c35"
+  },
+  {
+   "path": "edm-genre-tags-2026-10-05/openmic-main.json",
+   "bytes": 1057391,
+   "sha256": "14d4e3284c49f7a6e120122215db475339a5471a9a89a280fd705cd99f9e8e90"
+  },
+  {
+   "path": "fusion-input-tier-2026-10-04/agreement.json",
+   "bytes": 646158,
+   "sha256": "c74caec7037890514aaa2ed04e3790282f5daa7db67cfe31e1b103bf90e66b46"
+  },
+  {
+   "path": "hf-key-tempo-2026-10-06/runs/tempo-v1/cv.json",
+   "bytes": 160434,
+   "sha256": "094382125e8d7b9ed6c7f93a5e08ff0808322c898c46abcfcbeae94698c1095f"
+  },
+  {
+   "path": "key-2026-10-06/browser-cnn/mtg-key.json",
+   "bytes": 260552,
+   "sha256": "92459ce3092df7b5b30a08aba2b1fe952a94c10849c34ccc6d68eafa1ecdee1d"
+  },
+  {
+   "path": "key-2026-10-06/features-v2/gs-key.json.gz",
+   "bytes": 8065849,
+   "sha256": "e5f0aa567772a643fd6bfb8e0d55ee1e4031919aae7164dca85e974e9b667ed7"
+  },
+  {
+   "path": "key-2026-10-06/features-v2/mtg-500.json.gz",
+   "bytes": 420486,
+   "sha256": "bda38748091bfa896ec06f6e247ed631e9e420069a777d6bc7b13179c966fac0"
+  },
+  {
+   "path": "key-2026-10-06/features-v2/test-gtzan.json.gz",
+   "bytes": 1112262,
+   "sha256": "c65e7783d9a69bde0ef3dac1e15f399019dd058d57fcff3766f9201795236f51"
+  },
+  {
+   "path": "key-2026-10-06/features-v2/tune-gtzan.json.gz",
+   "bytes": 1064507,
+   "sha256": "8d8f79f5698c3f8e5fd75ddf82967a3790687039757ed17a7a6f8691faf5c739"
+  },
+  {
+   "path": "key-2026-10-06/features-v2/tune-mtg-c1.json.gz",
+   "bytes": 629617,
+   "sha256": "ee6da01e52196278515a877a70476cd47daebd960124b2f48ea5e7aeb62bea9f"
+  },
+  {
+   "path": "key-2026-10-06/features-v2/tune-mtg.json.gz",
+   "bytes": 4538725,
+   "sha256": "5aa35a69205b589e670e767022af521530223f4ef845da667ecbbb6ee33bc392"
+  },
+  {
+   "path": "key-2026-10-06/features/gs-key.json.gz",
+   "bytes": 276245,
+   "sha256": "47313faee14736422f68f40c6904a104c7f1123b513db38405aea811cc58266c"
+  },
+  {
+   "path": "key-2026-10-06/features/tune-mtg.json.gz",
+   "bytes": 197442,
+   "sha256": "59201aefd5626c98f0b1ed52568c3237a51de18e65bb126c2a9e10ad68abfc3c"
+  },
+  {
+   "path": "key-2026-10-06/loops/fsl10k-473.json",
+   "bytes": 263423,
+   "sha256": "2d63110e11e162f51d26718f1a542f6a87729ce6cf4e43fb7202d32381df78a8"
+  },
+  {
+   "path": "loop-tempo-path-2026-10-09/rows.json",
+   "bytes": 890849,
+   "sha256": "d16fa666174d47b4291bfe9e5b64dde4347d4bc85d89e4ff587b14085b858bf8"
+  },
+  {
+   "path": "research-pilot-2026-10-09/dge-full-run.json",
+   "bytes": 190475,
+   "sha256": "20bb6d8fc89febdc6111a57a55f009748982fa6f3f9df43f6ba7184a2d06c029"
+  },
+  {
+   "path": "sample-packs-2026-10-06/manifest.json",
+   "bytes": 555379,
+   "sha256": "429f702b15b372e4b988f0f96195696f9dbdaf9c5022be9f22ce66cd111efd66"
+  },
+  {
+   "path": "short-clips-2026-10-04/item-meta.json",
+   "bytes": 667206,
+   "sha256": "ff4684e8ab03ededc36c66b1ac1308af5174dc347a14618dbb346f9e527747a5"
+  },
+  {
+   "path": "short-clips-2026-10-04/manifest.json",
+   "bytes": 12167678,
+   "sha256": "80bac01368ca6cff76ad1a8f7c6dbe87440513b623484f96113a3cb8501038e0"
+  },
+  {
+   "path": "soundcloud-2026-10-06/manifest.json",
+   "bytes": 324334,
+   "sha256": "26f485add567c37daf9de92a11233319277f7ef7d2c1f4de0751cb7ea6944135"
+  },
+  {
+   "path": "soundcloud-2026-10-06/results/base-records.json",
+   "bytes": 558963,
+   "sha256": "e31fa00bd26eed2a7ea212203ad8d0a23cf96204708b4df1f7290fb84cf6bb09"
+  },
+  {
+   "path": "structure-2026-10-06/features/labels.json",
+   "bytes": 975367,
+   "sha256": "cf71e08be3f1e0da45191e68da9414e740b593780c099a0e14d7f9e4f25da957"
+  },
+  {
+   "path": "structure-2026-10-06/features/shard-0.json.gz",
+   "bytes": 1529020,
+   "sha256": "1213552f0aad46b803047e3dd8f3a44c03e507071e9dd2af90160c5015f4caf0"
+  },
+  {
+   "path": "structure-2026-10-06/features/shard-1.json.gz",
+   "bytes": 1652264,
+   "sha256": "e02552a02372dcbeee2e431cbd19e265de035c33d04eacb74e50db217aac8397"
+  },
+  {
+   "path": "structure-2026-10-06/features/shard-2.json.gz",
+   "bytes": 1433957,
+   "sha256": "5769d3813bb6da42ef2ce99cfa5e17df900cad284cb80c38ae4d47aeabb76a48"
+  },
+  {
+   "path": "structure-2026-10-06/features/shard-3.json.gz",
+   "bytes": 1348333,
+   "sha256": "8d61e385dfdb2d91e3feeeb1baa98a331707ebcbd2f7f305148c807c334c9a53"
+  },
+  {
+   "path": "synth-clips-2026-10-05/item-meta.json",
+   "bytes": 328466,
+   "sha256": "058d7966bf6ccb41ce6f1b7571d66270daef2aa0fefe1d04d09d1a104a6d92e1"
+  },
+  {
+   "path": "synth-clips-2026-10-05/manifest.json",
+   "bytes": 1673002,
+   "sha256": "426f10ceaf97ce1d9f04c3763f4c05e47c2d754c4fec33080be84591697109a5"
+  },
+  {
+   "path": "tempo-2026-10-06/features/gtzan-test.json.gz",
+   "bytes": 577752,
+   "sha256": "762dddfccc4775818f2ee6f307b5f39ec8c4cb987a7d9728ec28e59f3270a712"
+  },
+  {
+   "path": "tempo-2026-10-06/features/holdout.json.gz",
+   "bytes": 299748,
+   "sha256": "8c9756d16413b0e691bf88b479258f06025564d3e4dc517fbaa385e3d8268f60"
+  },
+  {
+   "path": "tempo-2026-10-06/features/tune.json.gz",
+   "bytes": 866888,
+   "sha256": "920c8711780115540b22b3e390ecac5979eb9dbd6f1acfc587d02886d0767fbb"
+  },
+  {
+   "path": "tempo-cnn-2026-10-06/browser/round1.json",
+   "bytes": 190106,
+   "sha256": "cdf68ed7c1e3c2ea2cd6001046fffc79570fe10e1ff6f4b4fe70fc991f634696"
+  },
+  {
+   "path": "tempo-cnn-2026-10-06/browser/round2.json",
+   "bytes": 258088,
+   "sha256": "3aab21755061f72842b89a10c776953699ed564a571e4e394693efecb9209818"
+  }
+ ]
+}
