@@ -1,5 +1,5 @@
 {
- "model": "2bec1c8ab2f0765d5bbc5684585f79fd9f08fdacbb8ea8bf58de9ce0524e1f6f",
+ "model": "dfd9a78b36b10296bee9a9b9eb8e3fcf79e1726af0be5044318fdc626fcedf55",
  "sampleRate": 32000,
  "cases": [
   {
@@ -72,7 +72,7 @@
     "cat:glitch effect": 0.145739,
     "cat:choir": 0.00484,
     "cat:wind ambience": 0.00138,
-    "cat:vocal shout": 4.5e-05,
+    "cat:vocal shout": 0.000277,
     "cat:staccato": 6e-06,
     "cat:reese bass": 2e-06
    }
@@ -147,7 +147,7 @@
     "cat:glitch effect": 0.344564,
     "cat:choir": 0.009904,
     "cat:wind ambience": 0.00077,
-    "cat:vocal shout": 5e-06,
+    "cat:vocal shout": 0.001556,
     "cat:staccato": 5.6e-05,
     "cat:reese bass": 0.000166
    }
@@ -223,7 +223,7 @@
     "cat:glitch effect": 0.344564,
     "cat:choir": 0.009904,
     "cat:wind ambience": 0.006305,
-    "cat:vocal shout": 5e-06,
+    "cat:vocal shout": 0.001734,
     "cat:staccato": 0.000398,
     "cat:reese bass": 0.000198
    }
@@ -300,7 +300,7 @@
     "cat:glitch effect": 0.386851,
     "cat:choir": 0.009183,
     "cat:wind ambience": 0.016604,
-    "cat:vocal shout": 1e-05,
+    "cat:vocal shout": 0.002382,
     "cat:staccato": 0.000499,
     "cat:reese bass": 0.000199
    }

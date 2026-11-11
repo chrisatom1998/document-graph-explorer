@@ -215,6 +215,9 @@ describe('the 50/50 shipping bar', () => {
     // Fresh-set retry (heads and cutoffs frozen on dev val, judged once on the fresh BBC + ESC-50 set): thunder P 0.630 /
     // R 0.750, phone ring P 0.966 / R 0.757, explosion P 0.797 / R 0.596; NSynth-valid false alarms 0 / 7 / 15 of 4,096.
     ['phone ring', .99, 'b06a9b6919db74db6c91c49a22b2ded21683820fe3ed8ff46b41e55e29d90c25'],
+    // Door (UI-sound batch, 2026-11-10): FSD50K Door class, heads cut on dev val, judged once on FSD50K eval (negatives sampled and
+    // weighted) + 2,048 NSynth-valid notes: P 0.702 / R 0.725, 1 false alarm in 2,048.
+    ['door', .8, 'd8a9899f3617020211ec51a1824e546c58bfd7e57a212f14df70c216669cad89'],
   ] as const)('ships the %s head as a normal tag on clips of any length at its dev-val cutoff', (label, threshold, digest) => {
     expect(head(label)).toMatchObject({ group: 'production', oneShot: true });
     expect(head(label).maybe).toBeUndefined();
