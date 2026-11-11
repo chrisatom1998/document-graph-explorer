@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocNode } from '../../model/types';
@@ -16,8 +16,12 @@ vi.mock('../ExportImportMenu', () => ({ default: () => <div>Export contents</div
 vi.mock('../CorpusSwitcher', () => ({ default: () => <span>Corpus</span> }));
 vi.mock('../SavedViewsSection', () => ({ default: () => null }));
 vi.mock('../Minimap', () => ({ default: () => <div>Minimap</div> }));
+vi.mock('../clearLoadedData', () => ({
+  clearLoadedData: vi.fn(async () => true),
+}));
 
 import ResonanceShell from './ResonanceShell';
+import { clearLoadedData } from '../clearLoadedData';
 import { useMusicJobs } from '../../store/musicJobs';
 
 const documentNode: DocNode = {
@@ -113,6 +117,48 @@ describe('ResonanceShell stage controls', () => {
     useGraphStore.getState().reset();
     render(<ResonanceShell><div>Graph</div></ResonanceShell>);
     expect(screen.getByRole('button', { name: 'Fit graph to view' })).toBeDisabled();
+  });
+
+  it('keeps Reset graph disabled until there is a graph', () => {
+    useGraphStore.getState().reset();
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+    fireEvent.click(screen.getByRole('button', { name: 'More tools' }));
+    expect(screen.getByRole('menuitem', { name: 'Reset graph' })).toBeDisabled();
+  });
+
+  it('resets the graph from the More menu after confirmation', async () => {
+    vi.mocked(clearLoadedData).mockImplementation(async () => {
+      useGraphStore.getState().reset();
+      return true;
+    });
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+
+    fireEvent.click(screen.getByRole('button', { name: 'More tools' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Reset graph' }));
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    const dialog = screen.getByRole('dialog', { name: 'Reset graph?' });
+    expect(dialog).toHaveTextContent('API keys and settings stay');
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(clearLoadedData).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'Reset graph?' })).not.toBeInTheDocument();
+    expect(document.querySelector('.rs-root')).not.toHaveClass('rs-root--empty');
+
+    fireEvent.click(screen.getByRole('button', { name: 'More tools' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Reset graph' }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(clearLoadedData).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'Reset graph?' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'More tools' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Reset graph' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset graph' }));
+    await waitFor(() => {
+      expect(document.querySelector('.rs-root')).toHaveClass('rs-root--empty');
+      expect(screen.queryByRole('dialog', { name: 'Reset graph?' })).not.toBeInTheDocument();
+      expect(useUiStore.getState().toasts.at(-1)).toMatchObject({ message: 'Graph reset.', kind: 'info' });
+    });
+    expect(screen.queryByText('Filters')).not.toBeInTheDocument();
   });
 
   it('mounts the minimap inside the graph stage and lets the Library view cover it', async () => {

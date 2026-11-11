@@ -29,7 +29,7 @@ import {
   SUGGESTED_OLLAMA_MODELS,
 } from '../ai/modelCatalog';
 import { runEnrichment } from '../enrich/enrichment';
-import { clearAllCaches, clearEmbeddingsCache, clearOriginalsCache } from '../persistence/cache';
+import { clearEmbeddingsCache, clearOriginalsCache } from '../persistence/cache';
 import {
   estimateStorage,
   formatStorageSummary,
@@ -37,8 +37,6 @@ import {
   type StoragePressure,
 } from '../persistence/quota';
 import { OCR_LANGUAGE_OPTIONS, OCR_PAGE_OPTIONS } from '../pipeline/ocrOptions';
-import { resetCorpus } from '../pipeline/coordinator';
-import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
 import {
   DEFAULT_OLLAMA_MODEL,
@@ -52,13 +50,8 @@ import {
 } from '../store/settingsStore';
 import { useChatScopeStore, type ChatScope } from '../store/chatScopeStore';
 import { useUiStore } from '../store/uiStore';
+import { clearLoadedData } from './clearLoadedData';
 import { buildDiagnosticsText, getAppVersion } from './diagnostics';
-
-/** Clear the two live stores that otherwise survive the IndexedDB wipe. */
-export function resetClearedDataState(): void {
-  resetCorpus();
-  useCorpusStore.getState().reset();
-}
 
 export default function SettingsPanel() {
   const open = useUiStore((s) => s.settingsOpen);
@@ -272,16 +265,10 @@ export default function SettingsPanel() {
       .finally(() => setEnrichBusy(false));
   };
 
-  // Full "start over": empties the live graph/UI/chat immediately, then wipes
-  // every locally cached document, embedding, graph, and snapshot. The API
-  // key and other settings live in localStorage and are intentionally kept.
   const onClearAll = () => {
     setClearNote(null);
     setClearing(true);
-    resetClearedDataState();
-    // clearAllCaches() catches internally and always resolves (never rejects)
-    // — fire-and-forget from this synchronous handler.
-    void clearAllCaches()
+    void clearLoadedData()
       .then((ok) =>
         setClearNote(
           ok

@@ -120,6 +120,11 @@
 .rs-narrow-filters { display: none; }
 .rs-menu button svg { width: 16px; height: 16px; color: var(--rs-muted); }
 .rs-menu button:hover:not(:disabled) { background: var(--rs-line); }
+.rs-menu button.rs-menu__danger,
+.rs-menu button.rs-menu__danger svg { color: #ff9a9a; }
+.rs-menu button.rs-menu__danger:hover:not(:disabled) { background: rgba(255, 128, 128, 0.12); }
+.rs-menu button.rs-menu__danger:disabled,
+.rs-menu button.rs-menu__danger:disabled svg { color: var(--rs-disabled); }
 /* Disabled items dim to a colour that still reads, rather than fading out. */
 .rs-menu button:disabled, .rs-menu button:disabled svg { color: var(--rs-disabled); cursor: default; }
 /* Keyboard shortcut hint at the right edge of a menu item. */

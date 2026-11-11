@@ -277,6 +277,15 @@ export function IconLink() {
   );
 }
 
+export function IconReset() {
+  return (
+    <Svg strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.6 9.2a5.6 5.6 0 1 1-1.5-4.6" />
+      <path d="M13.2 2.4v3.4H9.8" />
+    </Svg>
+  );
+}
+
 export function IconNote() {
   return (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

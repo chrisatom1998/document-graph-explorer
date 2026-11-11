@@ -1,9 +1,12 @@
-import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useGraphStore } from '../../store/graphStore';
 import { useUiStore } from '../../store/uiStore';
 import { useChatStore } from '../../store/chatStore';
 import { useCorpusStore } from '../../store/corpusStore';
-import { IconBulb, IconChat, IconFit, IconGear, IconHelp, IconHistory, IconNote, IconPath, IconSearch } from '../icons';
+import { clearLoadedData } from '../clearLoadedData';
+import { IconBulb, IconChat, IconFit, IconGear, IconHelp, IconHistory, IconNote, IconPath, IconReset, IconSearch } from '../icons';
+import { useFocusTrap } from '../useFocusTrap';
 import { openSampleAssistant } from '../../store/sampleAssistantStore';
 import { DimsToggleButton } from '../DimsToggleButton';
 import MusicAnalysisStatusButton from '../MusicAnalysisStatusButton';
@@ -47,6 +50,10 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
   const [tab, setTab] = useState<Tab>('graph');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const resetDialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(resetDialogRef, confirmReset);
   // Escape closes the tool menu first (capture phase, ahead of App's global
   // Escape chain) and returns focus to its trigger.
   useEffect(() => {
@@ -60,9 +67,20 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);
   }, [moreOpen]);
+  useEffect(() => {
+    if (!confirmReset) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || resetting) return;
+      event.stopPropagation();
+      setConfirmReset(false);
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [confirmReset, resetting]);
   const ready = phase === 'ready';
   const usable = graphUsable || ready;
   const refining = graphUsable && (phase === 'embedding' || phase === 'connecting');
+  const canReset = docCount > 0 || phase !== 'idle';
 
   // Full details follow how a clip was selected. Search, chat citations,
   // insights, paths and the library go through focusNode → commitPendingFocus
@@ -79,6 +97,25 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
   const ui = () => useUiStore.getState();
   // Same camera command as the Home key in App's global key handler.
   const fitGraph = () => ui().sendCamera('fitAll');
+  const dismissReset = () => {
+    if (!resetting) setConfirmReset(false);
+  };
+  const confirmResetGraph = () => {
+    setResetting(true);
+    void clearLoadedData()
+      .then((ok) => {
+        useUiStore.getState().pushToast(
+          ok
+            ? 'Graph reset.'
+            : 'Graph cleared, but cached data could not be removed (storage unavailable).',
+          ok ? 'info' : 'warning',
+        );
+      })
+      .finally(() => {
+        setResetting(false);
+        setConfirmReset(false);
+      });
+  };
 
   return (
     <div className={`rs-root${docCount === 0 && phase === 'idle' ? ' rs-root--empty' : ''}`}>
@@ -127,6 +164,17 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
                   <Suspense fallback={null}><SavedViewsSection onApplied={() => setMoreOpen(false)} /></Suspense>
                   <hr className="rs-menu__rule" />
                   <CollabMenuItems onDone={() => setMoreOpen(false)} />
+                  <hr className="rs-menu__rule" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="rs-menu__danger"
+                    disabled={!canReset}
+                    title="Remove the loaded graph and this browser's cached copy. API keys and settings stay."
+                    onClick={() => { setMoreOpen(false); setConfirmReset(true); }}
+                  >
+                    <IconReset />Reset graph
+                  </button>
                 </div>
               </>
             )}
@@ -158,6 +206,45 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
       </main>
 
       {!(docCount === 0 && phase === 'idle') && <ConnectedClips detailsOpen={detailsOpen} onToggleDetails={() => setDetailsOpen(v => !v)} />}
+      {confirmReset && createPortal(
+        <div className="settings-backdrop" onClick={dismissReset}>
+          <div
+            ref={resetDialogRef}
+            className="glass-panel confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Reset graph?"
+            tabIndex={-1}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.stopPropagation();
+                dismissReset();
+              }
+            }}
+          >
+            <h2 className="confirm-dialog__title">Reset graph?</h2>
+            <p className="confirm-dialog__text">
+              This removes every loaded document and the cached copy in this browser.
+              API keys and settings stay. This cannot be undone.
+            </p>
+            <div className="confirm-dialog__actions">
+              <button type="button" className="snapshot-btn" disabled={resetting} onClick={dismissReset}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="settings-btn settings-btn--danger"
+                disabled={resetting}
+                onClick={confirmResetGraph}
+              >
+                {resetting ? 'Resetting…' : 'Reset graph'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
