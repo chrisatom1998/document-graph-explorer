@@ -1,7 +1,7 @@
 {
  "version": 1,
- "revision": "all-tags-ep-bright-2026-11-07-r1+tail-2026-11-07+cymbal-2026-11-09+shout-2026-11-10+shout-r31-2026-11-10",
- "modelSha256": "dfd9a78b36b10296bee9a9b9eb8e3fcf79e1726af0be5044318fdc626fcedf55",
+ "revision": "all-tags-2026-11-11+ep-bright+tail+cymbal+shout-r31+synthbass-r31",
+ "modelSha256": "ff35f458af3459be7af5d206fbf29b3f7bfb0b7b496e501703ac895eb95725af",
  "input": {
   "name": "samples32k",
   "output": "scores",
@@ -899,6 +899,20 @@
     "afterSeconds": 30
    },
    "tail": true
+  },
+  {
+   "output": "cat:synth bass",
+   "label": "synth bass",
+   "dimension": "effect",
+   "threshold": 0.7261,
+   "decides": [
+    "synth bass"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
   },
   {
    "output": "cat:staccato",

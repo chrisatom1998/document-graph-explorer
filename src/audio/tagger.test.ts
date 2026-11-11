@@ -378,7 +378,7 @@ describe('trained tagger long-recording rules', () => {
       'cat:synth lead': { rule: 'detectors', afterSeconds: 30 }, 'cat:vocoder vocal': { rule: 'detectors', afterSeconds: 30 },
       'cat:record stop': { rule: 'detectors', afterSeconds: 30 }, 'cat:glitch effect': { rule: 'detectors', afterSeconds: 30 },
       'cat:choir': { rule: 'detectors', afterSeconds: 30 }, 'cat:wind ambience': { rule: 'detectors', afterSeconds: 30 },
-      'cat:vocal shout': { rule: 'detectors', afterSeconds: 30 },
+      'cat:vocal shout': { rule: 'detectors', afterSeconds: 30 }, 'cat:synth bass': { rule: 'detectors', afterSeconds: 30 },
       'cat:staccato': { rule: 'detectors', afterSeconds: 30 }, 'cat:reese bass': { rule: 'detectors', afterSeconds: 30 } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });

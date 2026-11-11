@@ -488,7 +488,7 @@
   "cat:swelling": "all-tags",
   "cat:syncopated": "all-tags",
   "cat:synth arpeggio": "all-tags",
-  "cat:synth bass": "all-tags",
+  "cat:synth bass": "all-tags-r31",
   "cat:synth chord": "all-tags",
   "cat:synth drone": "all-tags",
   "cat:synth lead": "all-tags",
@@ -557,7 +557,7 @@
   "cat:vocal harmony": "all-tags-run9"
  },
  "sha256": {
-  "model.onnx": "dfd9a78b36b10296bee9a9b9eb8e3fcf79e1726af0be5044318fdc626fcedf55"
+  "model.onnx": "ff35f458af3459be7af5d206fbf29b3f7bfb0b7b496e501703ac895eb95725af"
  },
  "bytes": 642925377,
  "maxAbsErrorVsPyTorch": 1.9669532775878906e-06
