@@ -1,4 +1,6 @@
-import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { isAudioLibrary } from '../../audio/audioHome';
+import { workspaceTabs, type WorkspaceTab } from '../../product/surface';
 import { useGraphStore } from '../../store/graphStore';
 import { useUiStore } from '../../store/uiStore';
 import { useChatStore } from '../../store/chatStore';
@@ -8,6 +10,7 @@ import { openSampleAssistant } from '../../store/sampleAssistantStore';
 import { DimsToggleButton } from '../DimsToggleButton';
 import MusicAnalysisStatusButton from '../MusicAnalysisStatusButton';
 import ResonanceFilters from './ResonanceFilters';
+import ForYouHome from './ForYouHome';
 import ConnectedClips from './ConnectedClips';
 import CollabMenuItems from './CollabMenuItems';
 import SnapshotDiffBanner from '../SnapshotDiffBanner';
@@ -19,7 +22,18 @@ const CorpusSwitcher = lazy(() => import('../CorpusSwitcher'));
 const SavedViewsSection = lazy(() => import('../SavedViewsSection'));
 const Minimap = lazy(() => import('../Minimap'));
 
-type Tab = 'graph' | 'library' | 'export';
+function tabLabel(key: WorkspaceTab, audioLibrary: boolean): string {
+  switch (key) {
+    case 'foryou': return 'For you';
+    case 'graph': return audioLibrary ? 'Sound map' : 'Graph';
+    case 'library': return 'Library';
+    case 'export': return 'Export';
+    default: {
+      const unknown: never = key;
+      return unknown;
+    }
+  }
+}
 
 function LogoMark() {
   return (
@@ -42,9 +56,28 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
   const graphUsable = useGraphStore(s => s.graphUsable);
   const docCount = useGraphStore(s => s.nodes.filter(n => n.kind === 'document').length);
   const hasAudio = useGraphStore(s => s.nodes.some(n => n.fileType === 'audio'));
+  const audioLibrary = useGraphStore(s => isAudioLibrary(s.nodes));
   const edgeCount = useGraphStore(s => s.edges.length);
   const activeName = useCorpusStore(s => s.activeName);
-  const [tab, setTab] = useState<Tab>('graph');
+  const corpusId = useCorpusStore(s => s.activeCorpusId);
+  const tabs = workspaceTabs(audioLibrary);
+  const [tab, setTab] = useState<WorkspaceTab>(() => (isAudioLibrary(useGraphStore.getState().nodes) ? 'foryou' : 'graph'));
+  const choice = useRef<{ corpusId: string | null; audioLibrary: boolean; tab: WorkspaceTab } | null>(null);
+  const choose = (next: WorkspaceTab) => {
+    choice.current = { corpusId, audioLibrary, tab: next };
+    setTab(next);
+  };
+  // A fresh audio library opens on For you. A document or mixed library opens on the graph.
+  // A tab the user picked stays until the library kind or the corpus changes.
+  useEffect(() => {
+    const available = workspaceTabs(audioLibrary);
+    const remembered = choice.current;
+    if (remembered && remembered.corpusId === corpusId && remembered.audioLibrary === audioLibrary && available.includes(remembered.tab)) {
+      setTab(remembered.tab);
+      return;
+    }
+    setTab(audioLibrary ? 'foryou' : 'graph');
+  }, [audioLibrary, corpusId]);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   // Escape closes the tool menu first (capture phase, ahead of App's global
@@ -74,7 +107,7 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
     if (committedFocus) setDetailsOpen(true);
     else if (state.selectedId !== prev.selectedId) setDetailsOpen(false);
   }), []);
-  useEffect(() => { if (tab === 'export' && !ready && phase !== 'idle') setTab('graph'); }, [tab, ready, phase]);
+  useEffect(() => { if (tab === 'export' && !ready && phase !== 'idle') setTab(audioLibrary ? 'foryou' : 'graph'); }, [tab, ready, phase, audioLibrary]);
 
   const ui = () => useUiStore.getState();
   // Same camera command as the Home key in App's global key handler.
@@ -92,10 +125,10 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
             : <span className="rs-tagline">Sounds and documents</span>}
         </div>
         <nav className="rs-tabs" aria-label="Views">
-          {(['graph', 'library', 'export'] as Tab[]).map(key => (
-            <button key={key} type="button" aria-current={tab === key ? 'page' : undefined} onClick={() => setTab(key)} disabled={key === 'library' ? docCount === 0 : key === 'export' ? !(ready || phase === 'idle') : false}>
+          {tabs.map(key => (
+            <button key={key} type="button" aria-current={tab === key ? 'page' : undefined} onClick={() => choose(key)} disabled={key === 'library' ? docCount === 0 : key === 'export' ? !(ready || phase === 'idle') : false}>
               {tab === key && <i aria-hidden="true" />}
-              {key === 'graph' ? 'Graph' : key === 'library' ? 'Library' : 'Export'}
+              {tabLabel(key, audioLibrary)}
             </button>
           ))}
         </nav>
@@ -145,6 +178,11 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
             the stage column it clears the filter column and inspector by construction; it
             unmounts under the Library and Export views rather than floating above them. */}
         {tab === 'graph' && <Suspense fallback={null}><Minimap /></Suspense>}
+        {tab === 'foryou' && (
+          <section className="rs-foryou" aria-label="For you">
+            <ForYouHome onOpenMap={() => choose('graph')} />
+          </section>
+        )}
         {tab === 'library' && (
           <section className="rs-library" aria-label="Library">
             <Suspense fallback={null}><GraphNavigator embedded /></Suspense>
@@ -152,7 +190,7 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
         )}
         {tab === 'export' && (
           <section className="rs-export" aria-label="Export and import">
-            <Suspense fallback={null}><ExportImportMenu onClose={() => setTab('graph')} /></Suspense>
+            <Suspense fallback={null}><ExportImportMenu onClose={() => choose('graph')} /></Suspense>
           </section>
         )}
       </main>
