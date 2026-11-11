@@ -1736,6 +1736,19 @@
       "axis": "dj-explosion"
     },
     {
+      "group": "production",
+      "family": "texture",
+      "label": "door",
+      "source": "sound effect",
+      "description": "A door opening, closing or slamming.",
+      "aliases": [
+        "door slam",
+        "door close"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-door"
+    },
+    {
       "group": "character",
       "family": "timbre",
       "label": "airy",
