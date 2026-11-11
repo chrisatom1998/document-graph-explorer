@@ -24,14 +24,53 @@
 }
 
 .ns-root {
+  position: relative;
+  z-index: 4;
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr) 360px;
   grid-template-rows: auto minmax(0, 1fr) 80px;
-  grid-template-areas: 'nav main now' 'lib main now' 'player player player';
+  grid-template-areas: 'header header header' 'lib main now' 'player player player';
   gap: 8px;
+  height: 100%;
   padding: 8px 8px 0;
+  overflow: hidden;
 }
-.ns-nav, .ns-library, .ns-main, .ns-now { border-radius: 8px; background: var(--mx-surface); min-height: 0; }
+.ns-library, .ns-main, .ns-now { border-radius: 8px; background: var(--mx-surface); min-height: 0; min-width: 0; }
+.ns-library, .ns-now { overflow: auto; }
+.ns-header {
+  grid-area: header;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  height: auto;
+  padding: 8px 12px;
+  background: #121212;
+  border: 0;
+  border-radius: 8px;
+}
+.ns-header .rs-corpus { min-width: 0; flex: 1; }
+.ns-views { display: flex; gap: 4px; }
+.ns-views button {
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--mx-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ns-views button[aria-current='page'] { background: #282828; color: #fff; }
+.ns-text-btn { margin-top: 16px; border: 0; background: none; color: var(--mx-muted); font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; cursor: pointer; }
+.ns-map { position: relative; display: flex; flex-direction: column; height: 440px; }
+.ns-map .mx-map__slot { position: relative; flex: 1; min-height: 240px; }
+.ns-map .nebula-canvas, .ns-map .scene-loading { position: absolute !important; inset: 0 !important; }
+.ns-map .minimap { position: absolute; right: 12px; bottom: 12px; }
+.ns-export { position: absolute; inset: 0; z-index: 3; overflow: auto; padding: 16px; background: #121212; }
+.app-root:has(.ns-root) .first-run-guide { right: 16px; bottom: 108px; width: min(330px, calc(100vw - 32px)); }
 
 /* ---- Left: navigation + library --------------------------------------- */
 .ns-nav { grid-area: nav; display: flex; flex-direction: column; gap: 4px; padding: 16px 12px; }
@@ -155,14 +194,12 @@
 :root[data-design='a'] .mx-details { border-radius: 8px; }
 
 @media (max-width: 1100px) {
-  .ns-root { grid-template-columns: 280px minmax(0, 1fr); grid-template-areas: 'nav main' 'lib main' 'player player'; }
-  .ns-now { display: none; }
+  .ns-root { grid-template-columns: 240px minmax(0, 1fr); grid-template-areas: 'header header' 'lib main' 'now now' 'player player'; }
   .ns-tags-inline { display: flex; }
 }
 @media (max-width: 760px) {
-  :root[data-design='a'] { --mx-player-h: 132px; --mx-slot-radius: 0 0 8px 8px; }
-  .ns-root { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto 64px; grid-template-areas: 'main' 'player' 'tabs'; gap: 0; padding: 0; }
-  .ns-nav, .ns-library { display: none; }
+  :root[data-design='a'] { --mx-player-h: 96px; }
+  .ns-root { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(280px, 1fr) auto auto; grid-template-areas: 'header' 'lib' 'main' 'now' 'player'; gap: 8px; padding: 8px; overflow: auto; }
   .ns-main { border-radius: 0; }
   .ns-hero { flex-direction: column; align-items: flex-start; gap: 16px; padding: 24px 16px 12px; }
   .ns-hero__art { width: 168px; align-self: center; }
@@ -185,9 +222,6 @@
   .ns-player__wave { grid-area: wave; }
   .ns-player__wave > span:not(.ns-player__line) { display: none; }
   .ns-player__side { display: none; }
-  .ns-tabbar { grid-area: tabs; display: grid; grid-template-columns: repeat(4, 1fr); background: linear-gradient(transparent, #000 40%); }
-  .ns-tabbar button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: none; color: var(--mx-muted) !important; font-size: 11px !important; font-weight: 600 !important; cursor: pointer; }
-  .ns-tabbar button[aria-current='page'] { color: #fff !important; }
-  .ns-tabbar button:disabled { opacity: 0.45; }
-  .ns-tabbar svg { width: 24px; height: 24px; }
 }
+.ns-root--empty { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'header' 'main' 'player'; }
+.ns-root--empty .ns-library, .ns-root--empty .ns-now { display: none; }

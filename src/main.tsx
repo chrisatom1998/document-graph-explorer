@@ -5,12 +5,12 @@ import AppErrorBoundary from './ui/AppErrorBoundary';
 import { installGlobalErrorHandlers } from './util/globalErrors';
 import { installOfflineFetchGuard } from './offline';
 import { installStaleBuildRecovery } from './util/staleBuild';
-import { applyDesign, initialDesign } from './design/designMode';
+import { applyDesign } from './design/designMode';
 
 installOfflineFetchGuard();
 installGlobalErrorHandlers();
 installStaleBuildRecovery();
-applyDesign(initialDesign());
+applyDesign();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

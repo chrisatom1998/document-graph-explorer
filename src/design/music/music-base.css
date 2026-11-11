@@ -1,44 +1,7 @@
-/* ==========================================================================
-   Shared base for the music design explorations (?design=a|b|c).
-   The Resonance shell stays mounted (it owns the graph canvas); its own
-   chrome is hidden and the whole shell is pinned over the design's graph
-   slot. Every rule is scoped to :root[data-design].
-   ========================================================================== */
+/* Shared pieces for Night Session: covers, chips, tags, the player and the graph frame. */
 :root[data-design] {
-  --rs-top: 0px;
-  --rs-left: 0px;
-  --rs-right: 0px;
-  --mx-player-h: 0px;
+  --mx-player-h: 88px;
 }
-:root[data-design] .rs-top,
-:root[data-design] .rs-sidebar,
-:root[data-design] .rs-inspector,
-:root[data-design] .empty-state-layer,
-:root[data-design] .insights-digest-layer,
-:root[data-design] .first-run-guide,
-:root[data-design] .first-run-spotlight { display: none !important; }
-
-:root[data-design] .rs-root {
-  position: fixed;
-  inset: auto;
-  left: var(--mx-slot-x, 0);
-  top: var(--mx-slot-y, 0);
-  width: var(--mx-slot-w, 0);
-  height: var(--mx-slot-h, 0);
-  grid-template-rows: 1fr;
-  grid-template-columns: 1fr;
-  grid-template-areas: 'stage';
-  z-index: 5;
-  overflow: hidden;
-  border-radius: var(--mx-slot-radius, 0);
-  clip-path: inset(var(--mx-slot-clip, 0px) round var(--mx-slot-radius, 0px));
-  background: transparent;
-  transition: none;
-}
-:root[data-design][data-graph-slot='off'] .rs-root,
-:root[data-design]:not([data-graph-slot]) .rs-root { visibility: hidden; }
-:root[data-design] .rs-stage { background: transparent; }
-:root[data-design] .rs-stage .minimap { transform: scale(0.6); transform-origin: right bottom; }
 
 .mx-shell {
   position: fixed;
@@ -140,7 +103,7 @@
 }
 
 /* ---- Legacy overlays (search, progress, dialogs) on the design palette --- */
-:root[data-design] .app-root:has(.rs-root) .progress-strip-layer { left: 0; right: 0; bottom: calc(var(--mx-player-h) + 16px); padding-inline: 16px; }
+:root[data-design] .app-root:has(.ns-root) .progress-strip-layer { left: 0; right: 0; bottom: calc(var(--mx-player-h) + 16px); padding-inline: 16px; }
 :root[data-design] .progress-strip,
 :root[data-design] .progress-strip-restore {
   background: var(--mx-surface-raised); border-color: var(--mx-line); color: var(--mx-text);
@@ -150,9 +113,9 @@
 :root[data-design] .progress-strip::before { display: none; }
 :root[data-design] .progress-strip__bar-fill, :root[data-design] .model-progress__bar-fill { background: var(--mx-accent); }
 :root[data-design] .file-chip { background: var(--mx-chip-bg); border-color: transparent; color: var(--mx-text); }
-:root[data-design] .app-root:has(.rs-root) .search-overlay {
+:root[data-design] .app-root:has(.ns-root) .search-overlay {
   background: var(--mx-surface-raised); border-color: var(--mx-line); font-family: var(--mx-font);
   --text-primary: var(--mx-text); --text-secondary: var(--mx-muted);
 }
-:root[data-design] .app-root:has(.rs-root) .search-overlay__input-row { background: transparent; }
-:root[data-design] .app-root:has(.rs-root) .search-result-row.is-active { background: color-mix(in srgb, var(--mx-accent) 14%, transparent); box-shadow: inset 3px 0 var(--mx-accent); }
+:root[data-design] .app-root:has(.ns-root) .search-overlay__input-row { background: transparent; }
+:root[data-design] .app-root:has(.ns-root) .search-result-row.is-active { background: color-mix(in srgb, var(--mx-accent) 14%, transparent); box-shadow: inset 3px 0 var(--mx-accent); }

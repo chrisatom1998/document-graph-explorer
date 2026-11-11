@@ -113,7 +113,7 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     await page.getByRole('option', { name: /Second tone/i }).click();
     await expect(page.locator('.audio-preview')).toBeVisible();
     await expect(details(page).locator('audio')).toHaveAttribute('src', /^blob:/);
-    await expect(page.locator('.rs-top')).toHaveCSS('background-color', 'rgb(14, 14, 21)');
+    await expect(page.locator('.rs-top')).toHaveCSS('background-color', 'rgb(18, 18, 18)');
     await expect(page.locator('.side-panel')).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('dark-workspace.png') });
     await openChat(page);
