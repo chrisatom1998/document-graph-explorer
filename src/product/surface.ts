@@ -38,12 +38,45 @@ export const CORE_LOOP = [
   'persist',
 ] as const;
 
+/**
+ * Sample libraries open on For you. A new first-class control has to earn a
+ * place on this loop: bring sounds in, listen, find what sounds alike, then
+ * open the graph as a map. Documents keep CORE_LOOP and the graph as home.
+ */
+export const SAMPLE_LOOP = [
+  'ingest',
+  'listen',
+  'similar',
+  'sound-map',
+  'persist',
+] as const;
+
+export const DOCUMENT_WORKSPACE_TABS = ['graph', 'library', 'export'] as const;
+export const AUDIO_WORKSPACE_TABS = ['foryou', 'graph', 'library', 'export'] as const;
+export type WorkspaceTab = (typeof AUDIO_WORKSPACE_TABS)[number];
+
+export function workspaceTabs(audioLibrary: boolean): readonly WorkspaceTab[] {
+  return audioLibrary ? AUDIO_WORKSPACE_TABS : DOCUMENT_WORKSPACE_TABS;
+}
+
 export const CAPABILITIES: readonly Capability[] = [
   {
     id: 'ingest',
     layer: 'core',
     chrome: 'always',
     summary: 'Drop files or pick a folder; parse, embed, and cluster locally.',
+  },
+  {
+    id: 'audio-home',
+    layer: 'core',
+    chrome: 'always',
+    summary: 'When every file is audio, For you is the home: a player, its tags, and fingerprint shelves. The graph stays one tab away as the sound map.',
+  },
+  {
+    id: 'similar-sounds',
+    layer: 'core',
+    chrome: 'always',
+    summary: 'Find similar sounds ranks the stored CLAP fingerprint. Shared labels, tempo and key stay as evidence under that ranking.',
   },
   {
     id: 'graph',
