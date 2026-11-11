@@ -5,6 +5,7 @@ import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { keyName, type MusicAnalysis } from './musicTypes';
 import { energyFromScore, genreFromScores, genreFamily, genreText } from './genreEnergy';
 import { confirmedInstrumentList, reliableInstruments, sourceReviewAllows } from './instrumentEvidence';
+import { clipSoundAlike, SOUND_LINK_POLICY } from './musicLinks';
 
 import type { SampleQuery } from './sampleQuery';
 export { EMPTY_SAMPLE_QUERY, parseSampleQuery, type SampleQuery } from './sampleQuery';
@@ -104,6 +105,8 @@ export function searchSamples(nodes: DocNode[], query: SampleQuery, referenceId?
       reasons.push(`Estimated key: ${keyName(a.key)}`);
     }
     if (query.similar && reference) {
+      const heard = reference.audio?.embedding ? clipSoundAlike(reference, node) : undefined;
+      if (reference.audio?.embedding && (!heard || heard.score < SOUND_LINK_POLICY.floor)) continue;
       const shared = labels.filter(t => refLabels.some(r => canonical(r.label) === canonical(t.label)) && (!query.confirmedOnly || t.source === 'confirmed'));
       let similarity = shared.length * 2;
       if (shared.length) reasons.push(`Shared labels: ${[...new Set(shared.map(t => t.label))].join(', ')} (${shared.every(t => t.source === 'confirmed') && refLabels.every(t => t.source === 'confirmed') ? 'confirmed' : 'includes estimates'})`);
@@ -115,7 +118,11 @@ export function searchSamples(nodes: DocNode[], query: SampleQuery, referenceId?
       if (rk && nk && Math.min(rk.strength, nk.strength) >= 0.6 && rk.tonic === nk.tonic && rk.mode === nk.mode) {
         similarity += 1; reasons.push(`Same estimated key: ${keyName(nk)}`);
       }
-      if (!similarity) continue;
+      if (heard && heard.score >= SOUND_LINK_POLICY.floor) {
+        reasons.unshift(`Sounds alike: the two recordings' sound fingerprints are ${Math.floor(heard.similarity * 100)}% similar.`);
+        score += heard.similarity * 1000;
+      }
+      if (!reference.audio?.embedding && !similarity) continue;
       score += similarity;
     }
     if (!reasons.length) reasons.push(query.confirmedOnly ? 'Has labels confirmed by you' : 'Imported audio');
