@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import type { DocNode } from '../model/types';
 import MusicFeatures from './MusicFeatures';
 import { createRecognition, recordEvidence } from '../audio/recognition';
+import { beginMusicJob, finishMusicJob } from '../store/musicJobs';
 import { useSettingsStore } from '../store/settingsStore';
 import { useGraphStore } from '../store/graphStore';
 function renderExpanded(ui: Parameters<typeof render>[0]) {
@@ -125,9 +126,26 @@ it('distinguishes active verification from an interrupted saved preview', () => 
   useGraphStore.getState().setPhase('parsing');
   const {rerender}=renderExpanded(<MusicFeatures node={{...node,audio:{...node.audio!,stage:'preview'}}} />);
   expect(screen.getByText(/Quick estimate — still checking/)).toBeVisible();
+  expect(screen.queryByText(/Analysis: partial/)).toBeNull();
   useGraphStore.getState().setPhase('ready');
   rerender(<MusicFeatures node={{...node,audio:{...node.audio!,stage:'preview'}}} />);
   expect(screen.getByText(/Quick estimate only\. Reanalyze to finish/)).toBeVisible();
+});
+it('names a partial analysis while the quick pass is still open after a model fails', () => {
+  useGraphStore.getState().setPhase('ready');
+  const controller = beginMusicJob(node.id);
+  const recognition = createRecognition(3, 'fast');
+  try {
+    const view = renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, stage: 'preview', recognition } }} />);
+    expect(screen.getByText(/Quick estimate — still checking/)).toBeVisible();
+    expect(screen.queryByText(/Analysis: partial/)).toBeNull();
+    recognition.jobs.find(entry => entry.modelId === 'clap')!.status = 'failed';
+    view.rerender(<MusicFeatures node={{ ...node, audio: { ...node.audio!, stage: 'preview', recognition } }} />);
+    expect(screen.getByText(/Analysis: partial/)).toBeVisible();
+    expect(screen.getByText(/still checking in the background/)).toBeVisible();
+  } finally {
+    finishMusicJob(node.id, controller);
+  }
 });
 
 it('keeps explanations collapsed while showing the main musical values', () => {

@@ -1,0 +1,642 @@
+id,uploader,licence,fsd50k_classes,tags_present
+fsd50k-dev:422,TicTacShutUp,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:423,TicTacShutUp,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:424,TicTacShutUp,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:425,TicTacShutUp,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:426,TicTacShutUp,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:441,TicTacShutUp,http://creativecommons.org/licenses/by/3.0/,Snare_drum;Drum;Percussion;Musical_instrument;Music,drums;percussion;snare
+fsd50k-dev:446,TicTacShutUp,http://creativecommons.org/licenses/by/3.0/,Snare_drum;Drum;Percussion;Musical_instrument;Music,drums;percussion;snare
+fsd50k-dev:2050,TwistedLemon,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:7312,peke,http://creativecommons.org/licenses/sampling+/1.0/,Wind;Ocean;Water,environmental sound;water ambience;wind ambience
+fsd50k-dev:7722,leiki,http://creativecommons.org/licenses/sampling+/1.0/,Motorcycle;Motor_vehicle_(road);Vehicle,
+fsd50k-dev:11676,jks,http://creativecommons.org/licenses/sampling+/1.0/,Drum;Drum_kit;Percussion;Musical_instrument;Music,drums;percussion
+fsd50k-dev:12712,WIM,http://creativecommons.org/licenses/by/3.0/,Whispering;Human_voice,voice;whisper
+fsd50k-dev:16427,agarwal.parag,http://creativecommons.org/licenses/sampling+/1.0/,Coin_(dropping);Domestic_sounds_and_home_sounds,
+fsd50k-dev:17602,acclivity,http://creativecommons.org/licenses/by-nc/3.0/,Human_group_actions;Shout;Human_voice,vocal shout;voice
+fsd50k-dev:17603,acclivity,http://creativecommons.org/licenses/by-nc/3.0/,Yell;Human_group_actions;Shout;Human_voice,vocal shout;voice
+fsd50k-dev:17607,muyayo,http://creativecommons.org/licenses/by-nc/3.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:18025,billcanada,http://creativecommons.org/licenses/sampling+/1.0/,Truck;Motor_vehicle_(road);Vehicle,
+fsd50k-dev:18665,Halleck,http://creativecommons.org/licenses/by/3.0/,Applause;Cheering;Human_group_actions,crowd ambience
+fsd50k-dev:18897,acclivity,http://creativecommons.org/licenses/by-nc/3.0/,Whoosh_and_swoosh_and_swish,whoosh
+fsd50k-dev:18898,acclivity,http://creativecommons.org/licenses/by-nc/3.0/,Whoosh_and_swoosh_and_swish,whoosh
+fsd50k-dev:19188,WIM,http://creativecommons.org/licenses/by/3.0/,Yell;Shout;Human_voice,vocal shout;voice
+fsd50k-dev:20212,modcam,http://creativecommons.org/licenses/sampling+/1.0/,Keys_jangling;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:21674,madjad,http://creativecommons.org/licenses/sampling+/1.0/,Wind_instrument_and_woodwind_instrument;Musical_instrument;Music,
+fsd50k-dev:21678,madjad,http://creativecommons.org/licenses/sampling+/1.0/,Wind_instrument_and_woodwind_instrument;Musical_instrument;Music,
+fsd50k-dev:22007,djgriffin,http://creativecommons.org/licenses/by-nc/3.0/,Keyboard_(musical);Musical_instrument;Music,
+fsd50k-dev:22760,FranciscoPadilla,http://creativecommons.org/licenses/by-nc/3.0/,Hiss;Human_voice,voice
+fsd50k-dev:23640,kupper,http://creativecommons.org/publicdomain/zero/1.0/,Crowd;Human_group_actions,crowd ambience
+fsd50k-dev:25779,ermine,http://creativecommons.org/licenses/by-nc/3.0/,Fireworks;Explosion,
+fsd50k-dev:25896,insinger,http://creativecommons.org/licenses/by-nc/3.0/,Wind_instrument_and_woodwind_instrument;Musical_instrument;Music,
+fsd50k-dev:27367,gallagho,http://creativecommons.org/publicdomain/zero/1.0/,Microwave_oven;Domestic_sounds_and_home_sounds,
+fsd50k-dev:27877,IneQuation,http://creativecommons.org/licenses/by/3.0/,Chewing_and_mastication,
+fsd50k-dev:28063,dan-charles,http://creativecommons.org/licenses/by-nc/3.0/,Zipper_(clothing);Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:29628,zerolagtime,http://creativecommons.org/licenses/by/3.0/,Harp;Musical_instrument;Music,harp
+fsd50k-dev:30934,aust_paul,http://creativecommons.org/publicdomain/zero/1.0/,Walk_and_footsteps,foley
+fsd50k-dev:31675,junggle,http://creativecommons.org/licenses/by/3.0/,Bass_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,bass guitar;guitar
+fsd50k-dev:32305,-zin-,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Bass_drum;Cymbal;Percussion;Musical_instrument;Music;Drum,cymbal;drums;hi-hat;kick;percussion
+fsd50k-dev:33122,mattlohkamp,http://creativecommons.org/licenses/by/3.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:33124,mattlohkamp,http://creativecommons.org/licenses/by/3.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:33132,mattlohkamp,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:33136,mattlohkamp,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:33138,mattlohkamp,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:33139,mattlohkamp,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:33148,mattlohkamp,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:33246,ljudman,http://creativecommons.org/licenses/sampling+/1.0/,Thunder;Rain;Water;Thunderstorm,environmental sound;rain ambience
+fsd50k-dev:34332,marvman,http://creativecommons.org/publicdomain/zero/1.0/,Harmonica;Musical_instrument;Music,harmonica
+fsd50k-dev:34796,-zin-,http://creativecommons.org/licenses/by/3.0/,Crash_cymbal;Bell;Cymbal;Percussion;Musical_instrument;Music,bell;crash cymbal;cymbal;percussion
+fsd50k-dev:34806,-zin-,http://creativecommons.org/licenses/by/3.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:34807,-zin-,http://creativecommons.org/licenses/by/3.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:34810,-zin-,http://creativecommons.org/licenses/by/3.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:34824,-zin-,http://creativecommons.org/licenses/by/3.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:34836,-zin-,http://creativecommons.org/licenses/by/3.0/,Bass_drum;Drum;Percussion;Musical_instrument;Music,drums;kick;percussion
+fsd50k-dev:34854,jackstrebor,http://creativecommons.org/licenses/sampling+/1.0/,Squeak,
+fsd50k-dev:35296,Bansemer,http://creativecommons.org/publicdomain/zero/1.0/,Bark;Dog;Domestic_animals_and_pets;Animal,animal sound
+fsd50k-dev:36325,johnnypanic,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:36815,watupgroupie,http://creativecommons.org/licenses/sampling+/1.0/,Gunshot_and_gunfire;Explosion,
+fsd50k-dev:36902,oen,http://creativecommons.org/licenses/by/3.0/,Bark;Dog;Domestic_animals_and_pets;Animal,animal sound
+fsd50k-dev:37304,Jambozal,http://creativecommons.org/licenses/by-nc/3.0/,Thunder;Thunderstorm,environmental sound;rain ambience
+fsd50k-dev:38239,nathanprtII,http://creativecommons.org/licenses/sampling+/1.0/,Boat_and_Water_vehicle;Vehicle,
+fsd50k-dev:38462,marvman,http://creativecommons.org/publicdomain/zero/1.0/,Acoustic_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,acoustic guitar;guitar
+fsd50k-dev:38464,marvman,http://creativecommons.org/publicdomain/zero/1.0/,Acoustic_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,acoustic guitar;guitar
+fsd50k-dev:38469,marvman,http://creativecommons.org/publicdomain/zero/1.0/,Acoustic_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,acoustic guitar;guitar
+fsd50k-dev:38646,digifishmusic,http://creativecommons.org/licenses/by/3.0/,Crackle;Wind,environmental sound;wind ambience
+fsd50k-dev:41744,digifishmusic,http://creativecommons.org/licenses/by/3.0/,Acoustic_guitar;Strum;Guitar;Plucked_string_instrument;Musical_instrument;Music,acoustic guitar;guitar
+fsd50k-dev:41746,digifishmusic,http://creativecommons.org/licenses/by/3.0/,Strum;Guitar;Plucked_string_instrument;Musical_instrument;Music,guitar
+fsd50k-dev:41749,digifishmusic,http://creativecommons.org/licenses/by/3.0/,Acoustic_guitar;Strum;Guitar;Plucked_string_instrument;Musical_instrument;Music,acoustic guitar;guitar
+fsd50k-dev:41943,datasoundsample,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:41945,datasoundsample,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:41986,digifishmusic,http://creativecommons.org/licenses/by/3.0/,Acoustic_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,acoustic guitar;guitar
+fsd50k-dev:42973,Whateverthing,http://creativecommons.org/licenses/by/3.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:44330,yang2o9,http://creativecommons.org/publicdomain/zero/1.0/,Snare_drum;Drum;Percussion;Musical_instrument;Music,drums;percussion;snare
+fsd50k-dev:44914,Dolfeus,http://creativecommons.org/publicdomain/zero/1.0/,Piano;Keyboard_(musical);Musical_instrument;Music,piano
+fsd50k-dev:45101,Matias.Reccius,http://creativecommons.org/publicdomain/zero/1.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:46390,kaboomproductions,http://creativecommons.org/licenses/sampling+/1.0/,Clapping;Hands,clap
+fsd50k-dev:46504,PhreaKsAccount,http://creativecommons.org/licenses/by/3.0/,Idling;Engine,machine ambience
+fsd50k-dev:46709,boney-man,http://creativecommons.org/licenses/by/3.0/,Snare_drum;Drum;Percussion;Musical_instrument;Music,drums;percussion;snare
+fsd50k-dev:46918,jessestephens,http://creativecommons.org/publicdomain/zero/1.0/,Engine_starting;Engine,machine ambience
+fsd50k-dev:47553,Nirvanabfg,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Bass_drum;Keyboard_(musical);Musical_instrument;Music;Cymbal;Percussion;Drum,cymbal;drums;hi-hat;kick;percussion
+fsd50k-dev:47556,Nirvanabfg,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Bass_drum;Keyboard_(musical);Musical_instrument;Music;Cymbal;Percussion;Drum,cymbal;drums;hi-hat;kick;percussion
+fsd50k-dev:50357,secondbody,http://creativecommons.org/licenses/by/3.0/,Female_speech_and_woman_speaking;Meow;Hiss;Speech;Human_voice;Cat;Domestic_animals_and_pets;Animal,animal sound;spoken phrase;voice
+fsd50k-dev:50715,RutgerMuller,http://creativecommons.org/publicdomain/zero/1.0/,Bass_drum;Snare_drum;Drum_kit;Drum;Percussion;Musical_instrument;Music,drums;kick;percussion;snare
+fsd50k-dev:50727,RutgerMuller,http://creativecommons.org/publicdomain/zero/1.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:50728,RutgerMuller,http://creativecommons.org/publicdomain/zero/1.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:50731,RutgerMuller,http://creativecommons.org/publicdomain/zero/1.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:50745,RutgerMuller,http://creativecommons.org/publicdomain/zero/1.0/,Electric_guitar;Drum;Guitar;Plucked_string_instrument;Musical_instrument;Music;Percussion,drums;electric guitar;guitar;percussion
+fsd50k-dev:50759,RutgerMuller,http://creativecommons.org/publicdomain/zero/1.0/,Snare_drum;Drum;Percussion;Musical_instrument;Music,drums;percussion;snare
+fsd50k-dev:51245,RutgerMuller,http://creativecommons.org/publicdomain/zero/1.0/,Bass_guitar;Piano;Guitar;Plucked_string_instrument;Musical_instrument;Music;Keyboard_(musical),bass guitar;guitar;piano
+fsd50k-dev:51291,k0wax,http://creativecommons.org/publicdomain/zero/1.0/,Drum_kit;Percussion;Musical_instrument;Music,drums;percussion
+fsd50k-dev:52295,XxBirdoxX,http://creativecommons.org/publicdomain/zero/1.0/,Raindrop;Drip;Rain;Water;Liquid,environmental sound;rain ambience
+fsd50k-dev:53806,YngwieM,http://creativecommons.org/licenses/by-nc/3.0/,Race_car_and_auto_racing;Car;Motor_vehicle_(road);Vehicle,
+fsd50k-dev:53807,YngwieM,http://creativecommons.org/licenses/by-nc/3.0/,Race_car_and_auto_racing;Engine;Car;Motor_vehicle_(road);Vehicle,machine ambience
+fsd50k-dev:54973,davidworksonline,http://creativecommons.org/publicdomain/zero/1.0/,Crow;Bird;Wild_animals;Animal,animal sound
+fsd50k-dev:55246,jasonmchl,http://creativecommons.org/publicdomain/zero/1.0/,Boiling;Liquid,
+fsd50k-dev:57189,Paracelso458,http://creativecommons.org/licenses/sampling+/1.0/,Cough;Respiratory_sounds,
+fsd50k-dev:57654,jih,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:57727,Bietfriek,http://creativecommons.org/publicdomain/zero/1.0/,Drum_kit;Percussion;Musical_instrument;Music,drums;percussion
+fsd50k-dev:58418,darren1979,http://creativecommons.org/licenses/sampling+/1.0/,Waves_and_surf;Ocean;Water,environmental sound;water ambience
+fsd50k-dev:58656,suonho,http://creativecommons.org/licenses/by/3.0/,Organ;Keyboard_(musical);Musical_instrument;Music,organ
+fsd50k-dev:58867,marvman,http://creativecommons.org/publicdomain/zero/1.0/,Rattle_(instrument);Percussion;Musical_instrument;Music,percussion
+fsd50k-dev:60658,ERH,http://creativecommons.org/licenses/by-nc/3.0/,Wind_instrument_and_woodwind_instrument;Musical_instrument;Music,
+fsd50k-dev:60688,barrigan,http://creativecommons.org/licenses/by/3.0/,Crowd;Human_group_actions,crowd ambience
+fsd50k-dev:61225,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Fart,
+fsd50k-dev:61559,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:61560,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:61561,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:61567,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:62291,Shopp,http://creativecommons.org/licenses/sampling+/1.0/,Cough;Respiratory_sounds,
+fsd50k-dev:62375,fons,http://creativecommons.org/publicdomain/zero/1.0/,Cheering;Human_voice;Human_group_actions,crowd ambience;voice
+fsd50k-dev:63241,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Tambourine;Percussion;Musical_instrument;Music,percussion;tambourine
+fsd50k-dev:63242,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Tambourine;Percussion;Musical_instrument;Music,percussion;tambourine
+fsd50k-dev:63276,tuckerbiker,http://creativecommons.org/licenses/by/3.0/,Child_speech_and_kid_speaking;Shout;Human_voice;Speech,spoken phrase;vocal shout;voice
+fsd50k-dev:63342,tuckerbiker,http://creativecommons.org/licenses/by/3.0/,Cheering;Clapping;Child_speech_and_kid_speaking;Shout;Human_group_actions;Human_voice;Hands;Speech,clap;crowd ambience;spoken phrase;vocal shout;voice
+fsd50k-dev:63632,vtownpunks,http://creativecommons.org/licenses/by/3.0/,Screaming;Human_voice,vocal scream;voice
+fsd50k-dev:63899,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Electric_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,electric guitar;guitar
+fsd50k-dev:63909,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Electric_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,electric guitar;guitar
+fsd50k-dev:64425,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Trumpet;Brass_instrument;Musical_instrument;Music,trumpet
+fsd50k-dev:65150,poursuivant,http://creativecommons.org/publicdomain/zero/1.0/,Piano;Keyboard_(musical);Musical_instrument;Music,piano
+fsd50k-dev:67786,SunnySideSound,http://creativecommons.org/licenses/by/3.0/,Tearing,foley
+fsd50k-dev:68715,mikaelfernstrom,http://creativecommons.org/licenses/by/3.0/,Dishes_and_pots_and_pans;Cupboard_open_or_close;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:69869,LG,http://creativecommons.org/licenses/by/3.0/,Female_speech_and_woman_speaking;Chatter;Conversation;Speech;Human_voice;Human_group_actions,spoken phrase;voice
+fsd50k-dev:71602,ghostcake,http://creativecommons.org/licenses/by/3.0/,Thunder;Wind;Rain;Water;Thunderstorm,environmental sound;rain ambience;wind ambience
+fsd50k-dev:72754,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Snare_drum;Drum;Percussion;Musical_instrument;Music,drums;percussion;snare
+fsd50k-dev:72941,3bagbrew,http://creativecommons.org/licenses/by/3.0/,Harp;Musical_instrument;Music,harp
+fsd50k-dev:73209,Ko Le,http://creativecommons.org/licenses/sampling+/1.0/,Zipper_(clothing);Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:74965,SuGu14,http://creativecommons.org/licenses/by/3.0/,Drill;Power_tool;Tools,machine ambience
+fsd50k-dev:75825,Analog Bleep Ten,http://creativecommons.org/licenses/sampling+/1.0/,Car_passing_by;Traffic_noise_and_roadway_noise;Wind;Car;Motor_vehicle_(road);Vehicle,environmental sound;wind ambience
+fsd50k-dev:76230,Elodie747,http://creativecommons.org/licenses/sampling+/1.0/,Cough;Respiratory_sounds,
+fsd50k-dev:77292,bigjoedrummer,http://creativecommons.org/publicdomain/zero/1.0/,Hi-hat;Bass_drum;Drum;Drum_kit;Percussion;Musical_instrument;Music;Cymbal,cymbal;drums;hi-hat;kick;percussion
+fsd50k-dev:77299,bigjoedrummer,http://creativecommons.org/publicdomain/zero/1.0/,Hi-hat;Drum;Percussion;Musical_instrument;Music;Cymbal,cymbal;drums;hi-hat;percussion
+fsd50k-dev:79163,atha89,http://creativecommons.org/licenses/by/3.0/,Writing;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:79369,improve,http://creativecommons.org/licenses/sampling+/1.0/,Cutlery_and_silverware;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:81260,evarholt,http://creativecommons.org/licenses/sampling+/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:82098,mugurm,http://creativecommons.org/licenses/by/3.0/,Camera;Mechanisms,
+fsd50k-dev:82798,payattention,http://creativecommons.org/publicdomain/zero/1.0/,Crowd;Human_group_actions,crowd ambience
+fsd50k-dev:83198,miastodzwiekow,http://creativecommons.org/licenses/by/3.0/,Fireworks;Explosion,
+fsd50k-dev:85560,MAJ061785,http://creativecommons.org/licenses/by/3.0/,Run,
+fsd50k-dev:86141,acrober,http://creativecommons.org/publicdomain/zero/1.0/,Cutlery_and_silverware;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:86142,acrober,http://creativecommons.org/publicdomain/zero/1.0/,Cutlery_and_silverware;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:87683,flogman,http://creativecommons.org/publicdomain/zero/1.0/,Male_speech_and_man_speaking;Speech;Human_voice,spoken phrase;voice
+fsd50k-dev:88433,bleedingedgar,http://creativecommons.org/licenses/sampling+/1.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:88590,piedoom,http://creativecommons.org/publicdomain/zero/1.0/,Wind_instrument_and_woodwind_instrument;Musical_instrument;Music,
+fsd50k-dev:89976,gmosser,http://creativecommons.org/licenses/sampling+/1.0/,Chewing_and_mastication,
+fsd50k-dev:90025,tewell,http://creativecommons.org/licenses/by/3.0/,Wind_instrument_and_woodwind_instrument;Musical_instrument;Music,
+fsd50k-dev:90404,mmplisskin,http://creativecommons.org/publicdomain/zero/1.0/,Accelerating_and_revving_and_vroom;Engine,machine ambience
+fsd50k-dev:91227,AbertayAudio,http://creativecommons.org/licenses/sampling+/1.0/,Coin_(dropping);Domestic_sounds_and_home_sounds,
+fsd50k-dev:91777,CharlieX,http://creativecommons.org/licenses/sampling+/1.0/,Walk_and_footsteps,foley
+fsd50k-dev:91900,redarkside,http://creativecommons.org/publicdomain/zero/1.0/,Snare_drum;Drum;Percussion;Musical_instrument;Music,drums;percussion;snare
+fsd50k-dev:92019,FatLane,http://creativecommons.org/licenses/by/3.0/,Shatter;Glass,
+fsd50k-dev:92486,UanGuz,http://creativecommons.org/licenses/by/3.0/,Frog;Wild_animals;Animal,animal sound
+fsd50k-dev:93771,rdneubauer,http://creativecommons.org/publicdomain/zero/1.0/,Squeak;Slam;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:94202,Peter Lustig,http://creativecommons.org/licenses/by/3.0/,Dishes_and_pots_and_pans;Chink_and_clink;Domestic_sounds_and_home_sounds;Glass,foley
+fsd50k-dev:94203,Peter Lustig,http://creativecommons.org/licenses/by/3.0/,Dishes_and_pots_and_pans;Chink_and_clink;Domestic_sounds_and_home_sounds;Glass,foley
+fsd50k-dev:94267,anemicrose,http://creativecommons.org/licenses/sampling+/1.0/,Dishes_and_pots_and_pans;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:96400,gunnbladez,http://creativecommons.org/licenses/by/3.0/,Guitar;Plucked_string_instrument;Musical_instrument;Music,guitar
+fsd50k-dev:96483,sepal,http://creativecommons.org/licenses/by/3.0/,Rattle_(instrument);Percussion;Musical_instrument;Music,percussion
+fsd50k-dev:96563,gunnbladez,http://creativecommons.org/licenses/by/3.0/,Bass_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,bass guitar;guitar
+fsd50k-dev:96891,TinyJiro,http://creativecommons.org/licenses/by/3.0/,Chewing_and_mastication,
+fsd50k-dev:98205,jakobthiesen,http://creativecommons.org/licenses/by/3.0/,Crackle;Fire,
+fsd50k-dev:98230,Smokey_B,http://creativecommons.org/licenses/by/3.0/,Crowd;Human_group_actions,crowd ambience
+fsd50k-dev:101383,bnicole2022,http://creativecommons.org/licenses/by/3.0/,Piano;Keyboard_(musical);Musical_instrument;Music,piano
+fsd50k-dev:101857,thebigracket,http://creativecommons.org/licenses/by/3.0/,Male_speech_and_man_speaking;Walk_and_footsteps;Speech;Human_voice,foley;spoken phrase;voice
+fsd50k-dev:102100,sagetyrtle,http://creativecommons.org/publicdomain/zero/1.0/,Applause;Crowd;Cheering;Human_group_actions,crowd ambience
+fsd50k-dev:102104,sagetyrtle,http://creativecommons.org/publicdomain/zero/1.0/,Applause;Crowd;Cheering;Human_group_actions,crowd ambience
+fsd50k-dev:102106,sagetyrtle,http://creativecommons.org/publicdomain/zero/1.0/,Applause;Crowd;Cheering;Human_group_actions,crowd ambience
+fsd50k-dev:103173,fons,http://creativecommons.org/publicdomain/zero/1.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:104602,Udit Duseja,http://creativecommons.org/licenses/by/3.0/,Cricket;Insect;Wild_animals;Animal,animal sound
+fsd50k-dev:106730,CrunchyNut,http://creativecommons.org/licenses/by/3.0/,Purr;Cat;Domestic_animals_and_pets;Animal,animal sound
+fsd50k-dev:106782,tec studios,http://creativecommons.org/publicdomain/zero/1.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:108423,gloriaeffect,http://creativecommons.org/publicdomain/zero/1.0/,Drip;Sink_(filling_or_washing);Water_tap_and_faucet;Gurgling;Liquid;Domestic_sounds_and_home_sounds;Water,
+fsd50k-dev:109369,CGEffex,http://creativecommons.org/licenses/by/3.0/,Marimba_and_xylophone;Mallet_percussion;Percussion;Musical_instrument;Music,mallet instrument;percussion
+fsd50k-dev:109754,Printer Killer,http://creativecommons.org/licenses/by/3.0/,Squeak;Glass;Hands,
+fsd50k-dev:110010,tuberatanka,http://creativecommons.org/publicdomain/zero/1.0/,Meow;Cat;Domestic_animals_and_pets;Animal,animal sound
+fsd50k-dev:111613,doubletrigger,http://creativecommons.org/licenses/by/3.0/,Subway_and_metro_and_underground;Rail_transport;Vehicle,
+fsd50k-dev:111645,bigjoedrummer,http://creativecommons.org/publicdomain/zero/1.0/,Hi-hat;Bass_drum;Drum;Percussion;Musical_instrument;Music;Cymbal,cymbal;drums;hi-hat;kick;percussion
+fsd50k-dev:111650,bigjoedrummer,http://creativecommons.org/publicdomain/zero/1.0/,Crash_cymbal;Snare_drum;Cymbal;Percussion;Musical_instrument;Music;Drum,crash cymbal;cymbal;drums;percussion;snare
+fsd50k-dev:112211,OmegaZeta,http://creativecommons.org/publicdomain/zero/1.0/,Ringtone;Telephone;Alarm,
+fsd50k-dev:112342,alyceobvious,http://creativecommons.org/publicdomain/zero/1.0/,Female_speech_and_woman_speaking;Subway_and_metro_and_underground;Speech;Human_voice;Rail_transport;Vehicle,spoken phrase;voice
+fsd50k-dev:114618,jennycollen,http://creativecommons.org/publicdomain/zero/1.0/,Sawing;Tools,
+fsd50k-dev:115833,Pixfix,http://creativecommons.org/licenses/by/3.0/,Camera;Mechanisms,
+fsd50k-dev:116400,ayamahambho,http://creativecommons.org/licenses/by/3.0/,Bark;Dog;Domestic_animals_and_pets;Animal,animal sound
+fsd50k-dev:116767,Owdeo,http://creativecommons.org/licenses/by-nc/3.0/,Organ;Keyboard_(musical);Musical_instrument;Music,organ
+fsd50k-dev:117250,rvinyard,http://creativecommons.org/licenses/by/3.0/,Livestock_and_farm_animals_and_working_animals;Animal,animal sound
+fsd50k-dev:118053,rkeato,http://creativecommons.org/licenses/by/3.0/,Cutlery_and_silverware;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:118979,esperri,http://creativecommons.org/publicdomain/zero/1.0/,Wind_chime;Chime;Bell,bell
+fsd50k-dev:119879,cmusounddesign,http://creativecommons.org/licenses/by/3.0/,Cupboard_open_or_close;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:120160,Oneirophile,http://creativecommons.org/publicdomain/zero/1.0/,Meow;Cat;Domestic_animals_and_pets;Animal,animal sound
+fsd50k-dev:120879,cyzumwalt,http://creativecommons.org/licenses/sampling+/1.0/,Tap,
+fsd50k-dev:123350,ivegotmono,http://creativecommons.org/publicdomain/zero/1.0/,Doorbell;Door;Domestic_sounds_and_home_sounds;Alarm,foley
+fsd50k-dev:124996,phmiller42,http://creativecommons.org/publicdomain/zero/1.0/,Crowd;Human_group_actions,crowd ambience
+fsd50k-dev:126110,CorrodedMaster,http://creativecommons.org/licenses/by/3.0/,Piano;Keyboard_(musical);Musical_instrument;Music,piano
+fsd50k-dev:126469,tehongis,http://creativecommons.org/licenses/sampling+/1.0/,Organ;Keyboard_(musical);Musical_instrument;Music,organ
+fsd50k-dev:127004,bulbastre,http://creativecommons.org/licenses/by/3.0/,Yell;Shout;Human_voice,vocal shout;voice
+fsd50k-dev:127559,romulofs,http://creativecommons.org/publicdomain/zero/1.0/,Packing_tape_and_duct_tape;Domestic_sounds_and_home_sounds,
+fsd50k-dev:128628,bigjoedrummer,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Bass_drum;Cymbal;Percussion;Musical_instrument;Music;Drum,cymbal;drums;hi-hat;kick;percussion
+fsd50k-dev:128979,aaronsiler,http://creativecommons.org/licenses/by/3.0/,Gunshot_and_gunfire;Explosion,
+fsd50k-dev:129685,weRsoundefx,http://creativecommons.org/publicdomain/zero/1.0/,Zipper_(clothing);Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:130414,mmiron,http://creativecommons.org/publicdomain/zero/1.0/,Tabla;Drum;Percussion;Musical_instrument;Music,drums;percussion;tabla
+fsd50k-dev:130430,mmiron,http://creativecommons.org/publicdomain/zero/1.0/,Tabla;Drum;Percussion;Musical_instrument;Music,drums;percussion;tabla
+fsd50k-dev:132738,Nanakisan,http://creativecommons.org/licenses/by/3.0/,Screaming;Yell;Laughter;Human_voice;Shout,vocal laugh;vocal scream;vocal shout;voice
+fsd50k-dev:134897,jberkuta14,http://creativecommons.org/publicdomain/zero/1.0/,Truck;Motor_vehicle_(road);Vehicle,
+fsd50k-dev:135639,PrimeJunt,http://creativecommons.org/licenses/by/3.0/,Wind_instrument_and_woodwind_instrument;Musical_instrument;Music,
+fsd50k-dev:135642,PrimeJunt,http://creativecommons.org/licenses/by/3.0/,Wind_instrument_and_woodwind_instrument;Musical_instrument;Music,
+fsd50k-dev:136496,zachfbstudios,http://creativecommons.org/publicdomain/zero/1.0/,Tearing,foley
+fsd50k-dev:138111,snakebarney,http://creativecommons.org/publicdomain/zero/1.0/,Applause;Human_group_actions,crowd ambience
+fsd50k-dev:139000,kargul.x,http://creativecommons.org/licenses/by/3.0/,Drill;Power_tool;Tools,machine ambience
+fsd50k-dev:139086,arjanvanhoorn0181,http://creativecommons.org/publicdomain/zero/1.0/,Screaming;Human_voice,vocal scream;voice
+fsd50k-dev:139972,jessepash,http://creativecommons.org/publicdomain/zero/1.0/,Applause;Cheering;Clapping;Shout;Human_group_actions;Human_voice;Hands,clap;crowd ambience;vocal shout;voice
+fsd50k-dev:140342,arnebuhmann,http://creativecommons.org/licenses/by/3.0/,Yell;Traffic_noise_and_roadway_noise;Shout;Human_voice;Motor_vehicle_(road);Vehicle,vocal shout;voice
+fsd50k-dev:140344,arnebuhmann,http://creativecommons.org/licenses/by/3.0/,Yell;Traffic_noise_and_roadway_noise;Shout;Human_voice;Motor_vehicle_(road);Vehicle,vocal shout;voice
+fsd50k-dev:140493,campl,http://creativecommons.org/licenses/by-nc/3.0/,Walk_and_footsteps,foley
+fsd50k-dev:142008,jop9798,http://creativecommons.org/publicdomain/zero/1.0/,Walk_and_footsteps,foley
+fsd50k-dev:143947,kgarman314,http://creativecommons.org/licenses/by/3.0/,Organ;Keyboard_(musical);Musical_instrument;Music,organ
+fsd50k-dev:144321,fumiya112,http://creativecommons.org/publicdomain/zero/1.0/,Shatter;Glass,
+fsd50k-dev:144484,Strever953,http://creativecommons.org/publicdomain/zero/1.0/,Snare_drum;Drum;Percussion;Musical_instrument;Music,drums;percussion;snare
+fsd50k-dev:146351,Sound1A,http://creativecommons.org/publicdomain/zero/1.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:147648,steph64,http://creativecommons.org/licenses/by-nc/3.0/,Church_bell;Bell,bell
+fsd50k-dev:148266,TheJRB,http://creativecommons.org/licenses/by/3.0/,Alarm;Door;Train;Vehicle;Domestic_sounds_and_home_sounds;Rail_transport,foley
+fsd50k-dev:149024,foxen10,http://creativecommons.org/publicdomain/zero/1.0/,Livestock_and_farm_animals_and_working_animals;Animal,animal sound
+fsd50k-dev:151373,treblebooster,http://creativecommons.org/publicdomain/zero/1.0/,Organ;Keyboard_(musical);Musical_instrument;Music,organ
+fsd50k-dev:154687,mistorcaveman,http://creativecommons.org/publicdomain/zero/1.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:154691,mistorcaveman,http://creativecommons.org/publicdomain/zero/1.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:154795,sheepfilms,http://creativecommons.org/publicdomain/zero/1.0/,Camera;Mechanisms,
+fsd50k-dev:154831,Tonbube,http://creativecommons.org/publicdomain/zero/1.0/,Run,
+fsd50k-dev:155651,the_semen_incident,http://creativecommons.org/publicdomain/zero/1.0/,Purr;Cat;Domestic_animals_and_pets;Animal,animal sound
+fsd50k-dev:155833,heptor,http://creativecommons.org/licenses/by/3.0/,Raindrop;Thunder;Rain;Water;Thunderstorm,environmental sound;rain ambience
+fsd50k-dev:155920,Shadowedhunter,http://creativecommons.org/publicdomain/zero/1.0/,Rattle;Walk_and_footsteps;Run;Wind,environmental sound;foley;wind ambience
+fsd50k-dev:157545,JL_barrett,http://creativecommons.org/publicdomain/zero/1.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:157766,Enok123,http://creativecommons.org/publicdomain/zero/1.0/,Computer_keyboard;Typing;Domestic_sounds_and_home_sounds,
+fsd50k-dev:157886,Setuniman,http://creativecommons.org/licenses/by-nc/3.0/,Wind_instrument_and_woodwind_instrument;Musical_instrument;Music,
+fsd50k-dev:160674,dermotte,http://creativecommons.org/licenses/by/3.0/,Rattle,
+fsd50k-dev:160681,mogovwebteam,http://creativecommons.org/licenses/by-nc/3.0/,Sawing;Tools,
+fsd50k-dev:160686,antique98,http://creativecommons.org/publicdomain/zero/1.0/,Chirp_and_tweet;Bird_vocalization_and_bird_call_and_bird_song;Fowl;Bird;Wild_animals;Animal;Livestock_and_farm_animals_and_working_animals,animal sound;bird ambience
+fsd50k-dev:160875,AlienXXX,http://creativecommons.org/licenses/by/3.0/,Drum_kit;Percussion;Musical_instrument;Music,drums;percussion
+fsd50k-dev:160877,AlienXXX,http://creativecommons.org/licenses/by/3.0/,Drum_kit;Percussion;Musical_instrument;Music,drums;percussion
+fsd50k-dev:161290,Snapper4298,http://creativecommons.org/publicdomain/zero/1.0/,Strum;Bowed_string_instrument;Musical_instrument;Music;Guitar;Plucked_string_instrument,guitar;strings
+fsd50k-dev:162208,vancer,http://creativecommons.org/publicdomain/zero/1.0/,Raindrop;Drip;Rain;Water;Liquid,environmental sound;rain ambience
+fsd50k-dev:162443,zendry423,http://creativecommons.org/publicdomain/zero/1.0/,Motorcycle;Traffic_noise_and_roadway_noise;Vehicle_horn_and_car_horn_and_honking;Engine;Car;Motor_vehicle_(road);Vehicle;Alarm,machine ambience
+fsd50k-dev:162747,Setuniman,http://creativecommons.org/licenses/by-nc/3.0/,Bowed_string_instrument;Musical_instrument;Music,strings
+fsd50k-dev:164064,cclaretc,http://creativecommons.org/licenses/by/3.0/,Chicken_and_rooster;Fowl;Livestock_and_farm_animals_and_working_animals;Animal,animal sound
+fsd50k-dev:165299,holymonwarrior7,http://creativecommons.org/licenses/by/3.0/,Thunder;Rain;Water;Thunderstorm,environmental sound;rain ambience
+fsd50k-dev:166171,Drillfire414,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:166474,adethefade,http://creativecommons.org/licenses/by-nc/3.0/,Clapping;Hands,clap
+fsd50k-dev:166698,Bradovic,http://creativecommons.org/publicdomain/zero/1.0/,Sliding_door;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:167265,Hornetan1,http://creativecommons.org/publicdomain/zero/1.0/,Writing;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:169233,mlteenie,http://creativecommons.org/licenses/by/3.0/,Cheering;Clapping;Human_group_actions;Hands,clap;crowd ambience
+fsd50k-dev:169581,Georgeantoniv,http://creativecommons.org/licenses/by/3.0/,Subway_and_metro_and_underground;Door;Domestic_sounds_and_home_sounds;Rail_transport;Vehicle,foley
+fsd50k-dev:169754,Setuniman,http://creativecommons.org/licenses/by-nc/3.0/,Marimba_and_xylophone;Mallet_percussion;Percussion;Musical_instrument;Music,mallet instrument;percussion
+fsd50k-dev:169810,missozzy,http://creativecommons.org/publicdomain/zero/1.0/,Screaming;Yell;Human_voice;Shout,vocal scream;vocal shout;voice
+fsd50k-dev:169811,missozzy,http://creativecommons.org/publicdomain/zero/1.0/,Screaming;Yell;Human_voice;Shout,vocal scream;vocal shout;voice
+fsd50k-dev:170243,BeatsbyCasper,http://creativecommons.org/publicdomain/zero/1.0/,Vehicle_horn_and_car_horn_and_honking;Car;Motor_vehicle_(road);Vehicle;Alarm,
+fsd50k-dev:172143,frus,http://creativecommons.org/licenses/by-nc/3.0/,Cricket;Traffic_noise_and_roadway_noise;Insect;Wild_animals;Animal;Motor_vehicle_(road);Vehicle,animal sound
+fsd50k-dev:173801,mojomills,http://creativecommons.org/licenses/by/3.0/,Bass_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,bass guitar;guitar
+fsd50k-dev:174080,sonidor,http://creativecommons.org/licenses/by/3.0/,Coin_(dropping);Domestic_sounds_and_home_sounds,
+fsd50k-dev:174168,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:175428,ajkerekes,http://creativecommons.org/licenses/by/3.0/,Wind;Breathing;Respiratory_sounds,breath;environmental sound;vocal breath;wind ambience
+fsd50k-dev:175934,MirkoMeter84,http://creativecommons.org/publicdomain/zero/1.0/,Rattle_(instrument);Percussion;Musical_instrument;Music,percussion
+fsd50k-dev:176983,Snapper4298,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:176989,Snapper4298,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:176990,Snapper4298,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:177059,ajkerekes,http://creativecommons.org/licenses/by/3.0/,Drip;Wind;Liquid,environmental sound;wind ambience
+fsd50k-dev:178084,ajkerekes,http://creativecommons.org/licenses/by/3.0/,Drip;Wind;Liquid,environmental sound;wind ambience
+fsd50k-dev:178459,vinjatovix,http://creativecommons.org/publicdomain/zero/1.0/,Subway_and_metro_and_underground;Rail_transport;Vehicle,
+fsd50k-dev:181189,Raventhornn,http://creativecommons.org/publicdomain/zero/1.0/,Coin_(dropping);Domestic_sounds_and_home_sounds,
+fsd50k-dev:181601,DaffaUrrofi,http://creativecommons.org/licenses/by/3.0/,Motor_vehicle_(road);Siren;Vehicle;Alarm,siren
+fsd50k-dev:181934,LanDub,http://creativecommons.org/publicdomain/zero/1.0/,Applause;Human_group_actions,crowd ambience
+fsd50k-dev:182017,safadancer,http://creativecommons.org/publicdomain/zero/1.0/,Giggle;Laughter;Human_voice,vocal laugh;voice
+fsd50k-dev:182293,Goup_1,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:182295,Goup_1,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:182442,qubodup,http://creativecommons.org/licenses/by/3.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:182510,TerryHancock,http://creativecommons.org/licenses/by/3.0/,Tap;Dishes_and_pots_and_pans;Chink_and_clink;Liquid;Domestic_sounds_and_home_sounds;Glass,foley
+fsd50k-dev:186267,unfa,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:186615,Snapper4298,http://creativecommons.org/licenses/by-nc/3.0/,Crash_cymbal;Bass_drum;Cymbal;Percussion;Musical_instrument;Music;Drum,crash cymbal;cymbal;drums;kick;percussion
+fsd50k-dev:186629,Snapper4298,http://creativecommons.org/licenses/by-nc/3.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:186630,Snapper4298,http://creativecommons.org/licenses/by-nc/3.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:187974,Porphyr,http://creativecommons.org/licenses/by/3.0/,Rattle,
+fsd50k-dev:188233,Baboonaiih,http://creativecommons.org/publicdomain/zero/1.0/,Computer_keyboard;Typing;Domestic_sounds_and_home_sounds,
+fsd50k-dev:188501,manthadavies,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:188640,HojnyTomasz,http://creativecommons.org/licenses/by/3.0/,Piano;Keyboard_(musical);Musical_instrument;Music,piano
+fsd50k-dev:189202,wordswar,http://creativecommons.org/licenses/by/3.0/,Child_speech_and_kid_speaking;Speech;Human_voice,spoken phrase;voice
+fsd50k-dev:189481,wordswar,http://creativecommons.org/licenses/by/3.0/,Male_speech_and_man_speaking;Speech;Human_voice,spoken phrase;voice
+fsd50k-dev:189496,wordswar,http://creativecommons.org/licenses/by/3.0/,Male_speech_and_man_speaking;Speech;Human_voice,spoken phrase;voice
+fsd50k-dev:189740,wordswar,http://creativecommons.org/licenses/by/3.0/,Male_speech_and_man_speaking;Speech;Human_voice,spoken phrase;voice
+fsd50k-dev:190484,smokenweewALT,http://creativecommons.org/publicdomain/zero/1.0/,Fart,
+fsd50k-dev:190918,SwampCommand,http://creativecommons.org/publicdomain/zero/1.0/,Sink_(filling_or_washing);Domestic_sounds_and_home_sounds,
+fsd50k-dev:190945,5thWall,http://creativecommons.org/publicdomain/zero/1.0/,Coin_(dropping);Domestic_sounds_and_home_sounds,
+fsd50k-dev:191487,Alteration,http://creativecommons.org/publicdomain/zero/1.0/,Male_speech_and_man_speaking;Hi-hat;Speech;Human_voice;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion;spoken phrase;voice
+fsd50k-dev:192761,ryuuzan,http://creativecommons.org/publicdomain/zero/1.0/,Bell;Doorbell;Door;Domestic_sounds_and_home_sounds;Alarm,bell;foley
+fsd50k-dev:193469,skyklan47,http://creativecommons.org/licenses/by/3.0/,Fire,
+fsd50k-dev:193768,Ionicsmusic,http://creativecommons.org/licenses/by-nc/3.0/,Electric_guitar;Bass_guitar;Crash_cymbal;Hi-hat;Bass_drum;Drum;Snare_drum;Drum_kit;Guitar;Plucked_string_instrument;Musical_instrument;Music;Percussion;Cymbal,bass guitar;crash cymbal;cymbal;drums;electric guitar;guitar;hi-hat;kick;percussion;snare
+fsd50k-dev:194917,damjancd,http://creativecommons.org/licenses/by/3.0/,Zipper_(clothing);Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:196098,peridactyloptrix,http://creativecommons.org/publicdomain/zero/1.0/,Applause;Human_group_actions,crowd ambience
+fsd50k-dev:196567,tambascot,http://creativecommons.org/publicdomain/zero/1.0/,Truck;Motor_vehicle_(road);Vehicle,
+fsd50k-dev:197866,Millavsb,http://creativecommons.org/publicdomain/zero/1.0/,Cutlery_and_silverware;Knock;Domestic_sounds_and_home_sounds;Door,foley
+fsd50k-dev:198434,Augdog,http://creativecommons.org/licenses/by/3.0/,Whispering;Human_voice,voice;whisper
+fsd50k-dev:198574,Goup_1,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:199512,kmbetton,http://creativecommons.org/publicdomain/zero/1.0/,Chewing_and_mastication,
+fsd50k-dev:199906,GN2013,http://creativecommons.org/publicdomain/zero/1.0/,Shatter;Glass,
+fsd50k-dev:200167,ebonny,http://creativecommons.org/licenses/by/3.0/,Cricket;Insect;Wild_animals;Animal,animal sound
+fsd50k-dev:200181,Seidhepriest,http://creativecommons.org/licenses/by-nc/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:200182,Seidhepriest,http://creativecommons.org/licenses/by-nc/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:200183,Seidhepriest,http://creativecommons.org/licenses/by-nc/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:201110,18hiltc,http://creativecommons.org/licenses/by/3.0/,Electric_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,electric guitar;guitar
+fsd50k-dev:201255,empraetorius,http://creativecommons.org/licenses/by/3.0/,Tearing,foley
+fsd50k-dev:201667,Frankie01234,http://creativecommons.org/publicdomain/zero/1.0/,Gunshot_and_gunfire;Explosion,
+fsd50k-dev:203917,JuGaspari,http://creativecommons.org/publicdomain/zero/1.0/,Writing;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:204449,ludist,http://creativecommons.org/licenses/by/3.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:204491,HPNoler,http://creativecommons.org/licenses/by-nc/3.0/,Knock;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:205610,Aadofzo,http://creativecommons.org/licenses/by-nc/3.0/,Drill;Power_tool;Tools,machine ambience
+fsd50k-dev:207224,troyschafer,http://creativecommons.org/publicdomain/zero/1.0/,Walk_and_footsteps,foley
+fsd50k-dev:208317,HPNoler,http://creativecommons.org/publicdomain/zero/1.0/,Knock;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:209205,whirlproductions,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:209582,Zott820,http://creativecommons.org/publicdomain/zero/1.0/,Crackle,
+fsd50k-dev:212600,pgi,http://creativecommons.org/publicdomain/zero/1.0/,Gunshot_and_gunfire;Explosion,
+fsd50k-dev:212849,Timbijnen,http://creativecommons.org/licenses/by-nc/3.0/,Drill;Power_tool;Tools,machine ambience
+fsd50k-dev:213504,Goup_1,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:215156,MarzipanKittens,http://creativecommons.org/publicdomain/zero/1.0/,Camera;Mechanisms,
+fsd50k-dev:216088,RICHERlandTV,http://creativecommons.org/licenses/by/3.0/,Tearing,foley
+fsd50k-dev:218037,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Wind_instrument_and_woodwind_instrument;Breathing;Musical_instrument;Music;Respiratory_sounds,breath;vocal breath
+fsd50k-dev:218946,annabloom,http://creativecommons.org/licenses/by-nc/3.0/,Cough;Respiratory_sounds,
+fsd50k-dev:219766,MadamVicious,http://creativecommons.org/publicdomain/zero/1.0/,Female_speech_and_woman_speaking;Yell;Speech;Human_voice;Shout,spoken phrase;vocal shout;voice
+fsd50k-dev:219772,MadamVicious,http://creativecommons.org/publicdomain/zero/1.0/,Female_speech_and_woman_speaking;Speech;Human_voice,spoken phrase;voice
+fsd50k-dev:219871,polmdx,http://creativecommons.org/licenses/by/3.0/,Screaming;Human_voice,vocal scream;voice
+fsd50k-dev:223150,keweldog,http://creativecommons.org/licenses/by/3.0/,Harp;Musical_instrument;Music,harp
+fsd50k-dev:223285,keweldog,http://creativecommons.org/licenses/by/3.0/,Wind_instrument_and_woodwind_instrument;Musical_instrument;Music,
+fsd50k-dev:223848,MadamVicious,http://creativecommons.org/publicdomain/zero/1.0/,Female_singing;Singing;Human_voice,voice
+fsd50k-dev:231322,sora955,http://creativecommons.org/licenses/by-nc/3.0/,Boom;Explosion,
+fsd50k-dev:232271,wikusv,http://creativecommons.org/licenses/by/3.0/,Bark;Accelerating_and_revving_and_vroom;Car;Dog;Domestic_animals_and_pets;Animal;Motor_vehicle_(road);Vehicle;Engine,animal sound;machine ambience
+fsd50k-dev:232358,RICHERlandTV,http://creativecommons.org/licenses/by/3.0/,Thump_and_thud,
+fsd50k-dev:232510,arnaump,http://creativecommons.org/publicdomain/zero/1.0/,Rattle;Screech;Slam;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:232541,arnaump,http://creativecommons.org/publicdomain/zero/1.0/,Drip;Bathtub_(filling_or_washing);Liquid;Domestic_sounds_and_home_sounds,
+fsd50k-dev:234034,11linda,http://creativecommons.org/licenses/by/3.0/,Female_speech_and_woman_speaking;Shout;Speech;Human_voice,spoken phrase;vocal shout;voice
+fsd50k-dev:234041,11linda,http://creativecommons.org/licenses/by/3.0/,Female_speech_and_woman_speaking;Yell;Speech;Human_voice;Shout,spoken phrase;vocal shout;voice
+fsd50k-dev:234849,quijack,http://creativecommons.org/publicdomain/zero/1.0/,Piano;Keyboard_(musical);Musical_instrument;Music,piano
+fsd50k-dev:236812,laserwoofer,http://creativecommons.org/publicdomain/zero/1.0/,Camera;Mechanisms,
+fsd50k-dev:237085,Seidhepriest,http://creativecommons.org/licenses/by-nc/3.0/,Electric_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,electric guitar;guitar
+fsd50k-dev:238409,amorralteixe,http://creativecommons.org/licenses/by/3.0/,Cutlery_and_silverware;Dishes_and_pots_and_pans;Chink_and_clink;Domestic_sounds_and_home_sounds;Glass,foley
+fsd50k-dev:238738,karnage1710,http://creativecommons.org/publicdomain/zero/1.0/,Organ;Keyboard_(musical);Musical_instrument;Music,organ
+fsd50k-dev:240785,f4ngy,http://creativecommons.org/licenses/by/3.0/,Dishes_and_pots_and_pans;Chink_and_clink;Domestic_sounds_and_home_sounds;Glass,foley
+fsd50k-dev:241721,addiofbaddi,http://creativecommons.org/publicdomain/zero/1.0/,Walk_and_footsteps;Car_passing_by;Engine;Car;Motor_vehicle_(road);Vehicle,foley;machine ambience
+fsd50k-dev:241756,ElGeorgia,http://creativecommons.org/publicdomain/zero/1.0/,Engine_starting;Motor_vehicle_(road);Vehicle;Engine,machine ambience
+fsd50k-dev:242003,junkfood2121,http://creativecommons.org/publicdomain/zero/1.0/,Fart,
+fsd50k-dev:243551,residentsparking,http://creativecommons.org/publicdomain/zero/1.0/,Trickle_and_dribble;Liquid;Pour,water ambience
+fsd50k-dev:243558,residentsparking,http://creativecommons.org/publicdomain/zero/1.0/,Trickle_and_dribble;Pour;Liquid,water ambience
+fsd50k-dev:243757,GeronimoGeronimo,http://creativecommons.org/publicdomain/zero/1.0/,Thunder;Rain;Water;Thunderstorm,environmental sound;rain ambience
+fsd50k-dev:243819,AlienXXX,http://creativecommons.org/licenses/by/3.0/,Speech;Human_voice,spoken phrase;voice
+fsd50k-dev:243968,Juunanagou,http://creativecommons.org/publicdomain/zero/1.0/,Thunder;Thunderstorm,environmental sound;rain ambience
+fsd50k-dev:244767,OfItAll,http://creativecommons.org/publicdomain/zero/1.0/,Traffic_noise_and_roadway_noise;Fireworks;Explosion;Motor_vehicle_(road);Vehicle,
+fsd50k-dev:245410,Spankous,http://creativecommons.org/publicdomain/zero/1.0/,Shatter;Chink_and_clink;Glass,
+fsd50k-dev:245873,Mick_T_1,http://creativecommons.org/licenses/by-nc/3.0/,Train;Rail_transport;Vehicle,
+fsd50k-dev:249160,MHockett,http://creativecommons.org/publicdomain/zero/1.0/,Tap,
+fsd50k-dev:249168,goingnowhereeatingthings,http://creativecommons.org/licenses/by/3.0/,Male_speech_and_man_speaking;Speech;Human_voice,spoken phrase;voice
+fsd50k-dev:250935,edwar64896,http://creativecommons.org/licenses/by/3.0/,Crowd;Human_group_actions,crowd ambience
+fsd50k-dev:251592,primisteka,http://creativecommons.org/licenses/by/3.0/,Writing;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:251815,Zabuhailo,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Drum_kit;Cymbal;Percussion;Musical_instrument;Music,cymbal;drums;hi-hat;percussion
+fsd50k-dev:252870,ProfMcKay,http://creativecommons.org/licenses/by/3.0/,Cricket;Insect;Wild_animals;Animal,animal sound
+fsd50k-dev:253580,P3PP3R,http://creativecommons.org/publicdomain/zero/1.0/,Boat_and_Water_vehicle;Vehicle,
+fsd50k-dev:253766,Jagadamba,http://creativecommons.org/licenses/by/3.0/,Acoustic_guitar;Plucked_string_instrument;Guitar;Musical_instrument;Music,acoustic guitar;guitar
+fsd50k-dev:253768,Jagadamba,http://creativecommons.org/licenses/by/3.0/,Acoustic_guitar;Plucked_string_instrument;Guitar;Musical_instrument;Music,acoustic guitar;guitar
+fsd50k-dev:254723,Omar Alvarado,http://creativecommons.org/licenses/by-nc/3.0/,Squeak;Cupboard_open_or_close;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:255111,rhapsodize,http://creativecommons.org/publicdomain/zero/1.0/,Boom;Explosion,
+fsd50k-dev:255216,Carmelomike,http://creativecommons.org/licenses/by/3.0/,Gunshot_and_gunfire;Explosion,
+fsd50k-dev:255875,Jagadamba,http://creativecommons.org/licenses/by/3.0/,Whispering;Human_voice,voice;whisper
+fsd50k-dev:255877,Jagadamba,http://creativecommons.org/licenses/by/3.0/,Whispering;Human_voice,voice;whisper
+fsd50k-dev:256494,seanpue,http://creativecommons.org/licenses/by-nc/3.0/,Screech;Screaming;Child_speech_and_kid_speaking;Human_voice;Speech,spoken phrase;vocal scream;voice
+fsd50k-dev:256513,HunteR4708,http://creativecommons.org/publicdomain/zero/1.0/,Knock;Door;Wood;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:256635,Kodack,http://creativecommons.org/publicdomain/zero/1.0/,Yell;Shout;Human_voice,vocal shout;voice
+fsd50k-dev:257517,waldram,http://creativecommons.org/publicdomain/zero/1.0/,Writing;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:257797,xtrgamr,http://creativecommons.org/licenses/by/3.0/,Fart,
+fsd50k-dev:257798,xtrgamr,http://creativecommons.org/licenses/by/3.0/,Fart,
+fsd50k-dev:257828,GoSoundtrack,http://creativecommons.org/licenses/by/3.0/,Crumpling_and_crinkling,foley
+fsd50k-dev:258367,wjoojoo,http://creativecommons.org/licenses/by/3.0/,Male_speech_and_man_speaking;Female_speech_and_woman_speaking;Speech;Human_voice,spoken phrase;voice
+fsd50k-dev:259181,iut_Paris8,http://creativecommons.org/licenses/by-nc/3.0/,Knock;Run;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:259316,PolecatMan,http://creativecommons.org/publicdomain/zero/1.0/,Thunder;Thunderstorm,environmental sound;rain ambience
+fsd50k-dev:260907,jennerallydrawing,http://creativecommons.org/publicdomain/zero/1.0/,Cough;Respiratory_sounds,
+fsd50k-dev:260959,smokenweewALT,http://creativecommons.org/licenses/by/3.0/,Fart,
+fsd50k-dev:261830,Setuniman,http://creativecommons.org/licenses/by-nc/3.0/,Marimba_and_xylophone;Mallet_percussion;Percussion;Musical_instrument;Music,mallet instrument;percussion
+fsd50k-dev:261861,smokenweewALT,http://creativecommons.org/licenses/by/3.0/,Fart,
+fsd50k-dev:262240,wjoojoo,http://creativecommons.org/licenses/by/3.0/,Female_speech_and_woman_speaking;Speech;Human_voice,spoken phrase;voice
+fsd50k-dev:262423,smokenweewALT,http://creativecommons.org/licenses/by/3.0/,Fart,
+fsd50k-dev:262753,bigpickle51,http://creativecommons.org/publicdomain/zero/1.0/,Fixed-wing_aircraft_and_airplane;Aircraft;Vehicle,
+fsd50k-dev:263037,Tee_Hee_Tummy_Tums,http://creativecommons.org/publicdomain/zero/1.0/,Scissors;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:263396,scotcampbell,http://creativecommons.org/publicdomain/zero/1.0/,Train;Rail_transport;Vehicle,
+fsd50k-dev:265198,killhead98,http://creativecommons.org/licenses/by-nc/3.0/,Drum_kit;Percussion;Musical_instrument;Music,drums;percussion
+fsd50k-dev:265361,lmr9,http://creativecommons.org/publicdomain/zero/1.0/,Crackle,
+fsd50k-dev:265983,Zabuhailo,http://creativecommons.org/licenses/by/3.0/,Electric_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,electric guitar;guitar
+fsd50k-dev:266005,Toivo161,http://creativecommons.org/licenses/by/3.0/,Piano;Keyboard_(musical);Musical_instrument;Music,piano
+fsd50k-dev:266600,SocializedArtist45,http://creativecommons.org/licenses/by/3.0/,Knock;Tap;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:267464,TeamTheBest,http://creativecommons.org/licenses/by/3.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:267954,anagar,http://creativecommons.org/publicdomain/zero/1.0/,Tearing,foley
+fsd50k-dev:268101,superfreq,http://creativecommons.org/licenses/by-nc/3.0/,Explosion,
+fsd50k-dev:270601,Hoerspielwerkstatt_HEF,http://creativecommons.org/licenses/by/3.0/,Acoustic_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,acoustic guitar;guitar
+fsd50k-dev:271442,RoooDyDoooDy,http://creativecommons.org/publicdomain/zero/1.0/,Sliding_door;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:271979,Polytest,http://creativecommons.org/publicdomain/zero/1.0/,Fireworks;Explosion,
+fsd50k-dev:272489,Ferguido,http://creativecommons.org/publicdomain/zero/1.0/,Shatter;Liquid;Glass,
+fsd50k-dev:273647,qyxs,http://creativecommons.org/publicdomain/zero/1.0/,Shatter;Glass,
+fsd50k-dev:274693,dsws,http://creativecommons.org/publicdomain/zero/1.0/,Rattle,
+fsd50k-dev:275363,n_audioman,http://creativecommons.org/licenses/by/3.0/,Bass_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,bass guitar;guitar
+fsd50k-dev:275891,n_audioman,http://creativecommons.org/licenses/by/3.0/,Bass_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,bass guitar;guitar
+fsd50k-dev:276938,gladkiy,http://creativecommons.org/publicdomain/zero/1.0/,Shatter;Glass,
+fsd50k-dev:278159,sirrealist2,http://creativecommons.org/publicdomain/zero/1.0/,Writing;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:280205,memuse,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:315942,benjaminharveydesign,http://creativecommons.org/publicdomain/zero/1.0/,Female_singing;Singing;Human_voice,voice
+fsd50k-dev:316558,else_fucker,http://creativecommons.org/publicdomain/zero/1.0/,Squeak;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:316640,benjaminharveydesign,http://creativecommons.org/publicdomain/zero/1.0/,Crowd;Yell;Human_group_actions;Shout;Human_voice,crowd ambience;vocal shout;voice
+fsd50k-dev:316648,benjaminharveydesign,http://creativecommons.org/publicdomain/zero/1.0/,Yell;Shout;Human_voice,vocal shout;voice
+fsd50k-dev:319781,Tristan_Lohengrin,http://creativecommons.org/licenses/by-nc/3.0/,Harp;Musical_instrument;Music,harp
+fsd50k-dev:319812,zmobie,http://creativecommons.org/publicdomain/zero/1.0/,Finger_snapping;Hands,finger snap
+fsd50k-dev:320767,wittte,http://creativecommons.org/licenses/by/3.0/,Motor_vehicle_(road);Siren;Vehicle;Alarm,siren
+fsd50k-dev:321454,vacuumfan7072,http://creativecommons.org/publicdomain/zero/1.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:322475,alcovebaron,http://creativecommons.org/publicdomain/zero/1.0/,Drill;Power_tool;Tools,machine ambience
+fsd50k-dev:324199,brterry,http://creativecommons.org/publicdomain/zero/1.0/,Electric_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,electric guitar;guitar
+fsd50k-dev:324202,brterry,http://creativecommons.org/publicdomain/zero/1.0/,Electric_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,electric guitar;guitar
+fsd50k-dev:324203,brterry,http://creativecommons.org/publicdomain/zero/1.0/,Electric_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,electric guitar;guitar
+fsd50k-dev:324275,reznik_Krkovicka,http://creativecommons.org/publicdomain/zero/1.0/,Siren;Alarm,siren
+fsd50k-dev:324328,monkeyman535,http://creativecommons.org/licenses/by/3.0/,Keys_jangling;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:324515,Adam_N,http://creativecommons.org/publicdomain/zero/1.0/,Fart,
+fsd50k-dev:324517,Adam_N,http://creativecommons.org/publicdomain/zero/1.0/,Fart,
+fsd50k-dev:324528,Adam_N,http://creativecommons.org/publicdomain/zero/1.0/,Fart,
+fsd50k-dev:324743,150112,http://creativecommons.org/licenses/by-nc/3.0/,Crackle;Tearing,foley
+fsd50k-dev:324755,thiss023,http://creativecommons.org/licenses/by-nc/3.0/,Toilet_flush;Domestic_sounds_and_home_sounds,
+fsd50k-dev:325331,Saskia_university_project,http://creativecommons.org/publicdomain/zero/1.0/,Splash_and_splatter;Liquid,
+fsd50k-dev:325419,TaXMaNFoReVeR,http://creativecommons.org/licenses/by-nc/3.0/,Chewing_and_mastication,
+fsd50k-dev:325560,140178sound,http://creativecommons.org/licenses/by-nc/3.0/,Packing_tape_and_duct_tape;Domestic_sounds_and_home_sounds,
+fsd50k-dev:325594,140178sound,http://creativecommons.org/licenses/by-nc/3.0/,Crackle;Domestic_sounds_and_home_sounds,
+fsd50k-dev:325663,sloppyjoe24,http://creativecommons.org/publicdomain/zero/1.0/,Fireworks;Explosion,
+fsd50k-dev:325767,MoniqueKruger,http://creativecommons.org/licenses/by-nc/3.0/,Meow;Cat;Domestic_animals_and_pets;Animal,animal sound
+fsd50k-dev:326195,Ernst53,http://creativecommons.org/licenses/by-nc/3.0/,Stream;Gurgling;Water,environmental sound;water ambience
+fsd50k-dev:326279,Spennnyyy,http://creativecommons.org/publicdomain/zero/1.0/,Piano;Keyboard_(musical);Musical_instrument;Music,piano
+fsd50k-dev:326323,Danelle150055Venter,http://creativecommons.org/licenses/by-nc/3.0/,Crumpling_and_crinkling,foley
+fsd50k-dev:326393,MorneDelport,http://creativecommons.org/licenses/by-nc/3.0/,Car;Motor_vehicle_(road);Vehicle,
+fsd50k-dev:326413,mickfire,http://creativecommons.org/licenses/by-nc/3.0/,Chewing_and_mastication;Chirp_and_tweet;Bird_vocalization_and_bird_call_and_bird_song;Bird;Wild_animals;Animal,animal sound;bird ambience
+fsd50k-dev:326706,botha9johann,http://creativecommons.org/licenses/by-nc/3.0/,Hiss,
+fsd50k-dev:326953,BuddyGuyTrask,http://creativecommons.org/publicdomain/zero/1.0/,Zipper_(clothing);Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:328458,AlexMurphy53,http://creativecommons.org/licenses/by-nc/3.0/,Squeak;Run,
+fsd50k-dev:328611,leandrocordeiro,http://creativecommons.org/publicdomain/zero/1.0/,Shatter;Chink_and_clink;Glass,
+fsd50k-dev:329061,kwahmah_02,http://creativecommons.org/licenses/by/3.0/,Trickle_and_dribble;Pour;Liquid,water ambience
+fsd50k-dev:329555,luiiiiiiii,http://creativecommons.org/licenses/by/3.0/,Rattle;Dishes_and_pots_and_pans;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:329557,luiiiiiiii,http://creativecommons.org/licenses/by/3.0/,Dishes_and_pots_and_pans;Chink_and_clink;Domestic_sounds_and_home_sounds;Glass,foley
+fsd50k-dev:330107,soundjoao,http://creativecommons.org/licenses/by/3.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:330662,womb_affliction,http://creativecommons.org/licenses/by/3.0/,Female_singing;Singing;Human_voice,voice
+fsd50k-dev:330706,womb_affliction,http://creativecommons.org/licenses/by/3.0/,Female_singing;Singing;Human_voice,voice
+fsd50k-dev:331802,ElectroShockNetwork,http://creativecommons.org/publicdomain/zero/1.0/,Bass_drum;Keyboard_(musical);Musical_instrument;Music;Drum;Percussion,drums;kick;percussion
+fsd50k-dev:332000,achinverma,http://creativecommons.org/publicdomain/zero/1.0/,Computer_keyboard;Typing;Domestic_sounds_and_home_sounds,
+fsd50k-dev:332416,musreville,http://creativecommons.org/licenses/by-nc/3.0/,Train;Rail_transport;Vehicle,
+fsd50k-dev:332600,jeudyx,http://creativecommons.org/publicdomain/zero/1.0/,Bowed_string_instrument;Musical_instrument;Music,strings
+fsd50k-dev:333080,Enoon,http://creativecommons.org/publicdomain/zero/1.0/,Drill;Power_tool;Tools,machine ambience
+fsd50k-dev:333288,larryblag,http://creativecommons.org/publicdomain/zero/1.0/,Sawing;Tools,
+fsd50k-dev:333318,womb_affliction,http://creativecommons.org/licenses/by/3.0/,Female_singing;Singing;Human_voice,voice
+fsd50k-dev:334210,Sethroph,http://creativecommons.org/publicdomain/zero/1.0/,Chewing_and_mastication,
+fsd50k-dev:334541,Teddy_Frost,http://creativecommons.org/publicdomain/zero/1.0/,Piano;Keyboard_(musical);Musical_instrument;Music,piano
+fsd50k-dev:334903,equiloud,http://creativecommons.org/licenses/by/3.0/,Car_passing_by;Traffic_noise_and_roadway_noise;Wind;Engine;Car;Motor_vehicle_(road);Vehicle,environmental sound;machine ambience;wind ambience
+fsd50k-dev:335969,newagesoup,http://creativecommons.org/licenses/by/3.0/,Glockenspiel;Bell;Mallet_percussion;Percussion;Musical_instrument;Music,bell;glockenspiel;mallet instrument;percussion
+fsd50k-dev:336516,chrillz3r,http://creativecommons.org/publicdomain/zero/1.0/,Cupboard_open_or_close;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:338080,omnisounddesign,http://creativecommons.org/licenses/by/3.0/,Stream;Gurgling;Water,environmental sound;water ambience
+fsd50k-dev:338719,LittleRainySeasons,http://creativecommons.org/licenses/by/3.0/,Burping_and_eructation,
+fsd50k-dev:339703,FFKoenigsegg20012017,http://creativecommons.org/publicdomain/zero/1.0/,Race_car_and_auto_racing;Accelerating_and_revving_and_vroom;Car;Motor_vehicle_(road);Vehicle;Engine,machine ambience
+fsd50k-dev:340998,esistnichtsoernst,http://creativecommons.org/publicdomain/zero/1.0/,Piano;Keyboard_(musical);Musical_instrument;Music,piano
+fsd50k-dev:341178,pnthr,http://creativecommons.org/publicdomain/zero/1.0/,Growling;Animal;Dog;Domestic_animals_and_pets,animal sound
+fsd50k-dev:342526,Maurice_J_K,http://creativecommons.org/licenses/by/3.0/,Writing;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:344281,TiesWijnen,http://creativecommons.org/licenses/by/3.0/,Printer;Mechanisms,
+fsd50k-dev:345685,Provan9,http://creativecommons.org/publicdomain/zero/1.0/,Walk_and_footsteps,foley
+fsd50k-dev:345940,osskr,http://creativecommons.org/publicdomain/zero/1.0/,Computer_keyboard;Typing;Domestic_sounds_and_home_sounds,
+fsd50k-dev:347790,ZoraGr,http://creativecommons.org/publicdomain/zero/1.0/,Sliding_door;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:347821,Dean Corso,http://creativecommons.org/licenses/by-nc/3.0/,Train;Rail_transport;Vehicle,
+fsd50k-dev:348332,rubenap,http://creativecommons.org/publicdomain/zero/1.0/,Bark;Dog;Domestic_animals_and_pets;Animal,animal sound
+fsd50k-dev:349401,zheng142326,http://creativecommons.org/publicdomain/zero/1.0/,Male_speech_and_man_speaking;Crowd;Cheering;Human_group_actions;Shout;Speech;Human_voice,crowd ambience;spoken phrase;vocal shout;voice
+fsd50k-dev:350439,benjaminharveydesign,http://creativecommons.org/publicdomain/zero/1.0/,Yell;Human_group_actions;Shout;Human_voice,vocal shout;voice
+fsd50k-dev:350446,benjaminharveydesign,http://creativecommons.org/publicdomain/zero/1.0/,Yell;Human_group_actions;Shout;Human_voice,vocal shout;voice
+fsd50k-dev:350451,benjaminharveydesign,http://creativecommons.org/publicdomain/zero/1.0/,Yell;Human_group_actions;Shout;Human_voice,vocal shout;voice
+fsd50k-dev:350578,Equality_X12,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:352287,cabled_mess,http://creativecommons.org/publicdomain/zero/1.0/,Tambourine;Percussion;Musical_instrument;Music,percussion;tambourine
+fsd50k-dev:352293,cabled_mess,http://creativecommons.org/publicdomain/zero/1.0/,Tambourine;Percussion;Musical_instrument;Music,percussion;tambourine
+fsd50k-dev:352737,j_e_f_f_g,http://creativecommons.org/publicdomain/zero/1.0/,Harmonica;Musical_instrument;Music,harmonica
+fsd50k-dev:352857,Hesterisek,http://creativecommons.org/licenses/by-nc/3.0/,Water_tap_and_faucet;Domestic_sounds_and_home_sounds,
+fsd50k-dev:352884,Robinhood76,http://creativecommons.org/licenses/by-nc/3.0/,Tabla;Drum;Percussion;Musical_instrument;Music,drums;percussion;tabla
+fsd50k-dev:352962,Shain_T,http://creativecommons.org/publicdomain/zero/1.0/,Stream;Chirp_and_tweet;Car_passing_by;Bird;Wild_animals;Animal;Water;Bird_vocalization_and_bird_call_and_bird_song;Car;Motor_vehicle_(road);Vehicle,animal sound;bird ambience;environmental sound;water ambience
+fsd50k-dev:353057,Nephthys0911,http://creativecommons.org/publicdomain/zero/1.0/,Scissors;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:353171,ivolipa,http://creativecommons.org/publicdomain/zero/1.0/,Fireworks;Explosion,
+fsd50k-dev:353609,DARKNESSEATER,http://creativecommons.org/publicdomain/zero/1.0/,Computer_keyboard;Typing;Domestic_sounds_and_home_sounds,
+fsd50k-dev:353928,frolickingdp1,http://creativecommons.org/publicdomain/zero/1.0/,Shatter;Explosion;Boom;Glass,
+fsd50k-dev:353953,Moo_Wonders,http://creativecommons.org/publicdomain/zero/1.0/,Traffic_noise_and_roadway_noise;Wind;Motor_vehicle_(road);Vehicle,environmental sound;wind ambience
+fsd50k-dev:353954,Moo_Wonders,http://creativecommons.org/publicdomain/zero/1.0/,Traffic_noise_and_roadway_noise;Wind;Motor_vehicle_(road);Vehicle,environmental sound;wind ambience
+fsd50k-dev:354058,eeease,http://creativecommons.org/publicdomain/zero/1.0/,Crowd;Human_group_actions,crowd ambience
+fsd50k-dev:359142,harveyjnz,http://creativecommons.org/licenses/by/3.0/,Crumpling_and_crinkling,foley
+fsd50k-dev:360300,Kleber_KGF,http://creativecommons.org/publicdomain/zero/1.0/,Drawer_open_or_close;Wood;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:360743,vacuumfan7072,http://creativecommons.org/publicdomain/zero/1.0/,Bus;Motor_vehicle_(road);Vehicle,
+fsd50k-dev:360890,dinkdonkdork,http://creativecommons.org/publicdomain/zero/1.0/,Cough;Respiratory_sounds,
+fsd50k-dev:361222,xXx_JPMC_xXx,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:361400,laserlife,http://creativecommons.org/publicdomain/zero/1.0/,Yell;Child_speech_and_kid_speaking;Human_group_actions;Laughter;Shout;Human_voice;Speech,spoken phrase;vocal laugh;vocal shout;voice
+fsd50k-dev:361578,j_e_f_f_g,http://creativecommons.org/publicdomain/zero/1.0/,Acoustic_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,acoustic guitar;guitar
+fsd50k-dev:362314,drogbaster,http://creativecommons.org/licenses/by-nc/3.0/,Sawing;Tools,
+fsd50k-dev:362357,tdes,http://creativecommons.org/licenses/by/3.0/,Walk_and_footsteps;Waves_and_surf;Ocean;Water,environmental sound;foley;water ambience
+fsd50k-dev:362665,11linda,http://creativecommons.org/licenses/by/3.0/,Shout;Human_voice,vocal shout;voice
+fsd50k-dev:362959,gastonsaenz,http://creativecommons.org/publicdomain/zero/1.0/,Livestock_and_farm_animals_and_working_animals;Animal,animal sound
+fsd50k-dev:364837,DomainHunter,http://creativecommons.org/licenses/by-nc/3.0/,Engine;Car;Motor_vehicle_(road);Vehicle,machine ambience
+fsd50k-dev:365220,Mochni,http://creativecommons.org/publicdomain/zero/1.0/,Walk_and_footsteps,foley
+fsd50k-dev:365326,Angie81Dee,http://creativecommons.org/licenses/by-nc/3.0/,Writing;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:365491,Caitlin_100,http://creativecommons.org/publicdomain/zero/1.0/,Cutlery_and_silverware;Drawer_open_or_close;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:365777,gloriagypsy,http://creativecommons.org/licenses/by/3.0/,Giggle;Laughter;Human_voice,vocal laugh;voice
+fsd50k-dev:366793,Gidion,http://creativecommons.org/licenses/by-nc/3.0/,Burping_and_eructation,
+fsd50k-dev:368453,SierraHWills,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:368470,gpugh,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:368594,JungleBean,http://creativecommons.org/licenses/by/3.0/,Piano;Keyboard_(musical);Musical_instrument;Music,piano
+fsd50k-dev:368841,SkyRaeVoicing,http://creativecommons.org/licenses/by/3.0/,Female_speech_and_woman_speaking;Shout;Speech;Human_voice,spoken phrase;vocal shout;voice
+fsd50k-dev:369054,AndrewAlexander,http://creativecommons.org/publicdomain/zero/1.0/,Idling;Car;Motor_vehicle_(road);Vehicle;Engine,machine ambience
+fsd50k-dev:369890,akirill,http://creativecommons.org/licenses/by/3.0/,Drum_kit;Percussion;Musical_instrument;Music,drums;percussion
+fsd50k-dev:370982,InSintesi,http://creativecommons.org/licenses/by/3.0/,Crackle,
+fsd50k-dev:371382,marcello777,http://creativecommons.org/licenses/by/3.0/,Male_speech_and_man_speaking;Speech;Human_voice,spoken phrase;voice
+fsd50k-dev:371385,marcello777,http://creativecommons.org/licenses/by/3.0/,Male_speech_and_man_speaking;Speech;Human_voice,spoken phrase;voice
+fsd50k-dev:372246,Durek,http://creativecommons.org/licenses/by/3.0/,Scissors;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:374050,Samulis,http://creativecommons.org/publicdomain/zero/1.0/,Trumpet;Brass_instrument;Musical_instrument;Music,trumpet
+fsd50k-dev:374056,Samulis,http://creativecommons.org/publicdomain/zero/1.0/,Trumpet;Brass_instrument;Musical_instrument;Music,trumpet
+fsd50k-dev:374077,Samulis,http://creativecommons.org/publicdomain/zero/1.0/,Trumpet;Brass_instrument;Musical_instrument;Music,trumpet
+fsd50k-dev:374100,Samulis,http://creativecommons.org/publicdomain/zero/1.0/,Trumpet;Brass_instrument;Musical_instrument;Music,trumpet
+fsd50k-dev:374108,Samulis,http://creativecommons.org/publicdomain/zero/1.0/,Trumpet;Brass_instrument;Musical_instrument;Music,trumpet
+fsd50k-dev:374109,Samulis,http://creativecommons.org/publicdomain/zero/1.0/,Trumpet;Brass_instrument;Musical_instrument;Music,trumpet
+fsd50k-dev:374125,Samulis,http://creativecommons.org/publicdomain/zero/1.0/,Trumpet;Brass_instrument;Musical_instrument;Music,trumpet
+fsd50k-dev:374170,Samulis,http://creativecommons.org/publicdomain/zero/1.0/,Trumpet;Brass_instrument;Musical_instrument;Music,trumpet
+fsd50k-dev:374175,Samulis,http://creativecommons.org/publicdomain/zero/1.0/,Trumpet;Brass_instrument;Musical_instrument;Music,trumpet
+fsd50k-dev:376197,AlanCat,http://creativecommons.org/publicdomain/zero/1.0/,Shatter;Glass,
+fsd50k-dev:376407,goblinjack,http://creativecommons.org/publicdomain/zero/1.0/,Sliding_door;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:377340,SBAudio,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:377342,SBAudio,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:377344,SBAudio,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:377348,SBAudio,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:377358,SBAudio,http://creativecommons.org/licenses/by/3.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:377383,SBAudio,http://creativecommons.org/licenses/by/3.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:377389,SBAudio,http://creativecommons.org/licenses/by/3.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:378105,DomainHunter,http://creativecommons.org/licenses/by/3.0/,Car;Motor_vehicle_(road);Vehicle,
+fsd50k-dev:378173,ghettovan,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:379142,13GPanska_Novakova_Klara,http://creativecommons.org/publicdomain/zero/1.0/,Cutlery_and_silverware;Dishes_and_pots_and_pans;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:379144,13GPanska_Novakova_Klara,http://creativecommons.org/publicdomain/zero/1.0/,Cutlery_and_silverware;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:379263,AdamsArchive,http://creativecommons.org/licenses/by/3.0/,Bathtub_(filling_or_washing);Water_tap_and_faucet;Domestic_sounds_and_home_sounds,
+fsd50k-dev:380787,ShyBlue,http://creativecommons.org/publicdomain/zero/1.0/,Splash_and_splatter;Liquid,
+fsd50k-dev:380806,EleniKlElen,http://creativecommons.org/publicdomain/zero/1.0/,Wind;Bird;Wild_animals;Animal,animal sound;environmental sound;wind ambience
+fsd50k-dev:380840,Getos,http://creativecommons.org/publicdomain/zero/1.0/,Shatter;Walk_and_footsteps;Chirp_and_tweet;Chink_and_clink;Glass;Bird_vocalization_and_bird_call_and_bird_song;Bird;Wild_animals;Animal,animal sound;bird ambience;foley
+fsd50k-dev:381261,edwar64896,http://creativecommons.org/licenses/by/3.0/,Dishes_and_pots_and_pans;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:381658,13FPanska_Prochazkova_Lucie,http://creativecommons.org/publicdomain/zero/1.0/,Acoustic_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,acoustic guitar;guitar
+fsd50k-dev:382301,goingnowhereeatingthings,http://creativecommons.org/licenses/by/3.0/,Sneeze;Respiratory_sounds,
+fsd50k-dev:382810,pjcohen,http://creativecommons.org/licenses/by/3.0/,Cowbell;Bell,bell;cowbell
+fsd50k-dev:382813,pjcohen,http://creativecommons.org/licenses/by/3.0/,Cowbell;Bell,bell;cowbell
+fsd50k-dev:383976,Marianne9876,http://creativecommons.org/publicdomain/zero/1.0/,Doorbell;Door;Domestic_sounds_and_home_sounds;Alarm,foley
+fsd50k-dev:385821,CrazyWashingtonianTrainNut,http://creativecommons.org/licenses/by-nc/3.0/,Train;Rail_transport;Vehicle,
+fsd50k-dev:386042,TaraMG,http://creativecommons.org/licenses/by/3.0/,Splash_and_splatter;Liquid,
+fsd50k-dev:386491,iimck,http://creativecommons.org/licenses/by/3.0/,Whispering;Human_voice,voice;whisper
+fsd50k-dev:386496,iimck,http://creativecommons.org/licenses/by/3.0/,Whispering;Human_voice,voice;whisper
+fsd50k-dev:386498,iimck,http://creativecommons.org/licenses/by/3.0/,Whispering;Human_voice,voice;whisper
+fsd50k-dev:386667,laurenmg95,http://creativecommons.org/licenses/by/3.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:387197,Eelke,http://creativecommons.org/licenses/by/3.0/,Cutlery_and_silverware;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:387962,giddster,http://creativecommons.org/publicdomain/zero/1.0/,Burping_and_eructation,
+fsd50k-dev:387981,DCPoke,http://creativecommons.org/publicdomain/zero/1.0/,Chirp_and_tweet;Slam;Car;Motor_vehicle_(road);Vehicle;Bird_vocalization_and_bird_call_and_bird_song;Bird;Wild_animals;Animal;Door;Domestic_sounds_and_home_sounds,animal sound;bird ambience;foley
+fsd50k-dev:387983,DCPoke,http://creativecommons.org/publicdomain/zero/1.0/,Chirp_and_tweet;Slam;Car;Motor_vehicle_(road);Vehicle;Bird_vocalization_and_bird_call_and_bird_song;Bird;Wild_animals;Animal;Door;Domestic_sounds_and_home_sounds,animal sound;bird ambience;foley
+fsd50k-dev:388912,Australopithecusman,http://creativecommons.org/licenses/by/3.0/,Computer_keyboard;Typing;Domestic_sounds_and_home_sounds,
+fsd50k-dev:389548,J0hnLang,http://creativecommons.org/publicdomain/zero/1.0/,Crumpling_and_crinkling,foley
+fsd50k-dev:389690,meggiepie,http://creativecommons.org/publicdomain/zero/1.0/,Cutlery_and_silverware;Whoosh_and_swoosh_and_swish;Domestic_sounds_and_home_sounds,foley;whoosh
+fsd50k-dev:389692,meggiepie,http://creativecommons.org/publicdomain/zero/1.0/,Hammer;Tools,
+fsd50k-dev:390788,mhad,http://creativecommons.org/publicdomain/zero/1.0/,Idling;Engine,machine ambience
+fsd50k-dev:390939,feferfila,http://creativecommons.org/publicdomain/zero/1.0/,Zipper_(clothing);Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:391362,guamorims,http://creativecommons.org/publicdomain/zero/1.0/,Screaming;Human_voice,vocal scream;voice
+fsd50k-dev:392153,vsipereck,http://creativecommons.org/publicdomain/zero/1.0/,Writing;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:392497,SaraBerrio,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:392663,corkob,http://creativecommons.org/publicdomain/zero/1.0/,Wind;Ocean;Water,environmental sound;water ambience;wind ambience
+fsd50k-dev:394070,sophoclesarvanitis,http://creativecommons.org/publicdomain/zero/1.0/,Thunder;Thunderstorm,environmental sound;rain ambience
+fsd50k-dev:394558,sijeh,http://creativecommons.org/publicdomain/zero/1.0/,Splash_and_splatter;Liquid,
+fsd50k-dev:394608,11linda,http://creativecommons.org/licenses/by/3.0/,Shout;Human_voice,vocal shout;voice
+fsd50k-dev:394946,Areti18,http://creativecommons.org/publicdomain/zero/1.0/,Slam;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:395863,jokallset,http://creativecommons.org/publicdomain/zero/1.0/,Hammer;Tools,
+fsd50k-dev:397236,black_trillium,http://creativecommons.org/publicdomain/zero/1.0/,Livestock_and_farm_animals_and_working_animals;Animal,animal sound
+fsd50k-dev:398412,mitkonikov,http://creativecommons.org/publicdomain/zero/1.0/,Camera;Mechanisms,
+fsd50k-dev:398724,aruncbose1,http://creativecommons.org/publicdomain/zero/1.0/,Bark;Dog;Domestic_animals_and_pets;Animal,animal sound
+fsd50k-dev:400130,monkeyman535,http://creativecommons.org/licenses/by/3.0/,Car_passing_by;Race_car_and_auto_racing;Accelerating_and_revving_and_vroom;Car;Motor_vehicle_(road);Vehicle;Engine,machine ambience
+fsd50k-dev:400576,SieuAmThanh,http://creativecommons.org/publicdomain/zero/1.0/,Bark;Dog;Domestic_animals_and_pets;Animal,animal sound
+fsd50k-dev:400992,UrsaDaBear,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:401330,flevarisp,http://creativecommons.org/licenses/by-nc/3.0/,Engine_starting;Engine,machine ambience
+fsd50k-dev:402443,yitibit,http://creativecommons.org/publicdomain/zero/1.0/,Knock;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:402801,Lisework,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:403001,Skullfire2099,http://creativecommons.org/publicdomain/zero/1.0/,Tick-tock;Clock;Mechanisms,
+fsd50k-dev:403026,alanmcki,http://creativecommons.org/licenses/by/3.0/,Livestock_and_farm_animals_and_working_animals;Animal,animal sound
+fsd50k-dev:403057,Vesperia94,http://creativecommons.org/publicdomain/zero/1.0/,Applause;Screaming;Crowd;Cheering;Clapping;Shout;Human_group_actions;Human_voice;Hands,clap;crowd ambience;vocal scream;vocal shout;voice
+fsd50k-dev:403315,themusicitself,http://creativecommons.org/licenses/by-nc/3.0/,Wind_instrument_and_woodwind_instrument;Musical_instrument;Music,
+fsd50k-dev:404532,465411956@q.com,http://creativecommons.org/publicdomain/zero/1.0/,Zipper_(clothing);Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:404892,gnuoctathorpe,http://creativecommons.org/publicdomain/zero/1.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:404894,gnuoctathorpe,http://creativecommons.org/publicdomain/zero/1.0/,Hi-hat;Cymbal;Percussion;Musical_instrument;Music,cymbal;hi-hat;percussion
+fsd50k-dev:405135,Mjeno,http://creativecommons.org/publicdomain/zero/1.0/,Chirp_and_tweet;Wind;Bird_vocalization_and_bird_call_and_bird_song;Bird;Wild_animals;Animal,animal sound;bird ambience;environmental sound;wind ambience
+fsd50k-dev:405139,Mjeno,http://creativecommons.org/publicdomain/zero/1.0/,Buzz;Wind;Insect;Wild_animals;Animal,animal sound;environmental sound;wind ambience
+fsd50k-dev:405140,Mjeno,http://creativecommons.org/publicdomain/zero/1.0/,Chirp_and_tweet;Wind;Bird_vocalization_and_bird_call_and_bird_song;Bird;Wild_animals;Animal,animal sound;bird ambience;environmental sound;wind ambience
+fsd50k-dev:405320,tberger2168,http://creativecommons.org/publicdomain/zero/1.0/,Crumpling_and_crinkling,foley
+fsd50k-dev:405646,apinasaundi,http://creativecommons.org/publicdomain/zero/1.0/,Crushing,
+fsd50k-dev:407269,Nightwatcher98,http://creativecommons.org/licenses/by-nc/3.0/,Hammer;Tools,
+fsd50k-dev:407433,Hencocor,http://creativecommons.org/licenses/by-nc/3.0/,Tick-tock;Clock;Mechanisms,
+fsd50k-dev:407637,jph298,http://creativecommons.org/publicdomain/zero/1.0/,Doorbell;Door;Domestic_sounds_and_home_sounds;Alarm,foley
+fsd50k-dev:407685,shorzie,http://creativecommons.org/licenses/by-nc/3.0/,Burping_and_eructation;Breathing;Respiratory_sounds,breath;vocal breath
+fsd50k-dev:407688,shorzie,http://creativecommons.org/licenses/by-nc/3.0/,Chewing_and_mastication,
+fsd50k-dev:407718,shorzie,http://creativecommons.org/licenses/by-nc/3.0/,Crumpling_and_crinkling,foley
+fsd50k-dev:408538,Nomfundo_k,http://creativecommons.org/licenses/by-nc/3.0/,Scissors;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:413854,jaegrover,http://creativecommons.org/publicdomain/zero/1.0/,Wind;Rain;Water,environmental sound;rain ambience;wind ambience
+fsd50k-dev:414659,johnb820,http://creativecommons.org/publicdomain/zero/1.0/,Frog;Wild_animals;Animal,animal sound
+fsd50k-dev:414848,Link-Boy,http://creativecommons.org/publicdomain/zero/1.0/,Thump_and_thud,
+fsd50k-dev:415371,Smukey9,http://creativecommons.org/publicdomain/zero/1.0/,Guitar;Plucked_string_instrument;Musical_instrument;Music,guitar
+fsd50k-dev:415375,Smukey9,http://creativecommons.org/publicdomain/zero/1.0/,Guitar;Plucked_string_instrument;Musical_instrument;Music,guitar
+fsd50k-dev:415377,Smukey9,http://creativecommons.org/publicdomain/zero/1.0/,Acoustic_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,acoustic guitar;guitar
+fsd50k-dev:416495,sirplus,http://creativecommons.org/publicdomain/zero/1.0/,Tearing,foley
+fsd50k-dev:417858,Wuaga,http://creativecommons.org/publicdomain/zero/1.0/,Doorbell;Door;Domestic_sounds_and_home_sounds;Alarm,foley
+fsd50k-dev:418200,ddaedalus,http://creativecommons.org/licenses/by/3.0/,Fixed-wing_aircraft_and_airplane;Aircraft;Vehicle,
+fsd50k-dev:418385,Mrthenoronha,http://creativecommons.org/publicdomain/zero/1.0/,Fixed-wing_aircraft_and_airplane;Aircraft;Vehicle,
+fsd50k-dev:419186,14GPanskaNechvatalova_Jana,http://creativecommons.org/publicdomain/zero/1.0/,Hammer;Tools,
+fsd50k-dev:419447,Mativve,http://creativecommons.org/licenses/by/3.0/,Walk_and_footsteps,foley
+fsd50k-dev:419475,14G_Panska_Hoskovcova_Eliska,http://creativecommons.org/publicdomain/zero/1.0/,Subway_and_metro_and_underground;Rail_transport;Vehicle,
+fsd50k-dev:420482,isaacpauls,http://creativecommons.org/publicdomain/zero/1.0/,Stream;Traffic_noise_and_roadway_noise;Gurgling;Water;Motor_vehicle_(road);Vehicle,environmental sound;water ambience
+fsd50k-dev:420692,abletunes,http://creativecommons.org/licenses/by/3.0/,Bass_drum;Keyboard_(musical);Musical_instrument;Music;Drum;Percussion,drums;kick;percussion
+fsd50k-dev:420931,Cigaro30,http://creativecommons.org/licenses/by/3.0/,Walk_and_footsteps,foley
+fsd50k-dev:420937,Cigaro30,http://creativecommons.org/licenses/by/3.0/,Walk_and_footsteps,foley
+fsd50k-dev:420946,Mrthenoronha,http://creativecommons.org/licenses/by-nc/3.0/,Electric_guitar;Guitar;Plucked_string_instrument;Musical_instrument;Music,electric guitar;guitar
+fsd50k-dev:424136,rcroller,http://creativecommons.org/publicdomain/zero/1.0/,Thunder;Rain;Thunderstorm;Water,environmental sound;rain ambience
+fsd50k-dev:424317,miksmusic,http://creativecommons.org/licenses/by/3.0/,Boom;Explosion,
+fsd50k-dev:424727,MariaMNobre,http://creativecommons.org/licenses/by/3.0/,Frying_(food);Domestic_sounds_and_home_sounds,
+fsd50k-dev:424793,johnnyguitar01,http://creativecommons.org/publicdomain/zero/1.0/,Applause;Crowd;Human_group_actions,crowd ambience
+fsd50k-dev:426377,pbharri,http://creativecommons.org/publicdomain/zero/1.0/,Microwave_oven;Domestic_sounds_and_home_sounds,
+fsd50k-dev:427012,Dannaye,http://creativecommons.org/licenses/by-nc/3.0/,Accelerating_and_revving_and_vroom;Engine,machine ambience
+fsd50k-dev:427014,Dannaye,http://creativecommons.org/licenses/by-nc/3.0/,Accelerating_and_revving_and_vroom;Engine,machine ambience
+fsd50k-dev:427245,GET_Accel,http://creativecommons.org/licenses/by/3.0/,Tick;Wind;Fire,environmental sound;wind ambience
+fsd50k-dev:427305,tmrobin1,http://creativecommons.org/publicdomain/zero/1.0/,Drawer_open_or_close;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:427988,womb_affliction,http://creativecommons.org/licenses/by/3.0/,Singing;Human_voice,voice
+fsd50k-dev:428775,pauliperez1999,http://creativecommons.org/licenses/by/3.0/,Sneeze;Respiratory_sounds,
+fsd50k-dev:428778,pauliperez1999,http://creativecommons.org/licenses/by/3.0/,Laughter;Human_voice,vocal laugh;voice
+fsd50k-dev:428779,pauliperez1999,http://creativecommons.org/licenses/by/3.0/,Laughter;Human_voice,vocal laugh;voice
+fsd50k-dev:429130,leonelmail,http://creativecommons.org/publicdomain/zero/1.0/,Screech;Slam;Door;Domestic_sounds_and_home_sounds,foley
+fsd50k-dev:429175,SamuelGremaud,http://creativecommons.org/publicdomain/zero/1.0/,Church_bell;Bell,bell
+fsd50k-dev:429706,IchBinChrist,http://creativecommons.org/publicdomain/zero/1.0/,Chicken_and_rooster;Fowl;Livestock_and_farm_animals_and_working_animals;Animal,animal sound
+fsd50k-dev:429889,matheusmarchetti,http://creativecommons.org/publicdomain/zero/1.0/,Chewing_and_mastication,
+fsd50k-dev:430710,Juandamb,http://creativecommons.org/publicdomain/zero/1.0/,Packing_tape_and_duct_tape;Domestic_sounds_and_home_sounds,
+fsd50k-dev:431355,allpurposedw,http://creativecommons.org/publicdomain/zero/1.0/,Organ;Keyboard_(musical);Musical_instrument;Music,organ
+fsd50k-dev:431390,epicdude959,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:431628,SieuAmThanh,http://creativecommons.org/publicdomain/zero/1.0/,Yell;Shout;Human_voice,vocal shout;voice
+fsd50k-dev:432056,otreck,http://creativecommons.org/publicdomain/zero/1.0/,Wind,environmental sound;wind ambience
+fsd50k-dev:432422,WilliamJMeyer,http://creativecommons.org/publicdomain/zero/1.0/,Coin_(dropping);Domestic_sounds_and_home_sounds,
+fsd50k-dev:432782,lohmann333,http://creativecommons.org/licenses/by/3.0/,Stream;Gurgling;Water,environmental sound;water ambience
+fsd50k-dev:432869,xtrgamr,http://creativecommons.org/licenses/by/3.0/,Crash_cymbal;Cymbal;Percussion;Musical_instrument;Music,crash cymbal;cymbal;percussion
+fsd50k-dev:433886,jodybruchon,http://creativecommons.org/publicdomain/zero/1.0/,Drip;Sink_(filling_or_washing);Water_tap_and_faucet;Liquid;Domestic_sounds_and_home_sounds,
+fsd50k-dev:433985,brunchik,http://creativecommons.org/publicdomain/zero/1.0/,Tearing,foley
+fsd50k-dev:434145,mfearnley,http://creativecommons.org/publicdomain/zero/1.0/,Tick;Whoosh_and_swoosh_and_swish;Fire,whoosh
+fsd50k-dev:434818,dersuperanton,http://creativecommons.org/licenses/by/3.0/,Bicycle_bell;Bell;Bicycle;Vehicle;Alarm,bell

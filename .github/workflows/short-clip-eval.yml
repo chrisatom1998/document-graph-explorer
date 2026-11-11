@@ -8,6 +8,8 @@ on:
   workflow_dispatch:
 
 env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
   ONNXRUNTIME_NODE_INSTALL: skip
   BASE_REF: d1b7b05928804975802348288f29384ce5a40245
   MUSIC_MODEL_PATHS: |
@@ -26,10 +28,10 @@ jobs:
         build: [base, branch]
         split: [calibration, test]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -62,7 +64,7 @@ jobs:
           npx vite-node scripts/short-clip-displayed.mjs out/run/graph-export.json out/run/r
           python3 scripts/short-clip-report.py out/run ${{ matrix.split }} > out/report.json
           set -o pipefail; node scripts/compare-tag-reports.mjs out/report.json
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: short-clip-${{ matrix.build }}-${{ matrix.split }}
@@ -82,8 +84,8 @@ jobs:
       matrix:
         split: [calibration, test]
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v7
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/download-artifact@v8
         with:
           pattern: short-clip-*-${{ matrix.split }}
           path: reports

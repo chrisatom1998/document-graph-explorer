@@ -13,7 +13,7 @@ Writes to <out-dir>:
   eval-<name>.json / eval-<name>.npy   eval manifest clips (test split only) as int16 32 kHz waveforms [N, 320000], so
                     the exported ONNX model is scored end to end from audio
 """
-import ast, csv, io, json, os, subprocess, sys, tarfile
+import csv, io, json, os, subprocess, sys, tarfile
 from concurrent.futures import ThreadPoolExecutor
 import warnings
 import numpy as np

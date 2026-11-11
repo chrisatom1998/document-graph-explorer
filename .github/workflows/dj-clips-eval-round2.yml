@@ -15,6 +15,8 @@ permissions:
   contents: write
 
 env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
   ONNXRUNTIME_NODE_INSTALL: skip
   OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
   MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git
@@ -35,7 +37,7 @@ jobs:
       matrix:
         set: [openmic, mtgkey]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Select OpenMIC clips
         if: matrix.set == 'openmic'
         run: |
@@ -57,7 +59,7 @@ jobs:
             for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
               && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
           fi
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: dj2-${{ matrix.set }}-audio
           path: |
@@ -76,12 +78,12 @@ jobs:
         set: [openmic, mtgkey]
         shard: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v7
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/download-artifact@v8
         with:
           name: dj2-${{ matrix.set }}-audio
           path: clips
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -102,7 +104,7 @@ jobs:
           AUDIO_DIR=clips/audio AUDIO_EXT=${{ matrix.set == 'openmic' && 'ogg' || 'wav' }} \
             MANIFEST=clips/$DOCS/${{ matrix.set == 'mtgkey' && 'mtg-key' || 'openmic' }}-manifest.json SHARD=${{ matrix.shard }}/4 \
             node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: dj2-${{ matrix.set }}-export-${{ matrix.shard }}
@@ -115,17 +117,17 @@ jobs:
     if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: dj2-*-export-*
           path: exports
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: dj2-*-audio
           path: clips

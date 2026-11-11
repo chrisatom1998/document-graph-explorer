@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DocNode } from '../model/types';
 import type { MusicAnalysis } from './musicTypes';
 import { sanitizeMusicAnalysis } from './musicTypes';
-import { buildMusicEdges, musicPairEdges, refreshMusicEdges, MUSIC_NEIGHBOR_LIMIT, MUSIC_NEIGHBORS_PER_KIND } from './musicLinks';
+import { buildMusicEdges, musicPairEdges, refreshMusicEdges, soundsLike, MUSIC_NEIGHBOR_LIMIT, MUSIC_NEIGHBORS_PER_KIND } from './musicLinks';
 import { instrumentScores } from './instrumentLabels';
 import { sanitizeGraphExport } from '../persistence/validateImport';
 import { createRecognition } from './recognition';
@@ -197,13 +197,15 @@ it.each(['rejected', 'uncertain'] as const)('removes cymbal sound edges after a 
     djTags: [{ group: 'production', label: 'cymbal', score: .9, model: 'Trained head' }] } });
   const a = cymbal('a'), b = cymbal('b');
   const initial = musicPairEdges(a, b);
-  expect(initial).toMatchObject([{ kind: 'sound', weight: .7 }]);
+  // A shown cymbal also shows the drums umbrella, so the two tracks share an instrument too.
+  expect(initial).toMatchObject([{ kind: 'instrument', weight: .7 }, { kind: 'sound', weight: .7 }]);
   const blocked = { ...a, audio: { ...a.audio!, soundReviews: [{ dimension: 'source' as const, labelId: 'cymbals', decision,
     scope: 'track' as const, at: '2026-10-07T12:00:00Z', evidenceRunId: 'old' }] } };
   expect(musicPairEdges(blocked, b)).toEqual([]);
   expect(refreshMusicEdges([blocked, b], initial)).toEqual([]);
   const confirmed = { ...blocked, audio: { ...blocked.audio, soundReviews: [...blocked.audio.soundReviews,
     { ...blocked.audio.soundReviews[0], dimension: 'effect' as const, labelId: 'cymbal', decision: 'confirmed' as const }] } };
+  // A hand-confirmed cymbal shows as picked, without the drums umbrella; b's model cymbal still shows drums alone.
   expect(musicPairEdges(confirmed, b)).toMatchObject([{ kind: 'sound', weight: .7 }]);
 });
 it.each(['rejected', 'uncertain', 'confirmed'] as const)('preserves the latest %s cymbal review through analysis and graph round trips', decision => {
@@ -432,5 +434,32 @@ describe('sound-alike score: centered fingerprints and music styles', () => {
     const [x, y] = pair(.55);
     const other = [{ label: 'Classical---Baroque', score: .7 }];
     expect(musicPairEdges(node('a', { embedding: x, styles }), node('b', { embedding: y, styles: other })).filter(e => e.kind === 'similar')).toEqual([]);
+  });
+});
+
+describe('more like this (soundsLike)', () => {
+  it('ranks every same-sounding clip, not only the 3 linked, and leaves different sounds out', () => {
+    const nodes = [0, 1].flatMap(g => [0, 1, 2, 3, 4, 5].map(m => sounding(`g${g}m${m}`, g, m)));
+    const hits = soundsLike('g0m0', nodes)!;
+    expect(hits.map(h => h.id).sort()).toEqual(['g0m1', 'g0m2', 'g0m3', 'g0m4', 'g0m5']);
+    for (let i = 1; i < hits.length; i++) expect(hits[i - 1].score).toBeGreaterThanOrEqual(hits[i].score);
+    const linked = buildMusicEdges(nodes).filter(e => e.kind === 'similar' && (e.source === 'g0m0' || e.target === 'g0m0'));
+    expect(linked.length).toBeLessThan(hits.length);
+    expect(soundsLike('g0m0', nodes, [], 2)).toHaveLength(2);
+  });
+  it('is undefined for a clip without a fingerprint and skips clips without one', () => {
+    const nodes = [node('bare'), sounding('a', 0, 0), sounding('b', 0, 1), node('other')];
+    expect(soundsLike('bare', nodes)).toBeUndefined();
+    expect(soundsLike('missing', nodes)).toBeUndefined();
+    expect(soundsLike('a', nodes)!.map(h => h.id)).toEqual(['b']);
+  });
+  it('counts only audio files and leaves out exact copies of the seed', () => {
+    const stray: DocNode = { ...sounding('text', 0, 2), fileType: 'markdown' as DocNode['fileType'] };
+    const copy = { ...sounding('copy', 0, 0) };
+    const nodes = [sounding('a', 0, 0), sounding('b', 0, 1), stray, copy];
+    const duplicate = { id: 'a->copy:version', source: 'a', target: 'copy', kind: 'version' as const, weight: 1, evidence: ['Same recording: test.'] };
+    expect(soundsLike('a', nodes)!.map(h => h.id)).toEqual(['copy', 'b']);
+    expect(soundsLike('a', nodes, [duplicate])!.map(h => h.id)).toEqual(['b']);
+    expect(soundsLike('text', nodes)).toBeUndefined();
   });
 });

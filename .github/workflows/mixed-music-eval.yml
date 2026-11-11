@@ -14,6 +14,8 @@ permissions:
   contents: write
 
 env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
   ONNXRUNTIME_NODE_INSTALL: skip
   BASE_REF: d1b7b05928804975802348288f29384ce5a40245
   OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
@@ -28,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Download OpenMIC-2018
         run: |
           curl -fsSL --retry 6 -o "$RUNNER_TEMP/openmic.tgz" "$OPENMIC"
@@ -43,7 +45,7 @@ jobs:
               commit -m "Freeze the mixed-music tag benchmark (OpenMIC test clips)"
             for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" && break; sleep $((2**i)); done
           fi
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: mixed-music-audio
           path: |
@@ -61,14 +63,14 @@ jobs:
         build: [base, branch]
         shard: [0, 1, 2]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: mixed-music-audio
           path: mm
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -91,7 +93,7 @@ jobs:
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
           AUDIO_DIR=mm/mixed-audio AUDIO_EXT=ogg MANIFEST=mm/docs/evaluations/mixed-music-2026-10-05/manifest.json SHARD=${{ matrix.shard }}/3 \
             node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mixed-music-${{ matrix.build }}-${{ matrix.shard }}
@@ -108,17 +110,17 @@ jobs:
       matrix:
         build: [base, branch]
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: mixed-music-${{ matrix.build }}-*
           path: exports
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: mixed-music-audio
           path: mm
@@ -126,7 +128,7 @@ jobs:
         run: |
           MANIFEST=mm/docs/evaluations/mixed-music-2026-10-05/manifest.json npx vite-node scripts/mixed-music/score.mjs report.json exports/*/graph-export.json
           set -o pipefail; node scripts/compare-tag-reports.mjs --min-positives 5 report.json
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: mixed-music-report-${{ matrix.build }}
           path: report.json
@@ -138,8 +140,8 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v7
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/download-artifact@v8
         with:
           pattern: mixed-music-report-*
           path: reports

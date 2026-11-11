@@ -10,7 +10,7 @@ Test sources (frozen here, never trained on):
     (drums, voices, impacts...). New synth heads never see these uploaders.
 Usage: python3 scripts/build-synth-fresh-bench.py
 """
-import csv, hashlib, io, json, os, subprocess, sys, tarfile, wave, zipfile
+import hashlib, json, os, subprocess, sys, tarfile, zipfile
 from collections import Counter
 
 MEDIA = '/Users/chrisjohnson/Documents/Media'

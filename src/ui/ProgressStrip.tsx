@@ -42,6 +42,7 @@ function truncateName(name: string, max = 20): string {
 
 export default function ProgressStrip() {
   const phase = useGraphStore((s) => s.phase);
+  const graphUsable = useGraphStore((s) => s.graphUsable);
   const fileStatuses = useGraphStore((s) => s.fileStatuses);
   const ignoredFiles = useGraphStore((s) => s.ignoredFiles);
   const modelProgress = useGraphStore((s) => s.modelProgress);
@@ -109,9 +110,12 @@ export default function ProgressStrip() {
     ? enrichProgress?.done ?? 0
     : statuses.filter((s) => s.stage === 'placed' || s.stage === 'cached').length;
   const recentFiles = enriching ? [] : statuses.slice(-MAX_FILE_CHIPS);
+  const refining = graphUsable && (phase === 'embedding' || phase === 'connecting');
   const phaseLabel =
     phase === 'ready'
       ? 'Ready'
+      : refining
+        ? 'Refining connections…'
       : enriching && enrichProgress?.note
         ? `Enriching — ${enrichProgress.note}`
         : music ? 'Analyzing music…' : PHASE_LABEL[phase] ?? 'Working…';

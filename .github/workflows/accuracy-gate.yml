@@ -11,6 +11,16 @@ on:
     branches: [main]
   push:
     branches: [main]
+  # GitHub drops a cache that has not been restored for 7 days. Main's own gate is the only run that
+  # writes the shared audio cache. Monday 06:15 UTC re-runs the full set and re-saves this commit's baseline.
+  # That cron shares the main concurrency group, so a busy day can drop it; accuracy-gate-cache.yml restores
+  # the audio every day and is what keeps the 7-day window. A quiet stretch (13 days, as of 2026-10-30) is
+  # what made every PR re-download Jamendo from cdn.freesound.org.
+  schedule:
+    - cron: '15 6 * * 1'
+  # Actions → Accuracy gate → Run workflow, on main, after this file is on main. Same full set as a push.
+  # This is the run that refills a cache that has already expired.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -27,4 +37,4 @@ jobs:
   held-out:
     uses: ./.github/workflows/accuracy-gate-run.yml
     with:
-      mode: ${{ github.event_name == 'push' && 'full' || 'fast' }}
+      mode: ${{ (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'full' || 'fast' }}

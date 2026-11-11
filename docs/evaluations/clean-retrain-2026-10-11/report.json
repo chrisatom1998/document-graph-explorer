@@ -1,0 +1,2295 @@
+{
+ "kind": "clean-retrain-fair-v2",
+ "shipLine": "60/30",
+ "judge": "Judge old vs clean CLAP heads on the fresh board test sets with the board's rules, and pick each clean head's cutoff\nFAIRLY (container only; test audio and ids never leave the project folder).\n\nUsage: python3 -I fair_judge.py <emb dir> <learned-main.json> <clean heads.json> <latest.json> <out.json>\n\n- Sets: the board's sets (fresh-tests-2026-10-11/sets/*.csv). The locked free-tag-set holdout is NOT used.\n- Clip score = max over 10 s windows of sigmoid(bias + w . x/|x|), as the app's learned heads.\n- Labels as the board: present (with mergedInto parents) = positive, absent = negative, else skipped.\n- Pass rule as the board: every set with >= 5 positives has P >= 0.6 and R >= 0.3, at least one of them has negatives,\n  and a set with < 5 positives and >= 50 negatives false-alarms on <= 1% of them.\n- Fair best of both: clips go to half A or B by sha256('pf|' + group) % 2 (whole uploader / pack / instrument on one side,\n  as precision_first.py). Each clean head has two cutoffs fixed from training out-of-fold scores (precision-first and\n  balanced). On each half the cutoff is chosen (precision-first, training's default, unless it fails there and balanced passes), then judged only on the other\n  half. A head passes when both directions pass.",
+ "sets": {
+  "free-tag-set-test": {
+   "clips": 1050,
+   "notEmbedded": 0
+  },
+  "fsd50k-eval": {
+   "clips": 10231,
+   "notEmbedded": 0
+  },
+  "idmt-bass": {
+   "clips": 3623,
+   "notEmbedded": 1683
+  },
+  "nsynth-test": {
+   "clips": 4096,
+   "notEmbedded": 0
+  },
+  "sasse-test": {
+   "clips": 2702,
+   "notEmbedded": 0
+  }
+ },
+ "heads": [
+  {
+   "label": "crowd ambience",
+   "threshold": 0.985,
+   "cutoff": "precision-first",
+   "coefficientDigest": "5c2704aa80af816c1fd3c2643c945335a0bb2c87228e5d32fc65a837918eb339",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairPass60_30": true,
+   "sets": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.5,
+     "positives": 12,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.92,
+     "r": 0.492,
+     "positives": 256,
+     "negatives": 9975,
+     "fp": 11
+    }
+   }
+  },
+  {
+   "label": "finger snap",
+   "threshold": 0.958,
+   "cutoff": "precision-first",
+   "coefficientDigest": "1e2fa430b65477fb8e379a1fed26e27cc2b7994529d6b70c2fa900a8526d2225",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairPass60_30": true,
+   "sets": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 1.0,
+     "positives": 9,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.681,
+     "r": 0.731,
+     "positives": 67,
+     "negatives": 10164,
+     "fp": 23
+    }
+   }
+  },
+  {
+   "label": "harmonica",
+   "threshold": 0.752,
+   "cutoff": "precision-first",
+   "coefficientDigest": "f688b68b9b244ac7deb61cefcd35ee2e49173d290b83d9c860cc993a7ee3554d",
+   "countedSets": [
+    "fsd50k-eval"
+   ],
+   "fairPass60_30": true,
+   "sets": {
+    "fsd50k-eval": {
+     "p": 0.709,
+     "r": 0.966,
+     "positives": 58,
+     "negatives": 10173,
+     "fp": 23
+    }
+   }
+  },
+  {
+   "label": "harp",
+   "threshold": 0.846,
+   "cutoff": "precision-first",
+   "coefficientDigest": "7ef661d32f61093764fddd62348f290c679004cb8798003ae36c636a16d8535a",
+   "countedSets": [
+    "fsd50k-eval"
+   ],
+   "fairPass60_30": true,
+   "sets": {
+    "fsd50k-eval": {
+     "p": 0.78,
+     "r": 0.807,
+     "positives": 57,
+     "negatives": 10174,
+     "fp": 13
+    }
+   }
+  },
+  {
+   "label": "snare",
+   "threshold": 0.856,
+   "cutoff": "precision-first",
+   "coefficientDigest": "04ff081aa99497485e8b3817efa1506930cad6225bb63698af34674de4f02b0c",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairPass60_30": true,
+   "sets": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.545,
+     "positives": 22,
+     "negatives": 484,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.813,
+     "r": 0.6,
+     "positives": 145,
+     "negatives": 10062,
+     "fp": 20
+    },
+    "nsynth-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 4096,
+     "fp": 17
+    },
+    "sasse-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 2702,
+     "fp": 1
+    }
+   }
+  },
+  {
+   "label": "tabla",
+   "threshold": 0.732,
+   "cutoff": "precision-first",
+   "coefficientDigest": "031c20eadc684037bee3dc3610a211578ec720c98b58083d5fee808b878eb1b8",
+   "countedSets": [
+    "fsd50k-eval"
+   ],
+   "fairPass60_30": true,
+   "sets": {
+    "fsd50k-eval": {
+     "p": 0.837,
+     "r": 0.911,
+     "positives": 45,
+     "negatives": 10186,
+     "fp": 8
+    }
+   }
+  },
+  {
+   "label": "trumpet",
+   "threshold": 0.957,
+   "cutoff": "precision-first",
+   "coefficientDigest": "fe198965e07cc5ec56ce164dda8c6e08ec972773ba71371bf98a6e2f56026eb9",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairPass60_30": true,
+   "sets": {
+    "free-tag-set-test": {
+     "p": 0.95,
+     "r": 0.95,
+     "positives": 20,
+     "negatives": 199,
+     "fp": 1
+    },
+    "fsd50k-eval": {
+     "p": 0.701,
+     "r": 0.839,
+     "positives": 56,
+     "negatives": 10175,
+     "fp": 20
+    }
+   }
+  },
+  {
+   "label": "vinyl scratch",
+   "threshold": 0.595,
+   "cutoff": "precision-first",
+   "coefficientDigest": "6ccaa49f16b5ddd2c2a574ee62abad04992b9321f7f6c84f9ca96a3381b29aa1",
+   "countedSets": [
+    "fsd50k-eval"
+   ],
+   "fairPass60_30": true,
+   "sets": {
+    "fsd50k-eval": {
+     "p": 0.914,
+     "r": 0.914,
+     "positives": 81,
+     "negatives": 10150,
+     "fp": 7
+    }
+   }
+  }
+ ],
+ "results": [
+  {
+   "tag": "accordion",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "balanced",
+     "cutoff": 0.914,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.9,
+     "passOnOtherHalf": false
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "balanced",
+   "threshold": 0.914,
+   "clean": {
+    "fsd50k-eval": {
+     "p": 0.574,
+     "r": 0.7,
+     "positives": 50,
+     "negatives": 10181,
+     "fp": 26
+    }
+   },
+   "cleanPasses": {
+    "60/30": false,
+    "50/50": true,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "fsd50k-eval": {
+     "p": 0.738,
+     "r": 0.9,
+     "positives": 50,
+     "negatives": 10181,
+     "fp": 16
+    }
+   },
+   "oldPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": true
+   },
+   "oldThreshold": 0.959,
+   "appPathToday": null
+  },
+  {
+   "tag": "acoustic guitar",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval",
+    "nsynth-test"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.772,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.772,
+     "passOnOtherHalf": false
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.772,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 1.0,
+     "positives": 6,
+     "negatives": 219,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.795,
+     "r": 0.866,
+     "positives": 134,
+     "negatives": 10097,
+     "fp": 30
+    },
+    "idmt-bass": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 3623,
+     "fp": 339
+    },
+    "nsynth-test": {
+     "p": 0.543,
+     "r": 0.484,
+     "positives": 273,
+     "negatives": 3615,
+     "fp": 111
+    }
+   },
+   "cleanPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.833,
+     "positives": 6,
+     "negatives": 219,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.858,
+     "r": 0.679,
+     "positives": 134,
+     "negatives": 10097,
+     "fp": 15
+    },
+    "idmt-bass": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 3623,
+     "fp": 54
+    },
+    "nsynth-test": {
+     "p": 0.526,
+     "r": 0.623,
+     "positives": 273,
+     "negatives": 3615,
+     "fp": 153
+    },
+    "sasse-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 2702,
+     "fp": 7
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.931,
+   "appPathToday": null
+  },
+  {
+   "tag": "bird ambience",
+   "decision": "held for Chris",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "balanced",
+     "cutoff": 0.979,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "balanced",
+     "cutoff": 0.979,
+     "passOnOtherHalf": true
+    },
+    "pass": true,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "balanced",
+   "threshold": 0.979,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.508,
+     "positives": 59,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.918,
+     "r": 0.34,
+     "positives": 459,
+     "negatives": 9772,
+     "fp": 14
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.678,
+     "positives": 59,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.734,
+     "r": 0.564,
+     "positives": 459,
+     "negatives": 9772,
+     "fp": 94
+    }
+   },
+   "oldPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.98,
+   "appPathToday": true
+  },
+  {
+   "tag": "cowbell",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.504,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.504,
+     "passOnOtherHalf": false
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.504,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.118,
+     "positives": 17,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.827,
+     "r": 0.683,
+     "positives": 63,
+     "negatives": 10168,
+     "fp": 9
+    }
+   },
+   "cleanPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.235,
+     "positives": 17,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.81,
+     "r": 0.81,
+     "positives": 63,
+     "negatives": 10168,
+     "fp": 12
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.964,
+   "appPathToday": null
+  },
+  {
+   "tag": "crash cymbal",
+   "decision": "reverted to old, unverified (failed on the app path after #232)",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.994,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.994,
+     "passOnOtherHalf": true
+    },
+    "pass": true,
+    "precisionFirstBothHalves": true
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.994,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.385,
+     "positives": 13,
+     "negatives": 411,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.768,
+     "r": 0.746,
+     "positives": 71,
+     "negatives": 10160,
+     "fp": 16
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.923,
+     "positives": 13,
+     "negatives": 411,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.406,
+     "r": 0.817,
+     "positives": 71,
+     "negatives": 10160,
+     "fp": 85
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.838,
+   "appPathToday": false,
+   "appPathAfterSwap": "FSD50K 0.18/0.10, free-tag-set 0.00/0.00"
+  },
+  {
+   "tag": "crowd ambience",
+   "decision": "swapped",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.985,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.985,
+     "passOnOtherHalf": true
+    },
+    "pass": true,
+    "precisionFirstBothHalves": true
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.985,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.5,
+     "positives": 12,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.92,
+     "r": 0.492,
+     "positives": 256,
+     "negatives": 9975,
+     "fp": 11
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.833,
+     "positives": 12,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.597,
+     "r": 0.852,
+     "positives": 256,
+     "negatives": 9975,
+     "fp": 147
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": true,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.969,
+   "appPathToday": null
+  },
+  {
+   "tag": "drums",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.994,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.994,
+     "passOnOtherHalf": false
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.994,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 152,
+     "negatives": 345,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 60,
+     "negatives": 9406,
+     "fp": 0
+    }
+   },
+   "cleanPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 0.872,
+     "r": 0.855,
+     "positives": 152,
+     "negatives": 345,
+     "fp": 19
+    },
+    "fsd50k-eval": {
+     "p": 0.091,
+     "r": 0.8,
+     "positives": 60,
+     "negatives": 9406,
+     "fp": 477
+    },
+    "sasse-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 2702,
+     "fp": 40
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.506,
+   "appPathToday": false
+  },
+  {
+   "tag": "electric guitar",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "fsd50k-eval",
+    "nsynth-test"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.98,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.98,
+     "passOnOtherHalf": false
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.98,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 1,
+     "negatives": 219,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.978,
+     "r": 0.249,
+     "positives": 181,
+     "negatives": 10050,
+     "fp": 1
+    },
+    "idmt-bass": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 3623,
+     "fp": 66
+    },
+    "nsynth-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 100,
+     "negatives": 3925,
+     "fp": 0
+    }
+   },
+   "cleanPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 1,
+     "negatives": 219,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.915,
+     "r": 0.718,
+     "positives": 181,
+     "negatives": 10050,
+     "fp": 12
+    },
+    "idmt-bass": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 3623,
+     "fp": 1581
+    },
+    "nsynth-test": {
+     "p": 0.154,
+     "r": 0.66,
+     "positives": 100,
+     "negatives": 3925,
+     "fp": 363
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.933,
+   "appPathToday": null
+  },
+  {
+   "tag": "finger snap",
+   "decision": "swapped",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.958,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.958,
+     "passOnOtherHalf": true
+    },
+    "pass": true,
+    "precisionFirstBothHalves": true
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.958,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 1.0,
+     "positives": 9,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.681,
+     "r": 0.731,
+     "positives": 67,
+     "negatives": 10164,
+     "fp": 23
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 1.0,
+     "positives": 9,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.513,
+     "r": 0.896,
+     "positives": 67,
+     "negatives": 10164,
+     "fp": 57
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": true,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.851,
+   "appPathToday": false
+  },
+  {
+   "tag": "gong",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.971,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.971,
+     "passOnOtherHalf": false
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.971,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 1,
+     "negatives": 219,
+     "fp": 4
+    },
+    "fsd50k-eval": {
+     "p": 0.659,
+     "r": 0.778,
+     "positives": 72,
+     "negatives": 10159,
+     "fp": 29
+    }
+   },
+   "cleanPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 1,
+     "negatives": 219,
+     "fp": 3
+    },
+    "fsd50k-eval": {
+     "p": 0.695,
+     "r": 0.792,
+     "positives": 72,
+     "negatives": 10159,
+     "fp": 25
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.923,
+   "appPathToday": null
+  },
+  {
+   "tag": "harmonica",
+   "decision": "swapped",
+   "countedSets": [
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.752,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.752,
+     "passOnOtherHalf": true
+    },
+    "pass": true,
+    "precisionFirstBothHalves": true
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.752,
+   "clean": {
+    "fsd50k-eval": {
+     "p": 0.709,
+     "r": 0.966,
+     "positives": 58,
+     "negatives": 10173,
+     "fp": 23
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": true
+   },
+   "old": {
+    "fsd50k-eval": {
+     "p": 0.879,
+     "r": 0.879,
+     "positives": 58,
+     "negatives": 10173,
+     "fp": 7
+    }
+   },
+   "oldPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": true
+   },
+   "oldThreshold": 0.964,
+   "appPathToday": null
+  },
+  {
+   "tag": "harp",
+   "decision": "swapped",
+   "countedSets": [
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.846,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.846,
+     "passOnOtherHalf": true
+    },
+    "pass": true,
+    "precisionFirstBothHalves": true
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.846,
+   "clean": {
+    "fsd50k-eval": {
+     "p": 0.78,
+     "r": 0.807,
+     "positives": 57,
+     "negatives": 10174,
+     "fp": 13
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": true
+   },
+   "old": {
+    "fsd50k-eval": {
+     "p": 0.762,
+     "r": 0.842,
+     "positives": 57,
+     "negatives": 10174,
+     "fp": 15
+    }
+   },
+   "oldPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": true
+   },
+   "oldThreshold": 0.927,
+   "appPathToday": null
+  },
+  {
+   "tag": "kick",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.998,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.998,
+     "passOnOtherHalf": false
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.998,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 18,
+     "negatives": 522,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 1.0,
+     "r": 0.092,
+     "positives": 119,
+     "negatives": 8259,
+     "fp": 0
+    }
+   },
+   "cleanPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.056,
+     "positives": 18,
+     "negatives": 522,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 1.0,
+     "r": 0.118,
+     "positives": 119,
+     "negatives": 8259,
+     "fp": 0
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.951,
+   "appPathToday": false
+  },
+  {
+   "tag": "mallet instrument",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval",
+    "nsynth-test",
+    "sasse-test"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.931,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.931,
+     "passOnOtherHalf": false
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.931,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.163,
+     "positives": 92,
+     "negatives": 139,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.963,
+     "r": 0.564,
+     "positives": 140,
+     "negatives": 10091,
+     "fp": 3
+    },
+    "nsynth-test": {
+     "p": 0.8,
+     "r": 0.116,
+     "positives": 172,
+     "negatives": 3894,
+     "fp": 5
+    },
+    "sasse-test": {
+     "p": 1.0,
+     "r": 0.001,
+     "positives": 2702,
+     "negatives": 0,
+     "fp": 0
+    }
+   },
+   "cleanPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.457,
+     "positives": 92,
+     "negatives": 139,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.778,
+     "r": 0.8,
+     "positives": 140,
+     "negatives": 10091,
+     "fp": 32
+    },
+    "nsynth-test": {
+     "p": 0.386,
+     "r": 0.663,
+     "positives": 172,
+     "negatives": 3894,
+     "fp": 181
+    },
+    "sasse-test": {
+     "p": 1.0,
+     "r": 0.05,
+     "positives": 2702,
+     "negatives": 0,
+     "fp": 0
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.936,
+   "appPathToday": null
+  },
+  {
+   "tag": "organ",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval",
+    "nsynth-test"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.973,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.973,
+     "passOnOtherHalf": false
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.973,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 12,
+     "negatives": 261,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.5,
+     "r": 0.543,
+     "positives": 35,
+     "negatives": 10196,
+     "fp": 19
+    },
+    "nsynth-test": {
+     "p": 0.974,
+     "r": 0.233,
+     "positives": 480,
+     "negatives": 3594,
+     "fp": 3
+    }
+   },
+   "cleanPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 0.714,
+     "r": 0.417,
+     "positives": 12,
+     "negatives": 261,
+     "fp": 2
+    },
+    "fsd50k-eval": {
+     "p": 0.364,
+     "r": 0.457,
+     "positives": 35,
+     "negatives": 10196,
+     "fp": 28
+    },
+    "idmt-bass": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 3623,
+     "fp": 2
+    },
+    "nsynth-test": {
+     "p": 0.688,
+     "r": 0.8,
+     "positives": 480,
+     "negatives": 3594,
+     "fp": 174
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.92,
+   "appPathToday": null
+  },
+  {
+   "tag": "piano",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval",
+    "nsynth-test"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "balanced",
+     "cutoff": 0.981,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.925,
+     "passOnOtherHalf": false
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "balanced",
+   "threshold": 0.981,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.45,
+     "positives": 20,
+     "negatives": 261,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.98,
+     "r": 0.658,
+     "positives": 76,
+     "negatives": 9855,
+     "fp": 1
+    },
+    "idmt-bass": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 3623,
+     "fp": 1
+    },
+    "nsynth-test": {
+     "p": 0.109,
+     "r": 0.084,
+     "positives": 119,
+     "negatives": 3977,
+     "fp": 82
+    },
+    "sasse-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 2702,
+     "fp": 4
+    }
+   },
+   "cleanPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.75,
+     "positives": 20,
+     "negatives": 261,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.744,
+     "r": 0.803,
+     "positives": 76,
+     "negatives": 9855,
+     "fp": 21
+    },
+    "idmt-bass": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 3623,
+     "fp": 48
+    },
+    "nsynth-test": {
+     "p": 0.321,
+     "r": 0.933,
+     "positives": 119,
+     "negatives": 3977,
+     "fp": 235
+    },
+    "sasse-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 2702,
+     "fp": 23
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.85,
+   "appPathToday": false
+  },
+  {
+   "tag": "rain ambience",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.822,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.822,
+     "passOnOtherHalf": true
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.822,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.471,
+     "positives": 17,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.607,
+     "r": 0.946,
+     "positives": 242,
+     "negatives": 9989,
+     "fp": 148
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.471,
+     "positives": 17,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.696,
+     "r": 0.86,
+     "positives": 242,
+     "negatives": 9989,
+     "fp": 91
+    }
+   },
+   "oldPasses": {
+    "60/30": true,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.926,
+   "appPathToday": true
+  },
+  {
+   "tag": "siren",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.998,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.998,
+     "passOnOtherHalf": true
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.998,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 28,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.964,
+     "r": 0.491,
+     "positives": 55,
+     "negatives": 10176,
+     "fp": 1
+    }
+   },
+   "cleanPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.357,
+     "positives": 28,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.096,
+     "r": 0.909,
+     "positives": 55,
+     "negatives": 10176,
+     "fp": 471
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.7545,
+   "appPathToday": null
+  },
+  {
+   "tag": "snare",
+   "decision": "swapped",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.856,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.856,
+     "passOnOtherHalf": true
+    },
+    "pass": true,
+    "precisionFirstBothHalves": true
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.856,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.545,
+     "positives": 22,
+     "negatives": 484,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.813,
+     "r": 0.6,
+     "positives": 145,
+     "negatives": 10062,
+     "fp": 20
+    },
+    "nsynth-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 4096,
+     "fp": 17
+    },
+    "sasse-test": {
+     "p": 0.0,
+     "r": 0.0,
+     "positives": 0,
+     "negatives": 2702,
+     "fp": 1
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.273,
+     "positives": 22,
+     "negatives": 484,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.982,
+     "r": 0.386,
+     "positives": 145,
+     "negatives": 10062,
+     "fp": 1
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.895,
+   "appPathToday": true
+  },
+  {
+   "tag": "strings",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval",
+    "nsynth-test"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.5,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.5,
+     "passOnOtherHalf": true
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.5,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 0.982,
+     "r": 0.618,
+     "positives": 89,
+     "negatives": 201,
+     "fp": 1
+    },
+    "fsd50k-eval": {
+     "p": 0.893,
+     "r": 0.714,
+     "positives": 140,
+     "negatives": 10091,
+     "fp": 12
+    },
+    "nsynth-test": {
+     "p": 0.813,
+     "r": 0.394,
+     "positives": 287,
+     "negatives": 3790,
+     "fp": 26
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.573,
+     "positives": 89,
+     "negatives": 201,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.917,
+     "r": 0.786,
+     "positives": 140,
+     "negatives": 10091,
+     "fp": 10
+    },
+    "nsynth-test": {
+     "p": 0.971,
+     "r": 0.826,
+     "positives": 287,
+     "negatives": 3790,
+     "fp": 7
+    }
+   },
+   "oldPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.924,
+   "appPathToday": null
+  },
+  {
+   "tag": "tabla",
+   "decision": "swapped",
+   "countedSets": [
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.732,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.732,
+     "passOnOtherHalf": true
+    },
+    "pass": true,
+    "precisionFirstBothHalves": true
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.732,
+   "clean": {
+    "fsd50k-eval": {
+     "p": 0.837,
+     "r": 0.911,
+     "positives": 45,
+     "negatives": 10186,
+     "fp": 8
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": true
+   },
+   "old": {
+    "fsd50k-eval": {
+     "p": 0.936,
+     "r": 0.978,
+     "positives": 45,
+     "negatives": 10186,
+     "fp": 3
+    }
+   },
+   "oldPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": true
+   },
+   "oldThreshold": 0.923,
+   "appPathToday": null
+  },
+  {
+   "tag": "trumpet",
+   "decision": "swapped",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.957,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.957,
+     "passOnOtherHalf": true
+    },
+    "pass": true,
+    "precisionFirstBothHalves": true
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.957,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 0.95,
+     "r": 0.95,
+     "positives": 20,
+     "negatives": 199,
+     "fp": 1
+    },
+    "fsd50k-eval": {
+     "p": 0.701,
+     "r": 0.839,
+     "positives": 56,
+     "negatives": 10175,
+     "fp": 20
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": true
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 0.87,
+     "r": 1.0,
+     "positives": 20,
+     "negatives": 199,
+     "fp": 3
+    },
+    "fsd50k-eval": {
+     "p": 0.723,
+     "r": 0.839,
+     "positives": 56,
+     "negatives": 10175,
+     "fp": 18
+    }
+   },
+   "oldPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": true
+   },
+   "oldThreshold": 0.88,
+   "appPathToday": true
+  },
+  {
+   "tag": "vinyl scratch",
+   "decision": "swapped",
+   "countedSets": [
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.595,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.595,
+     "passOnOtherHalf": true
+    },
+    "pass": true,
+    "precisionFirstBothHalves": true
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.595,
+   "clean": {
+    "fsd50k-eval": {
+     "p": 0.914,
+     "r": 0.914,
+     "positives": 81,
+     "negatives": 10150,
+     "fp": 7
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": true
+   },
+   "old": {
+    "fsd50k-eval": {
+     "p": 0.241,
+     "r": 0.852,
+     "positives": 81,
+     "negatives": 10150,
+     "fp": 217
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.7742,
+   "appPathToday": true
+  },
+  {
+   "tag": "vocal gasp",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.989,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.989,
+     "passOnOtherHalf": false
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.989,
+   "clean": {
+    "fsd50k-eval": {
+     "p": 0.467,
+     "r": 0.673,
+     "positives": 52,
+     "negatives": 10179,
+     "fp": 40
+    }
+   },
+   "cleanPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "fsd50k-eval": {
+     "p": 0.255,
+     "r": 0.904,
+     "positives": 52,
+     "negatives": 10179,
+     "fp": 137
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.979,
+   "appPathToday": null
+  },
+  {
+   "tag": "vocal laugh",
+   "decision": "reverted to old, unverified (failed on the app path after #232)",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.674,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.674,
+     "passOnOtherHalf": true
+    },
+    "pass": true,
+    "precisionFirstBothHalves": true
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.674,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.833,
+     "positives": 6,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.678,
+     "r": 0.708,
+     "positives": 253,
+     "negatives": 9978,
+     "fp": 85
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.833,
+     "positives": 6,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.61,
+     "r": 0.767,
+     "positives": 253,
+     "negatives": 9978,
+     "fp": 124
+    }
+   },
+   "oldPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": false
+   },
+   "oldThreshold": 0.965,
+   "appPathToday": null,
+   "appPathAfterSwap": "FSD50K 0.58/0.71"
+  },
+  {
+   "tag": "water ambience",
+   "decision": "kept old, unverified",
+   "countedSets": [
+    "free-tag-set-test",
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.966,
+     "passOnOtherHalf": false
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.966,
+     "passOnOtherHalf": false
+    },
+    "pass": false,
+    "precisionFirstBothHalves": false
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.966,
+   "clean": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.111,
+     "positives": 36,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.637,
+     "r": 0.414,
+     "positives": 432,
+     "negatives": 9799,
+     "fp": 102
+    }
+   },
+   "cleanPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "old": {
+    "free-tag-set-test": {
+     "p": 1.0,
+     "r": 0.417,
+     "positives": 36,
+     "negatives": 0,
+     "fp": 0
+    },
+    "fsd50k-eval": {
+     "p": 0.476,
+     "r": 0.847,
+     "positives": 432,
+     "negatives": 9799,
+     "fp": 403
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.935,
+   "appPathToday": true
+  },
+  {
+   "tag": "whisper",
+   "decision": "reverted to old, unverified (failed on the app path after #232)",
+   "countedSets": [
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.787,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.787,
+     "passOnOtherHalf": true
+    },
+    "pass": true,
+    "precisionFirstBothHalves": true
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.787,
+   "clean": {
+    "fsd50k-eval": {
+     "p": 0.72,
+     "r": 0.787,
+     "positives": 75,
+     "negatives": 10156,
+     "fp": 23
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": true
+   },
+   "old": {
+    "fsd50k-eval": {
+     "p": 0.157,
+     "r": 0.893,
+     "positives": 75,
+     "negatives": 10156,
+     "fp": 361
+    }
+   },
+   "oldPasses": {
+    "60/30": false,
+    "50/50": false,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.824,
+   "appPathToday": null,
+   "appPathAfterSwap": "FSD50K 0.32/0.83"
+  },
+  {
+   "tag": "whoosh",
+   "decision": "reverted to old, unverified (failed on the app path after #232)",
+   "countedSets": [
+    "fsd50k-eval"
+   ],
+   "fairBestOfBoth": {
+    "chosenOnA": {
+     "choice": "precision-first",
+     "cutoff": 0.71,
+     "passOnOtherHalf": true
+    },
+    "chosenOnB": {
+     "choice": "precision-first",
+     "cutoff": 0.71,
+     "passOnOtherHalf": true
+    },
+    "pass": true,
+    "precisionFirstBothHalves": true
+   },
+   "cutoff": "precision-first",
+   "threshold": 0.71,
+   "clean": {
+    "fsd50k-eval": {
+     "p": 0.632,
+     "r": 0.84,
+     "positives": 100,
+     "negatives": 10131,
+     "fp": 49
+    }
+   },
+   "cleanPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": true,
+    "70/70": false
+   },
+   "old": {
+    "fsd50k-eval": {
+     "p": 0.841,
+     "r": 0.58,
+     "positives": 100,
+     "negatives": 10131,
+     "fp": 11
+    }
+   },
+   "oldPasses": {
+    "60/30": true,
+    "50/50": true,
+    "60/60": false,
+    "70/70": false
+   },
+   "oldThreshold": 0.941,
+   "appPathToday": null,
+   "appPathAfterSwap": "FSD50K 0.56/0.88"
+  }
+ ],
+ "coefficientDigestFormat": "sha256 of the big-endian float64 bias then weights, taken from the heads fair-judge.py evaluated",
+ "appPathRevert": "After #232 the scoreboard scored the app's real path (q8 transformers.js CLAP fingerprints, reports/scoreboard/app-clap.json at 2b12ceb). These judges used Python fp32 fingerprints, and the 4 heads above failed there, so they went back to their weights at 59efdbd (Chris chose \"Revert 4\", Oct 11 2026).",
+ "revertedHeads": [
+  {
+   "label": "crash cymbal",
+   "restoredFrom": "59efdbd",
+   "threshold": 0.838,
+   "coefficientDigest": "a10326002f616313c3d4e21f8213673a557da308f5ba896d6f157c306cdb2967"
+  },
+  {
+   "label": "vocal laugh",
+   "restoredFrom": "59efdbd",
+   "threshold": 0.965,
+   "coefficientDigest": "a48b329bb8c2b56b857a1c5d37bf583cf09a9e1c5d681bf914b0d0fe08ee159d"
+  },
+  {
+   "label": "whisper",
+   "restoredFrom": "59efdbd",
+   "threshold": 0.824,
+   "coefficientDigest": "89a75d89b7c0e3d5c45dceb10ade9648d01c38f47c9134ef3125df27689f4552"
+  },
+  {
+   "label": "whoosh",
+   "restoredFrom": "59efdbd",
+   "threshold": 0.941,
+   "coefficientDigest": "627b6f6d196a243c688cac5a1ef97a93153c3ed7fd249082a2244c9729705dea"
+  }
+ ]
+}

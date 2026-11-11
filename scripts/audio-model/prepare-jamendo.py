@@ -17,7 +17,7 @@ tag is a weak absent (relevance 0, flagged so training can down-weight it). Voic
 voice/instrumental agreement where it exists. Classes Jamendo has no tag for (cymbals, banjo, mandolin, ukulele,
 mallet percussion) stay unknown.
 """
-import argparse, csv, hashlib, json, os, subprocess, sys, tarfile, threading, time, urllib.request
+import argparse, hashlib, json, os, subprocess, sys, tarfile, threading, time, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 import warnings
 import numpy as np

@@ -16,6 +16,8 @@ permissions:
   contents: write
 
 env:
+  # These builds need the audio model pack.
+  DGE_MODELS: full
   APP_REF: ${{ inputs.app_ref || 'main' }}
   ONNXRUNTIME_NODE_INSTALL: skip
   DOCS: docs/evaluations/all-tags-2026-10-06
@@ -37,7 +39,7 @@ jobs:
     outputs:
       sha: ${{ steps.r.outputs.sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ env.APP_REF }}
       - id: r
@@ -51,7 +53,7 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Check the frozen selection against the pinned dataset metadata
         run: |
           M="$RUNNER_TEMP/mj"
@@ -65,7 +67,7 @@ jobs:
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
           python3 scripts/all-tags/fetch-jamendo.py "$DOCS/jamendo-val-manifest.json" \
             "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ matrix.shard }}/10 audio
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: at-audio-${{ matrix.shard }}
           path: audio
@@ -81,13 +83,13 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.ref.outputs.sha }}
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           path: harness
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: at-audio-*
           path: clips/audio
@@ -96,7 +98,7 @@ jobs:
         run: |
           cp harness/$DOCS/jamendo-val-manifest.json manifest.json
           git log -1 --format='app under test: %H %s'
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
@@ -116,7 +118,7 @@ jobs:
           AUDIO_DIR=clips/audio AUDIO_EXT=wav MANIFEST=manifest.json SHARD=${{ matrix.shard }}/10 \
             node scripts/short-clip-upload-eval.mjs out/run validation 20
           git rev-parse HEAD > out/run/app-commit.txt
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: at-export-${{ matrix.shard }}
@@ -129,18 +131,18 @@ jobs:
     if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.ref.outputs.sha }}
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           path: harness
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: at-export-*
           path: exports
@@ -157,7 +159,7 @@ jobs:
           npx vite-node scripts/dj-fix/extract.mjs "$R/records.json" exports/at-export-*/graph-export.json
           echo "app $APP_REF at $APP; harness $GITHUB_SHA; run $GITHUB_RUN_ID" > "$R/tested-commit.txt"
       # Kept on every run; on the default branch (no commit) this is the only copy.
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: at-reports
           path: ${{ env.R }}

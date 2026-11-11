@@ -4,7 +4,7 @@ import { confidentSoundSummary } from './confidentSoundSummary';
 import { sanitizeMusicAnalysis, type MusicAnalysis } from './musicTypes';
 import { dimensionLabels } from './recognition';
 import { canonicalDjLabel } from './djTags';
-import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, TAGGER_UNAVAILABLE, TaggerEvidence, isTaggerScores, sanitizeTaggerAnalysis, taggerDecisions, taggerWindowStarts, type TaggerTag } from './tagger';
+import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, TAGGER_UNAVAILABLE, TaggerEvidence, isTaggerScores, sanitizeTaggerAnalysis, taggerDecisions, taggerTailStart, taggerWindowStarts, type TaggerTag } from './tagger';
 
 const threshold = (output: string) => TAGGER_POLICY.tags.find(t => t.output === output)!.threshold;
 const track = (seconds: number, scores: Record<string, number>, djTags: NonNullable<MusicAnalysis['soundProfile']>['djTags'] = []): MusicAnalysis => ({
@@ -27,12 +27,13 @@ describe('trained tagger policy', () => {
       expect(supported, tag.label).toBe(true);
     }
   });
-  it('keeps the existing detectors for voice, organ and cello', () => {
+  it('keeps the existing detectors for cello', () => {
     const decided = new Set(TAGGER_POLICY.tags.flatMap(t => t.decides));
-    for (const label of ['voice', 'organ', 'cello']) expect(decided.has(label)).toBe(false);
+    expect(decided.has('cello')).toBe(false);
     expect(TAGGER_POLICY.tags.filter(t => t.dimension === 'source').map(t => t.output).sort())
-      .toEqual(['bass', 'cat:animal sound', 'cat:bass guitar', 'cat:bell', 'cat:environmental sound', 'cat:foley', 'cat:glockenspiel', 'cat:percussion', 'cat:turntable', 'cat:whistle', 'cymbals',
-        'drums', 'guitar', 'piano', 'saxophone', 'synthesizer', 'trumpet', 'violin']);
+      .toEqual(['bass', 'cat:animal sound', 'cat:bass guitar', 'cat:bell', 'cat:cymbal', 'cat:electric piano', 'cat:environmental sound', 'cat:flute', 'cat:foley', 'cat:glockenspiel', 'cat:gong', 'cat:guitar',
+        'cat:marimba', 'cat:organ', 'cat:percussion', 'cat:turntable', 'cat:vibraphone', 'cat:violin / fiddle', 'cat:voice', 'cat:whistle', 'drums', 'piano', 'saxophone',
+        'synthesizer', 'trumpet']);
   });
 });
 
@@ -91,11 +92,27 @@ describe('trained tagger windows and storage', () => {
   });
 });
 
+describe('trained tagger tail window', () => {
+  it('adds one window ending at the end of a 10-30 s clip that whole windows leave unheard', () => {
+    expect([5, 10, 15, 20, 25, 30, 47].map(taggerTailStart)).toEqual([undefined, undefined, 5, undefined, 15, undefined, undefined]);
+  });
+  it('a tail tag reads the tail window; a 15 s clip keeps the one-window rule (drums: own cutoff, not the long one)', () => {
+    const drums = TAGGER_POLICY.tags.find(t => t.output === 'drums')!;
+    expect(drums.tail && drums.long?.threshold).toBeGreaterThan(drums.threshold);
+    const e = new TaggerEvidence();
+    e.add({ drums: .1 }, { start: 0, end: 10 }); e.addTail({ drums: (drums.threshold + drums.long!.threshold!) / 2, piano: .99 }, { start: 5, end: 15 });
+    const t = e.results()!;
+    expect(t.tail?.scores).toEqual({ drums: (drums.threshold + drums.long!.threshold!) / 2 });
+    expect(sanitizeTaggerAnalysis(JSON.parse(JSON.stringify(t)), 15)).toEqual(t);
+    expect(taggerDecisions(t, 15)!.find(d => d.tag.output === 'drums')!.shown).toBe(true);
+  });
+});
+
 describe('trained tagger display', () => {
   const sources = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'source').map(s => s.label).sort();
   it('decides its instruments on recordings of at least 10 s, replacing other models', () => {
     // CLAP-head drums and piano, Jamendo-style guitar: the tagger keeps drums (its own score) and drops piano and guitar.
-    const a = track(10, { drums: .99, piano: .01, guitar: .01, bass: threshold('bass') + .01 }, [
+    const a = track(10, { drums: .99, piano: .01, 'cat:guitar': .01, bass: threshold('bass') + .01 }, [
       { group: 'source', label: 'drums', score: .9, model: 'Trained head' }, { group: 'source', label: 'piano', score: .9, model: 'Trained head' },
       { group: 'source', label: 'guitar', score: .9, model: 'Trained head' }, { group: 'source', label: 'synthesizer', score: .9, model: 'Trained head' }]);
     const shown = confidentSoundSummary(a);
@@ -108,11 +125,197 @@ describe('trained tagger display', () => {
   it('leaves instruments to the other detectors on clips shorter than 10 s', () => {
     expect(sources(track(8, { drums: .01, piano: .99 }, [{ group: 'source', label: 'drums', score: .9, model: 'Trained head' }]))).toEqual(['drums']);
   });
+  it('hides the CLAP piano head on a short clip unless the tagger piano score clears its cutoff', () => {
+    const head = [{ group: 'source' as const, label: 'piano', score: .9, model: 'Trained head' as const }];
+    expect(sources(track(4, { piano: threshold('piano') - 1e-4 }, head))).toEqual([]);
+    expect(sources(track(4, { piano: threshold('piano') }, head))).toEqual(['piano']);
+    // One-shots and 10 s recordings keep their own rules. A listener confirmation is never removed.
+    expect(sources(track(2, { piano: 0 }, head))).toEqual(['piano']);
+    expect(sources(track(10, { piano: threshold('piano') }, head))).toEqual(['piano']);
+    const confirmed = track(4, { piano: 0 }, head);
+    confirmed.confirmedInstruments = ['piano'];
+    expect(sources(confirmed)).toEqual(['piano']);
+    const older = track(4, { piano: 0 }, head);
+    older.tagger = { revision: 'older', windows: 1, scores: { piano: 0 } };
+    expect(sources(older)).toEqual(['piano']);
+    // Only the trained head's piano is vetoed: tested piano evidence from another model (here the baseline
+    // fallback) keeps its own rules.
+    const fallback = [{ group: 'source' as const, label: 'piano', score: .9, model: 'Baseline fallback score' as 'Trained head' }];
+    expect(sources(track(4, { piano: 0 }, fallback))).toEqual(['piano']);
+    expect(sources(track(4, { piano: 0 }, [...head, ...fallback]))).toEqual(['piano']);
+    // An untested model that also scored piano does not shield the head's piano from the veto.
+    const ast = [{ group: 'source' as const, label: 'piano', score: .9, model: 'AudioSet AST' as 'Trained head' }];
+    expect(sources(track(4, { piano: 0 }, [...head, ...ast]))).toEqual([]);
+  });
+  it('hides the CLAP synthesizer head under 10 s, one-shots included, unless the tagger synthesizer score clears its cutoff', () => {
+    const head = [{ group: 'source' as const, label: 'synthesizer', score: .9, model: 'Trained head' as const }];
+    expect(sources(track(3, { synthesizer: threshold('synthesizer') - 1e-4 }, head))).toEqual([]);
+    expect(sources(track(2, { synthesizer: 0 }, head))).toEqual([]);
+    expect(sources(track(3, { synthesizer: threshold('synthesizer') }, head))).toEqual(['synthesizer']);
+    // From 10 s the tagger decides synthesizer itself, as before. A listener confirmation is never removed.
+    expect(sources(track(10, { synthesizer: threshold('synthesizer') }, head))).toEqual(['synthesizer']);
+    const confirmed = track(3, { synthesizer: 0 }, head);
+    confirmed.confirmedInstruments = ['synthesizer'];
+    expect(sources(confirmed)).toEqual(['synthesizer']);
+    const older = track(3, { synthesizer: 0 }, head);
+    older.tagger = { revision: 'older', windows: 1, scores: { synthesizer: 0 } };
+    expect(sources(older)).toEqual(['synthesizer']);
+    // Piano keeps its own rule: one-shots are not vetoed there.
+    expect(sources(track(2, { piano: 0, synthesizer: 0 }, [{ group: 'source', label: 'piano', score: .9, model: 'Trained head' }]))).toEqual(['piano']);
+  });
   it('decides its sound-type and effect tags at any length, and leaves other tags alone', () => {
     const a = track(4, { 'cat:percussive': .99, 'cat:dark': .01 }, [
       { group: 'character', label: 'dark', score: .9, model: 'Trained head' }, { group: 'character', label: 'bright', score: .9, model: 'Trained head' },
       { group: 'production', label: 'riser', score: .9, model: 'Trained head' }]);
     expect(confidentSoundSummary(a).map(s => `${s.dimension}:${s.label}`).sort()).toEqual(['character:bright', 'character:percussive', 'effect:riser']);
+  });
+  it('decides hi-hat over its CLAP head, including the merged closed hi-hat', () => {
+    const effects = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'effect').map(s => s.label).sort();
+    const heads = [{ group: 'production' as const, label: 'hi-hat', score: .9, model: 'Trained head' as const },
+      { group: 'production' as const, label: 'closed hi-hat', score: .9, model: 'Trained head' as const }];
+    expect(effects(track(4, { 'cat:hi-hat': .01 }, heads))).toEqual([]);
+    const shown = confidentSoundSummary(track(4, { 'cat:hi-hat': threshold('cat:hi-hat') }, heads));
+    expect(shown.filter(s => s.dimension === 'effect').map(s => s.label)).toEqual(['hi-hat']);
+    expect(shown.find(s => s.label === 'hi-hat')!.scores).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('decides hi-hat and percussion over the merged open hi-hat and percussion hit heads', () => {
+    const heads = [{ group: 'production' as const, label: 'open hi-hat', score: .99, model: 'Trained head' as const },
+      { group: 'production' as const, label: 'percussion hit', score: .99, model: 'Trained head' as const }];
+    const labels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
+    expect(labels(track(4, { 'cat:hi-hat': .01, 'cat:percussion': .01 }, heads))).toEqual([]);
+    const shown = confidentSoundSummary(track(4, { 'cat:hi-hat': threshold('cat:hi-hat'), 'cat:percussion': threshold('cat:percussion') }, heads));
+    // hi-hat is a drum-kit tag, so the drums umbrella shows beside it (#272).
+    expect(shown.map(s => s.label).sort()).toEqual(['drums', 'hi-hat', 'percussion']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('shows the ambient drone head as atmospheric pad', () => {
+    const heads = [{ group: 'production' as const, label: 'ambient drone', score: .99, model: 'Trained head' as const }];
+    expect(confidentSoundSummary(track(4, {}, heads)).filter(s => s.dimension === 'effect').map(s => s.label)).toEqual(['atmospheric pad']);
+  });
+  it('decides guitar over the merged acoustic and electric guitar heads', () => {
+    const sources = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'source').map(s => s.label).sort();
+    const heads = ['acoustic guitar', 'electric guitar'].map(label => ({ group: 'source' as const, label, score: .99, model: 'Trained head' as const }));
+    expect(sources(track(4, { 'cat:guitar': .01 }, heads))).toEqual([]);
+    const shown = confidentSoundSummary(track(4, { 'cat:guitar': threshold('cat:guitar') }, heads)).filter(s => s.dimension === 'source');
+    expect(shown.map(s => s.label)).toEqual(['guitar']);
+    expect(shown[0].scores).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('decides siren, flute, marimba and vibraphone over their CLAP heads, and guitar and violin on short clips', () => {
+    const shownLabels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
+    const heads = [{ group: 'production' as const, label: 'siren', score: .9, model: 'Trained head' as const },
+      ...['flute', 'marimba', 'vibraphone', 'guitar', 'violin'].map(label => ({ group: 'source' as const, label, score: .9, model: 'Trained head' as const }))];
+    const outputs = ['cat:siren', 'cat:flute', 'cat:marimba', 'cat:vibraphone', 'cat:guitar', 'cat:violin / fiddle'];
+    expect(shownLabels(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads))).toEqual([]);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads));
+    expect(shown.map(s => s.label).sort()).toEqual(['flute', 'guitar', 'marimba', 'siren', 'vibraphone', 'violin']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('decides crash cymbal and whisper over their CLAP heads', () => {
+    const effects = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'effect').map(s => s.label).sort();
+    const heads = ['crash cymbal', 'whisper'].map(label => ({ group: 'production' as const, label, score: .9, model: 'Trained head' as const }));
+    const outputs = ['cat:crash cymbal', 'cat:whisper'];
+    expect(effects(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads))).toEqual([]);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads)).filter(s => s.dimension === 'effect');
+    expect(shown.map(s => s.label).sort()).toEqual(['crash cymbal', 'whisper']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('decides cymbal on clips under 10 s, and wind ambience and vocal shout, over their CLAP heads', () => {
+    const shownLabels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
+    const heads = [...['wind ambience', 'vocal shout'].map(label => ({ group: 'production' as const, label, score: .9, model: 'Trained head' as const })),
+      { group: 'source' as const, label: 'cymbals', score: .9, model: 'Trained head' as const }];
+    const outputs = ['cat:cymbal', 'cat:wind ambience', 'cat:vocal shout'];
+    const low = shownLabels(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads));
+    for (const label of ['cymbals', 'wind ambience', 'vocal shout']) expect(low).not.toContain(label);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads))
+      .filter(s => ['cymbals', 'wind ambience', 'vocal shout'].includes(s.label));
+    expect(shown.map(s => s.label).sort()).toEqual(['cymbals', 'vocal shout', 'wind ambience']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('decides kick, clap, organ and gong over their CLAP heads', () => {
+    const shownLabels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
+    const heads = [...['kick', 'clap'].map(label => ({ group: 'production' as const, label, score: .9, model: 'Trained head' as const })),
+      ...['organ', 'gong'].map(label => ({ group: 'source' as const, label, score: .9, model: 'Trained head' as const }))];
+    const outputs = ['cat:kick', 'cat:clap', 'cat:organ', 'cat:gong'];
+    const low = shownLabels(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads));
+    for (const label of ['kick', 'clap', 'organ', 'gong']) expect(low).not.toContain(label);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads))
+      .filter(s => ['kick', 'clap', 'organ', 'gong'].includes(s.label));
+    expect(shown.map(s => s.label).sort()).toEqual(['clap', 'gong', 'kick', 'organ']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('decides laser and riser over their CLAP heads, and reverberant over its CLAP prompt', () => {
+    const shownLabels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
+    const heads = [...['laser', 'riser'].map(label => ({ group: 'production' as const, label, score: .9, model: 'Trained head' as const })),
+      { group: 'character' as const, label: 'reverberant', score: .9, model: 'Music CLAP' as const }];
+    const outputs = ['cat:laser', 'cat:riser', 'cat:reverberant'];
+    const low = shownLabels(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads));
+    for (const label of ['laser', 'riser', 'reverberant']) expect(low).not.toContain(label);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads))
+      .filter(s => ['laser', 'riser', 'reverberant'].includes(s.label));
+    expect(shown.map(s => s.label).sort()).toEqual(['laser', 'reverberant', 'riser']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('decides conga and vocal chant over their CLAP prompt and head, and static noise over its CLAP prompt', () => {
+    const shownLabels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
+    const labels = ['conga', 'vocal chant', 'static noise'];
+    // Native source conga evidence too: the tagger also decides that identity (alsoDecides).
+    const heads = [...labels.map(label => ({ group: 'production' as const, label, score: .9, model: (label === 'vocal chant' ? 'Trained head' : 'Music CLAP') as 'Trained head' | 'Music CLAP' })),
+      { group: 'source' as const, label: 'conga', score: .9, model: 'Music CLAP' as const }];
+    const outputs = labels.map(label => `cat:${label}`);
+    const low = shownLabels(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads));
+    for (const label of labels) expect(low).not.toContain(label);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads))
+      .filter(s => labels.includes(s.label));
+    expect(shown.map(s => `${s.dimension}:${s.label}`).sort()).toEqual(['effect:conga', 'effect:static noise', 'effect:vocal chant']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('decides acid synth and vocal phrase over their maybe CLAP heads on clips', () => {
+    const labels = ['acid synth', 'vocal phrase'];
+    const heads = labels.map(label => ({ group: 'production' as const, label, score: .9, model: 'Trained head' as const, maybe: true }));
+    const outputs = labels.map(label => `cat:${label}`);
+    const low = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads)).map(s => s.label);
+    for (const label of labels) expect(low).not.toContain(label);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads)).filter(s => labels.includes(s.label));
+    expect(shown.map(s => `${s.dimension}:${s.label}`).sort()).toEqual(['effect:acid synth', 'effect:vocal phrase']);
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('decides synth lead, vocoder vocal, record stop, glitch effect and choir over their CLAP prompts and heads on clips', () => {
+    const labels = ['synth lead', 'vocoder vocal', 'record stop', 'glitch effect', 'choir'];
+    // synth lead, vocoder vocal and record stop showed from the CLAP prompt; glitch effect from a maybe head, choir from a head.
+    const heads = labels.map(label => ({ group: 'production' as const, label, score: .9,
+      model: (label === 'glitch effect' || label === 'choir' ? 'Trained head' : 'Music CLAP') as 'Trained head' | 'Music CLAP', ...(label === 'glitch effect' ? { maybe: true } : {}) }));
+    const outputs = labels.map(label => `cat:${label}`);
+    const low = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, .01])), heads)).map(s => s.label);
+    for (const label of labels) expect(low).not.toContain(label);
+    const shown = confidentSoundSummary(track(4, Object.fromEntries(outputs.map(o => [o, threshold(o)])), heads)).filter(s => labels.includes(s.label));
+    expect(shown.map(s => `${s.dimension}:${s.label}`).sort()).toEqual(labels.map(l => `effect:${l}`).sort());
+    for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('decides staccato over its maybe CLAP head on clips', () => {
+    const heads = [{ group: 'character' as const, label: 'staccato', score: .9, model: 'Trained head' as const, maybe: true }];
+    expect(confidentSoundSummary(track(4, { 'cat:staccato': .01 }, heads)).map(s => s.label)).not.toContain('staccato');
+    const shown = confidentSoundSummary(track(4, { 'cat:staccato': threshold('cat:staccato') }, heads)).filter(s => s.label === 'staccato');
+    expect(shown.map(s => `${s.dimension}:${s.label}`)).toEqual(['character:staccato']);
+    expect(shown[0].scores).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('decides reese bass at its fresh-clip cutoff on clips', () => {
+    expect(threshold('cat:reese bass')).toBe(.1219);
+    expect(confidentSoundSummary(track(4, { 'cat:reese bass': .1 })).map(s => s.label)).not.toContain('reese bass');
+    const shown = confidentSoundSummary(track(4, { 'cat:reese bass': .1219 })).filter(s => s.label === 'reese bass');
+    expect(shown.map(s => `${s.dimension}:${s.label}`)).toEqual(['effect:reese bass']);
+    expect(shown[0].scores).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('shows whistle only from 0.90 (fresh test sets: the 0.4791 cutoff missed precision)', () => {
+    expect(threshold('cat:whistle')).toBe(.9);
+    expect(sources(track(4, { 'cat:whistle': .85 }))).toEqual([]);
+    expect(sources(track(4, { 'cat:whistle': .9 }))).toEqual(['whistle']);
+  });
+  it('decides voice over its CLAP head on clips', () => {
+    const heads = [{ group: 'source' as const, label: 'voice', score: .9, model: 'Trained head' as const }];
+    expect(sources(track(4, { 'cat:voice': .01 }, heads))).toEqual([]);
+    const shown = confidentSoundSummary(track(4, { 'cat:voice': threshold('cat:voice') }, heads)).filter(s => s.dimension === 'source');
+    expect(shown.map(s => s.label)).toEqual(['voice']);
+    expect(shown[0].scores).toMatchObject([{ model: TAGGER_SCORE }]);
   });
   it('never overrides what the listener confirmed or rejected', () => {
     const a = track(30, { drums: .01, piano: .99 });
@@ -154,8 +357,8 @@ describe('trained tagger long-recording rules', () => {
   };
   it('installs the rules picked on the full-song tuning set', () => {
     expect(Object.fromEntries(TAGGER_POLICY.tags.filter(t => t.long).map(t => [t.output, t.long]))).toEqual({
-      drums: { rule: 'max', threshold: .5757 }, trumpet: { rule: 'max' }, piano: { rule: 'detectors' }, guitar: { rule: 'detectors' },
-      cymbals: { rule: 'detectors' }, violin: { rule: 'detectors' }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' },
+      drums: { rule: 'max', threshold: .5757 }, trumpet: { rule: 'max' }, piano: { rule: 'detectors' }, 'cat:guitar': { rule: 'detectors', afterSeconds: 30 },
+      'cat:cymbal': { rule: 'detectors', afterSeconds: 30 }, 'cat:violin / fiddle': { rule: 'detectors', afterSeconds: 30 }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' },
       synthesizer: { rule: 'max' }, 'cat:percussion': { rule: 'detectors' }, 'cat:animal sound': { rule: 'detectors' },
       'cat:glockenspiel': { rule: 'detectors' }, 'cat:whistle': { rule: 'detectors' }, 'cat:tambourine': { rule: 'detectors' },
       'cat:vocal scream': { rule: 'detectors' }, 'cat:environmental sound': { rule: 'detectors', afterSeconds: 30 },
@@ -163,7 +366,20 @@ describe('trained tagger long-recording rules', () => {
       'cat:finger snap': { rule: 'detectors', afterSeconds: 30 }, 'cat:water ambience': { rule: 'detectors', afterSeconds: 30 },
       'cat:bell': { rule: 'detectors' }, 'cat:fm synth': { rule: 'detectors' },
       'cat:bass guitar': { rule: 'detectors', afterSeconds: 30 }, 'cat:machine ambience': { rule: 'detectors', afterSeconds: 30 },
-      'cat:pitched vocal': { rule: 'detectors' } });
+      'cat:pitched vocal': { rule: 'detectors' }, 'cat:hi-hat': { rule: 'detectors', afterSeconds: 30 }, 'cat:siren': { rule: 'detectors', afterSeconds: 30 },
+      'cat:flute': { rule: 'detectors', afterSeconds: 30 }, 'cat:marimba': { rule: 'detectors', afterSeconds: 30 }, 'cat:vibraphone': { rule: 'detectors', afterSeconds: 30 },
+      'cat:crash cymbal': { rule: 'detectors', afterSeconds: 30 }, 'cat:electric piano': { rule: 'detectors' }, 'cat:whisper': { rule: 'detectors', afterSeconds: 30 },
+      'cat:voice': { rule: 'detectors', afterSeconds: 30 }, 'cat:kick': { rule: 'detectors', afterSeconds: 30 }, 'cat:clap': { rule: 'detectors', afterSeconds: 30 },
+      'cat:organ': { rule: 'detectors', afterSeconds: 30 }, 'cat:gong': { rule: 'detectors', afterSeconds: 30 },
+      'cat:laser': { rule: 'detectors', afterSeconds: 30 }, 'cat:riser': { rule: 'detectors', afterSeconds: 30 },
+      'cat:reverberant': { rule: 'detectors', afterSeconds: 30 }, 'cat:conga': { rule: 'detectors', afterSeconds: 30 },
+      'cat:vocal chant': { rule: 'detectors', afterSeconds: 30 }, 'cat:static noise': { rule: 'detectors', afterSeconds: 30 },
+      'cat:acid synth': { rule: 'detectors', afterSeconds: 30 }, 'cat:vocal phrase': { rule: 'detectors', afterSeconds: 30 },
+      'cat:synth lead': { rule: 'detectors', afterSeconds: 30 }, 'cat:vocoder vocal': { rule: 'detectors', afterSeconds: 30 },
+      'cat:record stop': { rule: 'detectors', afterSeconds: 30 }, 'cat:glitch effect': { rule: 'detectors', afterSeconds: 30 },
+      'cat:choir': { rule: 'detectors', afterSeconds: 30 }, 'cat:wind ambience': { rule: 'detectors', afterSeconds: 30 },
+      'cat:vocal shout': { rule: 'detectors', afterSeconds: 30 },
+      'cat:staccato': { rule: 'detectors', afterSeconds: 30 }, 'cat:reese bass': { rule: 'detectors', afterSeconds: 30 } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
   it('needs the higher full-song drums threshold on long recordings only', () => {
@@ -176,11 +392,15 @@ describe('trained tagger long-recording rules', () => {
   });
   it('leaves fallback instruments to the existing detectors on long recordings, and keeps the tagger on 10 s clips', () => {
     const others = [{ group: 'source' as const, label: 'piano', score: .9, model: 'Trained head' as const }];
-    expect(sources(long({ piano: [.01, .01, .01], guitar: [.99, .99, .99] }, others))).toEqual(['piano']);
+    expect(sources(long({ piano: [.01, .01, .01], saxophone: [.99, .99, .99] }, others))).toEqual(['piano']);
     expect(taggerDecisions(long({ piano: [.99, .99, .99] }).tagger, 30)!.map(d => d.tag.output)).not.toContain('piano');
-    expect(sources(track(10, { piano: .01, guitar: .99 }, others))).toEqual(['guitar']);
+    expect(sources(track(10, { piano: .01, saxophone: .99 }, others))).toEqual(['saxophone']);
   });
-  it.each(['cat:environmental sound', 'cat:foley', 'cat:turntable', 'cat:finger snap', 'cat:water ambience'])(
+  it.each(['cat:environmental sound', 'cat:foley', 'cat:turntable', 'cat:finger snap', 'cat:water ambience', 'cat:guitar', 'cat:violin / fiddle', 'cat:siren',
+    'cat:flute', 'cat:marimba', 'cat:vibraphone', 'cat:crash cymbal', 'cat:whisper', 'cat:voice', 'cat:kick', 'cat:clap',
+    'cat:organ', 'cat:gong', 'cat:laser', 'cat:riser', 'cat:reverberant', 'cat:conga', 'cat:vocal chant', 'cat:static noise', 'cat:acid synth', 'cat:vocal phrase',
+    'cat:synth lead', 'cat:vocoder vocal', 'cat:record stop', 'cat:glitch effect', 'cat:choir', 'cat:cymbal', 'cat:hi-hat', 'cat:wind ambience', 'cat:vocal shout',
+    'cat:staccato', 'cat:reese bass'])(
     'keeps the tagger deciding %s up to 30 s, as the held-out scorer did, and defers on longer recordings', output => {
       const at = (duration: number, windows: number) => taggerDecisions({ revision: TAGGER_REVISION, windows, scores: { [output]: threshold(output) } }, duration)!
         .find(d => d.tag.output === output);

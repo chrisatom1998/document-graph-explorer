@@ -7,6 +7,7 @@ import { MERGED_DJ_LABELS, mergedDjLabel, sanitizeConfirmedDjTags, type Confirme
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
+import { sanitizeSoundTagFixes, type SoundTagFix } from './soundTagFixes';
 import { sanitizeStructure, type TrackStructure } from './structure';
 import { sanitizeVersionPrint } from './versionPrint';
 import { sanitizeTimbre, type TimbreSummary } from './timbre';
@@ -31,7 +32,69 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 99/100: tagger blend adds run 9 (bell, fm synth, water ambience).
 // 101/102: tagger blend adds runs 10 and 11 (bass guitar, machine ambience, pitched vocal; falling, glockenspiel, rain
 // ambience and wobbling move to run 10).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 102 : 101;
+// 105/106: the tagger decides hi-hat (fresh test sets 60/30; the CLAP head failed precision there).
+// 107/108: 12 learned heads retrained without FSD50K eval clips (clean-retrain-2026-10-11).
+// 109/110: neighbour heads (few-shot example matching) for vinyl crackle and vocal shout (knn-heads-2026-10-11).
+// 111/112: both neighbour heads removed again (vinyl crackle went over the 1% false-alarm cap on FSD50K).
+// 113/114: crash cymbal, vocal laugh, whisper and whoosh back to their pre-#232 learned heads (failed on the app path).
+// 115/116: the tagger gains the recall network: it decides guitar, violin, finger snap, siren, flute, marimba and vibraphone
+// on recall-run outputs (fresh test sets 60/30).
+// 117/118: the tagger decides crash cymbal and whisper (fresh test sets 60/30; their learned heads failed on the app path).
+// 119/120: the tagger decides voice on clips up to 30 s (fresh test sets 60/30 under the fair half-split rule; the CLAP head
+// failed precision on every set).
+// 121/122: the recall network is swapped for recall 2: the tagger also decides kick, clap, organ and gong (fresh test sets
+// 60/30 under the fair half-split rule; their CLAP heads failed on the app path).
+// 123/124: the tagger decides laser, riser and reverberant on clips up to 30 s (fresh test sets 60/30 at its own cutoffs; the
+// CLAP head or prompt that showed them failed on the app path).
+// 125/126: the tagger decides conga, vocal chant and static noise on clips up to 30 s (Listen Check clips 60/30 at its own
+// cutoffs; the CLAP head or prompt that showed them found none).
+// 127/128: the tagger decides acid synth and vocal phrase on clips up to 30 s, and whistle needs 0.90 (fresh test sets 60/30
+// under the fair half-split rule; the CLAP heads that showed acid synth and vocal phrase found none, whistle missed precision).
+// 129/130: the clave, drum fill, spoken phrase, tom and vocal laugh heads also run on clips of 2.25 s or less (app-path
+// scoring that follows the summary's display rules, 60/30 on the fresh test sets; the one-shot model found none of them).
+// 131/132: the tagger decides synth lead, vocoder vocal, record stop, glitch effect and choir on clips up to 30 s (fresh test
+// sets 60/30 at its own cutoffs, choir at its fair half-split cutoff; the CLAP prompts and heads that showed them failed).
+// record stop (5 positives) and glitch effect (11 + 5) were too few for the half split to confirm: recheck them first when
+// more labelled clips arrive.
+// 133/134: on recordings shorter than 10 s the electric-guitar head must outscore the acoustic-guitar head,
+// and between 2.25 s and 10 s the CLAP piano head must also clear the tagger's piano cutoff (NSynth test notes).
+// 135/136: a trained rimshot head (also on short clips) replaces the raw-CLAP prompt that never showed it (app-path 60/30 on
+// the fresh test sets, docs/evaluations/rimshot-supersaw-heads-2026-10-31).
+// 137/138: the tagger decides staccato on clips up to 30 s (fresh test sets 60/30 at its own cutoff 0.4305, Listen set 2/1;
+// the maybe CLAP head that showed it fired on 73 of 415 negatives). Only 5 positives judge it, so one miss flips it: recheck
+// first when more labelled clips arrive.
+// 139/140: the tagger decides reese bass on clips up to 30 s at 0.1219, a cutoff set on 1,474 fresh non-test, non-training
+// Freesound clips (32 reese) with calibrate.py's own rule, before any test clip was scored (Listen set 2/0, free-tag-set 0 false
+// alarms of 219). Only 5 positives judge it: recheck first when more labelled clips arrive.
+// 141/142: the tagger decides cymbal on clips of any length up to 30 s (the old 10 s
+// minimum and the window rule left every shorter clip and most longer ones with no decision), plus wind ambience and
+// vocal shout from its own outputs; foley and hi-hat cutoffs move. Cutoffs picked on an FSD50K dev-val tuning set that
+// shares no uploader with the tag-baseline judge set (docs/evaluations/tag-fix-2026-10-31).
+// 143/144: trained female vocal and male vocal heads (FSD50K dev train, cutoffs on dev val, judged once on FSD50K eval:
+// female P 0.794 / R 0.771, male P 0.620 / R 0.629, no NSynth false alarms; reports/dj-tags-plan-2026-11-01).
+// 145/146: trained acapella head (singing with no instruments; FSD50K dev train + AudioSet + Freesound training clips,
+// cutoff on FSD50K dev val, judged once on FSD50K eval: P 0.641 / R 0.843, no NSynth false alarms;
+// reports/bass-acapella-rap-2026-11-02).
+// 147/148: a trained supersaw head replaces the raw-CLAP prompt that never showed it (app-path 60/30 on the fresh test sets,
+// docs/evaluations/rimshot-supersaw-heads-2026-10-31).
+// 149/150: drop the texture head (a maybe head that fired on 71% of FSD50K eval clips over 2.25 s and, after #299, showed
+// as atmospheric pad on them; reports/all-tags-plan-2026-11-02).
+// 151/152: a reference-sound (neighbour) head for bitcrushed, cutoff set from training clips only (1% false alarms on
+// held-out training negatives); fresh test sets 0/0 -> 1.00/0.80 on the free-tag-set (docs/evaluations/ref-blend-2026-10-31).
+// 153/154: trained gunshot and footsteps heads (FSD50K dev train after the private exclude list, cutoffs on FSD50K dev val,
+// judged once on FSD50K eval: gunshot P 0.684 / R 0.903, footsteps P 0.757 / R 0.522; NSynth false alarms 2 and 0 of 4,096;
+// both also run on short one-shot clips; docs/evaluations/sfx-tags-2026-11-06).
+// 155/156: trained clock and chimes heads (same recipe, oneShot; judged once on FSD50K eval: clock P 0.654 / R 0.918,
+// chimes P 0.912 / R 0.608; no NSynth false alarms; docs/evaluations/sfx-tags-2026-11-06).
+// 157/158: trained cat meow, applause, knock, typing and train heads (same recipe, oneShot; judged once on FSD50K eval,
+// no NSynth false alarms; docs/evaluations/sfx-tags-2026-11-06).
+// 159/160: one combined fix for every clip length: five heads also score whole clips of 2.25 s or less (oneShot), eight
+// sustained-sound heads need two firing windows on 12-30 s clips (minWindows), and the tagger hears the tail of 10-30 s
+// clips for 12 outputs (docs/evaluations/super-fix-2026-11-07).
+// 161/162: trained thunder, phone ring and explosion heads (same recipe, oneShot; heads and cutoffs frozen on FSD50K dev
+// val, judged once on the fresh BBC + ESC-50 test set and 4,096 NSynth-valid notes). Thunder and explosion ship as maybe
+// heads (passed the fresh set, missed FSD50K eval); docs/evaluations/sfx-tags-2026-11-06.
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 162 : 161;
 export interface InstrumentEstimate {
   label: string;
   score: number;
@@ -52,6 +115,8 @@ export interface MusicAnalysis {
   tagger?: TaggerAnalysis;
   recognition?: Recognition;
   soundReviews?: SoundReview[];
+  /** Listener fixes from the "Not sure? Fix it" chip; display only, kept across reanalysis like the other corrections. */
+  soundTagFixes?: SoundTagFix[];
   stage?: 'preview';
   version: 1 | 2;
   tempoRevision?: number;
@@ -112,6 +177,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   out.recognition = sanitizeRecognition(m.recognition, out.durationSeconds);
   if (!out.recognition) delete out.recognition;
   if (Array.isArray(m.soundReviews)) out.soundReviews = sanitizeSoundReviews(m.soundReviews);
+  const soundTagFixes = sanitizeSoundTagFixes(m.soundTagFixes);
+  if (soundTagFixes?.length) out.soundTagFixes = soundTagFixes;
   if (m.stage === 'preview') out.stage = 'preview';
   if (Array.isArray(m.confirmedInstruments)) out.confirmedInstruments = [...new Set(m.confirmedInstruments.filter((label): label is string => typeof label === 'string' && sourceLabels.includes(label)))];
   const confirmedDjTags = sanitizeConfirmedDjTags(m.confirmedDjTags);

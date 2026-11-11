@@ -273,15 +273,11 @@ echo "training budget ${HOURS} h"
 if [ -n "${SOFT_LABELS:-}" ]; then EXTRA+=(--soft /tmp/soft-labels.json); fi
 if [ -n "${ABSENT_FIX:-}" ]; then EXTRA+=(--absent-fix /tmp/absent-fix.json); fi
 if [ "${ROUND12:-0}" = 1 ]; then EXTRA+=(--merge $S/round12/round12.json --rare-tags "$RARE_TAGS"); fi
-# DJ_RARE=<tag>,<tag>,... (without ROUND12): oversample windows with these app tags present RARE_REPEAT times, beside train.py's defaults.
-if [ "${ROUND12:-0}" != 1 ] && [ -n "${DJ_RARE:-}" ]; then EXTRA+=(--rare-tags "bass,organ,cello,trumpet,violin,saxophone,$DJ_RARE"); fi
 if [ -n "$TRAIN_DROP" ]; then EXTRA+=(--drop "$TRAIN_DROP"); fi
 # Recall push: RECALL_TAGS=<tag>,... oversamples those tags' present windows RARE_REPEAT times (with train.py's default rare
 # classes) and weighs their present labels POS_WEIGHT times in the loss, so tags that miss real sounds fire more often.
 # A RECALL_TAGS entry may be <tag>:<weight> to weigh that tag on its own (e.g. DJ priority tags higher).
-if [ -n "${RECALL_TAGS:-}" ]; then EXTRA+=(--rare-tags "bass,organ,cello,trumpet,violin,saxophone,$(echo "$RECALL_TAGS" | sed 's/:[0-9.]*//g')" --pos-tags "$RECALL_TAGS" --pos-weight "${POS_WEIGHT:-1}"); fi
-# Precision push: NEG_TAGS=<tag>[:<weight>],... weighs those tags' sure absences (hard negatives included) NEG_WEIGHT times.
-if [ -n "${NEG_TAGS:-}" ]; then EXTRA+=(--neg-tags "$NEG_TAGS" --neg-weight "${NEG_WEIGHT:-1}"); fi
+if [ -n "${RECALL_TAGS:-}" ]; then EXTRA+=(--rare-tags "bass,organ,cello,trumpet,violin,saxophone,$(echo "$RECALL_TAGS" | sed -E 's/:[0-9.]+(,|$)/\1/g')" --pos-tags "$RECALL_TAGS" --pos-weight "${POS_WEIGHT:-1}"); fi
 if [ "${MERGE_ONLY:-0}" = 1 ]; then EXTRA+=(--merge $S/round12/round12.json); fi   # round 13: round 12's merges without its oversampling
 python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --rare-repeat "${RARE_REPEAT:-1}" --repeat "${SOURCE_REPEAT:-}" --threads 8 --hours "$HOURS"
 # Which data trained this model, so it can be rebuilt without any one source (chris-drive rows keep source=chris-drive).

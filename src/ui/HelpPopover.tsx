@@ -29,10 +29,7 @@ export default function HelpPopover() {
         onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="help-popover__header">
-          <div>
-            <p className="help-popover__eyebrow">Resonance</p>
-            <h2 className="help-popover__title">Help &amp; graph legend</h2>
-          </div>
+          <h2 className="help-popover__title">Help &amp; graph legend</h2>
           <CloseButton
             title="Close help"
             aria-label="Close help"
