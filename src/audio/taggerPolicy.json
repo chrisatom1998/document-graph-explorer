@@ -1,7 +1,7 @@
 {
  "version": 1,
- "revision": "all-tags-ep-bright-2026-11-07-r1+tail-2026-11-07+cymbal-2026-11-09+shout-2026-11-10",
- "modelSha256": "2bec1c8ab2f0765d5bbc5684585f79fd9f08fdacbb8ea8bf58de9ce0524e1f6f",
+ "revision": "all-tags-ep-bright-2026-11-07-r1+tail-2026-11-07+cymbal-2026-11-09+shout-2026-11-10+shout-r31-2026-11-10",
+ "modelSha256": "dfd9a78b36b10296bee9a9b9eb8e3fcf79e1726af0be5044318fdc626fcedf55",
  "input": {
   "name": "samples32k",
   "output": "scores",
@@ -889,7 +889,7 @@
    "output": "cat:vocal shout",
    "label": "vocal shout",
    "dimension": "effect",
-   "threshold": 0.07,
+   "threshold": 0.7752,
    "decides": [
     "vocal shout"
    ],
