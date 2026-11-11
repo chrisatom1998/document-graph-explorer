@@ -50,6 +50,25 @@ describe('sample assistant local retrieval', () => {
     expect(result[0].reasons[0]).toContain('Shared labels');
     expect(searchSamples([clip('one')], { ...empty, similar: true }, 'missing')).toEqual([]);
   });
+  it('ranks similar sounds by the stored fingerprint and keeps labels, tempo and key as evidence', () => {
+    const unit = (hot: number[]) => {
+      const vector = new Array(512).fill(0);
+      hot.forEach((index, place) => { vector[index] = 1 - place * 0.01; });
+      const norm = Math.hypot(...vector);
+      return vector.map(value => value / norm);
+    };
+    const heard = { embedding: unit([1, 2, 3]), confirmedDjTags: tags, tempo: { bpm: 120, confidence: 0.9 }, key: { tonic: 9, mode: 'minor' as const, strength: 0.8 } };
+    const reference = clip('reference', heard);
+    const alike = clip('alike', { embedding: unit([1, 2, 3, 4]), tempo: heard.tempo, key: heard.key, confirmedDjTags: tags });
+    const labeledOnly = clip('labeled', { embedding: unit([300, 301, 302]), confirmedDjTags: tags });
+    const unheard = clip('unheard', { confirmedDjTags: tags });
+    const result = searchSamples([reference, labeledOnly, unheard, alike], { ...empty, similar: true }, 'reference');
+    expect(result.map(match => match.node.id)).toEqual(['alike']);
+    expect(result[0].reasons.some(reason => reason.includes('sound fingerprints'))).toBe(true);
+    expect(result[0].reasons.some(reason => reason.includes('Shared labels'))).toBe(true);
+    expect(result[0].reasons.some(reason => reason.includes('BPM'))).toBe(true);
+    expect(result[0].reasons.some(reason => reason.includes('key'))).toBe(true);
+  });
   it('returns no results for a clarification, rather than broadening the search', () => {
     expect(searchSamples([clip('one')], { ...empty, clarification: 'Choose a reference.' })).toEqual([]);
   });
