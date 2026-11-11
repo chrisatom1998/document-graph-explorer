@@ -126,6 +126,33 @@ describe('ResonanceShell stage controls', () => {
     expect(await within(stage).findByText('Minimap')).toBeInTheDocument();
   });
 
+  it('opens an audio-only library on For you and keeps documents on the graph', () => {
+    const sound = (id: string, title: string): DocNode => ({
+      ...documentNode, id, title, fileType: 'audio',
+      audio: { version: 2, durationSeconds: 4, analyzedSeconds: 4, instruments: [], notes: [] },
+    });
+    useGraphStore.getState().reset();
+    useGraphStore.getState().addNodes([sound('pad', 'Pad'), sound('kick', 'Kick')]);
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+
+    expect(screen.getByRole('button', { name: 'For you' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('heading', { name: 'For you' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sound map' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Graph' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sound map' }));
+    expect(screen.getByRole('button', { name: 'Sound map' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('heading', { name: 'For you' })).not.toBeInTheDocument();
+
+    cleanup();
+    useGraphStore.getState().reset();
+    useGraphStore.getState().addNodes([documentNode, sound('pad', 'Pad')]);
+    useGraphStore.setState({ phase: 'ready', graphUsable: true });
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+    expect(screen.getByRole('button', { name: 'Graph' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('button', { name: 'For you' })).not.toBeInTheDocument();
+  });
+
   it('offers a restore control only while the audio-analysis notice is minimized', () => {
     render(<ResonanceShell><div>Graph</div></ResonanceShell>);
     expect(screen.queryByRole('button', { name: 'Show audio analysis details' })).not.toBeInTheDocument();
