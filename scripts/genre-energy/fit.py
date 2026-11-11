@@ -9,7 +9,7 @@ Feature files: <set>.json.gz (or <set>.json), rows from scripts/genre-energy/fea
 import base64, gzip, hashlib, json, os, sys
 import numpy as np
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import StratifiedKFold, GroupKFold
+from sklearn.model_selection import GroupKFold
 
 feat_dir, model_out, report_out = sys.argv[1:4]
 JUDGE = '--judge' in sys.argv

@@ -7,7 +7,9 @@
     "all-tags-run9",
     "all-tags-run11",
     "all-tags-run10",
-    "all-tags-recall2"
+    "all-tags-recall2",
+    "all-tags-r29",
+    "all-tags-r31"
   ],
   "only": {
     "all-tags-run7": [
@@ -45,35 +47,116 @@
       "cat:clap",
       "cat:organ",
       "cat:gong"
+    ],
+    "all-tags-r29": [
+      "cat:electric piano"
+    ],
+    "all-tags-r31": [
+      "cat:vocal shout",
+      "cat:synth bass"
     ]
   },
   "pin": {
     "all-tags": [
+      "bass",
+      "cat:acid synth",
+      "cat:bird ambience",
+      "cat:choir",
+      "cat:conga",
+      "cat:crash cymbal",
+      "cat:dark",
+      "cat:environmental sound",
       "cat:foley",
+      "cat:glitch effect",
+      "cat:hi-hat",
+      "cat:laser",
+      "cat:record stop",
+      "cat:reese bass",
+      "cat:reverberant",
+      "cat:riser",
+      "cat:staccato",
+      "cat:static noise",
+      "cat:swelling",
+      "cat:synth lead",
       "cat:turntable",
+      "cat:vocal breath",
+      "cat:vocal chant",
+      "cat:vocoder vocal",
       "cat:voice",
-      "cat:whisper"
+      "cat:whisper",
+      "cat:wind ambience",
+      "cymbals",
+      "drums",
+      "piano",
+      "saxophone"
+    ],
+    "all-tags-run5": [
+      "cat:distorted",
+      "cat:percussive",
+      "cat:pulsing",
+      "cat:reverse effect",
+      "synthesizer",
+      "trumpet"
+    ],
+    "all-tags-run7": [
+      "cat:animal sound",
+      "cat:banjo",
+      "cat:bongo",
+      "cat:mandolin",
+      "cat:percussion",
+      "cat:shaker loop",
+      "cat:synth hit",
+      "cat:tambourine",
+      "cat:tuned percussion",
+      "cat:vocal scream",
+      "cat:vocal shush"
+    ],
+    "all-tags-run8": [
+      "cat:whistle"
     ],
     "all-tags-run9": [
-      "cat:fm synth"
+      "cat:bell",
+      "cat:fm synth",
+      "cat:reversed vocal",
+      "cat:rubbery bass",
+      "cat:vocal harmony",
+      "cat:vocal pad",
+      "cat:vocal phrase",
+      "cat:water ambience"
+    ],
+    "all-tags-run11": [
+      "cat:bass guitar",
+      "cat:machine ambience"
     ],
     "all-tags-run10": [
-      "cat:pitched vocal"
+      "cat:falling",
+      "cat:glockenspiel",
+      "cat:pitched vocal",
+      "cat:rain ambience",
+      "cat:wobbling"
     ],
     "all-tags-recall2": [
-      "cat:guitar",
+      "cat:atmospheric pad",
+      "cat:bright",
+      "cat:clap",
       "cat:drums",
       "cat:finger snap",
-      "cat:violin / fiddle",
-      "cat:siren",
-      "cat:atmospheric pad",
       "cat:flute",
-      "cat:marimba",
-      "cat:vibraphone",
+      "cat:gong",
+      "cat:guitar",
       "cat:kick",
-      "cat:clap",
+      "cat:marimba",
       "cat:organ",
-      "cat:gong"
+      "cat:siren",
+      "cat:vibraphone",
+      "cat:violin / fiddle"
+    ],
+    "all-tags-r29": [
+      "cat:electric piano"
+    ],
+    "all-tags-r31": [
+      "cat:vocal shout",
+      "cat:synth bass"
     ]
   },
   "keep": "drums",
@@ -81,5 +164,7 @@
   "license": "cc-by-nc-sa-4.0",
   "flavor": "cpu-xl",
   "timeout": "3h",
-  "attempt": 16
+  "attempt": 20,
+  "allow_hand_picks": true,
+  "hand_picks_why": "Nov 7 2026, Chris chose \"Ship EP now (allow hand picks)\": every tagger output keeps the run it has in the live model 410638a (pinned so validation-only picks do not move them; those picks are flagged as test-chosen in reports/model-selection-leak-2026-11-07), and only cat:electric piano moves, to all-tags-r29 (Chris shipped it under his own exception to the 60% line). Also cat:bright moves to all-tags-recall2: picked on NSynth validation only by a rule written down before grading (reports/bright-honest-2026-11-07/PREREGISTERED.md, thread \"Get bright tag passing honestly\"); app cutoff 0.7245. Attempt 19 (Nov 10 2026): cat:vocal shout moves to all-tags-r31 (round 31, screams and cheers taught as shouts per Chris). Training validation rows are not comparable across runs after the relabel, so it is pinned by a practice-clip rule written before scoring: on FSD50K dev-val (never trained on, relabelled), r31 at its own validation cutoff 0.7752 had P .744 R .674 vs the shipped P .652 R .453 at 0.07 (reports/round31-2026-11-10/README.md). Every other output keeps its run. Attempt 20 (Nov 11 2026): cat:synth bass moves to all-tags-r31, the only run trained on the synth-bass set (bass-guitar DI negatives + synth bass positives). Chris raised the false-alarm cap from 1% to 2% (\"raise the limit to 2%\"); at r31's own validation cutoff 0.7261 synth bass then passes every test set (reports/round32-2026-11-11/README.md). Honest note: this pick was made after seeing test results, on Chris's say-so. Every other output keeps its run."
 }

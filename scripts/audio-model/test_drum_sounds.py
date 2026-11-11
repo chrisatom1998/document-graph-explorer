@@ -1,6 +1,5 @@
 """Offline checks for the 2026-10-31 drums meaning (drum_sounds.py): any drum sound present counts drums present."""
 import importlib.util
-import json
 import os
 from pathlib import Path
 import sys

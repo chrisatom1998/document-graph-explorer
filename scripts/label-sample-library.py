@@ -51,7 +51,7 @@ def match(rel):
 def main():
     FILES, ROOT, OUT = sys.argv[1:4]; CAP = int(sys.argv[4]) if len(sys.argv) > 4 else 400
     ROOT = ROOT.rstrip('/') + '/'
-    by_label = collections.defaultdict(list); vendors = collections.Counter()
+    by_label = collections.defaultdict(list)
     for line in open(FILES):
         path = line.strip(); rel = path[len(ROOT):]; vendor = rel.split('/')[0]
         hit = match(rel)

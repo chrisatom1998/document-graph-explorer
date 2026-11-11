@@ -203,9 +203,35 @@ describe('the 50/50 shipping bar', () => {
     // Second batch (same recipe): clock P 0.654 / R 0.918, chimes P 0.912 / R 0.608, no NSynth false alarms.
     ['clock', .71, '76934099decd926c9ac3f1583efb59e70b9b6e738a5904461dc6f94dcd6fa313'],
     ['chimes', .98, '76bcd1bd14c0ff0cc92a1fc640920a3112809a0575be0f5078b6c196efb46446'],
+    // Third batch: cat meow P 0.645 / R 1.000, applause P 0.659 / R 0.940, knock P 0.724 / R 0.816,
+    // typing P 0.778 / R 0.842, train P 0.620 / R 0.838; no NSynth false alarms.
+    // cat meow and applause were cut at 0.29 on dev val; the loader rejects cutoffs under 0.5, so their bias carries
+    // logit(0.29) and they cut at 0.5 with the same decisions.
+    ['cat meow', .5, '96ffcf969d4dacbe3bcc9d10dfebee16d60b40d0193db64de9eb76610a643e3d'],
+    ['applause', .5, 'f4c4a475aa922a88459e13fc15635b109ce0d4e9c99f69510af27fe369c4d2b7'],
+    ['knock', .86, '027736acb00a3ca1e59cecadf5ccbc70acab897d3ccb0478597780db2baa4203'],
+    ['typing', .73, '84c4d07944b40d543752cc009cdbe59c24fe9ffeaf3c869c9a7b5ce205f0ea60'],
+    ['train', .93, 'f72237eeefaf79674c2a1787420f3b2ebc39393482fc486758d7f4128e579c33'],
+    // Fresh-set retry (heads and cutoffs frozen on dev val, judged once on the fresh BBC + ESC-50 set): thunder P 0.630 /
+    // R 0.750, phone ring P 0.966 / R 0.757, explosion P 0.797 / R 0.596; NSynth-valid false alarms 0 / 7 / 15 of 4,096.
+    ['phone ring', .99, 'b06a9b6919db74db6c91c49a22b2ded21683820fe3ed8ff46b41e55e29d90c25'],
+    // Door (UI-sound batch, 2026-11-10): FSD50K Door class, heads cut on dev val, judged once on FSD50K eval (negatives sampled and
+    // weighted) + 2,048 NSynth-valid notes: P 0.702 / R 0.725, 1 false alarm in 2,048.
+    ['door', .8, 'd8a9899f3617020211ec51a1824e546c58bfd7e57a212f14df70c216669cad89'],
   ] as const)('ships the %s head as a normal tag on clips of any length at its dev-val cutoff', (label, threshold, digest) => {
     expect(head(label)).toMatchObject({ group: 'production', oneShot: true });
     expect(head(label).maybe).toBeUndefined();
+    expect(head(label).threshold).toBeCloseTo(threshold, 4);
+    expect(coefficientDigest(head(label))).toBe(digest);
+  });
+  // Thunder and explosion passed the fresh set but missed FSD50K eval earlier (P 0.557 / 0.571), so they ship as maybes
+  // until a second held-out set confirms them (Chris, 2026-11-06). thunder was cut at 0.32 on dev val, so its bias
+  // carries logit(0.32) and it cuts at 0.5 with the same decisions.
+  it.each([
+    ['thunder', .5, '92d88fd5efbdcf0f8c287d7b02997d596255010ea5f4ea05b25364ce0376a4e3'],
+    ['explosion', .72, '0686b128dcfd4b6bd4bb2cd8d2b50d02b976963a123ae9e5a1d6e6b07721a0e1'],
+  ] as const)('ships the borderline %s head as a maybe on clips of any length at its dev-val cutoff', (label, threshold, digest) => {
+    expect(head(label)).toMatchObject({ group: 'production', oneShot: true, maybe: true });
     expect(head(label).threshold).toBeCloseTo(threshold, 4);
     expect(coefficientDigest(head(label))).toBe(digest);
   });
@@ -243,8 +269,10 @@ describe('the 50/50 shipping bar', () => {
     // Run 9 (tagger-run9): bell (0.72/0.62 on FSD50K eval; the old detector was 0.78/0.58, so a precision/recall trade), water ambience
     // and fm synth clear their bars on held-out audio.
     expect(['cat:bell', 'cat:fm synth'].map(tested)).toEqual([true, true]);
+    // bright (Nov 7 2026): run and cutoff picked on NSynth validation only, then NSynth test once: 0.742/0.485, the 60/30 ship line.
+    expect(tested('cat:bright')).toBe(true);
     // Measured only on NSynth and its effect renders: unchanged.
-    expect(['cat:bright', 'cat:dark', 'cat:distorted', 'cat:falling'].map(tested)).toEqual([false, false, false, false]);
+    expect(['cat:dark', 'cat:distorted', 'cat:falling'].map(tested)).toEqual([false, false, false]);
     expect(['cat:percussive', 'cat:pulsing', 'cat:swelling', 'cat:wobbling', 'cat:reverse effect'].map(tested)).toEqual([true, true, true, true, true]);
   });
 

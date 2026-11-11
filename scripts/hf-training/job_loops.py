@@ -1,6 +1,6 @@
 """HF Jobs driver for tempo-loops-v1: the tempo-v1 song data plus FSL10K loops with uploader BPMs.
 Never trains on any FSL10K loop that has a listener annotation, nor on any loop by an uploader in the tempo judge set."""
-import hashlib, json, os, subprocess, sys, tarfile, urllib.request, concurrent.futures, time, zipfile, collections, numpy as np
+import hashlib, json, os, subprocess, sys, tarfile, urllib.request, concurrent.futures, time, zipfile, collections
 from huggingface_hub import HfApi, hf_hub_download
 REPO = 'cmjatom/dge-key-tempo-train'; RUN = os.environ.get('RUN', 'tempo-loops-v1'); api = HfApi(); CAP = int(os.environ.get('CAP', 200))
 W = '/work'; os.makedirs(f'{W}/audio', exist_ok=True); os.makedirs(f'{W}/out', exist_ok=True); os.chdir(W)

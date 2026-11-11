@@ -40,7 +40,7 @@ def f1(p, r):
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('report'); ap.add_argument('items'); ap.add_argument('out'); ap.add_argument('--timing')
     a = ap.parse_args()
-    rep, items = json.load(open(a.report)), json.load(open(a.items))
+    rep, items = json.load(open(a.report)), json.load(open(a.items))  # noqa: F841 (still checks the items file parses)
     dec = deciders()
     rows = []
     for key, parts in rep['current'].items():

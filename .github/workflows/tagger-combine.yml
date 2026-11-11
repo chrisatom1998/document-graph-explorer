@@ -1,7 +1,7 @@
 name: Combine tagger runs
 
 # Builds the app's browser tagger from several training runs (scripts/audio-model/combine.py: per tag, the run that scored
-# best on held-out audio), scores it on the held-out sets and publishes it to a public Hugging Face model repo, on a
+# best on validation clips), scores it once on the held-out sets and publishes it to a public Hugging Face model repo, on a
 # Hugging Face Jobs CPU machine billed to the HF_TOKEN account.
 on:
   workflow_dispatch:
@@ -42,9 +42,10 @@ jobs:
             RUNS=${RUNS//,/ }
             ONLY=$(python3 -c 'import json; r = json.load(open("scripts/audio-model/combine-request.json")); print(";".join(k + "=" + ",".join(v) for k, v in r.get("only", {}).items()))')
             PIN=$(python3 -c 'import json; r = json.load(open("scripts/audio-model/combine-request.json")); print(";".join(k + "=" + ",".join(v) for k, v in r.get("pin", {}).items()))')
+            HAND=$(python3 -c 'import json; print(1 if json.load(open("scripts/audio-model/combine-request.json")).get("allow_hand_picks") else "")')
           else
             RUNS="$IN_RUNS"; KEEP="$IN_KEEP"; REPO="$IN_REPO"; LICENSE="$IN_LICENSE"; FLAVOR="$IN_FLAVOR"; TIMEOUT="$IN_TIMEOUT"
           fi
           USER=$(python3 -c "from huggingface_hub import whoami; print(whoami()['name'])")
           python3 scripts/audio-model/hf-launch.py "$FLAVOR" "$TIMEOUT" REPO_SHA=${{ github.sha }} JOB_SCRIPT=hf-combine-job.sh JOB_NAME=dge-tagger-combine \
-            "RUNS=$RUNS" "KEEP=$KEEP" "ONLY=${ONLY:-}" "PIN=${PIN:-}" "PUBLIC_REPO=$USER/$REPO" "LICENSE=$LICENSE"
+            "RUNS=$RUNS" "KEEP=$KEEP" "ONLY=${ONLY:-}" "PIN=${PIN:-}" "ALLOW_HAND_PICKS=${HAND:-}" "PUBLIC_REPO=$USER/$REPO" "LICENSE=$LICENSE"

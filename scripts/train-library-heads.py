@@ -6,10 +6,10 @@ Labels come from folder/file names, so two rules keep them honest:
     A drum loop is not evidence against "snare"; a noise sweep is not evidence against
     "riser". Those overlaps are excluded rather than counted as wrong.
 Usage: train-library-heads.py <manifest.json> <embeddings dir> <out dir>"""
-import json, sys, glob, datetime, os, itertools
+import json, sys, glob, datetime, os
 import numpy as np
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GroupKFold, GroupShuffleSplit
+from sklearn.model_selection import GroupKFold
 
 MANIFEST, EMB, OUT = sys.argv[1:4]
 os.makedirs(OUT, exist_ok=True)

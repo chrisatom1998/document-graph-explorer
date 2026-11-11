@@ -1,5 +1,5 @@
 {
- "model": "14f80825ba22af6048b62ad8c4dbddd0977eccffa66247b4ee657e9f15e62a56",
+ "model": "ff35f458af3459be7af5d206fbf29b3f7bfb0b7b496e501703ac895eb95725af",
  "sampleRate": 32000,
  "cases": [
   {
@@ -10,8 +10,9 @@
    "scores": {
     "drums": 0.067266,
     "piano": 0.469858,
+    "cat:electric piano": 0.00167,
     "cat:guitar": 1.2e-05,
-    "cymbals": 0.001272,
+    "cat:cymbal": 8e-06,
     "cat:violin / fiddle": 0.00018,
     "trumpet": 0.000964,
     "saxophone": 0.002762,
@@ -26,7 +27,7 @@
     "cat:wobbling": 0.000533,
     "cat:falling": 0.006163,
     "cat:pulsing": 0.00058,
-    "cat:bright": 0.493322,
+    "cat:bright": 0.017921,
     "cat:dark": 0.254654,
     "cat:distorted": 0.030455,
     "cat:reverse effect": 0.027068,
@@ -71,7 +72,8 @@
     "cat:glitch effect": 0.145739,
     "cat:choir": 0.00484,
     "cat:wind ambience": 0.00138,
-    "cat:vocal shout": 4.5e-05,
+    "cat:vocal shout": 0.000277,
+    "cat:synth bass": 0.003898,
     "cat:staccato": 6e-06,
     "cat:reese bass": 2e-06
    }
@@ -84,8 +86,9 @@
    "scores": {
     "drums": 0.031419,
     "piano": 0.377605,
+    "cat:electric piano": 0.027931,
     "cat:guitar": 0.002055,
-    "cymbals": 0.001421,
+    "cat:cymbal": 5.9e-05,
     "cat:violin / fiddle": 0.001162,
     "trumpet": 0.007243,
     "saxophone": 0.000652,
@@ -100,7 +103,7 @@
     "cat:wobbling": 0.002585,
     "cat:falling": 0.009566,
     "cat:pulsing": 0.00371,
-    "cat:bright": 0.221341,
+    "cat:bright": 0.027827,
     "cat:dark": 0.096244,
     "cat:distorted": 0.085727,
     "cat:reverse effect": 0.015564,
@@ -145,7 +148,8 @@
     "cat:glitch effect": 0.344564,
     "cat:choir": 0.009904,
     "cat:wind ambience": 0.00077,
-    "cat:vocal shout": 5e-06,
+    "cat:vocal shout": 0.001556,
+    "cat:synth bass": 0.08105,
     "cat:staccato": 5.6e-05,
     "cat:reese bass": 0.000166
    }
@@ -159,8 +163,9 @@
    "scores": {
     "drums": 0.034065,
     "piano": 0.51203,
+    "cat:electric piano": 0.027931,
     "cat:guitar": 0.002055,
-    "cymbals": 0.001796,
+    "cat:cymbal": 8.4e-05,
     "cat:violin / fiddle": 0.001332,
     "trumpet": 0.007243,
     "saxophone": 0.001871,
@@ -175,7 +180,7 @@
     "cat:wobbling": 0.002585,
     "cat:falling": 0.009566,
     "cat:pulsing": 0.042752,
-    "cat:bright": 0.306447,
+    "cat:bright": 0.027827,
     "cat:dark": 0.096244,
     "cat:distorted": 0.085727,
     "cat:reverse effect": 0.015564,
@@ -220,7 +225,8 @@
     "cat:glitch effect": 0.344564,
     "cat:choir": 0.009904,
     "cat:wind ambience": 0.006305,
-    "cat:vocal shout": 5e-06,
+    "cat:vocal shout": 0.001734,
+    "cat:synth bass": 0.08105,
     "cat:staccato": 0.000398,
     "cat:reese bass": 0.000198
    }
@@ -235,8 +241,9 @@
    "scores": {
     "drums": 0.190864,
     "piano": 0.594748,
+    "cat:electric piano": 0.018692,
     "cat:guitar": 0.00429,
-    "cymbals": 0.004164,
+    "cat:cymbal": 0.000326,
     "cat:violin / fiddle": 0.001479,
     "trumpet": 0.005435,
     "saxophone": 0.00239,
@@ -251,7 +258,7 @@
     "cat:wobbling": 0.003153,
     "cat:falling": 0.010684,
     "cat:pulsing": 0.209255,
-    "cat:bright": 0.380922,
+    "cat:bright": 0.010251,
     "cat:dark": 0.088681,
     "cat:distorted": 0.103696,
     "cat:reverse effect": 0.007465,
@@ -296,7 +303,8 @@
     "cat:glitch effect": 0.386851,
     "cat:choir": 0.009183,
     "cat:wind ambience": 0.016604,
-    "cat:vocal shout": 1e-05,
+    "cat:vocal shout": 0.002382,
+    "cat:synth bass": 0.154465,
     "cat:staccato": 0.000499,
     "cat:reese bass": 0.000199
    }

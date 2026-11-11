@@ -14,7 +14,7 @@ graph) that onnxruntime-web can run on 10 s windows of 32 kHz audio.
 | Export | `export.py` | Checks the ONNX output against PyTorch before writing |
 | Score | `evaluate.py` | DJ clip rounds 1 and 2 and the round 3 set, aggregates only, counted like the app's scorers |
 | Browser parity | `parity.py` | A fixed synthetic signal cut and scored as the held-out scorers did; `src/audio/tagger.parity.test.ts` checks the app's front end against it |
-| Combine runs | `combine.py` | Per app tag, the run with the best held-out mean min(P, R), never one that drops a set the shipped run passes; one ONNX file with a shared front end (`tagger-combine.yml` builds, scores and publishes it) |
+| Combine runs | `combine.py`, `combine_select.py` | Per app tag, the run with the best **validation** mean min(P, R) (thresholds.json's per-source validation rows), never one that drops a validation source the shipped run passes; the held-out test sets are scored once afterwards, never used to choose. One ONNX file with a shared front end (`tagger-combine.yml` builds, scores and publishes it) |
 
 `.github/workflows/audio-model-train.yml` runs the whole chain on a Hugging Face Jobs GPU (`hf-job.sh`, launched by
 `hf-launch.py`) with the `HF_TOKEN` repository secret, and uploads the run to that account's private
@@ -22,7 +22,10 @@ graph) that onnxruntime-web can run on 10 s windows of 32 kHz audio.
 
 The app runs a blend of runs 3, 5, 7, 8, 9, 10 and 11 (each tag in `src/audio/taggerPolicy.json` from the run listed in
 `public/tagger-model/model.json`'s `outputRun`); see docs/evaluations/all-tags-blend-2026-10-09. Runs 7 and 8 each add only the tags they won on
-held-out real clips (`combine-request.json`'s `only`).
+held-out real clips (`combine-request.json`'s `only`). Since 2026-11-07 the combiner refuses `only` and `pin` unless the
+request sets `"allow_hand_picks": true`: those lists were chosen from test-set results, which makes the scoreboard
+optimistic. A hand pick must rest on evidence other than the held-out test sets. Offline check:
+`python3 scripts/audio-model/test_combine_select.py`.
 
 FSD50K's supplemental app-tag labels are applied at load time, including coverage counts. Before comparing runs,
 `hf-combine-job.sh` re-exports each input and re-scores its FSD50K benchmark with the current label mapping and its

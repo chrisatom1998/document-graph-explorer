@@ -117,7 +117,8 @@
       "source": null,
       "description": "An electric piano playing soft bell-like keyboard notes.",
       "aliases": [
-        "rhodes"
+        "rhodes",
+        "wurlitzer"
       ],
       "recognition": "experimental",
       "axis": "dj-sources"
@@ -231,7 +232,9 @@
       "label": "organ",
       "source": null,
       "description": "An organ playing sustained keyboard chords.",
-      "aliases": [],
+      "aliases": [
+        "hammond"
+      ],
       "recognition": "experimental",
       "axis": "dj-sources"
     },
@@ -844,7 +847,8 @@
       "source": "synthesizer",
       "description": "A low detuned buzzing bass sound with beating and moving overtones.",
       "aliases": [
-        "reese"
+        "reese",
+        "neuro"
       ],
       "recognition": "experimental",
       "axis": "dj-bass"
@@ -1216,7 +1220,9 @@
       "label": "snare roll",
       "source": "drums",
       "description": "Rapid repeating snare drum hits building intensity.",
-      "aliases": [],
+      "aliases": [
+        "drum roll"
+      ],
       "recognition": "experimental",
       "axis": "dj-drum-pattern"
     },
@@ -1624,6 +1630,125 @@
       "axis": "dj-chimes"
     },
     {
+      "group": "production",
+      "family": "texture",
+      "label": "cat meow",
+      "source": "sound effect",
+      "description": "A cat meowing.",
+      "aliases": [
+        "meow",
+        "cat",
+        "cats"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-cat"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "applause",
+      "source": "sound effect",
+      "description": "An audience applauding and clapping.",
+      "aliases": [
+        "clapping crowd",
+        "audience applause"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-applause"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "knock",
+      "source": "sound effect",
+      "description": "Knocking on a door or wooden surface.",
+      "aliases": [
+        "door knock",
+        "knocking"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-knock"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "typing",
+      "source": "sound effect",
+      "description": "Typing on a computer keyboard or typewriter.",
+      "aliases": [
+        "keyboard typing",
+        "typewriter"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-typing"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "train",
+      "source": "sound effect",
+      "description": "A train passing or rolling on rails.",
+      "aliases": [
+        "railway",
+        "train horn"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-train"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "thunder",
+      "source": "sound effect",
+      "description": "Thunder rumbling or cracking in a storm.",
+      "aliases": [
+        "thunderclap",
+        "storm thunder"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-thunder"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "phone ring",
+      "source": "sound effect",
+      "description": "A telephone ringing.",
+      "aliases": [
+        "telephone ring",
+        "ringtone",
+        "phone ringing"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-phone"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "explosion",
+      "source": "sound effect",
+      "description": "An explosion or blast with a boom.",
+      "aliases": [
+        "blast",
+        "boom explosion"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-explosion"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "door",
+      "source": "sound effect",
+      "description": "A door opening, closing or slamming.",
+      "aliases": [
+        "door slam",
+        "door close"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-door"
+    },
+    {
       "group": "character",
       "family": "timbre",
       "label": "airy",
@@ -1672,7 +1797,8 @@
       "source": null,
       "description": "A rough grainy noisy musical texture.",
       "aliases": [
-        "gritty tone"
+        "gritty tone",
+        "dirty"
       ],
       "recognition": "experimental",
       "axis": "dj-timbre"
@@ -2185,7 +2311,9 @@
       "label": "kalimba",
       "source": null,
       "description": "A kalimba playing soft metallic plucked tine notes.",
-      "aliases": [],
+      "aliases": [
+        "mbira"
+      ],
       "recognition": "experimental",
       "axis": "dj-sources"
     },

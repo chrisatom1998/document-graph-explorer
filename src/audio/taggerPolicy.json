@@ -1,7 +1,7 @@
 {
  "version": 1,
- "revision": "all-tags-recall2-2026-10-11-r1",
- "modelSha256": "14f80825ba22af6048b62ad8c4dbddd0977eccffa66247b4ee657e9f15e62a56",
+ "revision": "all-tags-2026-11-11+ep-bright+tail+cymbal+shout-r31+synthbass-r31",
+ "modelSha256": "ff35f458af3459be7af5d206fbf29b3f7bfb0b7b496e501703ac895eb95725af",
  "input": {
   "name": "samples32k",
   "output": "scores",
@@ -24,7 +24,8 @@
    "long": {
     "rule": "max",
     "threshold": 0.5757
-   }
+   },
+   "tail": true
   },
   {
    "output": "piano",
@@ -36,6 +37,20 @@
    ],
    "tested": true,
    "minSeconds": 10,
+   "long": {
+    "rule": "detectors"
+   },
+   "trust": "both"
+  },
+  {
+   "output": "cat:electric piano",
+   "label": "electric piano",
+   "dimension": "source",
+   "threshold": 0.3535,
+   "decides": [
+    "electric piano"
+   ],
+   "tested": false,
    "long": {
     "rule": "detectors"
    }
@@ -55,10 +70,10 @@
    }
   },
   {
-   "output": "cymbals",
+   "output": "cat:cymbal",
    "label": "cymbals",
    "dimension": "source",
-   "threshold": 0.45,
+   "threshold": 0.09,
    "decides": [
     "cymbals",
     "cymbal"
@@ -158,7 +173,8 @@
    "tested": true,
    "long": {
     "rule": "detectors"
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:animal sound",
@@ -171,7 +187,8 @@
    "tested": true,
    "long": {
     "rule": "detectors"
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:glockenspiel",
@@ -253,11 +270,11 @@
    "output": "cat:bright",
    "label": "bright",
    "dimension": "character",
-   "threshold": 0.4432,
+   "threshold": 0.7245,
    "decides": [
     "bright"
    ],
-   "tested": false
+   "tested": true
   },
   {
    "output": "cat:dark",
@@ -307,7 +324,8 @@
    "decides": [
     "rain ambience"
    ],
-   "tested": true
+   "tested": true,
+   "trust": "sole"
   },
   {
    "output": "cat:vocal breath",
@@ -419,7 +437,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:bell",
@@ -473,7 +492,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:pitched vocal",
@@ -514,7 +534,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:flute",
@@ -570,7 +591,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:whisper",
@@ -584,7 +606,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:voice",
@@ -598,7 +621,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:kick",
@@ -626,7 +650,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:organ",
@@ -640,7 +665,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "tail": true
   },
   {
    "output": "cat:gong",
@@ -654,7 +680,8 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
-   }
+   },
+   "trust": "sole"
   },
   {
    "output": "cat:laser",
@@ -862,9 +889,24 @@
    "output": "cat:vocal shout",
    "label": "vocal shout",
    "dimension": "effect",
-   "threshold": 0.03,
+   "threshold": 0.7752,
    "decides": [
     "vocal shout"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   },
+   "tail": true
+  },
+  {
+   "output": "cat:synth bass",
+   "label": "synth bass",
+   "dimension": "effect",
+   "threshold": 0.7261,
+   "decides": [
+    "synth bass"
    ],
    "tested": true,
    "long": {

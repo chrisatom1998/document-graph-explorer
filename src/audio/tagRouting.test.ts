@@ -22,7 +22,7 @@ import { oneShotClipScores, sanitizeLearnedDjModel } from './learnedDjModel';
 import { sanitizeShortClipModel, SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { instrumentWindowStarts } from './instrumentEvidence';
 import { descriptionStarts } from './analysisPlan';
-import { TAGGER_POLICY, TaggerEvidence, taggerWindowStarts } from './tagger';
+import { TAGGER_POLICY, TaggerEvidence, taggerTailStart, taggerWindowStarts } from './tagger';
 import { isRuleDescribedLabel } from './timbreDescriptions';
 import type { MusicAnalysis } from './musicTypes';
 
@@ -39,7 +39,7 @@ const shownAs = (group: DjGroup, label: string) => { const m = mergedDjLabel(gro
 interface Case { name: string; mode: 'full' | 'fast'; seconds: number; at: 'all' | 'start' | 'end' }
 const CASES: Case[] = [
   ...[0.5, 1.5, 2.25, 2.5, 5, 9.5, 10, 20, 30, 60, 300].map(seconds => ({ name: `${seconds}s`, mode: 'full' as const, seconds, at: 'all' as const })),
-  // The tagger hears whole 10 s windows only: the tail of a 15 s or 25 s clip is left to the other detectors.
+  // The tagger hears whole 10 s windows, plus the tail of a 15 s or 25 s clip for the tags marked `tail`.
   ...[15, 25, 60, 300].flatMap(seconds => (['start', 'end'] as const).map(at => ({ name: `${seconds}s-${at}`, mode: 'full' as const, seconds, at }))),
   ...[20, 60, 300].map(seconds => ({ name: `fast-${seconds}s`, mode: 'fast' as const, seconds, at: 'all' as const })),
   ...(['start', 'end'] as const).map(at => ({ name: `fast-300s-${at}`, mode: 'fast' as const, seconds: 300, at })),
@@ -47,9 +47,9 @@ const CASES: Case[] = [
 /** The sound lasts this long when it sits at the start or end of a recording. */
 const EVENT_SECONDS = 4;
 
-interface Detectors { heads: { group: DjGroup; label: string; threshold: number; maybe?: boolean }[]; short: { group: DjGroup; label: string; threshold: number; maybe?: boolean }[]; tagger: string[] }
+interface Detectors { heads: { group: DjGroup; label: string; threshold: number; maybe?: boolean; minWindows?: number }[]; short: { group: DjGroup; label: string; threshold: number; maybe?: boolean }[]; tagger: string[] }
 function detectorsFor(key: string): Detectors {
-  const heads = [...(learned.heads ?? []).map(h => ({ group: h.group, label: h.label, threshold: h.threshold, maybe: h.maybe })),
+  const heads = [...(learned.heads ?? []).map(h => ({ group: h.group, label: h.label, threshold: h.threshold, maybe: h.maybe, minWindows: h.minWindows })),
     ...(learned.neighbours?.heads ?? []).map(h => ({ group: h.group, label: h.label, threshold: .5 }))].filter(h => shownAs(h.group, h.label) === key);
   const short = shortClip.heads.filter(h => shownAs(h.group, h.label) === key).map(h => ({ group: h.group, label: h.label, threshold: h.threshold, maybe: h.maybe }));
   const tagger = TAGGER_POLICY.tags.filter(t => [...t.decides.map(label => ({ dimension: t.dimension, label })), ...(t.alsoDecides ?? [])]
@@ -58,7 +58,7 @@ function detectorsFor(key: string): Detectors {
 }
 
 const fired = (h: Detectors['heads'][number]): DescriptionScore =>
-  ({ group: 'dj-learned', label: h.label, score: Math.min(1, h.threshold + .01), learnedGroup: h.group, decision: 'include', basis: 'head', ...(h.maybe ? { maybe: true } : {}) });
+  ({ group: 'dj-learned', label: h.label, score: Math.min(1, h.threshold + .01), learnedGroup: h.group, decision: 'include', basis: 'head', ...(h.maybe ? { maybe: true } : {}), ...(h.minWindows ? { minWindows: h.minWindows } : {}) });
 
 /** What the Sounds row lists when only this tag's detectors fire, in the windows that hear the sound. */
 function shown(d: Detectors, c: Case): Map<string, boolean> {
@@ -80,6 +80,9 @@ function shown(d: Detectors, c: Case): Map<string, boolean> {
     const end = Math.min(c.seconds, start + 10), on = hears(start, end);
     tagger.add(Object.fromEntries(TAGGER_POLICY.tags.map(t => [t.output, on && d.tagger.includes(t.output) ? .999 : 0])), { start, end });
   }
+  // The tail window (analyzeDecodedMusic's tagger pass) for the outputs marked `tail`.
+  const tail = taggerTailStart(c.seconds);
+  if (tail !== undefined) tagger.addTail(Object.fromEntries(TAGGER_POLICY.tags.map(t => [t.output, hears(tail, c.seconds) && d.tagger.includes(t.output) ? .999 : 0])), { start: tail, end: c.seconds });
   const average = descriptions.average();
   const profile = combineSoundModels([], {}, average, { ast: false, jamendo: false, clap: true });
   mergeDjTags(profile, dj.results(), average);
