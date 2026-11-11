@@ -94,7 +94,9 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 161/162: trained thunder, phone ring and explosion heads (same recipe, oneShot; heads and cutoffs frozen on FSD50K dev
 // val, judged once on the fresh BBC + ESC-50 test set and 4,096 NSynth-valid notes). Thunder and explosion ship as maybe
 // heads (passed the fresh set, missed FSD50K eval); docs/evaluations/sfx-tags-2026-11-06.
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 162 : 161;
+// 163/164: trained door head (same recipe, oneShot; FSD50K Door class, cutoff on dev val, judged once on FSD50K eval + 2,048
+// NSynth-valid notes; docs/evaluations/ui-sounds-2026-11-10).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 164 : 163;
 export interface InstrumentEstimate {
   label: string;
   score: number;
