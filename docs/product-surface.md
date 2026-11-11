@@ -19,6 +19,18 @@ Click to read  ·  compare two docs  ·  ⌘K to search  ·  chat to ask
 If a feature does not make that loop faster, clearer, or more trustworthy, it
 does not get a toolbar button.
 
+An audio-only library uses a second loop, `SAMPLE_LOOP` in `src/product/surface.ts`:
+
+```
+Drop sounds
+        ↓
+For you   (player, tags, fingerprint shelves)
+        ↓
+Sound map (the same graph, one tab away)
+```
+
+A document, or a mix of sounds and documents, stays on the graph. For you is not a second toolbar of studio tools. A new control still has to earn a place on that sample loop.
+
 The original spec (`knowledge-nebula-spec.md` §1.1) already named this:
 zero-friction ingest, meaningful structure, a graph people want open, and
 click-to-read. OCR, collaboration, in-app editing, and a second product around
