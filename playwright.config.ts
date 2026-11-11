@@ -31,10 +31,13 @@ const GROUP = ENV?.E2E_GROUP;
 if (GROUP && GROUP !== 'rest' && !(GROUP in E2E_GROUPS)) {
   throw new Error(`E2E_GROUP must be one of: ${[...Object.keys(E2E_GROUPS), 'rest'].join(', ')}.`);
 }
+// for-you.spec.ts needs the no-inference build served by playwright.for-you.config.ts; against this
+// production build it would fail, and its uploads could reach real model analysis. Never discover it here.
+const DEDICATED_SPECS = ['for-you.spec.ts'];
 const groupFilter = !GROUP
-  ? {}
+  ? { testIgnore: DEDICATED_SPECS }
   : GROUP === 'rest'
-    ? { testIgnore: Object.values(E2E_GROUPS).flat() }
+    ? { testIgnore: [...Object.values(E2E_GROUPS).flat(), ...DEDICATED_SPECS] }
     : { testMatch: E2E_GROUPS[GROUP] };
 
 export default defineConfig({
@@ -54,6 +57,10 @@ export default defineConfig({
   reporter: IS_CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
+    // A fresh profile opens on For you (viewStore.ts). These suites were written for the Graph view (welcome card,
+    // sidebar counts, visible canvas), so they start from a profile whose last chosen view is Graph, the same
+    // state a returning user is in. The For you view itself is covered by playwright.for-you.config.ts.
+    storageState: { cookies: [], origins: [{ origin: `http://127.0.0.1:${PORT}`, localStorage: [{ name: 'resonance-tab', value: 'graph' }] }] },
     channel: CHANNEL,
     // Camera focus commits synchronously under reduced motion, so node
     // selection opens the side panel without waiting on the camera glide.

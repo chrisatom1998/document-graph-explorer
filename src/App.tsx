@@ -5,6 +5,7 @@ import { shouldIgnoreGlobalKey } from './ui/globalKeyboard';
 import { useGraphStore } from './store/graphStore';
 import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
+import { useViewStore } from './store/viewStore';
 import { layoutSetDims } from './layout/layoutBridge';
 import { useInitialGraphFrame } from './scene/useInitialGraphFrame';
 import { positionBuffer, slotOfId } from './scene/positionBuffer';
@@ -15,6 +16,7 @@ import { initChatHistorySync } from './persistence/chatHistorySync';
 import { useSettingsStore } from './store/settingsStore';
 import { audioAnalysisUsedBefore } from './audio/speculativePreload';
 import { audioModelPackInstalled } from './audio/modelPack';
+import { E2E_NO_INFERENCE, e2eCounters } from './e2e/noInference';
 import './styles.css';
 
 /** Fetch and warm the audio models once a restored graph that contains audio has
@@ -25,6 +27,7 @@ import './styles.css';
  * waits for the pipeline to return to idle rather than competing with it, and a
  * document-only ingest that starts later stops it (speculativePreload.ts). */
 function preloadAudioModelsWhenIdle(): void {
+  if (E2E_NO_INFERENCE) { e2eCounters().skippedPreload += 1; return; }
   // A restored workspace settles in 'ready', an empty one in 'idle'.
   const settled = (phase: string) => phase === 'idle' || phase === 'ready';
   const start = () => {
@@ -119,6 +122,7 @@ export default function App() {
   const helpOpen = useUiStore((s) => s.helpOpen);
   const pathMode = useUiStore((s) => s.pathMode);
   const chatOpen = useChatStore((s) => s.isOpen);
+  const forYou = useViewStore((s) => s.tab === 'foryou');
 
   // Session restore + persistence hooks, once. Fresh starts stay empty until
   // the user adds files or explicitly loads the demo corpus from EmptyState.
@@ -151,6 +155,9 @@ export default function App() {
   }, []);
 
   useInitialGraphFrame(hasNodes);
+
+  // Lets the browser tests confirm they are running the no-inference build (src/e2e/noInference.ts).
+  useEffect(() => { if (E2E_NO_INFERENCE) document.documentElement.dataset.e2eNoInference = '1'; }, []);
 
   // Dev-only introspection for automated verification (position spread etc.).
   useEffect(() => {
@@ -353,7 +360,7 @@ export default function App() {
       </Suspense>
       <Suspense fallback={null}><InsightsDigest /><FirstRunGuide /></Suspense>
       <Suspense fallback={null}><DropZone /></Suspense>
-      {!hasNodes && phase === 'idle' && (
+      {!hasNodes && phase === 'idle' && !forYou && (
         <Suspense fallback={null}><EmptyState /></Suspense>
       )}
       {phase === 'ready' && (

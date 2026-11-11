@@ -25,5 +25,6 @@
         }
       ]
     }
-  ]
+  ],
+  "git": { "deploymentEnabled": { "feat/resonance-for-you-2026-11-07": false } }
 }

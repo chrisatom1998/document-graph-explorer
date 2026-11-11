@@ -17,6 +17,7 @@
  * materials stay unlit (basic/additive) and ignore these lights entirely.
  */
 
+import { useViewStore } from '../store/viewStore';
 import { useEffect, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
@@ -114,6 +115,9 @@ export default function NebulaCanvas() {
   // 2D constellation mode: flat ink background, no starfield/clouds/core —
   // the graph reads as a star chart, not a nebula (see palette FLAT_* tokens).
   const flat = useUiStore((s) => s.dims === 2);
+  // The For you view covers the stage, so the hidden scene stops rendering (it resumes the moment the Graph tab, or a
+  // navigation that opens it, brings it back). On software WebGL an unseen canvas otherwise starves the visible page.
+  const hidden = useViewStore((s) => s.tab === 'foryou');
   const bg = flat ? FLAT_BG : VOID;
 
   if (!webglSupported) return <WebGLFallback />;
@@ -130,6 +134,7 @@ export default function NebulaCanvas() {
       }
       style={{ position: 'absolute', inset: 0 }}
       dpr={renderDpr}
+      frameloop={hidden ? 'never' : 'always'}
       camera={{ fov: 55, near: 0.1, far: 4000, position: [0, 0, 160] }}
       gl={{ antialias: false, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {

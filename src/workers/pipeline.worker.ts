@@ -11,6 +11,7 @@
 // graph kills the worker before onmessage registers ("stuck parsing").
 import type { FeatureExtractionPipeline, Tensor } from '@huggingface/transformers';
 import { EMBED_DIMS, EMBED_MODEL_ID } from '../config';
+import { E2E_NO_INFERENCE, e2eStubEmbed } from '../e2e/noInference';
 import type { LinkRef, NodeStatus, ParsedDoc, PoolRequest, PoolResponse } from '../model/types';
 import { extractEntities } from '../pipeline/entities';
 import { extractPhraseTf } from '../pipeline/phrases';
@@ -260,6 +261,8 @@ function getExtractor(): Promise<FeatureExtractionPipeline> {
 
 /** Embed texts in batches; returns flattened unit vectors [n * EMBED_DIMS]. */
 async function embedTexts(texts: string[]): Promise<Float32Array> {
+  // Browser-test build only: deterministic E2E_STUB vectors, no model load (src/e2e/noInference.ts).
+  if (E2E_NO_INFERENCE) return e2eStubEmbed(texts, EMBED_DIMS);
   const extractor = await getExtractor();
   const out = new Float32Array(texts.length * EMBED_DIMS);
   for (let start = 0; start < texts.length; start += EMBED_BATCH_SIZE) {
