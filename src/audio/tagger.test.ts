@@ -483,3 +483,20 @@ describe('trained tagger pass', () => {
     expect(result.tagger).toBeUndefined();
   });
 });
+
+describe('trained tagger revision and synth bass', () => {
+  it('keeps the policy revision short enough for stored results to survive', () => {
+    // sanitizeTaggerAnalysis drops any stored result whose revision is longer than 120 characters.
+    expect(TAGGER_REVISION.length).toBeLessThanOrEqual(120);
+    expect(sanitizeTaggerAnalysis({ revision: TAGGER_REVISION, windows: 1, scores: { drums: .5 } })).toBeDefined();
+  });
+  it('shows synth bass from the tagger on a clip over 2.25 s at its cutoff, not below it', () => {
+    const t = threshold('cat:synth bass');
+    expect(t).toBe(.7261);
+    const effects = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'effect').map(s => s.label);
+    expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { 'cat:synth bass': .73 } }, 5)!.find(d => d.tag.output === 'cat:synth bass')!.shown).toBe(true);
+    expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { 'cat:synth bass': .72 } }, 5)!.find(d => d.tag.output === 'cat:synth bass')!.shown).toBe(false);
+    expect(effects(track(5, { 'cat:synth bass': .73 }))).toContain('synth bass');
+    expect(effects(track(5, { 'cat:synth bass': .72 }))).not.toContain('synth bass');
+  });
+});
