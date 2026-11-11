@@ -378,7 +378,7 @@ describe('trained tagger long-recording rules', () => {
       'cat:synth lead': { rule: 'detectors', afterSeconds: 30 }, 'cat:vocoder vocal': { rule: 'detectors', afterSeconds: 30 },
       'cat:record stop': { rule: 'detectors', afterSeconds: 30 }, 'cat:glitch effect': { rule: 'detectors', afterSeconds: 30 },
       'cat:choir': { rule: 'detectors', afterSeconds: 30 }, 'cat:wind ambience': { rule: 'detectors', afterSeconds: 30 },
-      'cat:vocal shout': { rule: 'detectors', afterSeconds: 30 },
+      'cat:vocal shout': { rule: 'detectors', afterSeconds: 30 }, 'cat:synth bass': { rule: 'detectors', afterSeconds: 30 },
       'cat:staccato': { rule: 'detectors', afterSeconds: 30 }, 'cat:reese bass': { rule: 'detectors', afterSeconds: 30 } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
@@ -481,5 +481,22 @@ describe('trained tagger pass', () => {
     const { result, taggerInputs } = await run(30, false, false);
     expect(taggerInputs).toEqual([]);
     expect(result.tagger).toBeUndefined();
+  });
+});
+
+describe('trained tagger revision and synth bass', () => {
+  it('keeps the policy revision short enough for stored results to survive', () => {
+    // sanitizeTaggerAnalysis drops any stored result whose revision is longer than 120 characters.
+    expect(TAGGER_REVISION.length).toBeLessThanOrEqual(120);
+    expect(sanitizeTaggerAnalysis({ revision: TAGGER_REVISION, windows: 1, scores: { drums: .5 } })).toBeDefined();
+  });
+  it('shows synth bass from the tagger on a clip over 2.25 s at its cutoff, not below it', () => {
+    const t = threshold('cat:synth bass');
+    expect(t).toBe(.7261);
+    const effects = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'effect').map(s => s.label);
+    expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { 'cat:synth bass': .73 } }, 5)!.find(d => d.tag.output === 'cat:synth bass')!.shown).toBe(true);
+    expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { 'cat:synth bass': .72 } }, 5)!.find(d => d.tag.output === 'cat:synth bass')!.shown).toBe(false);
+    expect(effects(track(5, { 'cat:synth bass': .73 }))).toContain('synth bass');
+    expect(effects(track(5, { 'cat:synth bass': .72 }))).not.toContain('synth bass');
   });
 });
