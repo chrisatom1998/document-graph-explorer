@@ -99,11 +99,14 @@
 .ns-nav__item:hover:not(:disabled), .ns-nav__item.is-current { color: var(--mx-text) !important; }
 .ns-nav__item:disabled { opacity: 0.5; cursor: default; }
 .ns-library { grid-area: lib; display: flex; flex-direction: column; overflow: auto; }
-/* The shared navigator starts fixed, invisible, and translated off screen.
-   Resonance reveals the embedded copy under .rs-library; this column is .ns-library. */
-.ns-library .graph-navigator--embedded {
+/* The shared navigator starts fixed, invisible, translated off screen, and
+   blurred. Embedded, it is ordinary column content: no modal z-index (that
+   flex-item z-index paints the list over the header menus) and no backdrop
+   blur (that resamples the live graph and stops the page producing frames). */
+.ns-library .graph-navigator.graph-navigator--embedded {
   pointer-events: auto;
   position: static;
+  z-index: auto;
   width: 100%;
   max-width: none;
   max-height: none;
@@ -112,11 +115,15 @@
   background: transparent;
   border: 0;
   box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   opacity: 1;
   transform: none;
+  transition: none;
 }
+.ns-library .graph-navigator--embedded::before { display: none; }
 .ns-library .graph-navigator__list { max-height: min(300px, 40vh); }
-.ns-library .graph-navigator.is-expanded #graph-navigator-content {
+.ns-library .graph-navigator.graph-navigator--embedded #graph-navigator-content {
   position: static;
   top: auto;
   left: auto;

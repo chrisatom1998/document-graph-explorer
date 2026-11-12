@@ -13,11 +13,14 @@ function paint(markup: string): void {
   style.textContent = `
     .graph-navigator {
       position: fixed;
+      z-index: 40;
       opacity: 0;
       pointer-events: none;
       transform: translateY(calc(-100% - 24px));
+      backdrop-filter: blur(16px);
     }
-    .graph-navigator.is-expanded #graph-navigator-content { position: absolute; top: 20px; }
+    .graph-navigator.is-expanded { z-index: 30; }
+    .graph-navigator.is-expanded #graph-navigator-content { position: absolute; top: 20px; width: calc(100vw - 20px); }
     .toolbar__menu { position: absolute; top: calc(100% + 8px); }
     ${nightCss}
   `;
@@ -40,7 +43,10 @@ describe('Night Session embedded panels', () => {
     expect(shown.pointerEvents).toBe('auto');
     expect(shown.position).toBe('static');
     expect(shown.transform).toBe('none');
+    expect(shown.zIndex).toBe('auto');
+    expect(shown.backdropFilter).toBe('none');
     expect(getComputedStyle(content).position).toBe('static');
+    expect(getComputedStyle(content).width).not.toBe('calc(100vw - 20px)');
   });
 
   it('keeps export actions inside the export panel', () => {
