@@ -107,8 +107,6 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     if (await minimizeAnalysis.isVisible()) {
       await minimizeAnalysis.click({ timeout: 5_000 }).catch(() => expect(minimizeAnalysis).toBeHidden());
     }
-    const guide = page.getByRole('button', { name: 'Dismiss getting started' });
-    if (await guide.isVisible()) await guide.click();
     await openFiles(page);
     await page.getByRole('option', { name: /Second tone/i }).click();
     await expect(page.locator('.audio-preview')).toBeVisible();

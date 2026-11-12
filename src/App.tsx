@@ -64,7 +64,6 @@ const ProgressStrip = lazy(() => import('./ui/ProgressStrip'));
 // The Resonance shell owns the toolbar, filters and inspector around the graph.
 const ResonanceShell = lazy(() => import('./ui/resonance/ResonanceShell'));
 const InsightsDigest = lazy(() => import('./ui/InsightsDigest'));
-const FirstRunGuide = lazy(() => import('./ui/FirstRunGuide'));
 const InsightsPanel = lazy(() => import('./ui/InsightsPanel'));
 const PathPanel = lazy(() => import('./ui/PathPanel'));
 const ComparePanel = lazy(() => import('./ui/ComparePanel'));
@@ -350,7 +349,7 @@ export default function App() {
           </Suspense>
         </ResonanceShell>
       </Suspense>
-      <Suspense fallback={null}><InsightsDigest /><FirstRunGuide /></Suspense>
+      <Suspense fallback={null}><InsightsDigest /></Suspense>
       <Suspense fallback={null}><DropZone /></Suspense>
       {phase === 'ready' && (
         <Suspense fallback={null}>

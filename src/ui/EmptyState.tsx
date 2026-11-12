@@ -2,9 +2,7 @@ import { lazy, Suspense, useRef, useState } from 'react';
 import { AUDIO_DEMO_CLIPS } from '../demo/audioDemo';
 import { openFilePicker } from '../ingest/DropZone';
 import { openFolderPicker } from '../ingest/folderPicker';
-import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
 import { rememberCenterOrigin } from '../scene/ingestGesture';
 import heroPng960 from '../assets/hero/hero-lime-960.png';
 import heroPng1920 from '../assets/hero/hero-lime-1920.png';
@@ -64,13 +62,6 @@ export default function EmptyState() {
     rememberCenterOrigin();
     import('../pipeline/coordinatorLazy')
       .then((mod) => (kind === 'docs' ? mod.loadDemoCorpus() : mod.loadDemoAudio()))
-      .then(() => {
-        // Only show the guide when the demo actually produced a graph; a
-        // mid-run cancellation resolves the promise but leaves nodes empty.
-        if (useGraphStore.getState().nodes.length > 0) {
-          window.dispatchEvent(new Event(FIRST_RUN_GUIDE_REOPEN_EVENT));
-        }
-      })
       .catch((err) => {
         console.warn(kind === 'docs' ? 'demo corpus load failed' : 'audio demo load failed', err);
         useUiStore.getState().pushToast(

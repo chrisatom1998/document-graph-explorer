@@ -29,7 +29,6 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
    Object.defineProperty(element,'files',{configurable:true,value:transfer.files});element.dispatchEvent(new Event('change',{bubbles:true}));
   },contents);
   await expect(page.getByRole('button',{name:'Search documents'})).toBeEnabled();
-  const guide=page.getByRole('button',{name:'Dismiss getting started'});if(await guide.isVisible())await guide.click();
  };
  const openAlpha=async()=>{
   await page.getByRole('button',{name:'Search documents'}).click();

@@ -22,7 +22,6 @@ for (const includeAudio of [false, true]) test(`file browsing is visible and mob
   // The library list lives in its own view tab now, at both sizes.
   const library = page.getByRole('button', { name: 'Library', exact: true });
   await expect(library).toBeInViewport();
-  // Open the Library directly: the getting-started guide checked below must stay up.
   await openTab(page, 'Library');
   await expect(page.getByRole('option', { name: /Layout note/ })).toBeVisible();
   await openTab(page, 'Graph');
@@ -32,12 +31,8 @@ for (const includeAudio of [false, true]) test(`file browsing is visible and mob
   await openTab(page, 'Library');
   await expect(page.getByRole('option', { name: /Layout note/ })).toBeInViewport();
   await openTab(page, 'Graph');
-  const guide = page.locator('.first-run-guide');
-  await expect(guide).toBeVisible();
-  const box = await guide.boundingBox();
-  expect(box!.x).toBeGreaterThanOrEqual(0);
-  expect(box!.x + box!.width).toBeLessThanOrEqual(390);
-  expect(box!.y + box!.height).toBeLessThanOrEqual(744);
+  // The getting-started tour was removed; nothing should cover the map after an import.
+  await expect(page.getByRole('button', { name: 'Dismiss getting started' })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   // The audio-only assistant is absent for documents; with audio, both tools
   // stay reachable on mobile and must not overlap.

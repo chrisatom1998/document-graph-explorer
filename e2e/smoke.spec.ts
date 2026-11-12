@@ -3,11 +3,6 @@ import { advancedFilters, closeDetails, corpusCount, details, fitAll, openFiles,
 
 test.beforeEach(async ({ page }) => { page.setDefaultTimeout(30_000); });
 
-async function openLibrary(page: Page) {
-  const guide = page.getByRole('button', { name: 'Dismiss getting started' });
-  if (await guide.isVisible()) await guide.click();
-}
-
 // Console/page-error hygiene: the app funnels failures into toasts, so a
 // clean console AND no error toast together prove the run was healthy.
 function collectErrors(page: Page): string[] {
@@ -91,12 +86,6 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await waitForGraphReady(page, 270_000);
   await expect(page.locator('.nebula-canvas canvas')).toBeVisible();
 
-  // The getting-started tour reopens after a demo load; dismiss it so
-  // keyboard-driven steps below reach the app, not the tour's handlers.
-  const tour = page.getByRole('button', { name: 'Dismiss getting started' });
-  if (await tour.isVisible().catch(() => false)) {
-    await tour.click();
-  }
   await page.screenshot({ path: testInfo.outputPath('demo-graph.png') });
 
   // Selection path 1: the accessible graph navigator (pure DOM listbox) —
@@ -242,7 +231,6 @@ test('search ranks within file filters before applying its result limit', async 
     node.fileType = index === 13 ? 'md' : 'txt';
   });
   await importGraphJson(page, JSON.stringify(graph));
-  await openLibrary(page);
   // File type is a sidebar checkbox list; the embedded Advanced panel no longer repeats it.
   await showFilters(page);
   // The native input is visually hidden behind a styled box, so drive the label.
@@ -277,7 +265,6 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await expect(searchInput).toBeFocused();
     await searchInput.press('Escape');
     await expect(search).toBeHidden();
-    await openLibrary(page);
     await advancedFilters(page);
     await page.getByRole('button', { name: 'More filters' }).click();
     const minimum = page.getByRole('slider', { name: 'Minimum document connections' });

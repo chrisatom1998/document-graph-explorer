@@ -232,9 +232,10 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
             </section>
           ) : (
             <>
+              {/* One compact row, so the sound map starts on the first screen. */}
               {focus && facts && (
                 <header className="ns-hero">
-                  <CoverArt node={focus} radius={6} className="ns-hero__art" />
+                  <CoverArt node={focus} radius={4} className="ns-hero__art" />
                   <div className="ns-hero__text">
                     <p className="ns-eyebrow">{selected ? facts.kind : `Featured ${facts.kind.toLowerCase()}`}</p>
                     <h1>{focus.title}</h1>
@@ -243,14 +244,12 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
                       <span>{neighbors.length} similar {neighbors.length === 1 ? 'sound' : 'sounds'}</span>
                     </p>
                   </div>
+                  {focus.fileType === 'audio' && (
+                    <button type="button" className="ns-bigplay" aria-label={isPlaying && playingId === focus.id ? `Pause ${focus.title}` : `Play ${focus.title}`} onClick={() => { if (!selected) selectClip(focus.id); playClip(focus.id); }}>
+                      <TransportGlyph kind={isPlaying && playingId === focus.id ? 'pause' : 'play'} />
+                    </button>
+                  )}
                 </header>
-              )}
-              {focus?.fileType === 'audio' && (
-                <div className="ns-actions">
-                  <button type="button" className="ns-bigplay" aria-label={isPlaying && playingId === focus.id ? `Pause ${focus.title}` : `Play ${focus.title}`} onClick={() => { if (!selected) selectClip(focus.id); playClip(focus.id); }}>
-                    <TransportGlyph kind={isPlaying && playingId === focus.id ? 'pause' : 'play'} />
-                  </button>
-                </div>
               )}
               {focus && <TagChips node={focus} className="ns-tags-inline" />}
               <div className="ns-body">

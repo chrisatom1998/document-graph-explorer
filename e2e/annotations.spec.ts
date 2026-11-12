@@ -15,8 +15,6 @@ test('competing tabs retain committed notes and deletion versions when an older 
     await closeDetails(tab);
   };
   const openNote = async (tab: Page) => {
-    const tour = tab.getByRole('button', { name: 'Dismiss getting started' });
-    if (await tour.isVisible()) await tour.click();
     await tab.getByRole('button', { name: 'Search documents', exact: true }).click();
     await tab.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('Postgres Performance Tuning Guide');
     // The library column lists the same document, so pick the search result, not the library row.
