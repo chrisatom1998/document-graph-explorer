@@ -338,3 +338,15 @@
   .ns-player__wave > span:not(.ns-player__line) { display: none; }
   .ns-player__side { display: none; }
 }
+
+/* The progress card stays beside the now-playing column (or open drawer), never over it,
+   so the drawer's own buttons (Cancel analysis, Reanalyze) stay clickable while it runs. */
+:root[data-design] .app-root:has(.ns-root) .progress-strip-layer { right: 376px; }
+@media (max-width: 1100px) {
+  :root[data-design] .app-root:has(.ns-root) .progress-strip-layer { right: 0; }
+  :root[data-design] .app-root:has(.ns-root):has(.ns-now--open) .progress-strip-layer { right: calc(min(400px, 100vw - 24px) + 20px); }
+}
+@media (max-width: 760px) {
+  /* Phones: the drawer spans the width, so the card keeps the full row. */
+  :root[data-design] .app-root:has(.ns-root):has(.ns-now--open) .progress-strip-layer { right: 0; }
+}

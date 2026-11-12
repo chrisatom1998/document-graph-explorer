@@ -87,6 +87,9 @@ test.describe('retina graph clarity', () => {
     await page.getByLabel('Graph clarity', { exact: true }).selectOption('ultra');
     await expect.poll(() => pixelRatio(page)).toBeCloseTo(4, 2);
     await page.getByRole('button', { name: 'Close settings', exact: true }).click();
+    // On compact windows the selected sound's drawer sits over the map's 2D/3D switch.
+    const closePanel = page.getByRole('button', { name: 'Close panel', exact: true });
+    if (await closePanel.isVisible()) await closePanel.click();
     await page.getByRole('button', { name: 'Switch to 3D view', exact: true }).click();
     await expect.poll(() => pixelRatio(page)).toBeCloseTo(4, 2);
     await finishFrames(page);
