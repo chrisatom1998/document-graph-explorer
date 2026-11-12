@@ -13,7 +13,7 @@ import SnapshotDiffBanner from '../../ui/SnapshotDiffBanner';
 import { Chips, CoverArt, PlayButton, Scrubber, TagChips, TransportGlyph, shade } from '../music/parts';
 import { clipColor, clipFacts, clock, libraryLabels, rowDetail } from '../music/library';
 import NowPlayingAudio from '../music/NowPlayingAudio';
-import { addFiles, addFolder, openSearch, openSettings, playClip, selectClip, skip, togglePlayback, usePlayerStore } from '../music/player';
+import { activateClip, addFiles, addFolder, openSearch, openSettings, playClip, selectClip, skip, togglePlayback, usePlayerStore } from '../music/player';
 import { useDemoLoader, useLibrary } from '../music/useLibrary';
 import '../../ui/resonance/resonance.css';
 import '../music/music-base.css';
@@ -144,7 +144,7 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
           <ul className="ns-rows">
             {listed.map(node => (
                 <li key={node.id}>
-                  <button type="button" className={`ns-row${selected?.id === node.id ? ' is-active' : ''}`} onClick={() => selectClip(node.id)}>
+                  <button type="button" className={`ns-row${selected?.id === node.id ? ' is-active' : ''}`} onClick={() => activateClip(node.id)}>
                     <CoverArt node={node} radius={4} className="ns-row__art" />
                     <span className="ns-row__text">
                       <strong className={playingId === node.id ? 'is-playing' : ''}>{node.title}</strong>

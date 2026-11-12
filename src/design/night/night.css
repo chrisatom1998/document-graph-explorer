@@ -57,7 +57,9 @@
   border: 0;
   border-radius: 8px;
 }
-.ns-header .rs-corpus { grid-area: corpus; min-width: 0; overflow: hidden; }
+/* No overflow clipping here: the workspace menu drops down out of this cell. A long name is trimmed inside the trigger. */
+.ns-header .rs-corpus { grid-area: corpus; display: flex; min-width: 0; }
+.ns-header .rs-corpus .corpus-switcher, .ns-header .rs-corpus .corpus-switcher__trigger { max-width: 100%; }
 .ns-header .rs-top__actions { grid-area: actions; }
 .ns-header .ns-views { grid-area: views; }
 .ns-header .rs-top__status { grid-area: status; justify-self: end; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -88,6 +88,23 @@ describe('NightShell', () => {
     expect(within(library).getByRole('button', { name: /kick-one-shot/ })).toBeVisible();
   });
 
+  it('lets a library row pick a path endpoint or comparison slot instead of opening it', () => {
+    render(<NightShell graph={<div>Graph</div>} />);
+    const library = screen.getByRole('complementary', { name: 'Your library' });
+
+    act(() => useUiStore.getState().setPathMode(true));
+    fireEvent.click(within(library).getByRole('button', { name: /Alpha notes/ }));
+    fireEvent.click(within(library).getByRole('button', { name: /Beta notes/ }));
+    expect(useUiStore.getState().pathEndpoints).toEqual(['a', 'b']);
+    expect(useUiStore.getState().selectedId).toBeNull();
+    act(() => useUiStore.getState().setPathMode(false));
+
+    act(() => useUiStore.setState({ compareLeftId: 'a', comparePick: 'right' }));
+    fireEvent.click(within(library).getByRole('button', { name: /Beta notes/ }));
+    expect(useUiStore.getState().compareRightId).toBe('b');
+    expect(useUiStore.getState().comparePick).toBeNull();
+  });
+
   it('puts a working 2D/3D switch on the sound map', () => {
     render(<NightShell graph={<div>Graph</div>} />);
 
