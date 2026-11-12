@@ -122,6 +122,18 @@
   transition: none;
 }
 .ns-library .graph-navigator--embedded::before { display: none; }
+/* These panels sit on the live WebGL map and inherit a backdrop blur (the
+   progress card adds another 24px blur). On software WebGL each blur waits
+   on a framebuffer readback, so animation frames stop and clicks time out.
+   Opaque panels keep the same layout without resampling the map. The tour's
+   spotlight is a 9999px shadow over that same map; the outline still marks
+   the step. */
+:root[data-design='a'] .app-root:has(.ns-root) :is(.minimap, .first-run-guide, .progress-strip, .progress-strip-restore, .insights-digest) {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--mx-surface-raised);
+}
+:root[data-design='a'] .app-root:has(.ns-root) .first-run-spotlight { box-shadow: none; }
 .ns-library .graph-navigator__list { max-height: min(300px, 40vh); }
 .ns-library .graph-navigator.graph-navigator--embedded #graph-navigator-content {
   position: static;
