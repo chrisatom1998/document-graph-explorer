@@ -1,0 +1,91 @@
+  border: 1px solid var(--rs-line-strong); border-radius: 10px; background: none; color: var(--rs-text);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.rs-assistant:hover { background: var(--rs-raised); border-color: var(--rs-violet); }
+.rs-assistant__icon { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 8px; background: color-mix(in srgb, var(--rs-violet) 18%, transparent); color: var(--rs-violet); font-size: 16px; }
+.rs-assistant__text { flex: 1; min-width: 0; }
+.rs-assistant__text strong { display: block; font-size: 14px; font-weight: 600; }
+.rs-assistant__text small { display: block; margin-top: 2px; color: var(--rs-muted); font-size: 12px; }
+.rs-assistant__count { padding: 2px 8px; border-radius: 999px; background: var(--rs-lime); color: var(--rs-lime-ink); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rs-count { margin: 16px 0 0; padding-bottom: 18px; border-bottom: 1px solid var(--rs-line); color: var(--rs-muted); font-size: 13px; }
+.rs-filters-head { display: flex; align-items: baseline; justify-content: space-between; margin: 20px 0 14px; }
+.rs-filters-head h2 { margin: 0; font-size: 17px; font-weight: 600; }
+.rs-filters-head button { border: 0; background: none; color: var(--rs-muted); font: inherit; font-size: 13px; cursor: pointer; }
+.rs-filters-head button:disabled { color: var(--rs-disabled); cursor: default; }
+.rs-group { display: flex; flex-direction: column; gap: 10px; padding: 8px 0 14px; }
+.rs-group--rule { border-top: 1px solid var(--rs-line); padding-top: 18px; margin-top: 4px; }
+.rs-group h3, .rs-group__head { margin: 0; font-size: 13px; font-weight: 600; color: var(--rs-text); }
+.rs-group__head { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0; border: 0; background: none; font: inherit; cursor: pointer; }
+.rs-group__head span { color: var(--rs-muted); font-size: 14px; }
+.rs-checks { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.rs-checks label { display: flex; align-items: center; gap: 10px; padding: 5px 0; cursor: pointer; font-size: 13px; }
+/* A disabled row keeps legible text (≈4.7:1); only the box itself fades. */
+.rs-checks label:has(input:disabled) { color: var(--rs-disabled); cursor: default; }
+.rs-checks label:has(input:disabled) .rs-check { opacity: 0.5; }
+.rs-checks label:has(input:disabled) .rs-checks__count { color: var(--rs-disabled); }
+.rs-checks input { position: absolute; opacity: 0; width: 0; height: 0; }
+.rs-check { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--rs-line-strong); display: grid; place-items: center; flex: none; }
+.rs-checks input:checked + .rs-check { background: var(--rs-lime); border-color: var(--rs-lime); }
+.rs-checks input:checked + .rs-check::after { content: ''; width: 5px; height: 9px; border: solid var(--rs-lime-ink); border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+.rs-checks__count { margin-left: auto; color: var(--rs-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.rs-show-more { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--rs-muted); font: inherit; font-size: 13px; cursor: pointer; text-decoration: underline; }
+.rs-empty { margin: 0; color: var(--rs-muted); font-size: 13px; }
+.rs-checks input:focus-visible + .rs-check { outline: 2px solid var(--rs-lime); outline-offset: 2px; }
+.rs-range { position: relative; height: 24px; margin: 6px 4px 0; }
+.rs-range__track { position: absolute; left: 0; right: 0; top: 11px; height: 2px; background: var(--rs-line-strong); border-radius: 2px; }
+.rs-range__track i { position: absolute; top: 0; bottom: 0; left: var(--lo); right: calc(100% - var(--hi)); background: var(--rs-lime); }
+.rs-range input { position: absolute; inset: 0; width: 100%; margin: 0; appearance: none; -webkit-appearance: none; background: none; pointer-events: none; }
+.rs-range input::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; pointer-events: auto; width: 18px; height: 18px; border-radius: 50%; background: var(--rs-lime); border: 3px solid var(--rs-bg); box-shadow: 0 0 0 1px var(--rs-lime); cursor: grab; }
+.rs-range input::-moz-range-thumb { pointer-events: auto; width: 12px; height: 12px; border-radius: 50%; background: var(--rs-lime); border: 3px solid var(--rs-bg); cursor: grab; }
+.rs-range input:disabled::-webkit-slider-thumb { background: #6b6a78; box-shadow: none; }
+.rs-range__ends { display: flex; justify-content: space-between; color: var(--rs-muted); font-size: 12px; margin-top: -2px; }
+.rs-select {
+  width: 100%; padding: 10px 12px; appearance: none; -webkit-appearance: none;
+  border: 1px solid var(--rs-line-strong); border-radius: 10px;
+  background: var(--rs-raised) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%239a99a8' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 12px center;
+  color: var(--rs-text); font: inherit; font-size: 13px; cursor: pointer;
+}
+.rs-select:disabled { color: var(--rs-disabled); cursor: default; }
+.rs-advanced { padding: 8px 0 14px; border-top: 1px solid var(--rs-line); }
+.rs-advanced summary { cursor: pointer; font-size: 13px; font-weight: 600; padding: 6px 0; }
+.rs-advanced .filter-bar-layer--embedded { position: static; inset: auto; padding: 0; pointer-events: auto; }
+.rs-advanced .filter-bar { width: 100%; max-width: 100%; max-height: none; overflow: visible; background: none; border: 0; box-shadow: none; padding: 8px 0 0; gap: 12px; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.rs-advanced .filter-bar::before { display: none; }
+.rs-advanced .filter-bar__group, .rs-advanced .filter-bar__chips { flex-wrap: wrap; min-width: 0; width: 100%; gap: 6px; }
+.rs-advanced .filter-bar__heading { display: none; }
+/* Group labels match the sidebar's other headings and take their own line, so
+   the chips below start at the column edge instead of after the word. */
+.rs-advanced .filter-bar__group-label { flex: 1 1 100%; margin: 0; color: var(--rs-text); font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; text-decoration: none; }
+/* Chips stay inside the 266px column: long cluster names ellipsize (the title
+   attribute carries the full name) instead of running past the right edge. */
+.rs-advanced .chip { display: inline-block; max-width: 100%; min-height: 28px; padding: 3px 10px; line-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; font-size: 12px; color: var(--rs-muted); background: var(--rs-raised); border-color: var(--rs-line-strong); }
+.rs-advanced .chip.chip-selectable:hover { color: var(--rs-text); border-color: var(--rs-lime); }
+.rs-advanced .chip.chip-selectable.is-active { color: var(--rs-text); background: color-mix(in srgb, var(--rs-lime) 14%, transparent); border-color: var(--rs-lime); }
+.rs-advanced .chip-dot { display: inline-block; margin-right: 6px; vertical-align: 0; }
+.rs-advanced .filter-bar__more, .rs-advanced .filter-bar__clear { min-height: 32px; padding: 0 12px; border-radius: var(--radius-md); font: inherit; font-size: 13px; color: var(--rs-muted); background: none; border-color: var(--rs-line-strong); }
+.rs-advanced .filter-bar__more:hover { color: var(--rs-text); border-color: var(--rs-lime); }
+.rs-advanced .filter-bar__degree { width: 100%; }
+.rs-advanced .filter-bar__degree input[type='range'] { flex: 1 1 auto; width: auto; min-width: 0; accent-color: var(--rs-lime); }
+.rs-advanced .filter-bar__degree-value { font-size: 12px; color: var(--rs-muted); }
+.rs-advanced .filter-bar__empty { font-size: 13px; }
+
+/* Collapse: the column shrinks to an icon rail and the graph takes the space. */
+.app-root.rs-side-collapsed { --rs-left: 64px; }
+.rs-root { transition: grid-template-columns 200ms var(--ease-out); }
+/* No files yet: the welcome card is the whole screen, so the side columns wait. */
+.rs-root--empty { grid-template-columns: 1fr; grid-template-areas: 'top' 'stage'; }
+/* The brand column is fixed to the sidebar width, which clips the empty-state
+   tagline even though the middle of the bar is free. Let it size to the words
+   on wide screens; the compact header below owns its own grid. */
+@media (min-width: 1101px) {
+  .rs-root--empty .rs-top { grid-template-columns: auto 1fr auto; }
+}
+.app-root:has(.rs-root--empty) { --rs-left: 0px; --rs-right: 0px; }
+.rs-import--folder { padding: 8px 16px; }
+.rs-import--folder strong { font-size: 13px; font-weight: 500; }
+.rs-import--folder .rs-import__plus { font-size: 18px; }
+/* Export tab: a raised card of 44px rows in 14px text; the "Backup" group
+   label matches the sidebar's 13px/600 headings. */
+.rs-export .toolbar__menu {
+  padding: 8px; gap: 2px;
+  background: var(--rs-raised); border: 1px solid var(--rs-line-strong); border-radius: var(--radius-lg);
