@@ -17,7 +17,7 @@
  * materials stay unlit (basic/additive) and ignore these lights entirely.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
@@ -42,6 +42,7 @@ import EdgePulses from './EdgePulses';
 import Labels from './Labels';
 import Effects from './Effects';
 import AutoQuality from './AutoQuality';
+import { OffscreenPacer, useSceneOnScreen } from './offscreenPacing';
 import ClusterCollapse from './ClusterCollapse';
 import SelectionHalo from './SelectionHalo';
 import PeerPresence from './PeerPresence';
@@ -111,6 +112,9 @@ function WebGLFallback() {
 export default function NebulaCanvas() {
   const [webglSupported] = useState(supportsWebGL);
   const [renderDpr, setRenderDpr] = useState(INITIAL_DPR);
+  // The graph sits in a scrolling column: off-screen it draws on demand, paced to the GPU (see offscreenPacing).
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const onScreen = useSceneOnScreen(canvasRef);
   // 2D constellation mode: flat ink background, no starfield/clouds/core —
   // the graph reads as a star chart, not a nebula (see palette FLAT_* tokens).
   const flat = useUiStore((s) => s.dims === 2);
@@ -124,6 +128,8 @@ export default function NebulaCanvas() {
 
   return (
     <Canvas
+      ref={canvasRef}
+      frameloop={onScreen ? 'always' : 'demand'}
       className="nebula-canvas"
       role="application"
       tabIndex={-1}
@@ -210,6 +216,7 @@ export default function NebulaCanvas() {
       <ClusterCollapse />
       <Effects />
       <AutoQuality onPixelRatioChange={setRenderDpr} />
+      <OffscreenPacer active={!onScreen} />
     </Canvas>
   );
 }

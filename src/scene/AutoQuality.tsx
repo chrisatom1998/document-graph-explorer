@@ -27,6 +27,7 @@ import type { QualityTier } from '../store/uiStore';
 import { switchGraphDimensions } from './dimensionTransition';
 import { useSettingsStore } from '../store/settingsStore';
 import { graphPixelRatio } from './renderQuality';
+import { isSceneOnScreen } from './offscreenPacing';
 
 const MIN_RECOVER_MS = 14;
 const CADENCE_WINDOW_MS = 1_000;
@@ -124,6 +125,15 @@ export default function AutoQuality({ onPixelRatioChange }: { onPixelRatioChange
       // Opted out: hold at maximum quality rather than freezing at whatever
       // tier we'd degraded to (the Settings toggle promises "maximum quality").
       if (ui.qualityTier !== 0) ui.setQualityTier(0);
+      overSince.current = null;
+      underSince.current = null;
+      return;
+    }
+
+    // Off-screen the scene draws a few frames a second on purpose. Those are not
+    // slow frames: skip them, and give the monitor a fresh start when it scrolls back.
+    if (!isSceneOnScreen()) {
+      holdUntil.current = now + GRACE_MS;
       overSince.current = null;
       underSince.current = null;
       return;
