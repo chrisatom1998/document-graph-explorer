@@ -29,7 +29,8 @@ import { onLayoutSettled } from '../layout/layoutBridge';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useSettingsStore } from '../store/settingsStore';
-import { graphSamples } from './renderQuality';
+import { prefersReducedMotion } from '../util/motion';
+import { graphSamples, readSoftwareRenderer } from './renderQuality';
 import { settleBloomBoost, triggerSettleCue } from './settleCue';
 import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../config';
 
@@ -44,7 +45,9 @@ const FLAT_BLOOM_INTENSITY = 0.05;
 const FLAT_VIGNETTE = 0.18;
 
 export default function Effects() {
-  const maxSamples = useThree(s => s.gl.capabilities.maxSamples);
+  const gl = useThree(s => s.gl);
+  const maxSamples = gl.capabilities.maxSamples;
+  const software = useMemo(() => readSoftwareRenderer(gl), [gl]);
   const clarity = useSettingsStore(s => s.graphClarity);
   const qualityTier = useUiStore((s) => s.qualityTier);
   const flat = useUiStore((s) => s.dims === 2);
@@ -77,6 +80,11 @@ export default function Effects() {
     ? FLAT_BLOOM_INTENSITY
     : BLOOM_INTENSITY - densitySoftening * 0.14 + focusBoost + settleBloomBoost() * 0.5;
   void settleTick;
+
+  // Bloom, SMAA, and the composer's MSAA resolve are full-screen passes.
+  // On SwiftShader (and under reduced motion) one of those passes is slower
+  // than the time a click will wait for a frame, so the map draws directly.
+  if (software || prefersReducedMotion()) return null;
 
   // Geometry antialiasing lives HERE, not on the canvas: the composer renders
   // the scene into its own framebuffer, so the WebGL context's MSAA (off in
