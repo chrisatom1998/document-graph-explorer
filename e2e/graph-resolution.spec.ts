@@ -52,6 +52,10 @@ test.describe('retina graph clarity', () => {
   // SwiftShader. Desktop layout is covered separately by workspace tests.
   test.use({ deviceScaleFactor: 2, viewport: { width: 800, height: 600 } });
   test('both views render sharply, remain interactive, and retain the clarity preference', async ({ page }, testInfo) => {
+    // Night Session draws more around the graph, and at DPR 3/4 under CI's
+    // software WebGL this test ran out of the default 7 minutes at a different
+    // step each time (3.3 min on a dev machine). Give it room to finish.
+    test.setTimeout(900_000);
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
