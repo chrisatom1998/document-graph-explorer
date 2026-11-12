@@ -1,0 +1,6 @@
+  /* The audio-analysis chip carries a count, so it keeps its own width instead of the 32px icon box. */
+  .rs-top__actions .music-analysis-status-button { width: auto; min-width: 32px; padding: 0 8px; }
+  .rs-top__actions .workspace-dims { height: 32px; padding: 2px; }
+  .rs-top__actions .workspace-dims span { padding: 4px 6px; }
+  .rs-corpus .corpus-switcher__trigger { padding: 0 8px; gap: 6px; }
+}
