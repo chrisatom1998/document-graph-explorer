@@ -201,9 +201,12 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
             )}
             {focus && <TagChips node={focus} className="ns-tags-inline" />}
             <div className="ns-body">
-              <section className="ns-map" aria-label="Sound Map">
+              <section className="ns-map mx-map" aria-label="Sound Map">
                 <header className="mx-map__head">
                   <span className="mx-map__titles"><strong>Sound Map</strong><small>Closer means more alike. Click a dot to open it.</small></span>
+                  <span className="mx-map__tools">
+                    <DimsToggleButton />
+                  </span>
                 </header>
                 <div className="mx-map__slot">
                   {view === 'graph' && <Suspense fallback={null}><Minimap /></Suspense>}

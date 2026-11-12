@@ -10,7 +10,9 @@ vi.mock('./ResonanceFilters', () => ({ default: () => <aside>Filters</aside> }))
 vi.mock('./ConnectedClips', () => ({ default: () => <aside>Connected documents</aside> }));
 vi.mock('./CollabMenuItems', () => ({ default: () => null }));
 vi.mock('../SnapshotDiffBanner', () => ({ default: () => null }));
-vi.mock('../DimsToggleButton', () => ({ DimsToggleButton: () => <button type="button">Dimensions</button> }));
+vi.mock('../DimsToggleButton', () => ({
+  DimsToggleButton: () => <button type="button">Switch to 2D view</button>,
+}));
 vi.mock('../GraphNavigator', () => ({ default: () => <div>Library contents</div> }));
 vi.mock('../ExportImportMenu', () => ({ default: () => <div>Export contents</div> }));
 vi.mock('../CorpusSwitcher', () => ({ default: () => <span>Corpus</span> }));
@@ -113,6 +115,13 @@ describe('ResonanceShell stage controls', () => {
     useGraphStore.getState().reset();
     render(<ResonanceShell><div>Graph</div></ResonanceShell>);
     expect(screen.getByRole('button', { name: 'Fit graph to view' })).toBeDisabled();
+  });
+
+  it('puts the 2D/3D switch back on the sound map', () => {
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+
+    const map = screen.getByRole('region', { name: 'Sound Map' });
+    expect(within(map).getByRole('button', { name: 'Switch to 2D view' })).toBeVisible();
   });
 
   it('mounts the minimap inside the graph stage and lets the Library view cover it', async () => {
