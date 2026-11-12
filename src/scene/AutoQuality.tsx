@@ -26,8 +26,7 @@ import { useUiStore } from '../store/uiStore';
 import type { QualityTier } from '../store/uiStore';
 import { switchGraphDimensions } from './dimensionTransition';
 import { useSettingsStore } from '../store/settingsStore';
-import { prefersReducedMotion } from '../util/motion';
-import { graphPixelRatio, readSoftwareRenderer } from './renderQuality';
+import { graphPixelRatio } from './renderQuality';
 
 const MIN_RECOVER_MS = 14;
 const CADENCE_WINDOW_MS = 1_000;
@@ -58,7 +57,6 @@ export default function AutoQuality({ onPixelRatioChange }: { onPixelRatioChange
       const ratio = graphPixelRatio({
         deviceRatio: window.devicePixelRatio, clarity, tier,
         width: size.width, height: size.height, maxDimension,
-        oneToOne: prefersReducedMotion() || readSoftwareRenderer(gl),
       });
       setDpr(ratio);
       onPixelRatioChange?.(ratio);

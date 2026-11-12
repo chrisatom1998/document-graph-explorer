@@ -84,6 +84,8 @@ export default function Effects() {
   // Bloom, SMAA, and the composer's MSAA resolve are full-screen passes.
   // On SwiftShader (and under reduced motion) one of those passes is slower
   // than the time a click will wait for a frame, so the map draws directly.
+  // Resolution stays on the clarity ladder; these checks still expect a
+  // retina buffer on the same software renderer.
   if (software || prefersReducedMotion()) return null;
 
   // Geometry antialiasing lives HERE, not on the canvas: the composer renders

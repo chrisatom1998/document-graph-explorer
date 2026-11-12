@@ -21,10 +21,11 @@ describe('graph resolution budgets', () => {
   it('uses a safe fallback for an invalid display scale', () => {
     expect(graphPixelRatio({ deviceRatio: NaN, clarity: 'high' })).toBe(2);
   });
-  it('stays at 1x on a software rasterizer', () => {
-    expect(graphPixelRatio({ deviceRatio: 2, clarity: 'high', oneToOne: true })).toBe(1);
-    expect(graphPixelRatio({ deviceRatio: 3, clarity: 'ultra', width: 800, height: 500, oneToOne: true })).toBe(1);
-    expect(graphPixelRatio({ deviceRatio: 2, clarity: 'high', width: 900, height: 650 })).toBe(3);
+  it('keeps the retina and touch buffers the graph checks measure', () => {
+    expect(graphPixelRatio({ deviceRatio: 2, clarity: 'high', width: 800, height: 600 })).toBe(3);
+    expect(graphPixelRatio({ deviceRatio: 2, clarity: 'ultra', width: 800, height: 600 })).toBe(4);
+    expect(graphPixelRatio({ deviceRatio: 2, clarity: 'performance', width: 800, height: 600 })).toBe(2);
+    expect(graphPixelRatio({ deviceRatio: 3, clarity: 'high', width: 390, height: 844 })).toBeGreaterThanOrEqual(1.99);
   });
   it('recognises the software rasterizers Playwright and headless Chrome use', () => {
     expect(isSoftwareRendererName('ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)')).toBe(true);

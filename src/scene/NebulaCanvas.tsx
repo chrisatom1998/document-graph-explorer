@@ -22,7 +22,6 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
 import { useUiStore } from '../store/uiStore';
-import { prefersReducedMotion } from '../util/motion';
 import { dismissGraphFocus } from './cameraFocusPolicy';
 import { registerSceneCapture } from './sceneCapture';
 import { NIGHT_SCENE } from '../design/designMode';
@@ -51,9 +50,7 @@ import FlatClusterLabels from './FlatClusterLabels';
 
 // AutoQuality publishes its bounded ratio back to this prop. R3F reapplies
 // the Canvas prop when resizing or switching views, even if it is unchanged.
-const INITIAL_DPR = typeof window === 'undefined' || prefersReducedMotion()
-  ? 1
-  : Math.min(window.devicePixelRatio || 1, 2);
+const INITIAL_DPR = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 2);
 
 /** Registers the Export-PNG capture hook: render a frame now, hand back the canvas. */
 function SceneCapture() {

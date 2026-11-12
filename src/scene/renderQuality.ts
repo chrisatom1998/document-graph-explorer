@@ -30,14 +30,14 @@ export function readSoftwareRenderer(gl: { getContext(): RendererInfoContext }):
 /** Supersample both views without allocating an unbounded full-screen buffer.
  * High keeps at least native detail (up to 2x) as effects are reduced. Ultra
  * keeps its resolution at every tier. Device limits always take precedence.
- * `oneToOne` stays at 1x. Callers set it for a software rasterizer and for
- * prefers-reduced-motion: a supersampled bloom buffer is what stops frames.
+ * Software rasterizers keep this ratio. Effects skips the composer there;
+ * the graph-resolution checks measure this ratio on that same renderer.
  */
 export function graphPixelRatio({
-  deviceRatio, clarity, tier = 0, width = 1, height = 1, maxDimension = 8192, oneToOne = false,
+  deviceRatio, clarity, tier = 0, width = 1, height = 1, maxDimension = 8192,
 }: {
   deviceRatio: number; clarity: GraphClarity; tier?: QualityTier;
-  width?: number; height?: number; maxDimension?: number; oneToOne?: boolean;
+  width?: number; height?: number; maxDimension?: number;
 }): number {
   const native = Number.isFinite(deviceRatio) && deviceRatio > 0 ? deviceRatio : 1;
   const w = Math.max(1, width);
@@ -45,8 +45,7 @@ export function graphPixelRatio({
   const target = clarity === 'ultra' ? Math.min(4, Math.max(3, native * 2))
     : clarity === 'performance' ? Math.min(native, PERFORMANCE_CAPS[tier])
     : Math.min(Math.max(Math.min(2, Math.max(1.5, native)), HIGH_CAPS[tier]), Math.max(2, native * 1.5));
-  const ratio = Math.min(target, Math.sqrt(PIXEL_BUDGET[clarity] / (w * h)), maxDimension / w, maxDimension / h);
-  return oneToOne ? Math.min(1, ratio) : ratio;
+  return Math.min(target, Math.sqrt(PIXEL_BUDGET[clarity] / (w * h)), maxDimension / w, maxDimension / h);
 }
 
 /** Keep geometry antialiasing even when glow and animation are reduced. */
