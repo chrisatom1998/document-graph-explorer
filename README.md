@@ -79,7 +79,7 @@ sample library and the notes about it can sit side by side.
 
 Once a graph is ready, the screen has four parts:
 
-- **Top bar.** The **Graph**, **Library** and **Export** tabs; search; a 2D/3D toggle; the
+- **Top bar.** **For you** when the library is only sounds (a player, its tags, and shelves of what sounds alike), then **Sound map**; a document or mixed library opens on **Graph**. **Library** and **Export** stay beside that. Search; a 2D/3D toggle; the
   **Sample assistant** (shown once audio is loaded); **Ask about your library** chat; and a
   **More tools** menu with Insights, Find a path, Snapshots, Saved views, Collaborate, Settings
   and Help.
@@ -156,8 +156,9 @@ precedence over audio estimates, and confirmed labels take precedence over both.
 says which source a value came from.
 
 **Sample assistant.** Opens from the top bar once audio is loaded. **My library** filters by labels
-or filename phrases, BPM range, maximum length and confirmed labels; **Find similar sounds** compares
-labels, tempo and key (not waveforms); results can be auditioned, added to a crate, or corrected with
+or filename phrases, BPM range, maximum length and confirmed labels; **Find similar sounds** ranks the
+stored sound fingerprint (the same CLAP vector the graph uses) and lists shared labels, tempo and key
+as the reason; results can be auditioned, added to a crate, or corrected with
 **More → Correct tags**. **Your crate** collects picks and **Export crate** downloads them as an
 importable graph subset (no audio files). **Upload overview** summarizes what came in and groups it.
 
@@ -295,7 +296,7 @@ Methodology and caveats are in [docs/benchmarks.md](docs/benchmarks.md).
 ## Builds
 
 | Command | Output | Network behaviour |
-| --- | --- | --- |
+| --- | --- |
 | `npm run build` | `dist/` | Core/document pack by default; includes audio only after `models:audio` or with `DGE_MODELS=full` |
 | `npm run build:airgap` | `dist-airgap/` | All model packs; **zero external destinations** enforced by CSP, runtime refusal, sanitization and a post-build verification gate |
 | `npm run build:desktop` | `release/mac-arm64/*.app`, copied to `/Applications` | Local macOS desktop app (run on a Mac) |
