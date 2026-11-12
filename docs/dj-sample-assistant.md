@@ -10,7 +10,7 @@ The assistant sends the text you type, previous search filters, and whether a re
 
 **Local filters** work without OpenAI. They support label/filename phrases, measured BPM ranges, a maximum duration, and confirmed labels. Missing or low-confidence measurements do not match numerical/key filters. Confirmed DJ tags supersede automatic tags, including explicit negative corrections. Filename hints are identified separately from audio estimates.
 
-**Find similar sounds** compares labels, reliable measured tempo, and estimated key. It is not audio-vector or waveform matching. Use **Audition** to listen, **Correct tags** for the existing correction workflow, and **Open in graph** for the full audio panel and conversion options.
+**Find similar sounds** ranks the stored sound fingerprint, the same CLAP vector that draws sounds-alike links on the graph. Shared labels, measured tempo and estimated key stay in the result as evidence. A clip with no fingerprint yet is left out while the reference has one; until the reference itself has a fingerprint, the search falls back to those labels, tempo and key. Use **Audition** to listen, **Correct tags** for the existing correction workflow, and **Open in graph** for the full audio panel and conversion options.
 
 Crates are saved locally per saved corpus. Temporary/imported views require exporting before closing the panel. **Export crate** downloads an importable graph subset containing selected nodes and their relationships, not the original audio files.
 
