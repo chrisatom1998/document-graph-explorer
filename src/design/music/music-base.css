@@ -60,6 +60,7 @@
 .mx-map__slot { flex: 1; min-height: 0; }
 .mx-map__fit, .mx-map .workspace-dims {
   display: inline-flex; align-items: center; gap: 2px; height: 32px; padding: 0 12px; width: auto;
+  flex: 0 0 auto;
   border: 1px solid var(--mx-line); border-radius: 999px; background: none; color: var(--mx-text);
   font-size: 13px; font-weight: 600; cursor: pointer;
 }

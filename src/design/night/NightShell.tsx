@@ -104,11 +104,13 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
     <div className={`mx-shell ns-root${empty ? ' ns-root--empty' : ''}`}>
       <NowPlayingAudio />
       <header className="rs-top ns-header">
-        <span className="ns-brand">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" /><path d="M6 10v4M9.5 7v10M13 9v6M16.5 6v12" /></svg>
-          Resonance
-        </span>
-        <span className="rs-corpus"><Suspense fallback={null}><CorpusSwitcher /></Suspense></span>
+        <div className="ns-header__ident">
+          <span className="ns-brand">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" /><path d="M6 10v4M9.5 7v10M13 9v6M16.5 6v12" /></svg>
+            <span className="ns-brand__name">Resonance</span>
+          </span>
+          <span className="rs-corpus"><Suspense fallback={null}><CorpusSwitcher /></Suspense></span>
+        </div>
         <span className="rs-top__status" role="status">{status}</span>
         <div className="ns-views" role="group" aria-label="Views">
           <button type="button" aria-current={view === 'graph' ? 'page' : undefined} onClick={() => setView('graph')}>Graph</button>
@@ -118,7 +120,6 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
         <div className="rs-top__actions">
           <button type="button" className="rs-icon" aria-label="Search documents" disabled={!usable} onClick={openSearch}><IconSearch /></button>
           <button type="button" className="rs-icon" aria-label="Fit graph to view" aria-keyshortcuts="Home" title="Fit graph to view (Home)" disabled={docCount === 0} onClick={fitGraph}><IconFit /></button>
-          <DimsToggleButton />
           <MusicAnalysisStatusButton className="rs-icon" />
           {hasAudio && <button type="button" className="rs-icon" aria-label="Sample assistant" title="Sample assistant: search, tag and build crates" aria-haspopup="dialog" onClick={() => openSampleAssistant()}><IconNote /></button>}
           <button type="button" className="rs-icon" aria-label="Ask about your library" disabled={docCount === 0} onClick={() => useChatStore.getState().setIsOpen(true)}><IconChat /></button>
@@ -152,7 +153,7 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
       </aside>
 
       <main className="ns-main" aria-label="Graph" style={{ '--ns-hero': shade(color, -0.25) } as React.CSSProperties}>
-        {empty ? (
+        {empty && (
           <section className="ns-welcome" aria-label="Welcome">
             <p className="ns-eyebrow">{greeting()}</p>
             <h1>Your sounds, mapped by how they sound.</h1>
@@ -177,58 +178,64 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
             </div>
             <button type="button" className="ns-text-btn" onClick={importGraph}>Import a graph</button>
           </section>
-        ) : (
-          <>
-            {focus && facts && (
-              <header className="ns-hero">
-                <CoverArt node={focus} radius={6} className="ns-hero__art" />
-                <div className="ns-hero__text">
-                  <p className="ns-eyebrow">{selected ? facts.kind : `Featured ${facts.kind.toLowerCase()}`}</p>
-                  <h1>{focus.title}</h1>
-                  <p className="ns-hero__meta">
-                    <Chips node={focus} />
-                    <span>{neighbors.length} similar {neighbors.length === 1 ? 'sound' : 'sounds'}</span>
-                  </p>
-                </div>
-              </header>
-            )}
-            {focus?.fileType === 'audio' && (
-              <div className="ns-actions">
-                <button type="button" className="ns-bigplay" aria-label={isPlaying && playingId === focus.id ? `Pause ${focus.title}` : `Play ${focus.title}`} onClick={() => { if (!selected) selectClip(focus.id); playClip(focus.id); }}>
-                  <TransportGlyph kind={isPlaying && playingId === focus.id ? 'pause' : 'play'} />
-                </button>
+        )}
+        {/* The canvas stays mounted under the welcome. Unmounting it when the
+            first files arrive creates a new WebGL context mid-session. */}
+        <div className="ns-stage" aria-hidden={empty || undefined}>
+          {!empty && focus && facts && (
+            <header className="ns-hero">
+              <CoverArt node={focus} radius={6} className="ns-hero__art" />
+              <div className="ns-hero__text">
+                <p className="ns-eyebrow">{selected ? facts.kind : `Featured ${facts.kind.toLowerCase()}`}</p>
+                <h1>{focus.title}</h1>
+                <p className="ns-hero__meta">
+                  <Chips node={focus} />
+                  <span>{neighbors.length} similar {neighbors.length === 1 ? 'sound' : 'sounds'}</span>
+                </p>
               </div>
-            )}
-            {focus && <TagChips node={focus} className="ns-tags-inline" />}
-            <div className="ns-body">
-              <section className="ns-map" aria-label="Sound Map">
-                <header className="mx-map__head">
-                  <span className="mx-map__titles"><strong>Sound Map</strong><small>Closer means more alike. Click a dot to open it.</small></span>
-                </header>
-                <div className="mx-map__slot">
-                  {view === 'graph' && <Suspense fallback={null}><Minimap /></Suspense>}
-                  <SnapshotDiffBanner />
-                  {graph}
+            </header>
+          )}
+          {!empty && focus?.fileType === 'audio' && (
+            <div className="ns-actions">
+              <button type="button" className="ns-bigplay" aria-label={isPlaying && playingId === focus.id ? `Pause ${focus.title}` : `Play ${focus.title}`} onClick={() => { if (!selected) selectClip(focus.id); playClip(focus.id); }}>
+                <TransportGlyph kind={isPlaying && playingId === focus.id ? 'pause' : 'play'} />
+              </button>
+            </div>
+          )}
+          {!empty && focus && <TagChips node={focus} className="ns-tags-inline" />}
+          <div className="ns-body">
+            <section className="ns-map mx-map" aria-label="Sound Map">
+              <header className="mx-map__head">
+                <span className="mx-map__titles"><strong>Sound Map</strong><small>Closer means more alike. Click a dot to open it.</small></span>
+                <span className="mx-map__tools">
+                  <DimsToggleButton />
+                </span>
+              </header>
+              <div className="mx-map__slot">
+                {view === 'graph' && <Suspense fallback={null}><Minimap /></Suspense>}
+                <SnapshotDiffBanner />
+                {graph}
+              </div>
+              {view === 'export' && (
+                <div className="ns-export" aria-label="Export and import">
+                  <Suspense fallback={null}><ExportImportMenu onClose={() => setView('graph')} /></Suspense>
                 </div>
-                {view === 'export' && (
-                  <div className="ns-export" aria-label="Export and import">
-                    <Suspense fallback={null}><ExportImportMenu onClose={() => setView('graph')} /></Suspense>
-                  </div>
-                )}
-              </section>
-              {neighbors.length > 0 && (
-                <section className="ns-shelf" aria-label="Similar sounds">
-                  <h2>Similar sounds</h2>
-                  <ul className="ns-tiles">{neighbors.map(n => <Tile key={n.node.id} node={n.node} active={selected?.id === n.node.id} />)}</ul>
-                </section>
               )}
+            </section>
+            {!empty && neighbors.length > 0 && (
+              <section className="ns-shelf" aria-label="Similar sounds">
+                <h2>Similar sounds</h2>
+                <ul className="ns-tiles">{neighbors.map(n => <Tile key={n.node.id} node={n.node} active={selected?.id === n.node.id} />)}</ul>
+              </section>
+            )}
+            {!empty && (
               <section className="ns-shelf" aria-label="Everything">
                 <h2>{audio.length ? 'All samples' : 'Everything'}</h2>
                 <ul className="ns-tiles">{(audio.length ? audio : docs).slice(0, 24).map(n => <Tile key={n.id} node={n} active={selected?.id === n.id} />)}</ul>
               </section>
-            </div>
-          </>
-        )}
+            )}
+          </div>
+        </div>
       </main>
 
       <aside className="ns-now" aria-label="Now playing">

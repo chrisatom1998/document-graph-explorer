@@ -49,7 +49,10 @@
   border: 0;
   border-radius: 8px;
 }
+.ns-header__ident { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
 .ns-header .rs-corpus { min-width: 0; flex: 1; }
+/* Resonance hides this summary below 1100px. Night Session still reports ingest there. */
+.ns-header .rs-top__status { display: inline; min-width: 0; }
 .ns-views { display: flex; gap: 4px; }
 .ns-views button {
   height: 32px;
@@ -70,11 +73,23 @@
 .ns-map .nebula-canvas, .ns-map .scene-loading { position: absolute !important; inset: 0 !important; }
 .ns-map .minimap { position: absolute; right: 12px; bottom: 12px; }
 .ns-export { position: absolute; inset: 0; z-index: 3; overflow: auto; padding: 16px; background: #121212; }
+/* The shared export menu anchors itself under a toolbar button. In this panel that
+   lands below the card. Keep the actions in the panel, the same way .rs-export does. */
+.ns-export .toolbar__menu {
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
+  width: min(420px, 100%);
+  margin: 0 auto;
+  max-height: none;
+  animation: none;
+}
 .app-root:has(.ns-root) .first-run-guide { right: 16px; bottom: 108px; width: min(330px, calc(100vw - 32px)); }
 
 /* ---- Left: navigation + library --------------------------------------- */
 .ns-nav { grid-area: nav; display: flex; flex-direction: column; gap: 4px; padding: 16px 12px; }
-.ns-brand { display: flex; align-items: center; gap: 10px; padding: 0 12px 10px; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+.ns-brand { display: flex; align-items: center; gap: 10px; padding: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; white-space: nowrap; }
 .ns-brand svg { width: 30px; height: 30px; fill: var(--mx-accent); stroke: #000; stroke-width: 2.2; stroke-linecap: round; }
 .ns-nav__item {
   display: flex; align-items: center; gap: 16px; height: 44px; padding: 0 12px; border: 0; border-radius: 6px;
@@ -83,7 +98,35 @@
 .ns-nav__item svg { width: 24px; height: 24px; }
 .ns-nav__item:hover:not(:disabled), .ns-nav__item.is-current { color: var(--mx-text) !important; }
 .ns-nav__item:disabled { opacity: 0.5; cursor: default; }
-.ns-library { grid-area: lib; display: flex; flex-direction: column; overflow: hidden; }
+.ns-library { grid-area: lib; display: flex; flex-direction: column; overflow: auto; }
+/* The shared navigator starts fixed, invisible, and translated off screen.
+   Resonance reveals the embedded copy under .rs-library; this column is .ns-library. */
+.ns-library .graph-navigator--embedded {
+  pointer-events: auto;
+  position: static;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 12px 12px 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  opacity: 1;
+  transform: none;
+}
+.ns-library .graph-navigator__list { max-height: min(300px, 40vh); }
+.ns-library .graph-navigator.is-expanded #graph-navigator-content {
+  position: static;
+  top: auto;
+  left: auto;
+  width: auto;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
 .ns-library__head { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 8px 24px; }
 .ns-library__head h2 { margin: 0; font-size: 16px; font-weight: 700; color: var(--mx-muted); }
 .ns-round { width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--mx-muted) !important; font-size: 22px !important; cursor: pointer; }
@@ -196,6 +239,26 @@
 @media (max-width: 1100px) {
   .ns-root { grid-template-columns: 240px minmax(0, 1fr); grid-template-areas: 'header header' 'lib main' 'now now' 'player player'; }
   .ns-tags-inline { display: flex; }
+  /* One row for the library name and the actions, then the summary, then the view tabs.
+     A wrapping flex row let the corpus pill's box run across the action icons. */
+  .ns-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'ident actions' 'status status' 'views views';
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 4px;
+  }
+  .ns-header__ident { grid-area: ident; overflow: hidden; }
+  .ns-header .rs-top__status { grid-area: status; overflow: hidden; text-overflow: ellipsis; }
+  .ns-views { grid-area: views; }
+  .ns-header .rs-top__actions { grid-area: actions; flex: none; gap: 4px; }
+  .ns-header .rs-corpus .corpus-switcher,
+  .ns-header .rs-corpus .corpus-switcher__trigger { max-width: 100%; }
+}
+@media (max-width: 600px) {
+  .ns-brand__name { display: none; }
+  .ns-header .rs-icon { width: 32px; height: 32px; }
 }
 @media (max-width: 760px) {
   :root[data-design='a'] { --mx-player-h: 96px; }
@@ -225,3 +288,8 @@
 }
 .ns-root--empty { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'header' 'main' 'player'; }
 .ns-root--empty .ns-library, .ns-root--empty .ns-now { display: none; }
+/* The welcome covers the map. The map stays in the layout so its canvas has a
+   real size and keeps the one WebGL context created at startup. */
+.ns-root--empty .ns-main { position: relative; }
+.ns-root--empty .ns-welcome { position: absolute; inset: 0; z-index: 3; overflow: auto; background: var(--mx-surface); }
+.ns-root--empty .ns-stage, .ns-root--empty .ns-body, .ns-root--empty .ns-map { height: 100%; min-height: 320px; }
