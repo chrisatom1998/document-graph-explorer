@@ -41,10 +41,15 @@ await page.addInitScript(() => localStorage.setItem('knowledge-nebula-settings',
 await page.goto(`http://127.0.0.1:${PORT}/`);
 
 async function exportGraph() {
-  // Older layout: a "Data options" toolbar menu; the Resonance layout (#137): an Export tab.
+  // Older layout: a "Data options" toolbar menu. Resonance uses a Views navigation landmark;
+  // Night Session uses a Views group. Either Export tab reveals "Export graph JSON".
   const dataOptions = page.getByRole('button', { name: 'Data options' });
   if (await dataOptions.count()) await dataOptions.click();
-  else await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Export', exact: true }).evaluate(b => b.click());
+  else {
+    const navigation = page.getByRole('navigation', { name: 'Views' });
+    const views = (await navigation.count()) ? navigation : page.getByRole('group', { name: 'Views' });
+    await views.getByRole('button', { name: 'Export', exact: true }).evaluate(b => b.click());
+  }
   const download = page.waitForEvent('download', { timeout: 60_000 });
   // If the click below fails, this promise still rejects later; keep that from crashing the whole run.
   download.catch(() => {});
@@ -59,11 +64,16 @@ const timings = [];
 for (let start = 0; start < ids.length; start += Number(batchArg)) {
   const batch = ids.slice(start, start + Number(batchArg));
   const t0 = Date.now();
-  // DGE's own hidden picker input (created by the first "Add files" press) receives the files.
+  // DGE's own hidden picker input (created by the first import press) receives the files.
+  // Night Session's empty screen says "Add your sounds"; once a library exists the sidebar says "Import".
   const picker = page.locator('body > input[type="file"][multiple]');
   if (!(await picker.count())) {
+    const addFiles = page.getByRole('button', { name: 'Add files', exact: true });
+    const addSounds = page.getByRole('button', { name: /^Add your sounds\b/ });
+    const importClips = page.getByRole('button', { name: /^Import(?! a )/ });
+    const opener = (await addFiles.count()) ? addFiles : (await addSounds.count()) ? addSounds : importClips;
     page.once('filechooser', () => {});
-    await page.getByRole('button', { name: 'Add files', exact: true }).click({ timeout: 180_000 });
+    await opener.first().click({ timeout: 180_000 });
   }
   await picker.setInputFiles(batch.map(id => join(AUDIO, fileName[id])));
   // 2D view: same analysis, far less software rendering competing with the models.
