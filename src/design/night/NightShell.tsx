@@ -12,6 +12,7 @@ import CollabMenuItems from '../../ui/resonance/CollabMenuItems';
 import SnapshotDiffBanner from '../../ui/SnapshotDiffBanner';
 import { Chips, CoverArt, PlayButton, Scrubber, TagChips, TransportGlyph, shade } from '../music/parts';
 import { clipColor, clipFacts, clock } from '../music/library';
+import NowPlayingAudio from '../music/NowPlayingAudio';
 import { addFiles, addFolder, openSearch, playClip, selectClip, skip, togglePlayback, usePlayerStore } from '../music/player';
 import { useDemoLoader, useLibrary } from '../music/useLibrary';
 import '../../ui/resonance/resonance.css';
@@ -101,6 +102,7 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
 
   return (
     <div className={`mx-shell ns-root${empty ? ' ns-root--empty' : ''}`}>
+      <NowPlayingAudio />
       <header className="rs-top ns-header">
         <span className="ns-brand">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" /><path d="M6 10v4M9.5 7v10M13 9v6M16.5 6v12" /></svg>
