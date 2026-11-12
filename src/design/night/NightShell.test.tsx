@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocNode } from '../../model/types';
@@ -57,6 +57,35 @@ describe('NightShell', () => {
     cleanup();
     document.querySelectorAll('style[data-test="night"]').forEach(s => s.remove());
     localStorage.removeItem('knowledge-nebula-dims');
+  });
+
+  it('labels the library shelves from the sounds it holds, as they arrive', () => {
+    const clip = (path: string, seconds: number): DocNode => ({
+      ...doc(path, path.replace(/^demo\/|\.wav$/g, '')), path, fileType: 'audio', wordCount: 0,
+      audio: { version: 2, durationSeconds: seconds, analyzedSeconds: seconds, instruments: [], notes: [] } as unknown as DocNode['audio'],
+    });
+    useGraphStore.getState().reset();
+    useGraphStore.getState().addNodes([clip('demo/kick-one-shot.wav', 0.4)]);
+    render(<NightShell graph={<div>Graph</div>} />);
+    const shelves = () => within(screen.getByRole('group', { name: 'Show' })).getAllByRole('button').map(b => b.textContent);
+
+    // Only what this library has: no loops, no keys yet.
+    expect(shelves()).toEqual(['All', 'One-shots', 'Drums', 'Kick']);
+    const library = screen.getByRole('complementary', { name: 'Your library' });
+    expect(within(library).getByText('Drums · One-shot')).toBeVisible();
+
+    // A new upload with new properties adds its shelves.
+    act(() => useGraphStore.getState().addNodes([clip('demo/pad-loop-Am-100.wav', 2.4)]));
+    expect(shelves()).toEqual(expect.arrayContaining(['Loops', 'In key']));
+    fireEvent.click(screen.getByRole('button', { name: 'Loops' }));
+    expect(within(library).queryByRole('button', { name: /kick-one-shot/ })).not.toBeInTheDocument();
+    expect(within(library).getByRole('button', { name: /pad-loop-Am-100/ })).toBeVisible();
+
+    // If that property leaves the library, the shelf goes and the list falls back to All.
+    act(() => { useGraphStore.getState().reset(); useGraphStore.getState().addNodes([clip('demo/kick-one-shot.wav', 0.4)]); });
+    expect(shelves()).not.toContain('Loops');
+    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(library).getByRole('button', { name: /kick-one-shot/ })).toBeVisible();
   });
 
   it('puts a working 2D/3D switch on the sound map', () => {

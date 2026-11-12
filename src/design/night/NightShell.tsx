@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { DocNode } from '../../model/types';
 import { useGraphStore } from '../../store/graphStore';
 import { useUiStore } from '../../store/uiStore';
@@ -11,7 +11,7 @@ import ConnectedClips from '../../ui/resonance/ConnectedClips';
 import CollabMenuItems from '../../ui/resonance/CollabMenuItems';
 import SnapshotDiffBanner from '../../ui/SnapshotDiffBanner';
 import { Chips, CoverArt, PlayButton, Scrubber, TagChips, TransportGlyph, shade } from '../music/parts';
-import { clipColor, clipFacts, clock } from '../music/library';
+import { clipColor, clipFacts, clock, libraryLabels, rowDetail } from '../music/library';
 import NowPlayingAudio from '../music/NowPlayingAudio';
 import { addFiles, addFolder, openSearch, openSettings, playClip, selectClip, skip, togglePlayback, usePlayerStore } from '../music/player';
 import { useDemoLoader, useLibrary } from '../music/useLibrary';
@@ -27,10 +27,8 @@ const Minimap = lazy(() => import('../../ui/Minimap'));
 const ResonanceFilters = lazy(() => import('../../ui/resonance/ResonanceFilters'));
 
 type View = 'graph' | 'library' | 'export';
-type Shelf = 'all' | 'loops' | 'shots' | 'keyed';
-const SHELVES: Array<{ id: Shelf; label: string }> = [
-  { id: 'all', label: 'All' }, { id: 'loops', label: 'Loops' }, { id: 'shots', label: 'One-shots' }, { id: 'keyed', label: 'In key' },
-];
+/** Shown before anything is imported, when there are no properties to read shelves from yet. */
+const EXAMPLE_SHELVES = ['Loops', 'One-shots', 'In key'];
 const ROW_LIMIT = 200;
 const HOME_ICON = <svg className="mx-fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z" /></svg>;
 
@@ -71,7 +69,7 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
   const [view, setView] = useState<View>('graph');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  const [shelf, setShelf] = useState<Shelf>('all');
+  const [shelf, setShelf] = useState('all');
   const playingId = usePlayerStore(s => s.currentId);
   const isPlaying = usePlayerStore(s => s.playing);
   const progress = usePlayerStore(s => s.progress);
@@ -101,10 +99,11 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
     return () => document.removeEventListener('keydown', onKey, true);
   }, [moreOpen]);
 
-  const shelved = shelf === 'all' ? docs : docs.filter(d => {
-    const f = clipFacts(d);
-    return (shelf === 'loops' && f.shape === 'Loop') || (shelf === 'shots' && f.shape === 'One-shot') || (shelf === 'keyed' && !!f.key);
-  });
+  // Shelves come from what analysis found in this library and refresh as results arrive.
+  const labels = useMemo(() => libraryLabels(docs), [docs]);
+  // A shelf whose property disappeared (re-import, correction) falls back to All.
+  const active = labels.find(l => l.id === shelf);
+  const shelved = active ? docs.filter(d => active.ids.has(d.id)) : docs;
   // A plain list keeps the column light; the Library view has the full, searchable one.
   const listed = shelved.slice(0, ROW_LIMIT);
   const fitGraph = () => useUiStore.getState().sendCamera('fitAll');
@@ -130,7 +129,12 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
           <button type="button" className="ns-round" aria-label="Add sounds" title="Add sounds" onClick={addFiles}>+</button>
         </header>
         <div className="ns-pills" role="group" aria-label="Show">
-          {SHELVES.map(s => <button key={s.id} type="button" aria-pressed={shelf === s.id} onClick={() => setShelf(s.id)}>{s.label}</button>)}
+          <button type="button" aria-pressed={!active} onClick={() => setShelf('all')}>All</button>
+          {docs.length === 0
+            ? EXAMPLE_SHELVES.map(label => <button key={label} type="button" aria-pressed={false} disabled>{label}</button>)
+            : labels.map(l => (
+              <button key={l.id} type="button" aria-pressed={active?.id === l.id} title={`${l.ids.size} ${l.ids.size === 1 ? 'item' : 'items'}`} onClick={() => setShelf(l.id)}>{l.label}</button>
+            ))}
         </div>
         {docs.length === 0 ? (
           <div className="ns-library__empty"><strong>Build your first crate</strong><p>Drop samples, loops or a whole folder anywhere on this window.</p><button type="button" className="ns-pill-btn" onClick={addFolder}>Add a folder</button></div>
@@ -138,20 +142,17 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
           <p className="ns-library__none">Nothing on this shelf yet.</p>
         ) : (
           <ul className="ns-rows">
-            {listed.map(node => {
-              const f = clipFacts(node);
-              return (
+            {listed.map(node => (
                 <li key={node.id}>
                   <button type="button" className={`ns-row${selected?.id === node.id ? ' is-active' : ''}`} onClick={() => selectClip(node.id)}>
                     <CoverArt node={node} radius={4} className="ns-row__art" />
                     <span className="ns-row__text">
                       <strong className={playingId === node.id ? 'is-playing' : ''}>{node.title}</strong>
-                      <small>{[f.kind, f.bpm !== null ? `${f.bpm} BPM` : null, f.key].filter(Boolean).join(' · ')}</small>
+                      <small>{rowDetail(node)}</small>
                     </span>
                   </button>
                 </li>
-              );
-            })}
+            ))}
           </ul>
         )}
         {shelved.length > listed.length && (
