@@ -1,1 +1,1 @@
-@file:///tmp/README_FIXED_EXACT.md
+$file:/tmp/README_FIXED_EXACT.md
