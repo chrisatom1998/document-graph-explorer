@@ -9,7 +9,7 @@ vi.mock('../../persistence/originals', () => ({
   getOriginal: vi.fn(async (id: string) => ({ name: `${id}.wav`, blob: new Blob(['x']) })),
 }));
 
-import NowPlayingAudio from './NowPlayingAudio';
+import NowPlayingAudio, { CLIP_GONE_GRACE_MS } from './NowPlayingAudio';
 import { playClip, togglePlayback, usePlayerStore } from './player';
 
 const node = (id: string, fileType: DocNode['fileType']): DocNode => ({
@@ -53,8 +53,20 @@ describe('shared player', () => {
 
     act(() => useGraphStore.getState().reset());
 
-    expect(usePlayerStore.getState()).toMatchObject({ currentId: null, playing: false, command: null });
+    await waitFor(() => expect(usePlayerStore.getState()).toMatchObject({ currentId: null, playing: false, command: null }), { timeout: CLIP_GONE_GRACE_MS + 2000 });
     await waitFor(() => expect(container.querySelector('audio')).toBeNull());
+  });
+
+  it('keeps the clip when a re-import brings it straight back', async () => {
+    const { container } = render(<NowPlayingAudio />);
+    act(() => playClip('kick'));
+    await waitFor(() => expect(container.querySelector('audio')).not.toBeNull());
+
+    act(() => useGraphStore.getState().reset());
+    act(() => useGraphStore.getState().addNodes([node('kick', 'audio')]));
+    await new Promise(resolve => setTimeout(resolve, CLIP_GONE_GRACE_MS + 300));
+
+    expect(usePlayerStore.getState().currentId).toBe('kick');
   });
 
   it('pauses when another player on the page starts', async () => {

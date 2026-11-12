@@ -4,6 +4,9 @@ import { mimeForFilename } from '../../util/fileMime';
 import { useGraphStore } from '../../store/graphStore';
 import { resetPlayer, usePlayerStore } from './player';
 
+/** How long the playing clip may be missing from the graph before playback is dropped. */
+export const CLIP_GONE_GRACE_MS = 1000;
+
 /** The one audio element behind every play button and now-playing bar in the music designs. */
 export default function NowPlayingAudio() {
   const currentId = usePlayerStore(s => s.currentId);
@@ -11,10 +14,15 @@ export default function NowPlayingAudio() {
   const audio = useRef<HTMLAudioElement>(null);
   const [url, setUrl] = useState('');
   const wantsPlay = useRef(false);
-  const inGraph = useGraphStore(s => !currentId || s.nodes.some(n => n.id === currentId));
+  const inGraph = useGraphStore(s => !currentId || s.nodeIndex[currentId] !== undefined);
 
   // Switching or clearing the workspace removes the clip: stop instead of playing on with no usable pause control.
-  useEffect(() => { if (!inGraph) resetPlayer(); }, [inGraph]);
+  // A re-import empties the graph for a moment and brings the same clip back, so wait before forgetting it.
+  useEffect(() => {
+    if (inGraph) return;
+    const timer = window.setTimeout(resetPlayer, CLIP_GONE_GRACE_MS);
+    return () => window.clearTimeout(timer);
+  }, [inGraph]);
 
   // One sound at a time: the inspector's own players pause this one when they start.
   useEffect(() => {

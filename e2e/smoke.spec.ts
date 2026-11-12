@@ -341,9 +341,7 @@ test('switching graph views does not leak WebGL contexts', async ({ page }) => {
     const observed = window as typeof window & { graphWebglContexts: number };
     observed.graphWebglContexts = 0;
     HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: Parameters<typeof original>) {
-      // Count renderer canvases, which live in the page. The label library also probes support on a detached
-      // canvas once per font sheet, and those appear on their own schedule, not per view switch.
-      if (String(args[0]).startsWith('webgl') && this.isConnected && !canvases.has(this)) {
+      if (String(args[0]).startsWith('webgl') && !canvases.has(this)) {
         canvases.add(this);
         observed.graphWebglContexts++;
       }
@@ -353,18 +351,29 @@ test('switching graph views does not leak WebGL contexts', async ({ page }) => {
   await page.goto('/');
   await importGraphJson(page, boundaryGraphJson(6));
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
-  // Let both views initialize their one-time graphics resources before
-  // checking that repeated switches do not allocate any more contexts.
-  await page.getByRole('button', { name: 'Switch to 2D view', exact: true }).click();
-  await page.getByRole('button', { name: 'Switch to 3D view', exact: true }).click();
-  // The sound map mounts the renderer after the import lands, so wait for it before taking the baseline.
-  await expect.poll(() => page.evaluate(() => (window as typeof window & { graphWebglContexts: number }).graphWebglContexts)).toBeGreaterThan(0);
-  const initialContexts = await page.evaluate(() => (window as typeof window & { graphWebglContexts: number }).graphWebglContexts);
+  const contexts = () => page.evaluate(() => (window as typeof window & { graphWebglContexts: number }).graphWebglContexts);
+  // Warm up: the sound map mounts the renderer after the import lands, and the label library probes WebGL
+  // support on a detached canvas once per font sheet as each view first draws its labels. Visit both views
+  // a few times, then wait until the count has stopped moving before taking the baseline.
+  for (let i = 0; i < 6; i++) {
+    await page.getByRole('button', { name: i % 2 ? 'Switch to 3D view' : 'Switch to 2D view', exact: true }).click();
+    await expect(page.getByRole('application', { name: i % 2 ? /Interactive 3D/ : /Interactive 2D/ })).toBeVisible();
+  }
+  await expect.poll(contexts).toBeGreaterThan(0);
+  let settled = await contexts();
+  await expect.poll(async () => {
+    await page.waitForTimeout(2000);
+    const now = await contexts();
+    const same = now === settled;
+    settled = now;
+    return same;
+  }, { timeout: 60_000 }).toBe(true);
+  const initialContexts = settled;
   for (let i = 0; i < 24; i++) {
     await page.getByRole('button', { name: i % 2 ? 'Switch to 3D view' : 'Switch to 2D view', exact: true }).click();
     await expect(page.getByRole('application', { name: i % 2 ? /Interactive 3D/ : /Interactive 2D/ })).toBeVisible();
   }
-  expect(await page.evaluate(() => (window as typeof window & { graphWebglContexts: number }).graphWebglContexts)).toBe(initialContexts);
+  expect(await contexts()).toBe(initialContexts);
   await expect(page.getByRole('heading', { name: 'Resonance stopped rendering.' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
