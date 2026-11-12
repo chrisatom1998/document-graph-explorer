@@ -1,0 +1,131 @@
+/* Collapse: the column shrinks to an icon rail and the graph takes the space. */
+.app-root.rs-side-collapsed { --rs-left: 64px; }
+.rs-root { transition: grid-template-columns 200ms var(--ease-out); }
+/* No files yet: the welcome card is the whole screen, so the side columns wait. */
+.rs-root--empty { grid-template-columns: 1fr; grid-template-areas: 'top' 'stage'; }
+/* The brand column is fixed to the sidebar width, which clips the empty-state
+   tagline even though the middle of the bar is free. Let it size to the words
+   on wide screens; the compact header below owns its own grid. */
+@media (min-width: 1101px) {
+  .rs-root--empty .rs-top { grid-template-columns: auto 1fr auto; }
+}
+.app-root:has(.rs-root--empty) { --rs-left: 0px; --rs-right: 0px; }
+.rs-import--folder { padding: 8px 16px; }
+.rs-import--folder strong { font-size: 13px; font-weight: 500; }
+.rs-import--folder .rs-import__plus { font-size: 18px; }
+/* Export tab: a raised card of 44px rows in 14px text; the "Backup" group
+   label matches the sidebar's 13px/600 headings. */
+.rs-export .toolbar__menu {
+  padding: 8px; gap: 2px;
+  background: var(--rs-raised); border: 1px solid var(--rs-line-strong); border-radius: var(--radius-lg);
+  box-shadow: 0 16px 40px #0009; backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+.rs-export .toolbar__menu::before { display: none; }
+.rs-export .toolbar__menu-item {
+  min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--radius-md);
+  color: var(--rs-text); font-size: 14px; white-space: normal;
+}
+.rs-export .toolbar__menu-item svg { width: 18px; height: 18px; color: var(--rs-muted); }
+.rs-export .toolbar__menu-item:hover:not(:disabled) { background: var(--rs-line); color: var(--rs-text); }
+.rs-export .toolbar__menu-item:disabled, .rs-export .toolbar__menu-item:disabled svg { color: var(--rs-disabled); }
+.rs-export .toolbar__menu-label { margin: 8px 4px 2px; padding: 12px 8px 0; border-top: 1px solid var(--rs-line-strong); color: var(--rs-muted); font-size: 13px; font-weight: 600; }
+.rs-collapse {
+  align-self: flex-end; width: 30px; height: 30px; margin: -8px -8px 8px 0; flex: none;
+  display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--rs-muted); cursor: pointer;
+}
+.rs-collapse svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.rs-collapse:hover { background: var(--rs-raised); color: var(--rs-text); }
+.rs-sidebar.is-collapsed { padding: 16px 10px; align-items: center; gap: 10px; overflow-x: hidden; }
+.rs-sidebar.is-collapsed .rs-collapse { align-self: center; margin: 0 0 4px; }
+.rs-sidebar.is-collapsed > :not(.rs-collapse, .rs-import, .rs-assistant, .rs-rail-filters) { display: none; }
+.rs-sidebar.is-collapsed .rs-import, .rs-sidebar.is-collapsed .rs-assistant {
+  width: 44px; height: 44px; margin: 0; padding: 0; justify-content: center; gap: 0; position: relative;
+}
+.rs-sidebar.is-collapsed .rs-import > span:not(.rs-import__plus),
+.rs-sidebar.is-collapsed .rs-assistant__text { display: none; }
+.rs-sidebar.is-collapsed .rs-import__plus { font-size: 22px; }
+.rs-sidebar.is-collapsed .rs-assistant__icon { background: none; }
+.rs-sidebar.is-collapsed .rs-assistant__count { position: absolute; top: -6px; right: -8px; padding: 1px 6px; font-size: 10px; }
+.rs-rail-filters {
+  position: relative; width: 44px; height: 44px; display: grid; place-items: center;
+  border: 1px solid var(--rs-line-strong); border-radius: 10px; background: none; color: var(--rs-text); cursor: pointer;
+}
+.rs-rail-filters svg { width: 18px; height: 18px; }
+.rs-rail-filters:hover { background: var(--rs-raised); }
+.rs-rail-filters i { position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--rs-lime); }
+
+/* ---- Stage -------------------------------------------------------------- */
+.rs-stage { grid-area: stage; position: relative; min-width: 0; min-height: 0; overflow: hidden; background: var(--rs-bg); }
+.rs-stage .nebula-canvas, .rs-stage .scene-loading { position: absolute !important; inset: 0 !important; }
+.rs-stage .webgl-fallback { position: absolute; inset: 0; }
+/* The minimap is anchored to the stage column instead of the viewport, so it
+   never lands on the filter column or the inspector; the classic layout's
+   side-panel offset does not apply here. */
+.rs-stage .minimap, .rs-stage .minimap--shifted { position: absolute; right: 18px; bottom: 18px; }
+/* The classic layout floats the minimap at --z-floating (30), which here would
+   outrank the top bar (--z-overlay) and so cover its open tool menu and the
+   corpus switcher. Nothing in the stage column is a stacking context, so the
+   minimap takes the top bar's layer minus one: above the canvas, below every
+   bar dropdown, the narrow-screen filter drop-down (z 19) and the app-level
+   panels (chat, compare, path, modals). */
+.rs-stage .minimap { z-index: calc(var(--z-overlay) - 1); }
+/* Compare is still a viewport-wide overlay: step left by however much it spills past the inspector. */
+.rs-stage .minimap--compare-shifted { position: absolute; right: calc(max(0px, var(--compare-panel-width) - var(--rs-right)) + 18px); bottom: 18px; }
+.rs-stage__banner { position: absolute; top: 16px; left: 16px; right: 16px; z-index: var(--z-panel); display: flex; justify-content: center; pointer-events: none; }
+.rs-stage__banner .snapshot-diff-banner { position: static; transform: none; pointer-events: auto; max-width: 560px; background: var(--rs-raised); border: 1px solid var(--rs-line-strong); }
+.rs-library, .rs-export, .rs-foryou {
+  position: absolute; inset: 0; z-index: var(--z-panel);
+  overflow-y: auto; padding: 24px 28px;
+  background: color-mix(in srgb, var(--rs-bg) 92%, transparent);
+  backdrop-filter: blur(8px);
+}
+.rs-foryou__body { width: min(880px, 100%); margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+.rs-foryou h1 { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.4px; }
+.rs-foryou h2 { margin: 0; font-size: 20px; font-weight: 600; }
+.rs-foryou__feature { padding: 18px; border: 1px solid var(--rs-line-strong); border-radius: 14px; background: var(--rs-raised); }
+.rs-foryou__eyebrow { margin: 0 0 6px; color: var(--rs-lime); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.rs-foryou__tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+.rs-foryou__tags li { display: flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; border-radius: 999px; background: var(--rs-panel); color: var(--rs-text); }
+.rs-foryou__tags span { color: var(--rs-muted); font-size: 11px; }
+.rs-foryou__actions { display: flex; gap: 8px; margin-top: 14px; }
+.rs-foryou__actions button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--rs-lime); color: var(--rs-lime-ink); font: inherit; font-weight: 600; cursor: pointer; }
+.rs-foryou__actions button:last-child { background: transparent; color: var(--rs-text); border: 1px solid var(--rs-line-strong); }
+.rs-foryou__shelf header p { margin: 4px 0 0; color: var(--rs-muted); }
+.rs-foryou__shelf ul { display: flex; gap: 10px; margin: 12px 0 0; padding: 0; list-style: none; overflow-x: auto; }
+.rs-foryou__shelf button { min-width: 140px; min-height: 64px; padding: 10px 12px; border: 1px solid var(--rs-line-strong); border-radius: 12px; background: var(--rs-panel); color: var(--rs-text); font: inherit; text-align: left; cursor: pointer; }
+.rs-foryou__shelf button[aria-pressed='true'] { border-color: var(--rs-lime); }
+.rs-foryou__note { margin: 0; color: var(--rs-muted); }
+.rs-library .graph-navigator--embedded {
+  pointer-events: auto;
+  position: static; width: min(720px, 100%); max-width: none; max-height: none; margin: 0 auto;
+  padding: 0; background: transparent; border: 0; box-shadow: none; opacity: 1; transform: none;
+}
+.rs-library .graph-navigator__list { max-height: none; }
+/* Library list: one left-aligned column. The header is a 44px row with the
+   collapse glyph in a 32px boxed control (matching the inspector's nav
+   buttons); every row is one line, 56px tall, name over a 13px meta line. */
+.rs-library .graph-navigator__toggle { min-height: 44px; gap: 12px; color: var(--rs-text); font-size: 14px; }
+.rs-library .graph-navigator__toggle strong { font-size: 18px; font-weight: 600; }
+.rs-library .graph-navigator__chevron {
+  flex: none; width: 32px; height: 32px; display: grid; place-items: center;
+  border: 1px solid var(--rs-line-strong); border-radius: var(--radius-md);
+  color: var(--rs-text); font-size: 18px; font-weight: 400; line-height: 1;
+}
+.rs-library .graph-navigator__toggle:hover .graph-navigator__chevron { background: var(--rs-raised); border-color: var(--rs-lime); }
+.rs-library .graph-navigator__overview { margin: 2px 0 0; color: var(--rs-muted); font-size: 13px; }
+.rs-library .graph-navigator__instructions { margin: 12px 0 0; color: var(--rs-muted); font-size: 13px; line-height: 1.5; }
+.rs-library .graph-navigator__instructions span { margin-top: 4px; color: var(--rs-muted); font-size: 13px; }
+.rs-library .graph-navigator p[role='status'] { margin: 12px 0 0; color: var(--rs-muted); font-size: 13px; }
+.rs-library .graph-navigator__list { margin-top: 14px; border: 1px solid var(--rs-line-strong); border-radius: var(--radius-lg); background: var(--rs-panel); }
+.rs-library .graph-navigator__option {
+  align-items: stretch; justify-content: center; gap: 2px;
+  min-height: 56px; padding: 10px 14px; border-bottom: 1px solid var(--rs-line);
+  text-align: left;
+}
+.rs-library .graph-navigator__option:hover { background: var(--rs-raised); }
+.rs-library .graph-navigator__option.is-active { background: color-mix(in srgb, var(--rs-lime) 10%, transparent); box-shadow: inset 3px 0 0 var(--rs-lime); }
+.rs-library .graph-navigator__option[aria-disabled='true'] .graph-navigator__name { color: var(--rs-disabled); }
+.rs-library .graph-navigator__name { font-size: 14px; font-weight: 500; line-height: 1.4; color: var(--rs-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rs-library .graph-navigator__meta { font-size: 13px; line-height: 1.4; color: var(--rs-muted); }
+.rs-export .toolbar__menu { position: static; width: min(420px, 100%); margin: 0 auto; max-height: none; animation: none; }
+
