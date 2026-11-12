@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocNode } from '../../model/types';
@@ -59,6 +59,52 @@ describe('NightShell', () => {
     localStorage.removeItem('knowledge-nebula-dims');
   });
 
+  it('labels the library shelves from the sounds it holds, as they arrive', () => {
+    const clip = (path: string, seconds: number): DocNode => ({
+      ...doc(path, path.replace(/^demo\/|\.wav$/g, '')), path, fileType: 'audio', wordCount: 0,
+      audio: { version: 2, durationSeconds: seconds, analyzedSeconds: seconds, instruments: [], notes: [] } as unknown as DocNode['audio'],
+    });
+    useGraphStore.getState().reset();
+    useGraphStore.getState().addNodes([clip('demo/kick-one-shot.wav', 0.4)]);
+    render(<NightShell graph={<div>Graph</div>} />);
+    const shelves = () => within(screen.getByRole('group', { name: 'Show' })).getAllByRole('button').map(b => b.textContent);
+
+    // Only what this library has: no loops, no keys yet.
+    expect(shelves()).toEqual(['All', 'One-shots', 'Drums', 'Kick']);
+    const library = screen.getByRole('complementary', { name: 'Your library' });
+    expect(within(library).getByText('Drums · One-shot')).toBeVisible();
+
+    // A new upload with new properties adds its shelves.
+    act(() => useGraphStore.getState().addNodes([clip('demo/pad-loop-Am-100.wav', 2.4)]));
+    expect(shelves()).toEqual(expect.arrayContaining(['Loops', 'In key']));
+    fireEvent.click(screen.getByRole('button', { name: 'Loops' }));
+    expect(within(library).queryByRole('button', { name: /kick-one-shot/ })).not.toBeInTheDocument();
+    expect(within(library).getByRole('button', { name: /pad-loop-Am-100/ })).toBeVisible();
+
+    // If that property leaves the library, the shelf goes and the list falls back to All.
+    act(() => { useGraphStore.getState().reset(); useGraphStore.getState().addNodes([clip('demo/kick-one-shot.wav', 0.4)]); });
+    expect(shelves()).not.toContain('Loops');
+    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(library).getByRole('button', { name: /kick-one-shot/ })).toBeVisible();
+  });
+
+  it('lets a library row pick a path endpoint or comparison slot instead of opening it', () => {
+    render(<NightShell graph={<div>Graph</div>} />);
+    const library = screen.getByRole('complementary', { name: 'Your library' });
+
+    act(() => useUiStore.getState().setPathMode(true));
+    fireEvent.click(within(library).getByRole('button', { name: /Alpha notes/ }));
+    fireEvent.click(within(library).getByRole('button', { name: /Beta notes/ }));
+    expect(useUiStore.getState().pathEndpoints).toEqual(['a', 'b']);
+    expect(useUiStore.getState().selectedId).toBeNull();
+    act(() => useUiStore.getState().setPathMode(false));
+
+    act(() => useUiStore.setState({ compareLeftId: 'a', comparePick: 'right' }));
+    fireEvent.click(within(library).getByRole('button', { name: /Beta notes/ }));
+    expect(useUiStore.getState().compareRightId).toBe('b');
+    expect(useUiStore.getState().comparePick).toBeNull();
+  });
+
   it('puts a working 2D/3D switch on the sound map', () => {
     render(<NightShell graph={<div>Graph</div>} />);
 
@@ -74,12 +120,22 @@ describe('NightShell', () => {
     expect(screen.getAllByRole('button', { name: /^Switch to [23]D view$/ })).toHaveLength(1);
   });
 
-  it('shows the embedded document list inside the library column', async () => {
-    loadStyles();
+  it('lists the library as rows in the sidebar', () => {
     render(<NightShell graph={<div>Graph</div>} />);
 
     const library = screen.getByRole('complementary', { name: 'Your library' });
-    const option = await within(library).findByRole('option', { name: /Alpha notes/ });
+    expect(within(library).getByRole('heading', { name: 'Your Library' })).toBeVisible();
+    fireEvent.click(within(library).getByRole('button', { name: /Beta notes/ }));
+    expect(useUiStore.getState().selectedId).toBe('b');
+  });
+
+  it('shows the searchable document list in the Library view', async () => {
+    loadStyles();
+    render(<NightShell graph={<div>Graph</div>} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Library' }));
+    const browse = document.querySelector<HTMLElement>('.ns-browse')!;
+    const option = await within(browse).findByRole('option', { name: /Alpha notes/ });
     const navigator = option.closest<HTMLElement>('.graph-navigator');
     expect(navigator).toHaveClass('graph-navigator--embedded');
     // The shared navigator is a hidden fixed popover unless the library column overrides it.

@@ -74,7 +74,7 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     await page.goto('/');
     await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(11, 11, 17)');
     const chooserPromise = page.waitForEvent('filechooser');
-    await page.getByRole('button', { name: /^Add a folder/ }).click();
+    await page.getByRole('button', { name: /^Add a folder Includes subfolders/ }).click();
     await (await chooserPromise).setFiles(folder);
     await expect.poll(() => embeddingRequested, { timeout: 120000 }).toBe(true);
     // The graph scene builds right after import. Under software WebGL that holds the main

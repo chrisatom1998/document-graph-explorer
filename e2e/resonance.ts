@@ -122,6 +122,8 @@ export async function autoDismissTour(page: Page): Promise<void> {
 }
 
 export async function showFilters(page: Page): Promise<void> {
+  // The first-run tour rests over the library column on compact windows.
+  await autoDismissTour(page);
   // The empty workspace has no sidebar. Wait for import to mount it before
   // checking the compact-screen toggle, or a fast check misses that control.
   await expect(page.getByRole('complementary', { name: 'Filters', exact: true })).toBeVisible();

@@ -114,3 +114,55 @@ export function clipTags(node: DocNode): ClipTag[] {
   const seen = new Set<string>();
   return tags.filter(t => { const k = `${t.group}:${t.label.toLowerCase()}`; if (seen.has(k)) return false; seen.add(k); return true; });
 }
+
+/** A sidebar shelf built from a property found in the library, with the sounds that carry it. */
+export interface LibraryLabel { id: string; label: string; group: TagGroup; ids: ReadonlySet<string> }
+
+/** Groups after shape and key, in the order ties are broken. Tempo is a number, not a shelf. */
+const LABEL_GROUPS: readonly TagGroup[] = ['Part', 'Genre', 'Sound', 'Character', 'Type'];
+export const MAX_LIBRARY_LABELS = 6;
+const SHAPE_WORDS = new Set(['oneshot', 'oneshots', 'loop', 'loops']);
+
+/**
+ * Shelf labels for the library sidebar, read from the properties the analysis
+ * actually found: Loops/One-shots and "In key" first when present, then the
+ * most common parts, genres, sounds and character words. Recomputed whenever
+ * the nodes change, so labels appear as analysis results arrive.
+ */
+export function libraryLabels(docs: readonly DocNode[], max = MAX_LIBRARY_LABELS): LibraryLabel[] {
+  const found = new Map<string, { id: string; label: string; group: TagGroup; ids: Set<string> }>();
+  const add = (group: TagGroup, id: string, label: string, nodeId: string) => {
+    const entry = found.get(id) ?? { id, label, group, ids: new Set<string>() };
+    // The same word from two detectors (part "Bass", sound "bass") is one shelf, filed under the earlier group.
+    if (LABEL_GROUPS.indexOf(group) < LABEL_GROUPS.indexOf(entry.group)) entry.group = group;
+    entry.ids.add(nodeId);
+    found.set(id, entry);
+  };
+  for (const node of docs) {
+    for (const tag of clipTags(node)) {
+      if (tag.group === 'Tempo') continue;
+      if (tag.group === 'Key') { add('Key', 'key', 'In key', node.id); continue; }
+      if (tag.group === 'Shape') { add('Shape', `shape:${tag.label.toLowerCase()}`, tag.label === 'Loop' ? 'Loops' : 'One-shots', node.id); continue; }
+      const word = tag.label.trim().toLowerCase();
+      // Shape already has its own shelves; a sound tag saying "one shot" or "loop" would repeat them.
+      if (!word || SHAPE_WORDS.has(word.replace(/[\s-]+/g, ''))) continue;
+      add(tag.group, `tag:${word}`, title(tag.label.trim()), node.id);
+    }
+  }
+  // A shelf holding every item filters nothing ("PDF" in an all-PDF library), so it is left out.
+  const useful = (l: { ids: Set<string> }) => docs.length < 2 || l.ids.size < docs.length;
+  const pinned = ['shape:loop', 'shape:one-shot', 'key'].flatMap(id => found.get(id) ?? []).filter(useful);
+  const rest = [...found.values()]
+    .filter(l => LABEL_GROUPS.includes(l.group) && useful(l))
+    .sort((a, b) => b.ids.size - a.ids.size || LABEL_GROUPS.indexOf(a.group) - LABEL_GROUPS.indexOf(b.group) || a.label.localeCompare(b.label));
+  return [...pinned, ...rest].slice(0, max);
+}
+
+/** One line under a library row, from the sound's own properties: part, shape, tempo, key. */
+export function rowDetail(node: DocNode): string {
+  const f = clipFacts(node);
+  if (node.fileType !== 'audio') return [f.kind, f.bpm !== null ? `${f.bpm} BPM` : null, f.key].filter(Boolean).join(' · ');
+  const tags = clipTags(node).filter(t => !SHAPE_WORDS.has(t.label.toLowerCase().replace(/[\s-]+/g, '')));
+  const lead = tags.find(t => t.group === 'Part') ?? tags.find(t => t.group === 'Sound') ?? tags.find(t => t.group === 'Genre');
+  return [lead ? title(lead.label) : f.kind, f.shape, f.bpm !== null ? `${f.bpm} BPM` : null, f.key].filter(Boolean).join(' · ');
+}

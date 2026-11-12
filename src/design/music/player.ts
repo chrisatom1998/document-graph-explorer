@@ -3,6 +3,7 @@ import { useGraphStore } from '../../store/graphStore';
 import { useUiStore } from '../../store/uiStore';
 import { openFilePicker } from '../../ingest/DropZone';
 import { openFolderPicker } from '../../ingest/folderPicker';
+import { applyComparePick } from '../../ui/openCompare';
 import { rememberCenterOrigin } from '../../scene/ingestGesture';
 
 interface PlayerState {
@@ -29,6 +30,17 @@ export function selectClip(id: string): void {
   const state = useUiStore.getState();
   state.setSelected(id);
   state.sendCamera('frameNode', [id]);
+}
+
+/**
+ * A library row click, matching the graph and the document list: while a comparison
+ * slot or a path endpoint is being picked the row fills it; otherwise it opens the sound.
+ */
+export function activateClip(id: string): void {
+  const state = useUiStore.getState();
+  if (state.comparePick) { applyComparePick(id); return; }
+  if (state.pathMode) { state.addPathEndpoint(id); return; }
+  selectClip(id);
 }
 
 export function playClip(id: string): void {

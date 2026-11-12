@@ -109,10 +109,12 @@ describe('ResonanceShell stage controls', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
-  it('disables Fit graph until there is a graph to fit', () => {
+  it('keeps the graph toolbar off the welcome screen until there is a graph', () => {
     useGraphStore.getState().reset();
     render(<ResonanceShell><div>Graph</div></ResonanceShell>);
-    expect(screen.getByRole('button', { name: 'Fit graph to view' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Fit graph to view' })).not.toBeInTheDocument();
+    // The side nav still reaches settings before anything is loaded.
+    expect(screen.getByRole('navigation', { name: 'Main' })).toBeVisible();
   });
 
   it('mounts the minimap inside the graph stage and lets the Library view cover it', async () => {
