@@ -16,6 +16,11 @@ interface PlayerState {
 
 export const usePlayerStore = create<PlayerState>(() => ({ currentId: null, playing: false, progress: 0, command: null }));
 
+/** Stop and forget the current clip, e.g. when it is no longer in the open workspace. */
+export function resetPlayer(): void {
+  usePlayerStore.setState({ currentId: null, playing: false, progress: 0, command: null });
+}
+
 let nonce = 0;
 const send = (kind: 'play' | 'pause' | 'seek', at?: number) => usePlayerStore.setState({ command: { kind, at, nonce: ++nonce } });
 
@@ -38,7 +43,10 @@ export function playClip(id: string): void {
 
 export function togglePlayback(): void {
   const { currentId } = usePlayerStore.getState();
-  const fallback = currentId ?? useUiStore.getState().selectedId ?? audioClips()[0]?.id;
+  // A selected document is not playable: only a selected sample is a fallback.
+  const clips = audioClips();
+  const selectedId = useUiStore.getState().selectedId;
+  const fallback = currentId ?? clips.find(c => c.id === selectedId)?.id ?? clips[0]?.id;
   if (fallback) playClip(fallback);
 }
 
