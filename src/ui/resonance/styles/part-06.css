@@ -1,0 +1,80 @@
+/* The tagline only shows before a graph exists; let the brand cell grow to
+   fit it rather than truncating it to "Find how so…" at desktop widths. */
+@media (min-width: 1101px) {
+  .rs-top:has(.rs-tagline) { grid-template-columns: minmax(var(--rs-brand), max-content) 1fr auto; }
+}
+@media (max-width: 1100px) {
+  :root { --rs-left: 230px; --rs-brand: 230px; --rs-right: 320px; }
+  .rs-tagline { display: none; }
+}
+@media (max-width: 860px) {
+  .rs-root { grid-template-columns: 1fr; grid-template-rows: var(--rs-top) auto 1fr auto; grid-template-areas: 'top' 'side' 'stage' 'inspect'; }
+  /* Narrow screens keep the three actions as one row; filters need the room. */
+  .rs-sidebar { flex-direction: row; gap: 8px; padding: 10px 16px; overflow: visible; border-right: 0; border-bottom: 1px solid var(--rs-line); }
+  .rs-sidebar > :not(.rs-import, .rs-assistant, .rs-narrow-filters) { display: none; }
+  /* The wide-screen rail (collapse toggle, rail filter icon) does not apply here, collapsed or not. */
+  .rs-sidebar.rs-sidebar > .rs-collapse, .rs-sidebar.rs-sidebar > .rs-rail-filters { display: none; }
+  .rs-sidebar.rs-sidebar > .rs-narrow-filters { display: flex; }
+  .rs-narrow-filters {
+    position: relative; flex: none; display: flex; align-items: center; gap: 6px; order: 9; padding: 0 12px;
+    border: 1px solid var(--rs-line-strong); border-radius: 10px; background: none; color: var(--rs-text); font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .rs-narrow-filters svg { width: 16px; height: 16px; }
+  .rs-narrow-filters i { width: 7px; height: 7px; border-radius: 50%; background: var(--rs-lime); }
+  /* Opened, the full filter column drops over the graph. */
+  .rs-sidebar { min-width: 0; overflow: hidden; }
+  .rs-sidebar.is-collapsed .rs-import, .rs-sidebar.is-collapsed .rs-assistant { width: auto; height: auto; padding: 8px 10px; }
+  .rs-sidebar.rs-sidebar.is-narrow-open {
+    /* Above the insights card (z 9), below app-level Insights/Compare panels (z 20). */
+    position: relative; z-index: calc(var(--z-panel) - 1); flex-wrap: wrap; align-content: flex-start;
+    max-height: 60vh; overflow-y: auto;
+  }
+  .rs-sidebar.is-narrow-open > .rs-narrow-filters { order: -1; flex: 1 1 100%; justify-content: center; padding: 8px; border-color: var(--rs-lime); }
+  .rs-sidebar.rs-sidebar.is-narrow-open > .rs-filters-head, .rs-sidebar.rs-sidebar.is-narrow-open > .rs-group { display: flex; flex: 1 1 100%; }
+  .rs-sidebar.rs-sidebar.is-narrow-open > .rs-advanced { display: block; flex: 1 1 100%; }
+  .rs-sidebar.is-narrow-open > .rs-filters-head { margin: 8px 0 0; }
+  .rs-sidebar.is-narrow-open > .rs-group { flex-direction: column; }
+  /* One column: nothing floats beside the stage, so the progress strip and guide span the width. */
+  .app-root:has(.rs-root), .app-root.rs-side-collapsed { --rs-left: 0px; --rs-right: 0px; }
+  .rs-sidebar.is-collapsed { flex-direction: row; padding: 10px 16px; }
+  /* The three row controls share one minimum height whether or not a label wraps. */
+  .rs-sidebar .rs-import, .rs-sidebar .rs-assistant, .rs-sidebar .rs-narrow-filters { min-height: 44px; }
+  .rs-sidebar .rs-import, .rs-sidebar .rs-assistant { flex: 1; min-width: 0; margin: 0; padding: 8px 10px; }
+  .rs-sidebar small { display: none !important; }
+  .rs-sidebar .rs-import strong { font-size: 13px; }
+  .rs-inspector { max-height: 45vh; border-left: 0; border-top: 1px solid var(--rs-line); }
+  /* The sidebar is a row here, so the card sits just under it, over the top of the graph, and goes away once a node is selected. */
+  .app-root:has(.rs-root) .insights-digest-layer { top: calc(var(--rs-top) + 92px); left: 16px; right: 16px; max-width: none; }
+  .app-root:has(.rs-inspector:not(.rs-inspector--empty)) .insights-digest-layer { display: none; }
+}
+/* Compact headers: the workspace picker and view tabs need separate rows.
+   At tablet widths a one-row header lets the tabs cover the picker even
+   though both controls remain visibly rendered. */
+@media (max-width: 1100px) {
+  :root { --rs-top: 96px; }
+  /* minmax(0, 1fr) lets the brand cell shrink below its content, so the workspace pill truncates instead of running under the action icons on phones. */
+  .rs-top { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'brand actions' 'tabs tabs'; padding: 8px 12px 0; row-gap: 4px; }
+  .rs-brand { grid-area: brand; overflow: hidden; }
+  /* Keep the workspace switcher reachable; the wordmark gives way to it. */
+  .rs-brand strong, .rs-tagline, .rs-top__status, .rs-top__rule { display: none; }
+  .rs-logo { width: 30px; flex: none; }
+  .rs-corpus { margin-left: 4px; max-width: 100%; }
+  .rs-corpus .corpus-switcher, .rs-corpus .corpus-switcher__trigger { max-width: 100%; }
+  .rs-corpus .corpus-switcher__name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rs-top__actions { grid-area: actions; gap: 4px; flex: none; }
+  .rs-tabs { grid-area: tabs; justify-content: flex-start; margin: 0; height: 40px; }
+  .rs-tabs button { padding: 0 12px; }
+}
+@media (max-width: 600px) {
+  .rs-sidebar .rs-import strong, .rs-sidebar .rs-assistant__text strong { font-size: 12px; }
+  /* Phone Library and Export: a 16px gutter instead of the desktop 28px. */
+  .rs-library, .rs-export, .rs-foryou { padding: 16px; }
+  /* Phone top bar: five actions plus the 2D/3D switch leave little room, so the icons tighten and the pill keeps whatever is left. */
+  .rs-top { padding: 8px 8px 0; }
+  .rs-top .rs-icon { width: 32px; height: 32px; }
+  /* The audio-analysis chip carries a count, so it keeps its own width instead of the 32px icon box. */
+  .rs-top__actions .music-analysis-status-button { width: auto; min-width: 32px; padding: 0 8px; }
+  .rs-top__actions .workspace-dims { height: 32px; padding: 2px; }
+  .rs-top__actions .workspace-dims span { padding: 4px 6px; }
+  .rs-corpus .corpus-switcher__trigger { padding: 0 8px; gap: 6px; }
+}
