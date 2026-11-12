@@ -71,7 +71,8 @@ for (let start = 0; start < ids.length; start += Number(batchArg)) {
     const addFiles = page.getByRole('button', { name: 'Add files', exact: true });
     const addSounds = page.getByRole('button', { name: /^Add your sounds\b/ });
     const importClips = page.getByRole('button', { name: /^Import(?! a )/ });
-    const opener = (await addFiles.count()) ? addFiles : (await addSounds.count()) ? addSounds : importClips;
+    // Wait for whichever button the current screen shows; counting once races the page load.
+    const opener = addFiles.or(addSounds).or(importClips);
     page.once('filechooser', () => {});
     await opener.first().click({ timeout: 180_000 });
   }

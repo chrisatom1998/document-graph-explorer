@@ -29,7 +29,7 @@ test('local synthetic audio is analyzed, playable, and corrections survive reloa
   });
   await page.goto('/');
   const firstStarted = Date.now();
-  await page.getByRole('button', { name: 'Add files', exact: true }).click();
+  await page.getByRole('button', { name: /^Add your sounds/ }).click();
   // Generate our own 3-second 440 Hz PCM WAV: no private or licensed samples.
   await page.locator('input[type="file"]').first().evaluate(element => {
     const count = 16000 * 3;

@@ -13,7 +13,7 @@ async function uploadEchoFlute(page: Page) {
     document.body.append(input);
   });
   await page.locator('#e2e-fixture').setInputFiles(FLUTE);
-  await page.getByRole('button', { name: 'Add files', exact: true }).click();
+  await page.getByRole('button', { name: /^Add your sounds/ }).click();
   await page.evaluate(async () => {
     const source = document.querySelector<HTMLInputElement>('#e2e-fixture')!;
     const bytes = new Uint8Array(await source.files![0].arrayBuffer());
