@@ -87,6 +87,11 @@
 :root[data-design='a'] .app-root:has(.ns-root--empty) { --rs-left: 8px; --rs-right: 8px; }
 /* The path finder centres over the main column, not the whole window. */
 .app-root:has(.ns-root) .path-panel { right: calc(var(--rs-right) + 16px); }
+/* Notices stay between the header and the player. */
+:root[data-design='a'] .app-root:has(.ns-root) .toast-host { bottom: calc(var(--mx-player-h) + 16px); max-height: calc(100dvh - var(--rs-top) - var(--mx-player-h) - 32px); }
+@media (max-width: 640px) {
+  :root[data-design='a'] .app-root:has(.ns-root):has(.first-run-guide) .toast-host { top: calc(var(--rs-top) + 8px); bottom: auto; }
+}
 /* The insights drawer stops above the player. */
 .app-root:has(.ns-root) .insights { margin-bottom: calc(var(--mx-player-h) + 8px); }
 .app-root:has(.ns-root) .first-run-guide { right: 16px; bottom: 108px; width: min(330px, calc(100vw - 32px)); }
@@ -111,6 +116,11 @@
   backdrop-filter: none; -webkit-backdrop-filter: none; opacity: 1; transform: none; pointer-events: auto;
 }
 .ns-library .graph-navigator--embedded::before { display: none; }
+/* On phones the floating navigator opens its list as a dropdown below itself. Embedded, the list stays in the column. */
+.ns-library .graph-navigator.graph-navigator--embedded #graph-navigator-content {
+  position: static; width: auto; max-height: none; overflow: visible; padding: 0;
+  border: 0; border-radius: 0; background: none; box-shadow: none;
+}
 .ns-library .graph-navigator__toggle { min-height: 40px; color: var(--mx-text); }
 .ns-library .graph-navigator__toggle strong { font-size: 16px; font-weight: 700; }
 .ns-library .graph-navigator__overview, .ns-library .graph-navigator__instructions, .ns-library .graph-navigator p[role='status'] { margin: 4px 0 0; color: var(--mx-muted); font-size: 13px; line-height: 1.5; }
@@ -237,8 +247,16 @@
 }
 @media (max-width: 760px) {
   :root[data-design='a'] { --mx-player-h: 96px; }
-  /* The header wraps to three rows on phones. */
-  :root[data-design='a'] .app-root:has(.ns-root) { --rs-top: 152px; --rs-left: 8px; --rs-right: 8px; }
+  /* Phone header: logo, workspace picker and actions share the first row; the view tabs take the second. */
+  :root[data-design='a'] .app-root:has(.ns-root) { --rs-top: 112px; --rs-left: 8px; --rs-right: 8px; }
+  .ns-header { gap: 8px; }
+  .ns-header .ns-brand { gap: 0; padding: 0; font-size: 0; }
+  .ns-header .rs-top__status { display: none; }
+  .ns-header .rs-top__actions { flex: none; margin-left: auto; }
+  .ns-views { order: 1; flex: 1 0 100%; }
+  /* A scrolling column has no minimum height of its own, so the grid squeezed the document list out of sight. */
+  .ns-library { min-height: 260px; max-height: 60vh; }
+  .ns-library .graph-navigator__instructions { display: none; }
   .app-root:has(.ns-root) .insights-digest-layer { right: 24px; max-width: none; }
   .ns-root { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(280px, 1fr) auto auto; grid-template-areas: 'header' 'lib' 'main' 'now' 'player'; gap: 8px; padding: 8px; overflow: auto; }
   .ns-main { border-radius: 0; }
