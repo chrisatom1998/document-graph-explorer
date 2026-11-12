@@ -14,7 +14,7 @@ test('unavailable models stay explicit through correction, cancellation and rest
   await page.addInitScript(() => localStorage.setItem('knowledge-nebula-settings', JSON.stringify({ musicAnalysisMode: 'fast' })));
   await page.route(/\/(music-model|sound-model|jamendo-model)\/.*\.onnx/, route => route.abort('failed'));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Add files', exact: true }).click();
+  await page.getByRole('button', { name: /^Add your sounds\b/ }).click();
   // Generate our own 3-second 440 Hz PCM WAV: no private or licensed samples.
   await page.locator('input[type="file"]').first().evaluate(element => {
     const count = 16000 * 3;
@@ -34,7 +34,7 @@ test('unavailable models stay explicit through correction, cancellation and rest
   await waitForGraphReady(page, 240_000);
   const openTrack = async () => {
     await page.getByRole('button', { name: 'Search documents' }).click();
-    await page.getByRole('option', { name: /Synthetic tone/i }).click();
+    await page.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /Synthetic tone/i }).first().click();
     await expect(page.locator('.audio-preview')).toBeVisible();
   };
   await openTrack();

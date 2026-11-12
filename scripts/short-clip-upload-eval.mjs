@@ -68,25 +68,22 @@ for (let start = 0; start < ids.length; start += Number(batchArg)) {
   // Night Session's empty screen says "Add your sounds"; once a library exists the sidebar says "Import".
   const picker = page.locator('body > input[type="file"][multiple]');
   if (!(await picker.count())) {
-    const addFiles = page.getByRole('button', { name: 'Add files', exact: true });
-    const addSounds = page.getByRole('button', { name: /^Add your sounds\b/ });
-    const importClips = page.getByRole('button', { name: /^Import(?! a )/ });
-    const opener = (await addFiles.count()) ? addFiles : (await addSounds.count()) ? addSounds : importClips;
+    // One locator for all three, so the click waits for whichever the app renders. Counting each one first
+    // raced the lazy-loaded workspace: right after load none existed yet, and the wait landed on "Import",
+    // which the empty screen never shows.
+    const opener = page.getByRole('button', { name: 'Add files', exact: true })
+      .or(page.getByRole('button', { name: /^Add your sounds\b/ }))
+      .or(page.getByRole('button', { name: /^Import(?! a )/ }));
     page.once('filechooser', () => {});
     await opener.first().click({ timeout: 180_000 });
   }
   await picker.setInputFiles(batch.map(id => join(AUDIO, fileName[id])));
-  // 2D view: same analysis, far less software rendering competing with the models.
+  // 2D view: same analysis, far less software rendering competing with the models. The switch sits on the sound
+  // map, which appears once the files land; a fresh profile usually starts in 2D already ("Switch to 3D view").
   if (start === 0) {
-    const toggle = page.getByRole('button', { name: 'Switch to 2D view' });
-    if (await toggle.count()) await toggle.click({ timeout: 120_000 }).catch(() => {});
-    else {
-      await page.getByRole('button', { name: 'More tools' }).click({ timeout: 120_000 }).catch(() => {});
-      await page.getByRole('menuitem', { name: 'Switch to 2D' }).click({ timeout: 10_000 }).catch(() => {});
-      // The menu's scrim would swallow the later Export and Search clicks.
-      const scrim = page.getByRole('button', { name: 'Close menu' });
-      if (await scrim.count()) await scrim.click().catch(() => {});
-    }
+    const to2d = page.getByRole('button', { name: 'Switch to 2D view' });
+    await to2d.or(page.getByRole('button', { name: 'Switch to 3D view' })).first().waitFor({ timeout: 120_000 }).catch(() => {});
+    if (await to2d.count()) await to2d.click({ timeout: 10_000 }).catch(() => {});
   }
   let done = 0;
   for (;;) {
