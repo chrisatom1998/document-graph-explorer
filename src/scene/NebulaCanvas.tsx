@@ -22,9 +22,10 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
 import { useUiStore } from '../store/uiStore';
+import { prefersReducedMotion } from '../util/motion';
 import { dismissGraphFocus } from './cameraFocusPolicy';
 import { registerSceneCapture } from './sceneCapture';
-import { FLAT_BG, VOID } from './palette';
+import { NIGHT_SCENE } from '../design/designMode';
 import {
   BACKDROP_RENDER_ORDER,
   BACKDROP_SIZE,
@@ -50,7 +51,9 @@ import FlatClusterLabels from './FlatClusterLabels';
 
 // AutoQuality publishes its bounded ratio back to this prop. R3F reapplies
 // the Canvas prop when resizing or switching views, even if it is unchanged.
-const INITIAL_DPR = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+const INITIAL_DPR = typeof window === 'undefined' || prefersReducedMotion()
+  ? 1
+  : Math.min(window.devicePixelRatio || 1, 2);
 
 /** Registers the Export-PNG capture hook: render a frame now, hand back the canvas. */
 function SceneCapture() {
@@ -114,7 +117,11 @@ export default function NebulaCanvas() {
   // 2D constellation mode: flat ink background, no starfield/clouds/core —
   // the graph reads as a star chart, not a nebula (see palette FLAT_* tokens).
   const flat = useUiStore((s) => s.dims === 2);
-  const bg = flat ? FLAT_BG : VOID;
+  const bg = flat ? NIGHT_SCENE.flat : NIGHT_SCENE.void;
+  useEffect(() => {
+    flatBackdropMaterial.uniforms.uOuter.value.set(NIGHT_SCENE.flat);
+    flatBackdropMaterial.uniforms.uInner.value.set(NIGHT_SCENE.flatInner);
+  }, []);
 
   if (!webglSupported) return <WebGLFallback />;
 

@@ -10,7 +10,9 @@ vi.mock('./ResonanceFilters', () => ({ default: () => <aside>Filters</aside> }))
 vi.mock('./ConnectedClips', () => ({ default: () => <aside>Connected documents</aside> }));
 vi.mock('./CollabMenuItems', () => ({ default: () => null }));
 vi.mock('../SnapshotDiffBanner', () => ({ default: () => null }));
-vi.mock('../DimsToggleButton', () => ({ DimsToggleButton: () => <button type="button">Dimensions</button> }));
+vi.mock('../DimsToggleButton', () => ({
+  DimsToggleButton: () => <button type="button">Switch to 2D view</button>,
+}));
 vi.mock('../GraphNavigator', () => ({ default: () => <div>Library contents</div> }));
 vi.mock('../ExportImportMenu', () => ({ default: () => <div>Export contents</div> }));
 vi.mock('../CorpusSwitcher', () => ({ default: () => <span>Corpus</span> }));
@@ -113,6 +115,36 @@ describe('ResonanceShell stage controls', () => {
     useGraphStore.getState().reset();
     render(<ResonanceShell><div>Graph</div></ResonanceShell>);
     expect(screen.getByRole('button', { name: 'Fit graph to view' })).toBeDisabled();
+  });
+
+  it('keeps the graph canvas mounted behind the empty welcome screen', () => {
+    useGraphStore.getState().reset();
+    render(<ResonanceShell><div>Graph canvas</div></ResonanceShell>);
+
+    expect(screen.getByRole('heading', { name: /Your sounds, mapped by how they sound/ })).toBeVisible();
+    expect(document.querySelector('.mx-map__slot')).toContainHTML('Graph canvas');
+  });
+
+  it('puts the 2D/3D switch on the sound map', () => {
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+
+    const map = screen.getByRole('region', { name: 'Sound Map' });
+    expect(within(map).getByRole('button', { name: 'Switch to 2D view' })).toBeVisible();
+    expect(screen.getAllByRole('button', { name: 'Switch to 2D view' })).toHaveLength(1);
+    expect(document.querySelector('.rs-top__actions')?.textContent).not.toContain('Switch to 2D view');
+  });
+
+  it('keeps the library list and the export actions in the Night Session panels', async () => {
+    render(<ResonanceShell><div>Graph</div></ResonanceShell>);
+
+    const library = document.querySelector('.ns-library');
+    expect(library).not.toBeNull();
+    expect(await within(library as HTMLElement).findByText('Library contents')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Export' }));
+    const exportPanel = document.querySelector('.ns-export');
+    expect(exportPanel).not.toBeNull();
+    expect(await within(exportPanel as HTMLElement).findByText('Export contents')).toBeInTheDocument();
   });
 
   it('mounts the minimap inside the graph stage and lets the Library view cover it', async () => {

@@ -66,7 +66,7 @@ test('first run renders the empty state with a working WebGL scene', async ({ pa
   const errors = collectErrors(page);
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'See how sounds and documents relate.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your sounds, mapped by how they sound.' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Load demo corpus' })).toBeVisible();
 
   // If WebGL context creation failed, the scene mounts a fallback section
@@ -259,7 +259,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
   test(`workspace controls remain usable at ${viewport.width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Add files', exact: true })).toBeInViewport();
+    await expect(page.getByRole('button', { name: /^Add your sounds\b/ })).toBeInViewport();
     await page.screenshot({ path: testInfo.outputPath('welcome.png') });
     // This filter scenario needs isolated nodes. Shared title phrases now
     // intentionally create relationships, so give each fixture a distinct title.

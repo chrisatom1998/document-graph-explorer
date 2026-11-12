@@ -41,10 +41,15 @@ await page.addInitScript(() => localStorage.setItem('knowledge-nebula-settings',
 await page.goto(`http://127.0.0.1:${PORT}/`);
 
 async function exportGraph() {
-  // Older layout: a "Data options" toolbar menu; the Resonance layout (#137): an Export tab.
+  // Older layout: a "Data options" toolbar menu. Resonance uses a Views navigation landmark;
+  // Night Session uses a Views group. Either Export tab reveals "Export graph JSON".
   const dataOptions = page.getByRole('button', { name: 'Data options' });
   if (await dataOptions.count()) await dataOptions.click();
-  else await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Export', exact: true }).evaluate(b => b.click());
+  else {
+    const navigation = page.getByRole('navigation', { name: 'Views' });
+    const views = (await navigation.count()) ? navigation : page.getByRole('group', { name: 'Views' });
+    await views.getByRole('button', { name: 'Export', exact: true }).evaluate(b => b.click());
+  }
   const download = page.waitForEvent('download', { timeout: 60_000 });
   // If the click below fails, this promise still rejects later; keep that from crashing the whole run.
   download.catch(() => {});
@@ -59,24 +64,26 @@ const timings = [];
 for (let start = 0; start < ids.length; start += Number(batchArg)) {
   const batch = ids.slice(start, start + Number(batchArg));
   const t0 = Date.now();
-  // DGE's own hidden picker input (created by the first "Add files" press) receives the files.
+  // DGE's own hidden picker input (created by the first import press) receives the files.
+  // count() does not wait. The welcome screen paints after goto, so a snapshot that
+  // misses "Add your sounds" must not fall through to a button this workspace never shows.
   const picker = page.locator('body > input[type="file"][multiple]');
   if (!(await picker.count())) {
+    const opener = page.getByRole('button', { name: 'Add files', exact: true })
+      .or(page.getByRole('button', { name: /^Add your sounds\b/ }))
+      .or(page.getByRole('button', { name: /^Import(?! a )/ }));
     page.once('filechooser', () => {});
-    await page.getByRole('button', { name: 'Add files', exact: true }).click({ timeout: 180_000 });
+    await opener.first().click({ timeout: 180_000 });
   }
   await picker.setInputFiles(batch.map(id => join(AUDIO, fileName[id])));
   // 2D view: same analysis, far less software rendering competing with the models.
+  // A fresh profile is already flat. The switch sits on the sound map, which
+  // mounts once ingest leaves the welcome screen, so wait for either label.
   if (start === 0) {
-    const toggle = page.getByRole('button', { name: 'Switch to 2D view' });
-    if (await toggle.count()) await toggle.click({ timeout: 120_000 }).catch(() => {});
-    else {
-      await page.getByRole('button', { name: 'More tools' }).click({ timeout: 120_000 }).catch(() => {});
-      await page.getByRole('menuitem', { name: 'Switch to 2D' }).click({ timeout: 10_000 }).catch(() => {});
-      // The menu's scrim would swallow the later Export and Search clicks.
-      const scrim = page.getByRole('button', { name: 'Close menu' });
-      if (await scrim.count()) await scrim.click().catch(() => {});
-    }
+    const to2d = page.getByRole('button', { name: 'Switch to 2D view', exact: true });
+    const to3d = page.getByRole('button', { name: 'Switch to 3D view', exact: true });
+    const ready = await to2d.or(to3d).first().waitFor({ state: 'visible', timeout: 120_000 }).then(() => true, () => false);
+    if (ready && (await to2d.count())) await to2d.click();
   }
   let done = 0;
   for (;;) {

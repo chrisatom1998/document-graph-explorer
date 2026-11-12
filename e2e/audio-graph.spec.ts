@@ -33,7 +33,7 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  };
  const openAlpha=async()=>{
   await page.getByRole('button',{name:'Search documents'}).click();
-  await page.getByRole('option',{name:/Alpha piano/}).click();
+  await page.getByRole('dialog',{name:'Search documents'}).getByRole('option',{name:/Alpha piano/}).click();
   await expect(page.locator('.audio-preview')).toBeVisible();
  };
  // Clips have no Connections disclosure: the inspector explains one connected clip at a time,
