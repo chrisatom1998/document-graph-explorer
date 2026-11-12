@@ -1,33 +1,63 @@
 import { useEffect, useId, useMemo, useState, type CSSProperties, type MouseEvent } from 'react';
 import type { DocNode } from '../../model/types';
 import { getOriginal } from '../../persistence/originals';
+import { useGraphStore } from '../../store/graphStore';
 import { useWaveform } from '../../ui/AudioControls';
 import { placeholderPeaks } from '../../ui/resonance/ClipWave';
 import { clipColor, clipFacts, clipTags, clock, type TagGroup } from './library';
 import { playClip, seekTo, usePlayerStore } from './player';
 
-/** Decoded peaks for a stored clip; stable placeholder bars until (or unless) it decodes. */
-export function useClipPeaks(node: DocNode | undefined, buckets = 64): { peaks: number[]; real: boolean } {
-  const [blob, setBlob] = useState<Blob | null>(null);
+/** Decoded 100-bucket peaks plus the file size they came from, so a same-id re-import with a new file decodes again. */
+const decodedPeaks = new Map<string, { size: number; peaks: number[] }>();
+
+/** Drop cached waveforms. A content-hash id already names the bytes; this covers a cleared library. */
+export function clearDecodedPeaks(): void { decodedPeaks.clear(); }
+
+useGraphStore.subscribe((state, prev) => {
+  if (prev && prev.nodes.length > 0 && state.nodes.length === 0) clearDecodedPeaks();
+});
+
+function shapePeaks(source: number[], buckets: number): number[] {
+  const max = Math.max(...source, 0.0001);
+  const step = source.length / buckets;
+  return Array.from({ length: buckets }, (_, i) => {
+    let peak = 0;
+    for (let j = Math.floor(i * step); j < Math.floor((i + 1) * step); j++) peak = Math.max(peak, source[j] ?? 0);
+    return Math.max(0.06, peak / max);
+  });
+}
+
+/**
+ * Peaks for a stored clip. List tiles pass `enabled: false` and keep placeholder
+ * bars. Hero, now-playing and the scrubber decode, once per clip id and file size.
+ */
+export function useClipPeaks(node: DocNode | undefined, buckets = 64, enabled = true): { peaks: number[]; real: boolean } {
+  const id = node?.fileType === 'audio' ? node.id : undefined;
+  const [owned, setOwned] = useState<{ id: string; blob: Blob } | null>(null);
+  const [decoded, setDecoded] = useState<number[]>([]);
   useEffect(() => {
+    if (!enabled || !id) { setOwned(null); return; }
     let cancelled = false;
-    setBlob(null);
-    if (!node || node.fileType !== 'audio') return;
-    void getOriginal(node.id).then(record => { if (!cancelled && record) setBlob(record.blob); }).catch(() => {});
+    setOwned(null);
+    setDecoded([]);
+    void getOriginal(id).then(record => {
+      if (cancelled || !record) return;
+      const cached = decodedPeaks.get(id);
+      if (cached && cached.size === record.blob.size) { setDecoded(cached.peaks); return; }
+      setOwned({ id, blob: record.blob });
+    }).catch(() => {});
     return () => { cancelled = true; };
-  }, [node]);
-  const decoded = useWaveform(blob);
+  }, [id, enabled]);
+  const fresh = useWaveform(owned?.blob ?? null);
+  useEffect(() => {
+    if (!owned || owned.id !== id || !fresh.length) return;
+    decodedPeaks.set(owned.id, { size: owned.blob.size, peaks: fresh });
+    setDecoded(fresh);
+  }, [fresh, owned, id]);
   return useMemo(() => {
-    if (!decoded.length) return { peaks: placeholderPeaks(node?.id ?? 'none', buckets), real: false };
-    const max = Math.max(...decoded, 0.0001);
-    const step = decoded.length / buckets;
-    const peaks = Array.from({ length: buckets }, (_, i) => {
-      let peak = 0;
-      for (let j = Math.floor(i * step); j < Math.floor((i + 1) * step); j++) peak = Math.max(peak, decoded[j] ?? 0);
-      return Math.max(0.06, peak / max);
-    });
-    return { peaks, real: true };
-  }, [decoded, node?.id, buckets]);
+    if (!decoded.length) return { peaks: placeholderPeaks(id ?? 'none', buckets), real: false };
+    return { peaks: shapePeaks(decoded, buckets), real: true };
+  }, [decoded, id, buckets]);
 }
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -64,12 +94,12 @@ export function WaveBars({ peaks, color, progress = -1, className }: { peaks: nu
 }
 
 /** Album-art style cover generated from the clip's cluster colour, shape and real waveform. */
-export function CoverArt({ node, className = '', radius = 8 }: { node: DocNode; className?: string; radius?: number }) {
+export function CoverArt({ node, className = '', radius = 8, waveform = false }: { node: DocNode; className?: string; radius?: number; waveform?: boolean }) {
   const id = useId().replace(/:/g, '');
   const base = clipColor(node);
   const second = partner(base);
   const facts = clipFacts(node);
-  const { peaks } = useClipPeaks(node, 28);
+  const { peaks } = useClipPeaks(node, 28, waveform);
   const seed = [...node.id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
   const cx = 30 + (seed % 40);
   const cy = 26 + ((seed >> 4) % 30);
