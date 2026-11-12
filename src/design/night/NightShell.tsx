@@ -180,7 +180,7 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
           <>
             {focus && facts && (
               <header className="ns-hero">
-                <CoverArt node={focus} radius={6} className="ns-hero__art" />
+                <CoverArt node={focus} radius={6} className="ns-hero__art" waveform />
                 <div className="ns-hero__text">
                   <p className="ns-eyebrow">{selected ? facts.kind : `Featured ${facts.kind.toLowerCase()}`}</p>
                   <h1>{focus.title}</h1>
@@ -236,7 +236,7 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
         {focus && (
           <>
             <p className="ns-now__label">{selected ? 'Selected' : 'Featured'}</p>
-            <CoverArt node={focus} radius={8} className="ns-now__art" />
+            <CoverArt node={focus} radius={8} className="ns-now__art" waveform />
             <strong className="ns-now__title">{focus.title}</strong>
             <TagChips node={focus} />
           </>
@@ -246,7 +246,7 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
 
       <footer className="ns-player" aria-label="Player">
         <div className="ns-player__track">
-          {nowNode ? <><CoverArt node={nowNode} radius={4} className="ns-player__art" /><span><strong>{nowNode.title}</strong><Chips node={nowNode} /></span></> : <span className="ns-player__idle">Nothing playing</span>}
+          {nowNode ? <><CoverArt node={nowNode} radius={4} className="ns-player__art" waveform /><span><strong>{nowNode.title}</strong><Chips node={nowNode} /></span></> : <span className="ns-player__idle">Nothing playing</span>}
         </div>
         <div className="ns-player__center">
           <div className="ns-player__controls">
