@@ -34,7 +34,7 @@ test('unavailable models stay explicit through correction, cancellation and rest
   await waitForGraphReady(page, 240_000);
   const openTrack = async () => {
     await page.getByRole('button', { name: 'Search documents' }).click();
-    await page.getByRole('option', { name: /Synthetic tone/i }).click();
+    await page.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /Synthetic tone/i }).click();
     await expect(page.locator('.audio-preview')).toBeVisible();
   };
   await openTrack();
