@@ -1,0 +1,130 @@
+/* ==========================================================================
+   Resonance workspace — near-black surfaces, lime accent, violet node hues.
+   Three-column grid around the existing graph renderer; the graph itself
+   keeps its own palette (scene/palette.ts) and overlays stay fixed-position.
+   ========================================================================== */
+:root {
+  --rs-bg: #0b0b11;
+  --rs-panel: #0e0e15;
+  --rs-raised: #15151e;
+  --rs-line: #1f1f2b;
+  --rs-line-strong: #2c2c3a;
+  --rs-text: #f1f0f6;
+  --rs-muted: #9a99a8;
+  /* Faint text still clears 4.5:1 on the panel surfaces (≈5.6:1 on #0b0b11). */
+  --rs-faint: #8a8998;
+  /* Disabled text clears 4.5:1 on the raised surface (#15151e) as well. */
+  --rs-disabled: #7f7e8c;
+  --rs-lime: #c8f55a;
+  --rs-lime-ink: #10140a;
+  --rs-violet: #a89bff;
+  --rs-top: 76px;
+  --rs-left: 266px;
+  --rs-brand: 266px;
+  --rs-right: 372px;
+  --bg-void: var(--rs-bg);
+}
+
+.rs-root {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: var(--rs-top) 1fr;
+  grid-template-columns: var(--rs-left) 1fr var(--rs-right);
+  grid-template-areas: 'top top top' 'side stage inspect';
+  background: var(--rs-bg);
+  color: var(--rs-text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+/* ---- Top bar ------------------------------------------------------------ */
+.rs-top {
+  grid-area: top;
+  display: grid;
+  grid-template-columns: var(--rs-brand) 1fr auto;
+  align-items: center;
+  padding: 0 24px 0 20px;
+  border-bottom: 1px solid var(--rs-line);
+  background: var(--rs-panel);
+  z-index: var(--z-overlay);
+}
+.rs-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.rs-brand strong { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+.rs-logo { width: 44px; height: 28px; fill: var(--rs-text); }
+.rs-tagline { color: var(--rs-muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 12px; }
+.rs-tabs { display: flex; justify-content: flex-end; gap: 6px; height: 100%; margin-right: 24px; }
+.rs-tabs button {
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+  height: 100%; padding: 0 16px;
+  background: none; border: 0; cursor: pointer;
+  color: var(--rs-muted); font: inherit; font-size: 14px;
+}
+.rs-tabs button[aria-current='page'] { color: var(--rs-text); }
+.rs-tabs button[aria-current='page']::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px; background: var(--rs-lime); border-radius: 2px; }
+.rs-tabs button i { width: 6px; height: 6px; border-radius: 50%; background: var(--rs-lime); }
+/* Disabled tabs stay legible while reading as inactive. */
+.rs-tabs button:disabled { color: var(--rs-disabled); cursor: default; }
+.rs-top__actions { display: flex; align-items: center; gap: 10px; }
+.rs-top__status { color: var(--rs-muted); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rs-top__rule { width: 1px; height: 28px; background: var(--rs-line-strong); margin: 0 8px; }
+/* Every control in the action row is 36px tall with the shared button radius. */
+.rs-icon {
+  width: 36px; height: 36px; display: grid; place-items: center;
+  border: 0; border-radius: var(--radius-md); background: none; color: var(--rs-text); cursor: pointer;
+}
+.rs-icon svg { width: 18px; height: 18px; }
+.rs-icon:hover:not(:disabled) { background: var(--rs-raised); }
+.rs-icon:disabled { color: var(--rs-disabled); cursor: default; }
+.rs-icon--round { border: 1px solid var(--rs-line-strong); }
+/* 2D/3D switch: a two-segment pill in the action row. width: auto overrides
+   .btn-icon's fixed 36px, which let "2D" and "3D" spill out over the pill's
+   border and read as one merged blob. */
+.rs-top__actions .workspace-dims {
+  display: inline-flex; align-items: center; gap: 2px; flex: 0 0 auto; width: auto; min-width: 0; height: 36px; padding: 3px;
+  border: 1px solid var(--rs-line-strong); border-radius: 999px; background: none; color: var(--rs-muted);
+  font: inherit; font-size: 12px; font-weight: 600; letter-spacing: .04em; cursor: pointer;
+}
+.rs-top__actions .workspace-dims span { padding: 4px 8px; border-radius: 999px; }
+.rs-top__actions .workspace-dims span.is-current { background: var(--rs-raised); color: var(--rs-lime); box-shadow: inset 0 0 0 1px var(--rs-line-strong); }
+.rs-top__actions .workspace-dims:hover { border-color: var(--rs-lime); }
+.rs-more { position: relative; }
+/* The trigger sits above the click-away scrim so a second click closes the menu. */
+.rs-more > .rs-icon { position: relative; z-index: 2; }
+.rs-scrim { position: fixed; inset: 0; background: transparent; border: 0; z-index: 1; cursor: default; }
+.rs-menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 3;
+  min-width: 190px; padding: 6px;
+  /* Up to 12 saved views plus collaboration: stay inside the viewport and scroll. */
+  max-height: calc(100dvh - var(--rs-top) - 16px); overflow-y: auto;
+  background: var(--rs-raised); border: 1px solid var(--rs-line-strong); border-radius: 12px;
+  box-shadow: 0 16px 40px #0009;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.rs-menu button {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 36px; padding: 8px 10px; border: 0; border-radius: 8px; background: none;
+  color: var(--rs-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.rs-menu__label { margin: 6px 10px 2px; color: var(--rs-muted); font-size: 13px; font-weight: 600; }
+.rs-menu__rule { margin: 4px 6px; border: 0; border-top: 1px solid var(--rs-line-strong); }
+.rs-menu button[aria-checked='true'] { color: var(--rs-lime); }
+.rs-menu .saved-views, .rs-menu .saved-views__list { display: flex; flex-direction: column; gap: 2px; }
+.rs-menu .saved-views button, .rs-menu .toolbar__menu-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 36px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: var(--rs-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.rs-menu .saved-views button:hover, .rs-menu .toolbar__menu-item:hover { background: var(--rs-line); }
+.rs-corpus { margin-left: 12px; min-width: 0; }
+.rs-corpus .corpus-switcher__trigger { background: none; border: 1px solid var(--rs-line-strong); border-radius: 999px; color: var(--rs-muted); }
+.rs-corpus .corpus-switcher__trigger:hover { color: var(--rs-text); border-color: var(--rs-lime); }
+.rs-corpus .corpus-switcher__menu { background: var(--rs-raised); border-color: var(--rs-line-strong); z-index: var(--z-modal); }
+.rs-narrow-filters { display: none; }
+.rs-menu button svg { width: 16px; height: 16px; color: var(--rs-muted); }
+.rs-menu button:hover:not(:disabled) { background: var(--rs-line); }
+/* Disabled items dim to a colour that still reads, rather than fading out. */
+.rs-menu button:disabled, .rs-menu button:disabled svg { color: var(--rs-disabled); cursor: default; }
+/* Keyboard shortcut hint at the right edge of a menu item. */
+.rs-menu__kbd { margin-left: auto; padding: 1px 6px; border: 1px solid var(--rs-line-strong); border-radius: 5px; color: var(--rs-muted); font: inherit; font-size: 11px; }
+/* Minimized audio-analysis restore chip: the note glyph plus a count, as one 36px pill. */
+.rs-top__actions .music-analysis-status-button { display: inline-flex; gap: 4px; width: auto; padding: 0 10px; border: 1px solid var(--rs-line-strong); color: var(--rs-text); }
+.rs-top__actions .music-analysis-status-button:hover { border-color: var(--rs-lime); }
+
