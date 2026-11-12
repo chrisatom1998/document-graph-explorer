@@ -74,12 +74,22 @@ describe('NightShell', () => {
     expect(screen.getAllByRole('button', { name: /^Switch to [23]D view$/ })).toHaveLength(1);
   });
 
-  it('shows the embedded document list inside the library column', async () => {
-    loadStyles();
+  it('lists the library as rows in the sidebar', () => {
     render(<NightShell graph={<div>Graph</div>} />);
 
     const library = screen.getByRole('complementary', { name: 'Your library' });
-    const option = await within(library).findByRole('option', { name: /Alpha notes/ });
+    expect(within(library).getByRole('heading', { name: 'Your Library' })).toBeVisible();
+    fireEvent.click(within(library).getByRole('button', { name: /Beta notes/ }));
+    expect(useUiStore.getState().selectedId).toBe('b');
+  });
+
+  it('shows the searchable document list in the Library view', async () => {
+    loadStyles();
+    render(<NightShell graph={<div>Graph</div>} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Library' }));
+    const browse = document.querySelector<HTMLElement>('.ns-browse')!;
+    const option = await within(browse).findByRole('option', { name: /Alpha notes/ });
     const navigator = option.closest<HTMLElement>('.graph-navigator');
     expect(navigator).toHaveClass('graph-navigator--embedded');
     // The shared navigator is a hidden fixed popover unless the library column overrides it.
