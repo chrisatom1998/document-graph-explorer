@@ -507,13 +507,13 @@
 
 /* Fixed overlays that assumed the floating toolbar: anchor them to the stage
    column instead of the viewport corners so nothing lands on the sidebars. */
-.app-root:has(.rs-root) .path-panel { top: calc(var(--rs-top) + 16px); left: calc(var(--rs-left) + 16px); }
+.app-root:has(.ns-root) .path-panel { top: calc(var(--rs-top) + 16px); left: calc(var(--rs-left) + 16px); }
 /* The digest is a passive notice on the stage: it sits under the top bar's
    stacking context (z-overlay) so the More-tools menu, the Export view and
    anything else the user opens stacks above it, while it still clears the
    canvas and the side columns (z 2). */
-.app-root:has(.rs-root) .insights-digest-layer { top: calc(var(--rs-top) + 16px); left: calc(var(--rs-left) + 16px); z-index: calc(var(--z-overlay) - 1); }
-.app-root:has(.rs-root) .insights-layer { padding-top: var(--rs-top); }
+.app-root:has(.ns-root) .insights-digest-layer { top: calc(var(--rs-top) + 16px); left: calc(var(--rs-left) + 16px); z-index: calc(var(--z-overlay) - 1); }
+.app-root:has(.ns-root) .insights-layer { padding-top: var(--rs-top); }
 /* The welcome card sits under the top bar instead of across it. */
 .app-root:has(.rs-root) .empty-state-layer { top: var(--rs-top); }
 /* The card's own max-height counts the whole viewport, so a tall card was
@@ -616,7 +616,7 @@ body:has(.rs-root) .confirm-dialog .snapshot-btn:disabled { background: none; bo
 .app-root:has(.rs-root) .corpus-switcher__action:hover:not(:disabled) { background: var(--rs-line); }
 /* The drawer opens on the stage, aligned with the digest card's 16px inset,
    instead of 76px down and over the filter sidebar. */
-.app-root:has(.rs-root) .insights { margin: 16px 0 16px calc(var(--rs-left) + 16px); }
+.app-root:has(.ns-root) .insights { margin: 16px 0 16px calc(var(--rs-left) + 16px); }
 
 /* The tagline only shows before a graph exists; let the brand cell grow to
    fit it rather than truncating it to "Find how so…" at desktop widths. */

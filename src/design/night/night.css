@@ -70,6 +70,25 @@
 .ns-map .nebula-canvas, .ns-map .scene-loading { position: absolute !important; inset: 0 !important; }
 .ns-map .minimap { position: absolute; right: 12px; bottom: 12px; }
 .ns-export { position: absolute; inset: 0; z-index: 3; overflow: auto; padding: 16px; background: #121212; }
+/* The shared menu is a dropdown (absolute, offset below its trigger). Here it is the panel's content. */
+.ns-export .toolbar__menu {
+  position: static; width: min(420px, 100%); max-height: none; margin: 0 auto; padding: 8px;
+  border: 1px solid var(--mx-line); border-radius: 8px; background: var(--mx-surface-raised);
+  box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; animation: none;
+}
+.ns-export .toolbar__menu::before { display: none; }
+.ns-export .toolbar__menu-item { min-height: 44px; padding: 0 12px; border: 0; border-radius: 6px; color: var(--mx-text); font-size: 14px; white-space: normal; }
+.ns-export .toolbar__menu-item svg { width: 18px; height: 18px; color: var(--mx-muted); }
+.ns-export .toolbar__menu-item:hover:not(:disabled) { background: var(--mx-line); }
+.ns-export .toolbar__menu-item:disabled, .ns-export .toolbar__menu-item:disabled svg { color: #7c7c7c; }
+.ns-export .toolbar__menu-label { margin: 8px 4px 2px; padding: 12px 8px 0; border-top: 1px solid var(--mx-line); color: var(--mx-muted); font-size: 13px; font-weight: 600; }
+/* Fixed overlays (path finder, insights) line up with the main column: below the header, right of the library. */
+:root[data-design='a'] .app-root:has(.ns-root) { --rs-top: 72px; --rs-left: 336px; --rs-right: 376px; }
+:root[data-design='a'] .app-root:has(.ns-root--empty) { --rs-left: 8px; --rs-right: 8px; }
+/* The path finder centres over the main column, not the whole window. */
+.app-root:has(.ns-root) .path-panel { right: calc(var(--rs-right) + 16px); }
+/* The insights drawer stops above the player. */
+.app-root:has(.ns-root) .insights { margin-bottom: calc(var(--mx-player-h) + 8px); }
 .app-root:has(.ns-root) .first-run-guide { right: 16px; bottom: 108px; width: min(330px, calc(100vw - 32px)); }
 
 /* ---- Left: navigation + library --------------------------------------- */
@@ -83,7 +102,25 @@
 .ns-nav__item svg { width: 24px; height: 24px; }
 .ns-nav__item:hover:not(:disabled), .ns-nav__item.is-current { color: var(--mx-text) !important; }
 .ns-nav__item:disabled { opacity: 0.5; cursor: default; }
-.ns-library { grid-area: lib; display: flex; flex-direction: column; overflow: hidden; }
+.ns-library { grid-area: lib; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; }
+/* The document list lives in the library column. The shared navigator is a hidden
+   fixed popover by default (off-screen, transparent, no pointer events). */
+.ns-library .graph-navigator.graph-navigator--embedded {
+  position: static; flex: none; width: auto; max-width: none; max-height: none; margin: 0; padding: 16px 16px 8px;
+  overflow: visible; border: 0; border-radius: 0; background: none; box-shadow: none;
+  backdrop-filter: none; -webkit-backdrop-filter: none; opacity: 1; transform: none; pointer-events: auto;
+}
+.ns-library .graph-navigator--embedded::before { display: none; }
+.ns-library .graph-navigator__toggle { min-height: 40px; color: var(--mx-text); }
+.ns-library .graph-navigator__toggle strong { font-size: 16px; font-weight: 700; }
+.ns-library .graph-navigator__overview, .ns-library .graph-navigator__instructions, .ns-library .graph-navigator p[role='status'] { margin: 4px 0 0; color: var(--mx-muted); font-size: 13px; line-height: 1.5; }
+.ns-library .graph-navigator__list { max-height: 320px; margin-top: 10px; border: 0; border-radius: 6px; background: var(--mx-surface-2); }
+.ns-library .graph-navigator__option { align-items: stretch; justify-content: center; gap: 2px; min-height: 56px; padding: 8px 12px; border-bottom: 0; border-radius: 6px; text-align: left; }
+.ns-library .graph-navigator__option:hover { background: var(--mx-surface-raised); }
+.ns-library .graph-navigator__option.is-active { background: var(--mx-surface-raised); box-shadow: inset 3px 0 0 var(--mx-accent); }
+.ns-library .graph-navigator__name { color: var(--mx-text); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ns-library .graph-navigator__meta { color: var(--mx-muted); font-size: 13px; }
+.ns-library .rs-sidebar { flex: none; overflow: visible; }
 .ns-library__head { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 8px 24px; }
 .ns-library__head h2 { margin: 0; font-size: 16px; font-weight: 700; color: var(--mx-muted); }
 .ns-round { width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--mx-muted) !important; font-size: 22px !important; cursor: pointer; }
@@ -195,10 +232,14 @@
 
 @media (max-width: 1100px) {
   .ns-root { grid-template-columns: 240px minmax(0, 1fr); grid-template-areas: 'header header' 'lib main' 'now now' 'player player'; }
+  :root[data-design='a'] .app-root:has(.ns-root) { --rs-left: 256px; --rs-right: 8px; }
   .ns-tags-inline { display: flex; }
 }
 @media (max-width: 760px) {
   :root[data-design='a'] { --mx-player-h: 96px; }
+  /* The header wraps to three rows on phones. */
+  :root[data-design='a'] .app-root:has(.ns-root) { --rs-top: 152px; --rs-left: 8px; --rs-right: 8px; }
+  .app-root:has(.ns-root) .insights-digest-layer { right: 24px; max-width: none; }
   .ns-root { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(280px, 1fr) auto auto; grid-template-areas: 'header' 'lib' 'main' 'now' 'player'; gap: 8px; padding: 8px; overflow: auto; }
   .ns-main { border-radius: 0; }
   .ns-hero { flex-direction: column; align-items: flex-start; gap: 16px; padding: 24px 16px 12px; }

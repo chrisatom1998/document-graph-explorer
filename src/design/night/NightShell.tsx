@@ -118,7 +118,6 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
         <div className="rs-top__actions">
           <button type="button" className="rs-icon" aria-label="Search documents" disabled={!usable} onClick={openSearch}><IconSearch /></button>
           <button type="button" className="rs-icon" aria-label="Fit graph to view" aria-keyshortcuts="Home" title="Fit graph to view (Home)" disabled={docCount === 0} onClick={fitGraph}><IconFit /></button>
-          <DimsToggleButton />
           <MusicAnalysisStatusButton className="rs-icon" />
           {hasAudio && <button type="button" className="rs-icon" aria-label="Sample assistant" title="Sample assistant: search, tag and build crates" aria-haspopup="dialog" onClick={() => openSampleAssistant()}><IconNote /></button>}
           <button type="button" className="rs-icon" aria-label="Ask about your library" disabled={docCount === 0} onClick={() => useChatStore.getState().setIsOpen(true)}><IconChat /></button>
@@ -201,9 +200,11 @@ export default function NightShell({ graph }: { graph: ReactNode }) {
             )}
             {focus && <TagChips node={focus} className="ns-tags-inline" />}
             <div className="ns-body">
-              <section className="ns-map" aria-label="Sound Map">
+              <section className="mx-map ns-map" aria-label="Sound Map">
                 <header className="mx-map__head">
                   <span className="mx-map__titles"><strong>Sound Map</strong><small>Closer means more alike. Click a dot to open it.</small></span>
+                  {/* The 2D/3D switch sits on the map it changes. */}
+                  <span className="mx-map__tools"><DimsToggleButton /></span>
                 </header>
                 <div className="mx-map__slot">
                   {view === 'graph' && <Suspense fallback={null}><Minimap /></Suspense>}
