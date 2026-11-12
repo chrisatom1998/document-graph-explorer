@@ -114,6 +114,8 @@
   position: static; flex: none; width: auto; max-width: none; max-height: none; margin: 0; padding: 16px 16px 8px;
   overflow: visible; border: 0; border-radius: 0; background: none; box-shadow: none;
   backdrop-filter: none; -webkit-backdrop-filter: none; opacity: 1; transform: none; pointer-events: auto;
+  /* The floating navigator's modal z-index still applies to a flex item, and put the list over the header's menus. */
+  z-index: auto;
 }
 .ns-library .graph-navigator--embedded::before { display: none; }
 /* On phones the floating navigator opens its list as a dropdown below itself. Embedded, the list stays in the column. */
