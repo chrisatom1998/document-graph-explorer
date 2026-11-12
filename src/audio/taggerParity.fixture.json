@@ -1,5 +1,5 @@
 {
- "model": "ff35f458af3459be7af5d206fbf29b3f7bfb0b7b496e501703ac895eb95725af",
+ "model": "5a7067d033c9a8b1b0babc5f910635c1f2b8b373e0b39aa31653ab2fd7bb0e61",
  "sampleRate": 32000,
  "cases": [
   {
@@ -74,6 +74,7 @@
     "cat:wind ambience": 0.00138,
     "cat:vocal shout": 0.000277,
     "cat:synth bass": 0.003898,
+    "cat:vocal laugh": 0.00076,
     "cat:staccato": 6e-06,
     "cat:reese bass": 2e-06
    }
@@ -150,6 +151,7 @@
     "cat:wind ambience": 0.00077,
     "cat:vocal shout": 0.001556,
     "cat:synth bass": 0.08105,
+    "cat:vocal laugh": 0.001029,
     "cat:staccato": 5.6e-05,
     "cat:reese bass": 0.000166
    }
@@ -227,6 +229,7 @@
     "cat:wind ambience": 0.006305,
     "cat:vocal shout": 0.001734,
     "cat:synth bass": 0.08105,
+    "cat:vocal laugh": 0.001699,
     "cat:staccato": 0.000398,
     "cat:reese bass": 0.000198
    }
@@ -305,6 +308,7 @@
     "cat:wind ambience": 0.016604,
     "cat:vocal shout": 0.002382,
     "cat:synth bass": 0.154465,
+    "cat:vocal laugh": 0.00208,
     "cat:staccato": 0.000499,
     "cat:reese bass": 0.000199
    }

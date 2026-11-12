@@ -1,7 +1,7 @@
 {
  "version": 1,
- "revision": "all-tags-2026-11-11+ep-bright+tail+cymbal+shout-r31+synthbass-r31",
- "modelSha256": "ff35f458af3459be7af5d206fbf29b3f7bfb0b7b496e501703ac895eb95725af",
+ "revision": "all-tags-2026-11-11+ep-bright+tail+cymbal+shout-r31+synthbass-r31+laugh-r32",
+ "modelSha256": "5a7067d033c9a8b1b0babc5f910635c1f2b8b373e0b39aa31653ab2fd7bb0e61",
  "input": {
   "name": "samples32k",
   "output": "scores",
@@ -907,6 +907,20 @@
    "threshold": 0.7261,
    "decides": [
     "synth bass"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:vocal laugh",
+   "label": "vocal laugh",
+   "dimension": "effect",
+   "threshold": 0.9483,
+   "decides": [
+    "vocal laugh"
    ],
    "tested": true,
    "long": {

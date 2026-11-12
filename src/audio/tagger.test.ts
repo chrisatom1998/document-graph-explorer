@@ -379,6 +379,7 @@ describe('trained tagger long-recording rules', () => {
       'cat:record stop': { rule: 'detectors', afterSeconds: 30 }, 'cat:glitch effect': { rule: 'detectors', afterSeconds: 30 },
       'cat:choir': { rule: 'detectors', afterSeconds: 30 }, 'cat:wind ambience': { rule: 'detectors', afterSeconds: 30 },
       'cat:vocal shout': { rule: 'detectors', afterSeconds: 30 }, 'cat:synth bass': { rule: 'detectors', afterSeconds: 30 },
+      'cat:vocal laugh': { rule: 'detectors', afterSeconds: 30 },
       'cat:staccato': { rule: 'detectors', afterSeconds: 30 }, 'cat:reese bass': { rule: 'detectors', afterSeconds: 30 } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
@@ -498,5 +499,16 @@ describe('trained tagger revision and synth bass', () => {
     expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { 'cat:synth bass': .72 } }, 5)!.find(d => d.tag.output === 'cat:synth bass')!.shown).toBe(false);
     expect(effects(track(5, { 'cat:synth bass': .73 }))).toContain('synth bass');
     expect(effects(track(5, { 'cat:synth bass': .72 }))).not.toContain('synth bass');
+  });
+});
+
+describe('trained tagger vocal laugh', () => {
+  it('shows vocal laugh from the tagger at its round 32 cutoff, not below it', () => {
+    expect(threshold('cat:vocal laugh')).toBe(.9483);
+    const effects = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'effect').map(s => s.label);
+    expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { 'cat:vocal laugh': .95 } }, 5)!.find(d => d.tag.output === 'cat:vocal laugh')!.shown).toBe(true);
+    expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { 'cat:vocal laugh': .94 } }, 5)!.find(d => d.tag.output === 'cat:vocal laugh')!.shown).toBe(false);
+    expect(effects(track(5, { 'cat:vocal laugh': .95 }))).toContain('vocal laugh');
+    expect(effects(track(5, { 'cat:vocal laugh': .94 }))).not.toContain('vocal laugh');
   });
 });

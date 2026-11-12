@@ -276,7 +276,7 @@
   "name": "scores",
   "activation": "sigmoid"
  },
- "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
+ "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
  "runs": [
   "all-tags",
   "all-tags-run5",
@@ -287,7 +287,8 @@
   "all-tags-run10",
   "all-tags-recall2",
   "all-tags-r29",
-  "all-tags-r31"
+  "all-tags-r31",
+  "all-tags-r32"
  ],
  "outputRun": {
   "accordion": "all-tags",
@@ -517,7 +518,7 @@
   "cat:vocal chops": "all-tags",
   "cat:vocal gasp": "all-tags",
   "cat:vocal hum": "all-tags",
-  "cat:vocal laugh": "all-tags",
+  "cat:vocal laugh": "all-tags-r32",
   "cat:vocal scream": "all-tags-run7",
   "cat:vocal shout": "all-tags-r31",
   "cat:vocal vowel": "all-tags",
@@ -557,8 +558,8 @@
   "cat:vocal harmony": "all-tags-run9"
  },
  "sha256": {
-  "model.onnx": "ff35f458af3459be7af5d206fbf29b3f7bfb0b7b496e501703ac895eb95725af"
+  "model.onnx": "5a7067d033c9a8b1b0babc5f910635c1f2b8b373e0b39aa31653ab2fd7bb0e61"
  },
- "bytes": 642925377,
+ "bytes": 711875668,
  "maxAbsErrorVsPyTorch": 1.9669532775878906e-06
 }
