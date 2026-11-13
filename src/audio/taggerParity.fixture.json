@@ -8,7 +8,7 @@
     0.0
    ],
    "scores": {
-    "drums": 0.067266,
+    "cat:drums": 7.3e-05,
     "piano": 0.469858,
     "cat:electric piano": 0.00167,
     "cat:guitar": 1.2e-05,
@@ -85,7 +85,7 @@
     0.0
    ],
    "scores": {
-    "drums": 0.031419,
+    "cat:drums": 0.003052,
     "piano": 0.377605,
     "cat:electric piano": 0.027931,
     "cat:guitar": 0.002055,
@@ -163,7 +163,7 @@
     10.0
    ],
    "scores": {
-    "drums": 0.034065,
+    "cat:drums": 0.003052,
     "piano": 0.51203,
     "cat:electric piano": 0.027931,
     "cat:guitar": 0.002055,
@@ -242,7 +242,7 @@
     28.5
    ],
    "scores": {
-    "drums": 0.190864,
+    "cat:drums": 0.020746,
     "piano": 0.594748,
     "cat:electric piano": 0.018692,
     "cat:guitar": 0.00429,

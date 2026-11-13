@@ -1,6 +1,6 @@
 {
  "version": 1,
- "revision": "all-tags-2026-11-11+ep-bright+tail+cymbal+shout-r31+synthbass-r31+laugh-r32",
+ "revision": "all-tags-2026-11-11+ep-bright+tail+cymbal+shout-r31+synthbass-r31+laugh-r32+drums-2026-11-13",
  "modelSha256": "5a7067d033c9a8b1b0babc5f910635c1f2b8b373e0b39aa31653ab2fd7bb0e61",
  "input": {
   "name": "samples32k",
@@ -11,21 +11,22 @@
  },
  "tags": [
   {
-   "output": "drums",
+   "output": "cat:drums",
    "label": "drums",
    "dimension": "source",
-   "threshold": 0.2928,
+   "threshold": 0.8,
    "decides": [
     "drums",
     "drum kit"
    ],
    "tested": true,
-   "minSeconds": 10,
    "long": {
-    "rule": "max",
-    "threshold": 0.5757
+    "rule": "windows",
+    "windows": 2,
+    "threshold": 0.3
    },
-   "tail": true
+   "tail": true,
+   "trust": "both"
   },
   {
    "output": "piano",
