@@ -254,7 +254,7 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     // The umbrella is an estimate under ambience, so it obeys the same rules as any effect estimate.
     ()=>!HIDDEN_UNTIL_TESTED.has(AMBIENCE_UMBRELLA.label)&&allowed(DIMENSION_OF[AMBIENCE_UMBRELLA.group],AMBIENCE_UMBRELLA.label)&&audio.confirmedDjTags===undefined),
     // The umbrella is an estimate under drums, so it obeys the same rules as any source estimate.
-    ()=>!HIDDEN_UNTIL_TESTED.has(DRUMS_UMBRELLA.label)&&allowed('source',DRUMS_UMBRELLA.label)&&confirmed===undefined), audio));
+    ()=>!HIDDEN_UNTIL_TESTED.has(DRUMS_UMBRELLA.label)&&allowed('source',DRUMS_UMBRELLA.label)&&confirmed===undefined,audio), audio));
 }
 /** With the hidden-tags switch off, model estimates of a DJ_HIDDEN_LABELS tag are dropped; hand-confirmed tags stay. */
 function withoutHiddenTags(sounds:DisplaySound[]):DisplaySound[]{
@@ -279,8 +279,12 @@ function ambienceUmbrella(sounds:DisplaySound[],canEstimate:()=>boolean):Display
 }
 /** Any shown drum-kit tag (DRUM_KIT_LABELS) also shows drums, unless drums already shows at least as strongly. The kit
  * tag itself stays. A listener who rejected drums, or confirmed their instrument list, gets no umbrella; neither does a
- * kit tag the listener confirmed by hand. */
-function drumsUmbrella(sounds:DisplaySound[],canEstimate:()=>boolean):DisplaySound[]{
+ * kit tag the listener confirmed by hand.
+ * With a current tagger result the tagger alone decides drums (taggerPolicy trust 'both'), so the umbrella stays off:
+ * kit tags firing on hand claps, knocks and glass added most of drums' false alarms (FSD50K dev-val practice, Chris
+ * chose "tagger only" on 2026-11-12, reports/drums-precision-2026-11-10). It still applies when no current tagger ran. */
+function drumsUmbrella(sounds:DisplaySound[],canEstimate:()=>boolean,audio:MusicAnalysis):DisplaySound[]{
+  if(audio.tagger?.revision===TAGGER_REVISION&&TAGGER_POLICY.tags.some(t=>t.decides.includes(DRUMS_UMBRELLA.label)))return sounds;
   // Only model estimates: a tag the listener confirmed by hand shows exactly as they picked it.
   const kit=sounds.filter(s=>s.origin==='model estimate'&&s.dimension==='effect'&&DRUM_KIT_LABELS.has(`production:${s.label}`));
   if(!kit.length||!canEstimate())return sounds;

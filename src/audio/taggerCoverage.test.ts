@@ -19,7 +19,7 @@ function audio(durationSeconds = 180, intervals: Interval[] | undefined = middle
   return {
     version: 2, durationSeconds, analyzedSeconds: Math.min(durationSeconds, 60), instruments: [], notes: [],
     soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false, djTags: [] },
-    tagger: { revision: TAGGER_REVISION, windows, scores: { 'cat:rain ambience': 0, piano: 0, drums: 0, 'cat:cymbal': 0 },
+    tagger: { revision: TAGGER_REVISION, windows, scores: { 'cat:rain ambience': 0, piano: 0, 'cat:drums': 0, 'cat:cymbal': 0 },
       ...(intervals ? { intervals } : {}) },
   };
 }
@@ -33,6 +33,12 @@ function native(a: MusicAnalysis, label: string, segments?: Interval[], group: '
 }
 const shown = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => `${s.dimension}:${s.label}`);
 
+/** Coverage mechanics under the default trust: drums itself has trust 'both' (a tagger "no" stands for the whole recording). */
+function withDefaultDrumsTrust(run: () => void) {
+  const drums = TAGGER_POLICY.tags.find(t => t.output === 'cat:drums')!, before = drums.trust;
+  delete drums.trust;
+  try { run(); } finally { if (before) drums.trust = before; }
+}
 describe('tagger coverage in the displayed sounds', () => {
   it.each([[0, 10], [170, 180]])('keeps a native effect at %s–%s s outside the tagger excerpt', (start, end) => {
     expect(shown(native(audio(), 'rain ambience', [{ start, end }]))).toEqual(['effect:rain ambience']);
@@ -59,11 +65,16 @@ describe('tagger coverage in the displayed sounds', () => {
     b.tagger!.scores.piano = .9;
     expect(shown(b)).toEqual(['source:piano']);
   });
-  it('uses the score supported outside coverage, without reviving a stronger score from inside it', () => {
+  it('uses the score supported outside coverage, without reviving a stronger score from inside it', () => withDefaultDrumsTrust(() => {
     const a = audio(); a.recognition = createRecognition(180, 'full');
     recordEvidence(a.recognition, 'jamendo', { start: 0, end: 10 }, [{ dimension: 'source', labelId: 'drum kit', score: .55 }]);
     recordEvidence(a.recognition, 'jamendo', { start: 75, end: 85 }, [{ dimension: 'source', labelId: 'drum kit', score: .99 }]);
     expect(confidentSoundSummary(a)).toMatchObject([{ label: 'drums', scores: [{ model: FULL_MIX_JAMENDO_SCORE, score: .55 }] }]);
+  }));
+  it("drops drums the tagger did not hear, outside its excerpt too (trust 'both', reports/drums-precision-2026-11-10)", () => {
+    const a = audio(); a.recognition = createRecognition(180, 'full');
+    recordEvidence(a.recognition, 'jamendo', { start: 0, end: 10 }, [{ dimension: 'source', labelId: 'drum kit', score: .99 }]);
+    expect(confidentSoundSummary(a)).toEqual([]);
   });
   it('keeps the full-coverage 30 s display policy unchanged', () => {
     const a = native(audio(30, [{ start: 0, end: 10 }, { start: 10, end: 20 }, { start: 20, end: 30 }]), 'rain ambience');
@@ -163,7 +174,7 @@ describe('coverage from the real native accumulators', () => {
     recordEvidence(a.recognition, 'clap', { start: 0, end: 10 }, [{ dimension: 'effect', labelId: 'rain ambience', score: .8 }]);
     expect(confidentSoundSummary(a)).toEqual([{ dimension: 'effect', label: 'rain ambience', origin: 'model estimate', tier: 'possible', coverageUnknown: true }]);
   });
-  it('recomputes the existing full-mix aggregation from actual outside probabilities', () => {
+  it('recomputes the existing full-mix aggregation from actual outside probabilities', () => withDefaultDrumsTrust(() => {
     const weights = Array(513).fill(0); weights[512] = 1;
     const model: FullMixModel = { version: 1, revision: FULL_MIX_REVISION!, inputs: { clap: 512, ast: ['drums'], jamendo: [] }, aggregation: { top: 2 },
       heads: [{ label: 'drums', weights, bias: 0, threshold: .5 }] };
@@ -175,7 +186,7 @@ describe('coverage from the real native accumulators', () => {
     const saved = sanitizeMusicAnalysis(a)!;
     expect(saved.fullMix?.labels[0].windowEvidence).toEqual(a.fullMix!.labels[0].windowEvidence);
     expect(confidentSoundSummary(saved)).toMatchObject([{ label: 'drums', scores: [{ model: 'Full-mix head score', score: .55 }] }]);
-  });
+  }));
   it('bounds accumulated scored windows and marks omitted evidence incomplete', () => {
     const a = accumulated(Array.from({ length: NATIVE_WINDOW_EVIDENCE_LIMIT + 1 }, (_, i) => [i * 5, i * 5 + 10, .9]));
     a.durationSeconds = 900;
