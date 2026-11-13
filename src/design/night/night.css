@@ -281,6 +281,13 @@
   :root[data-design='a'] .app-root:has(.ns-root) { --rs-left: 296px; --rs-right: 8px; }
   :root[data-design='a'] .app-root:has(.ns-root--empty) { --rs-top: 8px; }
 }
+/* The progress strip and background-analysis notice float over the drawer's bottom corner; keep
+   them left of the open drawer so its last controls (Track actions, Cancel analysis) stay clickable. */
+@media (min-width: 761px) and (max-width: 1100px) {
+  :root[data-design] .app-root:has(.ns-root .ns-now--open) { --ns-drawer-clear: calc(min(400px, 100vw - 24px) + 12px); }
+  :root[data-design] .app-root:has(.ns-root .ns-now--open) .progress-strip-layer { right: var(--ns-drawer-clear); }
+  :root[data-design] .app-root:has(.ns-root .ns-now--open) .music-background-status { right: calc(var(--ns-drawer-clear) + 16px); max-width: calc(100vw - var(--ns-drawer-clear) - 32px); }
+}
 /* Short tablet windows: the nav folds to one row of icons so the library keeps its room. */
 @media (max-width: 1100px) and (max-height: 760px) {
   .ns-nav { flex-direction: row; align-items: center; justify-content: space-between; padding: 8px 12px; }
