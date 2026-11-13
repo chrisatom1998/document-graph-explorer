@@ -1,0 +1,113 @@
+name: Drums full-song tuning (temporary)
+
+# One-off for PR #348: picks the trained tagger's long-recording drums rule on the full-song TUNING set
+# (docs/evaluations/all-tags-model-2026-10-06/fullsong-tuning-manifest.json; never a held-out set), by analysing the
+# 300 tuning tracks with this branch's build and with main's build. Audio is fetched at run time, kept on the runner only,
+# never committed or uploaded. Only aggregate reports are uploaded. This file is removed before the PR merges.
+on:
+  push:
+    branches: [claude/project-thread-1od5ti]
+    paths: [.github/workflows/drums-fullsong-tune.yml]
+
+permissions:
+  contents: read
+
+env:
+  DGE_MODELS: full
+  ONNXRUNTIME_NODE_INSTALL: skip
+  TUNE: docs/evaluations/all-tags-model-2026-10-06/fullsong-tuning-manifest.json
+  JAMENDO_META: https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/cafd8e20c265ed84f1e61f1c875327971f43a62f
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    public/tagger-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: head
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+          path: main
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: head/package-lock.json
+      - name: Fetch this shard's tuning tracks
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          mkdir -p "$RUNNER_TEMP/mj" && curl -fsSL --retry 6 -o "$RUNNER_TEMP/mj/sha.txt" "$JAMENDO_META/data/download/raw_30s_audio-low_sha256_tracks.txt"
+          timeout 60m python3 head/scripts/holdout-r3/fetch-jamendo.py "head/$TUNE" "$RUNNER_TEMP/mj/sha.txt" ${{ matrix.shard }}/10 "$PWD/audio"
+          node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync(process.argv[1]));const ids=m.items.filter(i=>fs.existsSync(`${process.argv[2]}/${i.id}.wav`)).map(i=>i.id);
+            fs.writeFileSync("ids.json",JSON.stringify(ids));console.log(ids.length,"tracks in this shard")' "head/$TUNE" "$PWD/audio"
+      - name: Analyse with both builds
+        run: |
+          for side in head main; do
+            ( cd $side && npm ci --no-audit --no-fund >/dev/null )
+          done
+          ( cd head && npx playwright install --with-deps chromium >/dev/null )
+          export CHROME_PATH=$(cd head && node -e "console.log(require('playwright').chromium.executablePath())")
+          for side in head main; do
+            ( cd $side && npm run build >/dev/null && \
+              AUDIO_DIR="$GITHUB_WORKSPACE/audio" AUDIO_EXT=wav MANIFEST="$GITHUB_WORKSPACE/head/$TUNE" ONLY_IDS="$GITHUB_WORKSPACE/ids.json" \
+              node ../head/scripts/short-clip-upload-eval.mjs "$GITHUB_WORKSPACE/out/$side" tuning 20 )
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tune-export-${{ matrix.shard }}
+          path: |
+            out/head/graph-export.json
+            out/main/graph-export.json
+          retention-days: 7
+
+  tune:
+    needs: analyse
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          path: head
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+          path: main
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: head/package-lock.json
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: tune-export-*
+          path: exports
+      - name: Score main, then tune drums on this branch
+        run: |
+          set -o pipefail
+          for side in head main; do ( cd $side && npm ci --no-audit --no-fund >/dev/null ); done
+          mkdir -p reports main/scripts/holdout-r3 && cp head/scripts/holdout-r3/score-tags.mjs main/scripts/holdout-r3/
+          ( cd main && MANIFEST="../head/$TUNE" BENCHMARK=fullsong-tuning npx vite-node scripts/holdout-r3/score-tags.mjs ../reports/main-tags.json $(ls ../exports/*/main/graph-export.json) )
+          ( cd head && MANIFEST="../head/$TUNE" BENCHMARK=fullsong-tuning npx vite-node scripts/holdout-r3/score-tags.mjs ../reports/head-tags.json $(ls ../exports/*/head/graph-export.json) )
+          ( cd head && MANIFEST="$TUNE" ONLY_OUTPUT=cat:drums MAIN_REPORT=../reports/main-tags.json \
+              THRESHOLDS=0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75 \
+              npx vite-node scripts/audio-model/tune-fullsong-rule.mjs ../reports/drums-rule.json $(ls ../exports/*/head/graph-export.json) ) | tee reports/drums-rule.txt
+          node -e 'for (const s of ["main","head"]) { const r=JSON.parse(require("fs").readFileSync(`reports/${s}-tags.json`)); console.log(s, r.analysed, "tracks", JSON.stringify(r.displayedIncludingMaybe["source:drums"])) }' | tee -a reports/drums-rule.txt
+          { echo '```'; cat reports/drums-rule.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: drums-rule-report
+          path: reports
+          retention-days: 30
