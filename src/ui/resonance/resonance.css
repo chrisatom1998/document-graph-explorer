@@ -176,7 +176,10 @@
 .rs-group__head { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0; border: 0; background: none; font: inherit; cursor: pointer; }
 .rs-group__head span { color: var(--rs-muted); font-size: 14px; }
 .rs-checks { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.rs-checks label { display: flex; align-items: center; gap: 10px; padding: 5px 0; cursor: pointer; font-size: 13px; }
+/* position: relative keeps each hidden checkbox inside the sidebar's own scroll.
+   Without it the input escapes to the page shell, and focusing it on click
+   scrolls the whole layout up so the bottom of the screen takes over. */
+.rs-checks label { position: relative; display: flex; align-items: center; gap: 10px; padding: 5px 0; cursor: pointer; font-size: 13px; }
 /* A disabled row keeps legible text (≈4.7:1); only the box itself fades. */
 .rs-checks label:has(input:disabled) { color: var(--rs-disabled); cursor: default; }
 .rs-checks label:has(input:disabled) .rs-check { opacity: 0.5; }
@@ -526,7 +529,6 @@
    launcher sit outside it), so the classic 88px/256px insets only squeezed
    the card until the phase title truncated to "Embedd…". */
 .app-root:has(.rs-root) .progress-strip-layer { left: var(--rs-left); right: var(--rs-right); padding-inline: 16px; }
-.app-root:has(.rs-root) .first-run-guide { right: calc(var(--rs-right) + 18px); }
 
 /* Search overlay on the Resonance palette: a solid raised surface (no glass
    tint, nothing bleeds through), lime for the active row, 32px close button. */

@@ -45,113 +45,6 @@
   font-size: 11px;
   padding: 5px 8px;
 }
-.first-run-guide {
-  /* Sit just left of the 220px-wide minimap (right: 18px) plus an 18px gap. */
-  position: fixed;
-  z-index: var(--z-modal);
-  left: auto;
-  right: 256px;
-  bottom: 18px;
-  width: min(330px, calc(100vw - 40px));
-  padding: 13px 18px 15px;
-  color: var(--text);
-  font-size: 13px;
-}
-.first-run-guide__drag {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin: 0 30px 8px -4px;
-  padding: 3px 0;
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-}
-.first-run-guide__drag:active {
-  cursor: grabbing;
-}
-.first-run-guide__grip {
-  display: flex;
-  color: var(--text-faint);
-  opacity: 0.85;
-}
-.first-run-guide__grip svg {
-  width: 13px;
-  height: 13px;
-  display: block;
-}
-.first-run-guide__drag:hover .first-run-guide__grip {
-  opacity: 1;
-}
-.first-run-spotlight {
-  position: fixed;
-  z-index: calc(var(--z-modal) - 1);
-  border: 2px solid var(--accent-strong);
-  border-radius: 14px;
-  pointer-events: none;
-  box-shadow: 0 0 0 9999px rgba(2, 3, 12, 0.68), 0 0 26px rgba(143, 123, 255, 0.62);
-  transition: inset 180ms var(--ease-out), width 180ms var(--ease-out), height 180ms var(--ease-out);
-}
-.first-run-guide__step {
-  display: block;
-  margin-bottom: 0;
-  color: var(--accent-strong);
-  font-size: 13px;
-  font-weight: 600;
-}
-.first-run-guide > strong {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-}
-.first-run-guide p {
-  margin: 6px 0 14px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-.first-run-guide__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-/* Back and Next share one size; Back is outlined, Next is tinted. */
-.first-run-guide__back,
-.first-run-guide__done {
-  min-height: 36px;
-  padding: 0 14px;
-  border: 1px solid var(--border-glass-strong);
-  border-radius: var(--radius-md);
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-}
-.first-run-guide__back {
-  background: transparent;
-  color: var(--text-primary);
-}
-/* Disabled Back keeps a legible tone (≈5.9:1) instead of fading to a ghost. */
-.first-run-guide__back:disabled,
-.first-run-guide__back[data-disabled] {
-  opacity: 1;
-  border-color: var(--border-glass);
-  color: var(--text-faint);
-  cursor: default;
-}
-.first-run-guide__close {
-  position: absolute;
-  top: 6px;
-  right: 9px;
-  width: 36px;
-  height: 36px;
-  border: 0;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 19px;
-  cursor: pointer;
-}
 @font-face {
   font-family: 'Space Grotesk';
   font-style: normal;
@@ -531,7 +424,7 @@ textarea {
 /* ---------------------------------------------------------------------- */
 
 /* Zero-specificity so panels that declare their own `position` (fixed toolbar,
-   side panel, first-run guide…) always win, regardless of source order. This
+   side panel…) always win, regardless of source order. This
    only supplies a containing block for the ::before sheen on static panels. */
 :where(.glass-panel) {
   position: relative;
@@ -4630,13 +4523,6 @@ details.settings-section > summary {
     top: 166px;
     left: 10px;
   }
-  .first-run-guide {
-    right: 10px;
-    bottom: 184px;
-    width: calc(100vw - 20px);
-    max-height: calc(100vh - 300px);
-    overflow: auto;
-  }
   .minimap {
     right: 10px;
     bottom: 10px;
@@ -6014,13 +5900,6 @@ details.settings-section > summary {
     top: 128px;
     left: 10px;
   }
-  .first-run-guide {
-    right: 10px;
-    bottom: 184px;
-    width: calc(100vw - 20px);
-    max-height: calc(100vh - 300px);
-    overflow: auto;
-  }
   .minimap {
     right: 10px;
     bottom: 10px;
@@ -6187,19 +6066,8 @@ input {
 .app-root:has(.dj-launch) .chat-bubble-btn { left: 270px; }
 @media (max-width: 640px) {
   .app-root:has(.dj-launch) .chat-bubble-btn { left: auto; right: 18px; }
-  /* A visible tour uses the lower half; notices occupy the gap below Browse. */
-  .app-root:has(.first-run-guide) .toast-host {
-    top: 132px;
-    bottom: auto;
-    max-height: min(45dvh, calc(100dvh - 232px));
-  }
 }
 
-/* Short phone windows cannot fit two help surfaces at once. Let notices be
-   dismissed first, then reveal the tour in its existing position. */
-@media (max-width: 640px) and (max-height: 640px) {
-  .app-root:has(.app-toast) .first-run-guide { visibility: hidden; }
-}
 /* Untested model guesses: visible near the top, but visibly weaker than tested Sounds tags. */
 .sound-guesses { margin: 12px 0 0; }
 .sound-guesses__groups { margin: 0; }

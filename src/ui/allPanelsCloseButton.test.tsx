@@ -9,7 +9,6 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useChatStore } from '../store/chatStore';
 import ChatPanel from './ChatPanel';
-import FirstRunGuide from './FirstRunGuide';
 import HelpPopover from './HelpPopover';
 import InsightsPanel from './InsightsPanel';
 import PathPanel from './PathPanel';
@@ -69,13 +68,6 @@ describe('Accessibility Verification: CloseButton across all 10 UI Panels', () =
     const btn = screen.getByRole('button', { name: 'Close chat' });
     expect(btn).toBeInTheDocument();
     expect(btn).toHaveAttribute('aria-label', 'Close chat');
-  });
-
-  it('2. FirstRunGuide has accessible close button', async () => {
-    render(<FirstRunGuide />);
-    const btn = await screen.findByRole('button', { name: 'Dismiss getting started' });
-    expect(btn).toBeInTheDocument();
-    expect(btn).toHaveAttribute('aria-label', 'Dismiss getting started');
   });
 
   it('3. HelpPopover has accessible close button', () => {
