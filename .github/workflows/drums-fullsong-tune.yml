@@ -50,7 +50,9 @@ jobs:
         run: |
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
           mkdir -p "$RUNNER_TEMP/mj" && curl -fsSL --retry 6 -o "$RUNNER_TEMP/mj/sha.txt" "$JAMENDO_META/data/download/raw_30s_audio-low_sha256_tracks.txt"
-          timeout 60m python3 head/scripts/holdout-r3/fetch-jamendo.py "head/$TUNE" "$RUNNER_TEMP/mj/sha.txt" ${{ matrix.shard }}/10 "$PWD/audio"
+          # Tuning tracks can be longer than the held-out set's: raise the per-track safety cap in a copy (still SHA-checked).
+          sed 's/^MAX_MEMBER = .*/MAX_MEMBER = 64_000_000/' head/scripts/holdout-r3/fetch-jamendo.py > "$RUNNER_TEMP/fetch.py"
+          timeout 60m python3 "$RUNNER_TEMP/fetch.py" "head/$TUNE" "$RUNNER_TEMP/mj/sha.txt" ${{ matrix.shard }}/10 "$PWD/audio"
           node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync(process.argv[1]));const ids=m.items.filter(i=>fs.existsSync(`${process.argv[2]}/${i.id}.wav`)).map(i=>i.id);
             fs.writeFileSync("ids.json",JSON.stringify(ids));console.log(ids.length,"tracks in this shard")' "head/$TUNE" "$PWD/audio"
       - name: Analyse with both builds
@@ -75,7 +77,6 @@ jobs:
 
   tune:
     needs: analyse
-    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
@@ -97,6 +98,8 @@ jobs:
       - name: Score main, then tune drums on this branch
         run: |
           set -o pipefail
+          # Every shard must be here, or the rule would be picked on part of the set.
+          n=$(ls -d exports/tune-export-* | wc -l); echo "$n of 10 shards"; [ "$n" = 10 ] || { echo "::error::missing shards"; exit 1; }
           for side in head main; do ( cd $side && npm ci --no-audit --no-fund >/dev/null ); done
           mkdir -p reports main/scripts/holdout-r3 && cp head/scripts/holdout-r3/score-tags.mjs main/scripts/holdout-r3/
           ( cd main && MANIFEST="../head/$TUNE" BENCHMARK=fullsong-tuning npx vite-node scripts/holdout-r3/score-tags.mjs ../reports/main-tags.json $(ls ../exports/*/main/graph-export.json) )
@@ -104,7 +107,8 @@ jobs:
           ( cd head && MANIFEST="$TUNE" ONLY_OUTPUT=cat:drums MAIN_REPORT=../reports/main-tags.json \
               THRESHOLDS=0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75 \
               npx vite-node scripts/audio-model/tune-fullsong-rule.mjs ../reports/drums-rule.json $(ls ../exports/*/head/graph-export.json) ) | tee reports/drums-rule.txt
-          node -e 'for (const s of ["main","head"]) { const r=JSON.parse(require("fs").readFileSync(`reports/${s}-tags.json`)); console.log(s, r.analysed, "tracks", JSON.stringify(r.displayedIncludingMaybe["source:drums"])) }' | tee -a reports/drums-rule.txt
+          node -e 'const a={}; for (const s of ["main","head"]) { const r=JSON.parse(require("fs").readFileSync(`reports/${s}-tags.json`)); a[s]=r.analysed; console.log(s, r.analysed, "of", r.items, "tracks analysed", JSON.stringify(r.displayedIncludingMaybe["source:drums"])) }
+            if (a.main !== a.head) { console.log("::error::main and head analysed different track counts"); process.exit(1) }' | tee -a reports/drums-rule.txt
           { echo '```'; cat reports/drums-rule.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         with:

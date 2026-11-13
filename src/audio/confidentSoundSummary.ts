@@ -284,7 +284,8 @@ function ambienceUmbrella(sounds:DisplaySound[],canEstimate:()=>boolean):Display
  * kit tags firing on hand claps, knocks and glass added most of drums' false alarms (FSD50K dev-val practice, Chris
  * chose "tagger only" on 2026-11-12, reports/drums-precision-2026-11-10). It still applies when no current tagger ran. */
 function drumsUmbrella(sounds:DisplaySound[],canEstimate:()=>boolean,audio:MusicAnalysis):DisplaySound[]{
-  if(audio.tagger?.revision===TAGGER_REVISION&&TAGGER_POLICY.tags.some(t=>t.decides.includes(DRUMS_UMBRELLA.label)))return sounds;
+  // Only when the tagger actually scored drums: an output dropped as invalid leaves the umbrella on.
+  if(audio.tagger?.revision===TAGGER_REVISION&&TAGGER_POLICY.tags.some(t=>t.decides.includes(DRUMS_UMBRELLA.label)&&Number.isFinite(audio.tagger!.scores[t.output])))return sounds;
   // Only model estimates: a tag the listener confirmed by hand shows exactly as they picked it.
   const kit=sounds.filter(s=>s.origin==='model estimate'&&s.dimension==='effect'&&DRUM_KIT_LABELS.has(`production:${s.label}`));
   if(!kit.length||!canEstimate())return sounds;

@@ -196,10 +196,16 @@ describe('trained tagger display', () => {
       { group: 'production' as const, label: 'percussion hit', score: .99, model: 'Trained head' as const }];
     const labels = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => s.label).sort();
     expect(labels(track(4, { 'cat:hi-hat': .01, 'cat:percussion': .01 }, heads))).toEqual([]);
-    const shown = confidentSoundSummary(track(4, { 'cat:hi-hat': threshold('cat:hi-hat'), 'cat:percussion': threshold('cat:percussion') }, heads));
-    // With a current tagger result the tagger alone decides drums, so the kit-tag umbrella (#272) stays off.
+    const shown = confidentSoundSummary(track(4, { 'cat:hi-hat': threshold('cat:hi-hat'), 'cat:percussion': threshold('cat:percussion'), 'cat:drums': .01 }, heads));
+    // With a current tagger drums score the tagger alone decides drums, so the kit-tag umbrella (#272) stays off.
     expect(shown.map(s => s.label).sort()).toEqual(['hi-hat', 'percussion']);
     for (const s of shown) expect(s.scores, s.label).toMatchObject([{ model: TAGGER_SCORE }]);
+  });
+  it('keeps the kit-tag umbrella when the tagger has no valid drums score', () => {
+    const heads = [{ group: 'production' as const, label: 'open hi-hat', score: .99, model: 'Trained head' as const }];
+    const labels = (scores: Record<string, number>) => confidentSoundSummary(track(4, scores, heads)).map(s => s.label).sort();
+    expect(labels({ 'cat:hi-hat': threshold('cat:hi-hat') })).toEqual(['drums', 'hi-hat']);
+    expect(labels({ 'cat:hi-hat': threshold('cat:hi-hat'), 'cat:drums': .01 })).toEqual(['hi-hat']);
   });
   it('shows the ambient drone head as atmospheric pad', () => {
     const heads = [{ group: 'production' as const, label: 'ambient drone', score: .99, model: 'Trained head' as const }];
