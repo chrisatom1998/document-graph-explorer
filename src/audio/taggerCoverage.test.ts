@@ -20,7 +20,8 @@ function audio(durationSeconds = 180, intervals: Interval[] | undefined = middle
     version: 2, durationSeconds, analyzedSeconds: Math.min(durationSeconds, 60), instruments: [], notes: [],
     soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false, djTags: [] },
     tagger: { revision: TAGGER_REVISION, windows, scores: { 'cat:rain ambience': 0, piano: 0, 'cat:drums': 0, 'cat:cymbal': 0 },
-      ...(intervals ? { intervals } : {}) },
+      // Per-window scores, which drums' long-recording rule (2 windows) reads.
+      windowScores: { 'cat:drums': Array(windows).fill(0) }, ...(intervals ? { intervals } : {}) },
   };
 }
 function native(a: MusicAnalysis, label: string, segments?: Interval[], group: 'source' | 'production' = 'production') {

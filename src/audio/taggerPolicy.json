@@ -1,6 +1,6 @@
 {
  "version": 1,
- "revision": "all-tags-2026-11-11+ep-bright+tail+cymbal+shout-r31+synthbass-r31+laugh-r32+drums-2026-11-12",
+ "revision": "all-tags-2026-11-11+ep-bright+tail+cymbal+shout-r31+synthbass-r31+laugh-r32+drums-2026-11-13",
  "modelSha256": "5a7067d033c9a8b1b0babc5f910635c1f2b8b373e0b39aa31653ab2fd7bb0e61",
  "input": {
   "name": "samples32k",
@@ -21,7 +21,9 @@
    ],
    "tested": true,
    "long": {
-    "rule": "max"
+    "rule": "windows",
+    "windows": 2,
+    "threshold": 0.3
    },
    "tail": true,
    "trust": "both"

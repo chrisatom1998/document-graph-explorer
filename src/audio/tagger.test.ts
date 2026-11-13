@@ -377,7 +377,7 @@ describe('trained tagger long-recording rules', () => {
   };
   it('installs the rules picked on the full-song tuning set', () => {
     expect(Object.fromEntries(TAGGER_POLICY.tags.filter(t => t.long).map(t => [t.output, t.long]))).toEqual({
-      'cat:drums': { rule: 'max' }, trumpet: { rule: 'max' }, piano: { rule: 'detectors' }, 'cat:guitar': { rule: 'detectors', afterSeconds: 30 },
+      'cat:drums': { rule: 'windows', windows: 2, threshold: 0.3 }, trumpet: { rule: 'max' }, piano: { rule: 'detectors' }, 'cat:guitar': { rule: 'detectors', afterSeconds: 30 },
       'cat:cymbal': { rule: 'detectors', afterSeconds: 30 }, 'cat:violin / fiddle': { rule: 'detectors', afterSeconds: 30 }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' },
       synthesizer: { rule: 'max' }, 'cat:percussion': { rule: 'detectors' }, 'cat:animal sound': { rule: 'detectors' },
       'cat:glockenspiel': { rule: 'detectors' }, 'cat:whistle': { rule: 'detectors' }, 'cat:tambourine': { rule: 'detectors' },
@@ -401,13 +401,16 @@ describe('trained tagger long-recording rules', () => {
       'cat:vocal shout': { rule: 'detectors', afterSeconds: 30 }, 'cat:synth bass': { rule: 'detectors', afterSeconds: 30 },
       'cat:vocal laugh': { rule: 'detectors', afterSeconds: 30 },
       'cat:staccato': { rule: 'detectors', afterSeconds: 30 }, 'cat:reese bass': { rule: 'detectors', afterSeconds: 30 } });
-    for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
+    // A best-window rule only ever raises the cutoff on long recordings. Needing several windows can use a lower one
+    // (drums: 2 windows at 0.3, picked on the full-song tuning set).
+    for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined && t.long.rule === 'max')) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
-  it('keeps one drums cutoff on long recordings', () => {
-    const t = threshold('cat:drums');
+  it('needs two drums windows at 0.3 on long recordings (picked on the full-song tuning set)', () => {
     const head = [{ group: 'source' as const, label: 'drums', score: .99, model: 'Trained head' as const }];
-    expect(sources(long({ 'cat:drums': [t - 1e-3, .1, .1] }, head))).toEqual([]);
-    expect(sources(long({ 'cat:drums': [t, .1, .1] }, head))).toEqual(['drums']);
+    expect(sources(long({ 'cat:drums': [.99, .3 - 1e-3, .1] }, head))).toEqual([]);
+    expect(sources(long({ 'cat:drums': [.3, .3, .1] }, head))).toEqual(['drums']);
+    // A 10 s clip keeps the clip cutoff.
+    expect(sources(track(10, { 'cat:drums': .79 }, head))).toEqual([]);
   });
   it('leaves fallback instruments to the existing detectors on long recordings, and keeps the tagger on 10 s clips', () => {
     const others = [{ group: 'source' as const, label: 'piano', score: .9, model: 'Trained head' as const }];
