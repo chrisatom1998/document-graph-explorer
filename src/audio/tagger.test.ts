@@ -399,7 +399,7 @@ describe('trained tagger long-recording rules', () => {
       'cat:record stop': { rule: 'detectors', afterSeconds: 30 }, 'cat:glitch effect': { rule: 'detectors', afterSeconds: 30 },
       'cat:choir': { rule: 'detectors', afterSeconds: 30 }, 'cat:wind ambience': { rule: 'detectors', afterSeconds: 30 },
       'cat:vocal shout': { rule: 'detectors', afterSeconds: 30 }, 'cat:synth bass': { rule: 'detectors', afterSeconds: 30 },
-      'cat:vocal laugh': { rule: 'detectors', afterSeconds: 30 },
+      'cat:vocal laugh': { rule: 'detectors', afterSeconds: 30 }, 'cat:thunder': { rule: 'detectors', afterSeconds: 30 },
       'cat:staccato': { rule: 'detectors', afterSeconds: 30 }, 'cat:reese bass': { rule: 'detectors', afterSeconds: 30 } });
     // A best-window rule only ever raises the cutoff on long recordings. Needing several windows can use a lower one
     // (drums: 2 windows at 0.3, picked on the full-song tuning set).
@@ -531,5 +531,16 @@ describe('trained tagger vocal laugh', () => {
     expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { 'cat:vocal laugh': .94 } }, 5)!.find(d => d.tag.output === 'cat:vocal laugh')!.shown).toBe(false);
     expect(effects(track(5, { 'cat:vocal laugh': .95 }))).toContain('vocal laugh');
     expect(effects(track(5, { 'cat:vocal laugh': .94 }))).not.toContain('vocal laugh');
+  });
+});
+
+describe('trained tagger thunder', () => {
+  it('shows thunder from the tagger at its round 33 cutoff, not below it', () => {
+    expect(threshold('cat:thunder')).toBe(.0834);
+    const effects = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'effect').map(s => s.label);
+    expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { 'cat:thunder': .09 } }, 5)!.find(d => d.tag.output === 'cat:thunder')!.shown).toBe(true);
+    expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { 'cat:thunder': .08 } }, 5)!.find(d => d.tag.output === 'cat:thunder')!.shown).toBe(false);
+    expect(effects(track(5, { 'cat:thunder': .09 }))).toContain('thunder');
+    expect(effects(track(5, { 'cat:thunder': .08 }))).not.toContain('thunder');
   });
 });

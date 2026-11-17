@@ -8,6 +8,9 @@ weak absences only).
 EXTRA_CAT = ['bongo', 'tuned percussion', 'banjo', 'mandolin', 'pitched vocal', 'shaker loop', 'synth hit', 'vocal shush']
 # Run 9: below-bar tags that had no output yet (only run 9's staged sets and renders label them; prepare-run9.py).
 EXTRA_CAT += ['reversed vocal', 'vocal pad', 'vocal phrase', 'rubbery bass', 'vocal harmony']
+# Round 33 (Nov 16 2026): thunder and explosion had only CLAP heads (FSD50K eval P .557 / .571). FSD50K dev teaches
+# them through fsd50k_extra.py (load time), so the prep cache key does not move.
+EXTRA_CAT += ['thunder', 'explosion']
 
 # Run 9: the below-bar tags of reports/training-data-all-tags-2026-10-10.md that the tagger trains (every one except the
 # nine rule-based timbre tags and steel guitar, which has no allowed audio). An item marked weakAll='run9' (prepare-run9.py)

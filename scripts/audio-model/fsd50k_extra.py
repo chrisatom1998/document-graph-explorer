@@ -19,12 +19,17 @@ EXTRA = {
     'Tabla': ['hand percussion'], 'Tambourine': ['hand percussion'], 'Rattle_(instrument)': ['hand percussion', 'shaker'],
     'Thump_and_thud': ['foley hit'], 'Knock': ['foley hit'], 'Slam': ['foley hit'], 'Chink_and_clink': ['foley hit'],
     'Splash_and_splatter': ['water ambience'],
+    # Round 33 (Nov 16 2026): same meaning as the CLAP heads (docs/evaluations/sfx-tags-2026-11-06): thunder = Thunder
+    # (Thunderstorm without it is unknown); explosion = Explosion, but a clip that is only gunshots (Gunshot_and_gunfire
+    # without Boom or Fireworks) is unknown.
+    'Thunder': ['thunder'], 'Explosion': ['explosion'],
 }
 # Tags that are new to FSD50K here: a clip with none of their classes is absent only when it also has none of these
 # broader classes, which can hide the sound (FSD50K has no conga, bongo, djembe, cajon or shaker class).
 UNKNOWN_IF = {
     'hand percussion': {'Drum', 'Percussion', 'Musical_instrument', 'Music'},
     'shaker': {'Percussion', 'Musical_instrument', 'Music'},
+    'thunder': {'Thunderstorm'},
     'foley hit': {'Domestic_sounds_and_home_sounds', 'Tools', 'Mechanisms', 'Wood', 'Glass', 'Door', 'Cupboard_open_or_close',
                   'Drawer_open_or_close', 'Dishes_and_pots_and_pans', 'Cutlery_and_silverware', 'Hammer', 'Coin_(dropping)', 'Crack'},
 }
@@ -43,7 +48,10 @@ def labels_for(classes):
     """{cat:<tag>: True | False} for the tags above; a tag is missing when it is unknown for this clip."""
     present = {t for c in classes for t in EXTRA.get(c, [])}
     out = {}
+    gunshot_only = 'Gunshot_and_gunfire' in classes and not classes & {'Boom', 'Fireworks'}
+    if gunshot_only: present.discard('explosion')
     for tag in sorted({t for v in EXTRA.values() for t in v}):
+        if tag == 'explosion' and gunshot_only: continue   # unknown, not absent
         if tag in present: out[f'cat:{tag}'] = True
         elif not classes & UNKNOWN_IF.get(tag, set()): out[f'cat:{tag}'] = False
     return out

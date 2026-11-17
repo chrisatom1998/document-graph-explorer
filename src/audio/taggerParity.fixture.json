@@ -1,5 +1,5 @@
 {
- "model": "5a7067d033c9a8b1b0babc5f910635c1f2b8b373e0b39aa31653ab2fd7bb0e61",
+ "model": "fc39eb42266c520514acbe4745e6aebe1d2b0dac1ab56f007e0d6e5b1411028a",
  "sampleRate": 32000,
  "cases": [
   {
@@ -76,7 +76,8 @@
     "cat:synth bass": 0.003898,
     "cat:vocal laugh": 0.00076,
     "cat:staccato": 6e-06,
-    "cat:reese bass": 2e-06
+    "cat:reese bass": 2e-06,
+    "cat:thunder": 0.00265
    }
   },
   {
@@ -153,7 +154,8 @@
     "cat:synth bass": 0.08105,
     "cat:vocal laugh": 0.001029,
     "cat:staccato": 5.6e-05,
-    "cat:reese bass": 0.000166
+    "cat:reese bass": 0.000166,
+    "cat:thunder": 0.01105
    }
   },
   {
@@ -231,7 +233,8 @@
     "cat:synth bass": 0.08105,
     "cat:vocal laugh": 0.001699,
     "cat:staccato": 0.000398,
-    "cat:reese bass": 0.000198
+    "cat:reese bass": 0.000198,
+    "cat:thunder": 0.01105
    }
   },
   {
@@ -310,7 +313,8 @@
     "cat:synth bass": 0.154465,
     "cat:vocal laugh": 0.00208,
     "cat:staccato": 0.000499,
-    "cat:reese bass": 0.000199
+    "cat:reese bass": 0.000199,
+    "cat:thunder": 0.026031
    }
   }
  ]

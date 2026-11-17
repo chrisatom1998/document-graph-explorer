@@ -264,7 +264,9 @@
   "cat:vocal pad",
   "cat:vocal phrase",
   "cat:rubbery bass",
-  "cat:vocal harmony"
+  "cat:vocal harmony",
+  "cat:thunder",
+  "cat:explosion"
  ],
  "input": {
   "name": "samples32k",
@@ -276,7 +278,7 @@
   "name": "scores",
   "activation": "sigmoid"
  },
- "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
+ "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
  "runs": [
   "all-tags",
   "all-tags-run5",
@@ -288,7 +290,8 @@
   "all-tags-recall2",
   "all-tags-r29",
   "all-tags-r31",
-  "all-tags-r32"
+  "all-tags-r32",
+  "all-tags-r33"
  ],
  "outputRun": {
   "accordion": "all-tags",
@@ -555,11 +558,13 @@
   "cat:vocal pad": "all-tags-run9",
   "cat:vocal phrase": "all-tags-run9",
   "cat:rubbery bass": "all-tags-run9",
-  "cat:vocal harmony": "all-tags-run9"
+  "cat:vocal harmony": "all-tags-run9",
+  "cat:thunder": "all-tags-r33",
+  "cat:explosion": "all-tags-r33"
  },
  "sha256": {
-  "model.onnx": "5a7067d033c9a8b1b0babc5f910635c1f2b8b373e0b39aa31653ab2fd7bb0e61"
+  "model.onnx": "fc39eb42266c520514acbe4745e6aebe1d2b0dac1ab56f007e0d6e5b1411028a"
  },
- "bytes": 711875668,
+ "bytes": 780858129,
  "maxAbsErrorVsPyTorch": 1.9669532775878906e-06
 }
