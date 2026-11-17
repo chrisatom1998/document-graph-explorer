@@ -1,6 +1,6 @@
 """Score the frozen key and tempo CNNs once on the held-out sets, next to the app's own numbers.
 Usage: eval_heldout.py key|tempo <model.pt> <out.json>"""
-import gzip, json, os, sys, numpy as np, torch, torch.nn as nn, torch.nn.functional as Fn, importlib.util
+import gzip, json, os, sys, numpy as np, torch, importlib.util
 R = '/home/user/document-graph-explorer'; H = '/tmp/claude-0/feats/held'; G = '/tmp/claude-0/dl/gs'
 what, model_path, out = sys.argv[1:4]
 TON = {'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'F':5,'F#':6,'Gb':6,'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11}

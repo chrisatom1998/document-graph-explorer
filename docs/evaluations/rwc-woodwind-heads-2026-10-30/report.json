@@ -1,0 +1,231 @@
+{
+ "kind": "rwc-woodwind-heads-v1",
+ "date": "2026-10-30",
+ "preregistration": "PREREGISTRATION.md",
+ "fingerprints": "app q8 CLAP (scripts/embed-clap.mjs), first 10 s",
+ "judges": {
+  "existing": "train-with-extras.py real-recordings test groups for the instrument (Freesound-mined / FSD50K / FSL10K uploaders), unchanged since 2026-10-29",
+  "rwcHalf": "RWC players with sha256(\"half|rwc:\"+group) even; never trained; negatives are the other RWC wind and brass notes of that half; every note is longer than 2.25 s"
+ },
+ "shipRule": "precision >= 0.50 and recall >= 0.50 on every judge with >= 5 positives",
+ "heads": [
+  {
+   "label": "bassoon",
+   "uses": [
+    "fsm",
+    "tinysol",
+    "rwc"
+   ],
+   "C": 0.1,
+   "threshold": 0.935,
+   "existing": {
+    "before": {
+     "precision": 0.9167,
+     "recall": 0.4889,
+     "positives": 45,
+     "tp": 22,
+     "fp": 2,
+     "fn": 23
+    },
+    "after": {
+     "precision": 0.9333,
+     "recall": 0.6222,
+     "positives": 45,
+     "tp": 28,
+     "fp": 2,
+     "fn": 17
+    },
+    "shippedHead": {
+     "precision": 0.9167,
+     "recall": 0.7333,
+     "positives": 45,
+     "tp": 33,
+     "fp": 3,
+     "fn": 12,
+     "note": "not a fair yardstick: the shipped head was refit on these test rows (EXPORT)"
+    }
+   },
+   "rwcHalf": {
+    "shipped": {
+     "precision": 0.6803,
+     "recall": 0.8333,
+     "positives": 120,
+     "tp": 100,
+     "fp": 47,
+     "fn": 20
+    },
+    "before": {
+     "precision": 0.6429,
+     "recall": 0.825,
+     "positives": 120,
+     "tp": 99,
+     "fp": 55,
+     "fn": 21
+    },
+    "after": {
+     "precision": 0.6389,
+     "recall": 0.9583,
+     "positives": 120,
+     "tp": 115,
+     "fp": 65,
+     "fn": 5
+    },
+    "negatives": 763
+   },
+   "passes": true,
+   "result": "shipped (maybe removed)",
+   "coefficientDigest": "3295862953470791307e213187521b6f8226ab21770f14e1055dfceb74e11ce5",
+   "precision": 0.9333,
+   "recall": 0.6222,
+   "bindingJudge": "existing (the weaker of the two judges)",
+   "trainPositives": {
+    "before": 156,
+    "after": 368
+   },
+   "trainPositive": 368,
+   "testPositive": 45
+  },
+  {
+   "label": "flute",
+   "uses": [
+    "slakh",
+    "nsynth",
+    "processed",
+    "fsm",
+    "tinysol",
+    "rwc"
+   ],
+   "C": 0.1,
+   "threshold": 0.902,
+   "existing": {
+    "before": {
+     "precision": 0.7802,
+     "recall": 0.4522,
+     "positives": 157,
+     "tp": 71,
+     "fp": 20,
+     "fn": 86
+    },
+    "after": {
+     "precision": 0.8118,
+     "recall": 0.4395,
+     "positives": 157,
+     "tp": 69,
+     "fp": 16,
+     "fn": 88
+    },
+    "shippedHead": {
+     "precision": 0.6585,
+     "recall": 0.5159,
+     "positives": 157,
+     "tp": 81,
+     "fp": 42,
+     "fn": 76,
+     "note": "not a fair yardstick: the shipped head was refit on these test rows (EXPORT)"
+    }
+   },
+   "rwcHalf": {
+    "shipped": {
+     "precision": 0.7941,
+     "recall": 0.7714,
+     "positives": 35,
+     "tp": 27,
+     "fp": 7,
+     "fn": 8
+    },
+    "before": {
+     "precision": 0.5882,
+     "recall": 0.8571,
+     "positives": 35,
+     "tp": 30,
+     "fp": 21,
+     "fn": 5
+    },
+    "after": {
+     "precision": 0.7692,
+     "recall": 0.8571,
+     "positives": 35,
+     "tp": 30,
+     "fp": 9,
+     "fn": 5
+    },
+    "negatives": 848
+   },
+   "passes": false,
+   "result": "not shipped; head unchanged",
+   "trainPositives": {
+    "before": 856,
+    "after": 980
+   }
+  },
+  {
+   "label": "oboe",
+   "uses": [
+    "fsm",
+    "tinysol"
+   ],
+   "C": 2.0,
+   "threshold": 0.991,
+   "existing": {
+    "before": {
+     "precision": 1.0,
+     "recall": 0.0732,
+     "positives": 41,
+     "tp": 3,
+     "fp": 0,
+     "fn": 38
+    },
+    "after": {
+     "precision": 1.0,
+     "recall": 0.0732,
+     "positives": 41,
+     "tp": 3,
+     "fp": 0,
+     "fn": 38
+    },
+    "shippedHead": {
+     "precision": 0.9062,
+     "recall": 0.7073,
+     "positives": 41,
+     "tp": 29,
+     "fp": 3,
+     "fn": 12,
+     "note": "not a fair yardstick: the shipped head was refit on these test rows (EXPORT)"
+    }
+   },
+   "rwcHalf": {
+    "shipped": {
+     "precision": 0.1344,
+     "recall": 1.0,
+     "positives": 57,
+     "tp": 57,
+     "fp": 367,
+     "fn": 0
+    },
+    "before": {
+     "precision": 0.4113,
+     "recall": 0.8947,
+     "positives": 57,
+     "tp": 51,
+     "fp": 73,
+     "fn": 6
+    },
+    "after": {
+     "precision": 0.4113,
+     "recall": 0.8947,
+     "positives": 57,
+     "tp": 51,
+     "fp": 73,
+     "fn": 6
+    },
+    "negatives": 826
+   },
+   "passes": false,
+   "result": "not shipped; head unchanged",
+   "trainPositives": {
+    "before": 98,
+    "after": 98
+   }
+  }
+ ]
+}

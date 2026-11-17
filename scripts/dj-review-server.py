@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Local-only review service. Run from the project root: python3 scripts/dj-review-server.py."""
-import hashlib, json, os, re, secrets, shutil, subprocess, threading, time, tempfile
+import hashlib, json, os, re, secrets, subprocess, threading, time, tempfile
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote

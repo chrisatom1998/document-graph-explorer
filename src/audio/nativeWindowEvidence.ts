@@ -51,3 +51,11 @@ export function nativeScoreOutside(evidence: NativeWindowEvidence | undefined, c
   }
   return { score, unknown: !evidence.complete };
 }
+
+/** The window vote was measured on recordings up to 30 s (five 10 s windows at a 5 s hop); longer files keep the old rule,
+ * so a short burst of strings in a long song still shows. */
+export const SUSTAINED_VOTE_MAX_WINDOWS = 5;
+/** A sustained-sound head (minWindows) on a recording of minWindows to SUSTAINED_VOTE_MAX_WINDOWS scored windows needs
+ * that many firing windows. */
+export const sustainedHeadMissing = (minWindows: number | undefined, windows: number, evidence: NativeWindowEvidence | undefined) =>
+  !!minWindows && windows >= minWindows && windows <= SUSTAINED_VOTE_MAX_WINDOWS && (evidence?.windows.length ?? 0) < minWindows;

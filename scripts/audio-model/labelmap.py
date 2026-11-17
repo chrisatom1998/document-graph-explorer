@@ -11,6 +11,7 @@ A tag none of them covers is not an output: the app keeps its CLAP zero-shot sco
 
 # FSD50K class -> catalog labels. Parents (e.g. Guitar for Electric_guitar) are listed in FSD50K too, so a clip with
 # any mapped class is a positive and a clip with none is an absence.
+# Vocal shout includes screams and cheering (Chris, Nov 10 2026: "Screams cheers and crowd shouts are vocal shouts").
 FSD50K = {
     'Accordion': ['accordion'], 'Acoustic_guitar': ['acoustic guitar', 'guitar'], 'Electric_guitar': ['electric guitar', 'guitar'],
     'Guitar': ['guitar'], 'Bass_guitar': ['bass guitar'], 'Bell': ['bell'], 'Church_bell': ['bell'], 'Bowed_string_instrument': ['strings'],
@@ -20,14 +21,14 @@ FSD50K = {
     'Human_voice': ['voice'], 'Singing': ['voice'], 'Male_singing': ['voice'], 'Female_singing': ['voice'],
     'Speech': ['voice', 'spoken phrase'], 'Male_speech_and_man_speaking': ['voice', 'spoken phrase'],
     'Female_speech_and_woman_speaking': ['voice', 'spoken phrase'], 'Child_speech_and_kid_speaking': ['voice', 'spoken phrase'],
-    'Whispering': ['whisper', 'voice'], 'Shout': ['vocal shout', 'voice'], 'Yell': ['vocal shout', 'voice'], 'Screaming': ['vocal scream', 'voice'],
+    'Whispering': ['whisper', 'voice'], 'Shout': ['vocal shout', 'voice'], 'Yell': ['vocal shout', 'voice'], 'Screaming': ['vocal scream', 'vocal shout', 'voice'],
     'Laughter': ['vocal laugh'], 'Giggle': ['vocal laugh'], 'Chuckle_and_chortle': ['vocal laugh'], 'Gasp': ['vocal gasp'],
     'Breathing': ['breath', 'vocal breath'], 'Sigh': ['breath'],
     'Animal': ['animal sound'], 'Bird_vocalization_and_bird_call_and_bird_song': ['bird ambience', 'animal sound'],
     'Rain': ['rain ambience', 'environmental sound'], 'Raindrop': ['rain ambience'], 'Thunderstorm': ['rain ambience', 'environmental sound'],
     'Stream': ['water ambience', 'environmental sound'], 'Ocean': ['water ambience', 'environmental sound'],
     'Waves_and_surf': ['water ambience', 'environmental sound'], 'Trickle_and_dribble': ['water ambience'],
-    'Wind': ['wind ambience', 'environmental sound'], 'Crowd': ['crowd ambience'], 'Cheering': ['crowd ambience'], 'Applause': ['crowd ambience'],
+    'Wind': ['wind ambience', 'environmental sound'], 'Crowd': ['crowd ambience'], 'Cheering': ['crowd ambience', 'vocal shout'], 'Applause': ['crowd ambience'],
     'Siren': ['siren'], 'Whoosh_and_swoosh_and_swish': ['whoosh'], 'Scratching_(performance_technique)': ['vinyl scratch', 'turntable'],
     'Bass_drum': ['kick'], 'Snare_drum': ['snare'], 'Hi-hat': ['hi-hat'], 'Crash_cymbal': ['crash cymbal', 'cymbal'], 'Cymbal': ['cymbal'],
     'Clapping': ['clap'], 'Finger_snapping': ['finger snap'], 'Cowbell': ['cowbell'], 'Tambourine': ['tambourine'],

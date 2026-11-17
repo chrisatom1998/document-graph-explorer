@@ -63,7 +63,8 @@ function styleVector(audio: MusicAnalysis): Map<string, number> | undefined {
 /** What decides a sound-alike link: when both tracks have styles, the centered fingerprint cosine blended with
  * music-style agreement; otherwise the plain fingerprint cosine, offset to the same scale. Only used to choose
  * links; the link's strength and text keep the plain fingerprint similarity. */
-function soundAlikeScore(a: Features, b: Features): number | undefined {
+type Fingerprint = Pick<Features, 'vector' | 'centered' | 'styles'>;
+function soundAlikeScore(a: Fingerprint, b: Fingerprint): number | undefined {
   if (!a.vector || !b.vector || !a.centered || !b.centered) return;
   if (!a.styles || !b.styles) return cosine(a.vector, b.vector) - FINGERPRINT_ONLY_OFFSET;
   let style = 0;
@@ -176,6 +177,34 @@ function pairEdges(a: Features, b: Features, floor = SOUND_LINK_POLICY.floor): E
   const informative = labels.some(i => !GENERIC_LABELS.has(i.label) || i.weight >= .7);
   const corroborated = edges.some(e => e.kind === 'tempo' || e.kind === 'similar');
   return edges.filter(e => e.kind !== 'instrument' && e.kind !== 'sound' || informative || corroborated);
+}
+/** Only the parts of a track that the sound-alike score reads: much cheaper than `features` for a whole-library scan. */
+function fingerprint(node: DocNode): Fingerprint {
+  const audio = node.audio!;
+  const vector = unitVector(audio.embedding);
+  return { vector, centered: centeredVector(vector), styles: styleVector(audio) };
+}
+export interface SoundAlikeHit { id: string; score: number }
+/** "More like this" for a clip: every other clip in the library ranked by the same sound-alike score that picks the
+ * graph's sounds-alike links (CLAP fingerprint, blended with music styles on longer tracks), kept at or above the shipped
+ * link floor. Unlike the links, it is not capped at each track's 3 closest, so it shows the wider neighbourhood.
+ * No model runs here: it reuses the fingerprints analysis already stored. Undefined means the seed has no fingerprint.
+ * Like the links, only audio files count, and exact copies of the seed (the graph's duplicate version links in `edges`)
+ * are left out: a copy scores about 1 and would always rank first while telling you nothing new. */
+export function soundsLike(seedId: string, nodes: DocNode[], edges: Edge[] = [], limit = 12, floor = SOUND_LINK_POLICY.floor): SoundAlikeHit[] | undefined {
+  const seedNode = nodes.find(n => n.id === seedId && n.fileType === 'audio' && n.audio);
+  if (!seedNode) return;
+  const seed = fingerprint(seedNode);
+  if (!seed.vector) return;
+  const copies = new Set(edges.filter(e => (e.source === seedId || e.target === seedId) && versionRelation(e) === 'duplicate').map(e => e.source === seedId ? e.target : e.source));
+  const hits: SoundAlikeHit[] = [];
+  for (const node of nodes) {
+    if (node.id === seedId || node.fileType !== 'audio' || !node.audio?.embedding || copies.has(node.id)) continue;
+    const score = soundAlikeScore(seed, fingerprint(node));
+    if (score !== undefined && score >= floor) hits.push({ id: node.id, score });
+  }
+  hits.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+  return hits.slice(0, Math.max(1, limit));
 }
 export function musicPairEdges(a: DocNode, b: DocNode): Edge[] {
   if (a.fileType !== 'audio' || b.fileType !== 'audio' || !a.audio || !b.audio || a.id === b.id) return [];

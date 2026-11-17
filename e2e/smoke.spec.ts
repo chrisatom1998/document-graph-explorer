@@ -1,12 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
-import { advancedFilters, closeDetails, corpusCount, details, fitAll, openFiles, showFilters, startIn3D } from './resonance';
+import { advancedFilters, closeDetails, corpusCount, details, fitAll, openFiles, showFilters, startIn3D, waitForGraphReady } from './resonance';
 
 test.beforeEach(async ({ page }) => { page.setDefaultTimeout(30_000); });
-
-async function openLibrary(page: Page) {
-  const guide = page.getByRole('button', { name: 'Dismiss getting started' });
-  if (await guide.isVisible()) await guide.click();
-}
 
 // Console/page-error hygiene: the app funnels failures into toasts, so a
 // clean console AND no error toast together prove the run was healthy.
@@ -66,7 +61,7 @@ test('first run renders the empty state with a working WebGL scene', async ({ pa
   const errors = collectErrors(page);
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Find how sounds relate.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your sounds, mapped by how they sound.' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Load demo corpus' })).toBeVisible();
 
   // If WebGL context creation failed, the scene mounts a fallback section
@@ -83,22 +78,14 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await expect(page.locator('.webgl-fallback')).toHaveCount(0);
   await page.getByRole('button', { name: 'Load demo corpus' }).click();
 
-  // Pin the full demo count, then require the ready-only search action to
-  // be enabled before testing navigation and persistence.
+  // Pin the full demo count, then require the ready-only node/link summary
+  // before testing navigation and persistence.
   await expect(corpusCount(page)).toContainText('100 files', {
     timeout: 270_000,
   });
-  // Parsed nodes appear before embedding finishes. Apply the existing ingest
-  // budget to readiness too, rather than a 30-second UI-action budget.
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled({ timeout: 270_000 });
+  await waitForGraphReady(page, 270_000);
   await expect(page.locator('.nebula-canvas canvas')).toBeVisible();
 
-  // The getting-started tour reopens after a demo load; dismiss it so
-  // keyboard-driven steps below reach the app, not the tour's handlers.
-  const tour = page.getByRole('button', { name: 'Dismiss getting started' });
-  if (await tour.isVisible().catch(() => false)) {
-    await tour.click();
-  }
   await page.screenshot({ path: testInfo.outputPath('demo-graph.png') });
 
   // Selection path 1: the accessible graph navigator (pure DOM listbox) —
@@ -168,13 +155,38 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await page.locator('.rs-sidebar').getByRole('button', { name: /^Import(?: (?:Clips|Files),|$)/ }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/persistence.txt');
   await expect(corpusCount(page)).toContainText('101 files');
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
+  await waitForGraphReady(page, 150_000);
   await page.reload();
   await expect(corpusCount(page)).toContainText('101 files');
 
   // Hygiene: no console errors, no uncaught page errors, no error toasts.
   await expect(page.locator('.app-toast--error')).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test('search opens the demo reader as soon as the lexical graph is usable', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Load demo corpus' }).click();
+
+  // Search unlocks once titles, references and keywords are committed, before
+  // embeddings and semantic links finish. A fast machine may finish refining
+  // before the check, so the test only logs whether the search ran mid-ingest.
+  const status = page.locator('.rs-top__status');
+  const searchButton = page.getByRole('button', { name: 'Search documents' });
+  await expect(searchButton).toBeEnabled({ timeout: 270_000 });
+  const refiningAtMilestone = (await status.textContent()) === 'Refining connections…';
+
+  await searchButton.click();
+  const search = page.getByRole('dialog', { name: 'Search documents' });
+  await search.getByRole('combobox').fill('Postgres Performance Tuning Guide');
+  const result = search.getByRole('option', { name: /^Postgres Performance Tuning Guide/ });
+  await expect(result).toBeVisible();
+  const stillRefining = (await status.textContent()) === 'Refining connections…';
+  await result.click();
+  await expect(details(page)).toContainText('Postgres Performance Tuning Guide', { timeout: 150_000 });
+  console.log(JSON.stringify({ refiningAtMilestone, searchResultWhileRefining: stillRefining }));
+
+  await waitForGraphReady(page, 270_000);
 });
 
 test('normal-motion navigation and title-only Unicode search work after import', async ({ page }, testInfo) => {
@@ -219,7 +231,6 @@ test('search ranks within file filters before applying its result limit', async 
     node.fileType = index === 13 ? 'md' : 'txt';
   });
   await importGraphJson(page, JSON.stringify(graph));
-  await openLibrary(page);
   // File type is a sidebar checkbox list; the embedded Advanced panel no longer repeats it.
   await showFilters(page);
   // The native input is visually hidden behind a styled box, so drive the label.
@@ -236,7 +247,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
   test(`workspace controls remain usable at ${viewport.width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Add files', exact: true })).toBeInViewport();
+    await expect(page.getByRole('button', { name: /^Add your sounds\b/ })).toBeInViewport();
     await page.screenshot({ path: testInfo.outputPath('welcome.png') });
     // This filter scenario needs isolated nodes. Shared title phrases now
     // intentionally create relationships, so give each fixture a distinct title.
@@ -254,7 +265,6 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await expect(searchInput).toBeFocused();
     await searchInput.press('Escape');
     await expect(search).toBeHidden();
-    await openLibrary(page);
     await advancedFilters(page);
     await page.getByRole('button', { name: 'More filters' }).click();
     const minimum = page.getByRole('slider', { name: 'Minimum document connections' });
@@ -328,16 +338,29 @@ test('switching graph views does not leak WebGL contexts', async ({ page }) => {
   await page.goto('/');
   await importGraphJson(page, boundaryGraphJson(6));
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
-  // Let both views initialize their one-time graphics resources before
-  // checking that repeated switches do not allocate any more contexts.
-  await page.getByRole('button', { name: 'Switch to 2D view', exact: true }).click();
-  await page.getByRole('button', { name: 'Switch to 3D view', exact: true }).click();
-  const initialContexts = await page.evaluate(() => (window as typeof window & { graphWebglContexts: number }).graphWebglContexts);
+  const contexts = () => page.evaluate(() => (window as typeof window & { graphWebglContexts: number }).graphWebglContexts);
+  // Warm up: the sound map mounts the renderer after the import lands, and the label library probes WebGL
+  // support on a detached canvas once per font sheet as each view first draws its labels. Visit both views
+  // a few times, then wait until the count has stopped moving before taking the baseline.
+  for (let i = 0; i < 6; i++) {
+    await page.getByRole('button', { name: i % 2 ? 'Switch to 3D view' : 'Switch to 2D view', exact: true }).click();
+    await expect(page.getByRole('application', { name: i % 2 ? /Interactive 3D/ : /Interactive 2D/ })).toBeVisible();
+  }
+  await expect.poll(contexts).toBeGreaterThan(0);
+  let settled = await contexts();
+  await expect.poll(async () => {
+    await page.waitForTimeout(2000);
+    const now = await contexts();
+    const same = now === settled;
+    settled = now;
+    return same;
+  }, { timeout: 60_000 }).toBe(true);
+  const initialContexts = settled;
   for (let i = 0; i < 24; i++) {
     await page.getByRole('button', { name: i % 2 ? 'Switch to 3D view' : 'Switch to 2D view', exact: true }).click();
     await expect(page.getByRole('application', { name: i % 2 ? /Interactive 3D/ : /Interactive 2D/ })).toBeVisible();
   }
-  expect(await page.evaluate(() => (window as typeof window & { graphWebglContexts: number }).graphWebglContexts)).toBe(initialContexts);
+  expect(await contexts()).toBe(initialContexts);
   await expect(page.getByRole('heading', { name: 'Resonance stopped rendering.' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });

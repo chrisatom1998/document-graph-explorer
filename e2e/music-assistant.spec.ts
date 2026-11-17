@@ -15,8 +15,6 @@ test('integrated music assistant preserves the classic graph and works on mobile
     Object.defineProperty(element, 'files', { configurable: true, value: files.files }); element.dispatchEvent(new Event('change', { bubbles: true }));
   }, fixture);
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
-  const guide = page.getByRole('button', { name: 'Dismiss getting started' });
-  if (await guide.isVisible()) await guide.click();
   await page.getByRole('button', { name: /Sample assistant/ }).click();
   const dialog = page.getByRole('dialog', { name: 'Find your next sound.' });
   await expect(dialog).toBeVisible();

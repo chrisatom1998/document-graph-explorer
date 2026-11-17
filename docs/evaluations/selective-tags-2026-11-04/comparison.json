@@ -1,0 +1,234 @@
+{
+  "sources": [
+    {
+      "repo": "cmjatom/dge-all-tags-tagger-nc",
+      "revision": "410638ae8e38766f1647af233157a0c0c95da96a",
+      "path": "eval.json"
+    },
+    {
+      "repo": "cmjatom/dge-sound-tag-candidate",
+      "revision": "59a3370c0c236c337e202c8cad0d7476c711db05",
+      "path": "drums-any-r1/eval.json"
+    }
+  ],
+  "rows": [
+    {
+      "tag": "piano",
+      "output": "piano",
+      "split": "eval-round1",
+      "view": "all",
+      "baseline": {
+        "precision": 1.0,
+        "recall": 0.957,
+        "truePositives": 22,
+        "falseDetections": 0,
+        "positives": 23,
+        "negatives": 12,
+        "enabled": true
+      },
+      "candidate": {
+        "precision": 1.0,
+        "recall": 0.957,
+        "truePositives": 22,
+        "falseDetections": 0,
+        "positives": 23,
+        "negatives": 12,
+        "enabled": true
+      }
+    },
+    {
+      "tag": "piano",
+      "output": "piano",
+      "split": "eval-round2",
+      "view": "all",
+      "baseline": {
+        "precision": 0.933,
+        "recall": 0.933,
+        "truePositives": 14,
+        "falseDetections": 1,
+        "positives": 15,
+        "negatives": 17,
+        "enabled": true
+      },
+      "candidate": {
+        "precision": 0.929,
+        "recall": 0.867,
+        "truePositives": 13,
+        "falseDetections": 1,
+        "positives": 15,
+        "negatives": 17,
+        "enabled": true
+      }
+    },
+    {
+      "tag": "piano",
+      "output": "piano",
+      "split": "holdout-r3",
+      "view": "strict",
+      "baseline": {
+        "precision": 1.0,
+        "recall": 0.871,
+        "truePositives": 122,
+        "falseDetections": 0,
+        "positives": 140,
+        "negatives": 0,
+        "enabled": true
+      },
+      "candidate": {
+        "precision": 1.0,
+        "recall": 0.686,
+        "truePositives": 96,
+        "falseDetections": 0,
+        "positives": 140,
+        "negatives": 0,
+        "enabled": true
+      }
+    },
+    {
+      "tag": "glockenspiel",
+      "output": "cat:glockenspiel",
+      "split": "eval-fsd50k",
+      "view": "all",
+      "baseline": {
+        "precision": 0.82,
+        "recall": 0.683,
+        "truePositives": 41,
+        "falseDetections": 9,
+        "positives": 60,
+        "negatives": 4824,
+        "enabled": true
+      },
+      "candidate": {
+        "precision": 0.774,
+        "recall": 0.8,
+        "truePositives": 48,
+        "falseDetections": 14,
+        "positives": 60,
+        "negatives": 4824,
+        "enabled": true
+      }
+    },
+    {
+      "tag": "vinyl scratch",
+      "output": "cat:turntable",
+      "split": "eval-fsd50k",
+      "view": "all",
+      "baseline": {
+        "precision": 0.727,
+        "recall": 0.842,
+        "truePositives": 32,
+        "falseDetections": 12,
+        "positives": 38,
+        "negatives": 4846,
+        "enabled": true
+      },
+      "candidate": {
+        "precision": 0.857,
+        "recall": 0.632,
+        "truePositives": 24,
+        "falseDetections": 4,
+        "positives": 38,
+        "negatives": 4846,
+        "enabled": true
+      }
+    },
+    {
+      "tag": "machine ambience",
+      "output": "cat:machine ambience",
+      "split": "eval-fsd50k",
+      "view": "all",
+      "baseline": {
+        "precision": 0.614,
+        "recall": 0.508,
+        "truePositives": 153,
+        "falseDetections": 96,
+        "positives": 301,
+        "negatives": 4583,
+        "enabled": true
+      },
+      "candidate": {
+        "precision": 0.662,
+        "recall": 0.495,
+        "truePositives": 149,
+        "falseDetections": 76,
+        "positives": 301,
+        "negatives": 4583,
+        "enabled": true
+      }
+    },
+    {
+      "tag": "vocal shout",
+      "output": "cat:vocal shout",
+      "split": "eval-fsd50k",
+      "view": "all",
+      "baseline": {
+        "precision": 0.471,
+        "recall": 0.232,
+        "truePositives": 16,
+        "falseDetections": 18,
+        "positives": 69,
+        "negatives": 4815,
+        "enabled": true
+      },
+      "candidate": {
+        "precision": 0.373,
+        "recall": 0.362,
+        "truePositives": 25,
+        "falseDetections": 42,
+        "positives": 69,
+        "negatives": 4815,
+        "enabled": true
+      }
+    },
+    {
+      "tag": "bell",
+      "output": "cat:bell",
+      "split": "eval-fsd50k",
+      "view": "all",
+      "baseline": {
+        "precision": 0.718,
+        "recall": 0.617,
+        "truePositives": 127,
+        "falseDetections": 50,
+        "positives": 206,
+        "negatives": 4678,
+        "enabled": true
+      },
+      "candidate": {
+        "precision": 0.717,
+        "recall": 0.602,
+        "truePositives": 124,
+        "falseDetections": 49,
+        "positives": 206,
+        "negatives": 4678,
+        "enabled": true
+      }
+    },
+    {
+      "tag": "foley",
+      "output": "cat:foley",
+      "split": "eval-fsd50k",
+      "view": "all",
+      "baseline": {
+        "precision": 0.714,
+        "recall": 0.626,
+        "truePositives": 478,
+        "falseDetections": 191,
+        "positives": 763,
+        "negatives": 4121,
+        "enabled": true
+      },
+      "candidate": {
+        "precision": 0.703,
+        "recall": 0.659,
+        "truePositives": 503,
+        "falseDetections": 212,
+        "positives": 763,
+        "negatives": 4121,
+        "enabled": true
+      }
+    }
+  ],
+  "approvedOutputs": [],
+  "status": "blocked pending independent paired evaluation and provenance audit"
+}

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { autoDismissTour, openFiles } from './resonance';
+import { openFiles } from './resonance';
 
 // These tiny metadata fixtures run no inference. Report blocked controls
 // promptly instead of inheriting the multi-minute OCR/embedding budgets.
@@ -63,7 +63,6 @@ async function seedPrivateWorkspace(page: Page): Promise<void> {
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('knowledge-nebula-dims', '2'));
-  await autoDismissTour(page);
 });
 
 test('opens a shared graph on startup and replaces it on live hash navigation without mixing saved data', async ({ page }) => {

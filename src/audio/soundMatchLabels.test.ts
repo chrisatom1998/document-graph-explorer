@@ -58,6 +58,8 @@ describe('cymbal reviews in sound match labels', () => {
     expect(soundMatchLabels(node)).toEqual([
       { group: 'production', label: 'kick', origin: 'sounds', weight: .7 },
       { group: 'character', label: 'bright', origin: 'maybe', weight: .55 },
+      // The kick also shows the drums umbrella (Chris, 2026-10-31).
+      { group: 'source', label: 'drums', origin: 'sounds', weight: .7 },
       { group: 'production', label: 'ride cymbal', origin: 'guess', weight: .4 },
     ]);
   });

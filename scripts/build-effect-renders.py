@@ -39,7 +39,7 @@ rms = lambda x: float(np.sqrt(np.mean(x ** 2)) + 1e-9)
 
 def distort(x, r):
     kind = r.choice(['drive', 'clip', 'crush'])
-    if kind == 'drive': return np.tanh(x / (np.abs(x).max() + 1e-9) * 10 ** (r.uniform(6, 24) / 20)), f'drive'
+    if kind == 'drive': return np.tanh(x / (np.abs(x).max() + 1e-9) * 10 ** (r.uniform(6, 24) / 20)), 'drive'
     if kind == 'clip':
         t = np.abs(x).max() * r.uniform(.05, .25); return np.clip(x, -t, t), 'clip'
     bits, hold = r.choice([4, 5, 6]), r.choice([2, 4, 6])

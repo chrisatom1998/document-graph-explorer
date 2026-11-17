@@ -5,7 +5,7 @@ import { removeDocuments } from '../pipeline/coordinator';
 import { useUiStore } from '../store/uiStore';
 import { openDocument } from './openDocument';
 import { startCompare } from './openCompare';
-import { showSimilarTo } from './showSimilar';
+import { showSimilarTo, showSoundsLike } from './showSimilar';
 import CloseButton from './CloseButton';
 
 interface SidePanelHeaderProps {
@@ -32,7 +32,7 @@ export default function SidePanelHeader({
   const pushToast = useUiStore((s) => s.pushToast);
   const isDocument = node.kind === 'document';
   const isTopic = node.kind === 'topic';
-  // Clips get Open and Remove only: Mix with already lists similar tracks, and Compare reads text.
+  // Clips skip Compare (it reads text). Their More like this ranks by sound fingerprint, wider than Mix with's links.
   const isAudio = node.fileType === 'audio';
 
   return (
@@ -73,11 +73,17 @@ export default function SidePanelHeader({
       {node.path && <p className="workspace-file-path" title={node.path}>{node.path}</p>}
       {isDocument && (
         <div className="side-panel__header-actions">
-          {!isAudio && <button
+          <button
             type="button"
             className="side-panel__open-btn"
-            title="Highlight documents similar to this one in the graph"
+            title={isAudio ? 'Highlight clips that sound like this one in the graph' : 'Highlight documents similar to this one in the graph'}
             onClick={() => {
+              if (isAudio) {
+                const count = showSoundsLike(node.id);
+                if (count === undefined) pushToast('This clip has no sound fingerprint yet. Try again when analysis finishes.', 'info');
+                else if (count === 0) pushToast('No clips in this library sound close enough to this one', 'info');
+                return;
+              }
               const count = showSimilarTo(node.id);
               if (count === 0) {
                 pushToast('No similar documents in this corpus', 'info');
@@ -85,7 +91,7 @@ export default function SidePanelHeader({
             }}
           >
             More like this
-          </button>}
+          </button>
           {!isAudio && <button
             type="button"
             className="side-panel__open-btn"

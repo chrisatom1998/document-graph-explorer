@@ -29,11 +29,10 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
    Object.defineProperty(element,'files',{configurable:true,value:transfer.files});element.dispatchEvent(new Event('change',{bubbles:true}));
   },contents);
   await expect(page.getByRole('button',{name:'Search documents'})).toBeEnabled();
-  const guide=page.getByRole('button',{name:'Dismiss getting started'});if(await guide.isVisible())await guide.click();
  };
  const openAlpha=async()=>{
   await page.getByRole('button',{name:'Search documents'}).click();
-  await page.getByRole('option',{name:/Alpha piano/}).click();
+  await page.getByRole('dialog',{name:'Search documents'}).getByRole('option',{name:/Alpha piano/}).first().click();
   await expect(page.locator('.audio-preview')).toBeVisible();
  };
  // Clips have no Connections disclosure: the inspector explains one connected clip at a time,
@@ -77,8 +76,10 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  await fitAll(page);
  await page.screenshot({path:testInfo.outputPath('audio-graph-desktop.png')});
  // Link kinds are a sidebar checkbox now; the embedded Advanced panel no longer repeats them.
- await similarityFilter(page,'Sound properties');
+ // Every present kind starts ticked (no filter), so untick first to hide that kind, then
+ // tick it back to clear the filter; ticking first would be a no-op under these semantics.
  await similarityFilter(page,'Sound properties',false);
+ await similarityFilter(page,'Sound properties');
  await advancedFilters(page);
  await expect(page.getByRole('button',{name:'More filters',exact:true})).toBeVisible();
  await advancedFilters(page,false);

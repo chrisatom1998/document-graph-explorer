@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { confidentSoundSummary, FULL_MIX_JAMENDO_SCORE } from './confidentSoundSummary';
+import { confidentSoundSummary as fullSummary, FULL_MIX_JAMENDO_SCORE } from './confidentSoundSummary';
 import { createRecognition, recordEvidence } from './recognition';
 import { sanitizeMusicAnalysis, type MusicAnalysis } from './musicTypes';
-import { TAGGER_REVISION } from './tagger';
+import { TAGGER_POLICY, TAGGER_REVISION, type TaggerTrust } from './tagger';
 import { DjTagEvidence, selectDjTags } from './djTags';
 import { mergeDjTags } from './djClassification';
 import { FULL_MIX_REVISION, FullMixEvidence, type FullMixModel } from './fullMixHeads';
@@ -10,14 +10,18 @@ import { NATIVE_WINDOW_EVIDENCE_LIMIT, nativeScoreOutside, sanitizeNativeWindowE
 import { DescriptionAccumulator, type DescriptionScore } from './profileDescriptions';
 import { combineSoundModels } from './ensemble';
 
+// These tests use rain ambience as the example effect; its "ambience" umbrella (Chris, 2026-11-01) copies the child's
+// tier and coverage and is checked once below, so the coverage cases look at the child tags only.
+const confidentSoundSummary = (a: MusicAnalysis) => fullSummary(a).filter(s => !(s.dimension === 'effect' && s.label === 'ambience'));
 type Interval = { start: number; end: number };
 const middle = [{ start: 75, end: 85 }, { start: 85, end: 95 }, { start: 95, end: 105 }];
 function audio(durationSeconds = 180, intervals: Interval[] | undefined = middle, windows = 3): MusicAnalysis {
   return {
     version: 2, durationSeconds, analyzedSeconds: Math.min(durationSeconds, 60), instruments: [], notes: [],
     soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false, djTags: [] },
-    tagger: { revision: TAGGER_REVISION, windows, scores: { 'cat:rain ambience': 0, piano: 0, drums: 0, cymbals: 0 },
-      ...(intervals ? { intervals } : {}) },
+    tagger: { revision: TAGGER_REVISION, windows, scores: { 'cat:rain ambience': 0, piano: 0, 'cat:drums': 0, 'cat:cymbal': 0 },
+      // Per-window scores, which drums' long-recording rule (2 windows) reads.
+      windowScores: { 'cat:drums': Array(windows).fill(0) }, ...(intervals ? { intervals } : {}) },
   };
 }
 function native(a: MusicAnalysis, label: string, segments?: Interval[], group: 'source' | 'production' = 'production') {
@@ -30,6 +34,12 @@ function native(a: MusicAnalysis, label: string, segments?: Interval[], group: '
 }
 const shown = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => `${s.dimension}:${s.label}`);
 
+/** Coverage mechanics under the default trust: drums itself has trust 'both' (a tagger "no" stands for the whole recording). */
+function withDefaultDrumsTrust(run: () => void) {
+  const drums = TAGGER_POLICY.tags.find(t => t.output === 'cat:drums')!, before = drums.trust;
+  delete drums.trust;
+  try { run(); } finally { if (before) drums.trust = before; }
+}
 describe('tagger coverage in the displayed sounds', () => {
   it.each([[0, 10], [170, 180]])('keeps a native effect at %s–%s s outside the tagger excerpt', (start, end) => {
     expect(shown(native(audio(), 'rain ambience', [{ start, end }]))).toEqual(['effect:rain ambience']);
@@ -40,15 +50,32 @@ describe('tagger coverage in the displayed sounds', () => {
   it('keeps a native window that only partly overlaps the sampled excerpt', () => {
     expect(shown(native(audio(), 'rain ambience', [{ start: 70, end: 80 }]))).toEqual(['effect:rain ambience']);
   });
-  it('keeps an instrument in the unsampled tail of a 19.9 s clip', () => {
-    const a = native(audio(19.9, [{ start: 0, end: 10 }], 1), 'piano', [{ start: 9.9, end: 19.9 }], 'source');
-    expect(shown(a)).toEqual(['source:piano']);
+  it('keeps an instrument in the unsampled tail of a 19.9 s clip (default trust)', () => {
+    const piano = TAGGER_POLICY.tags.find(t => t.output === 'piano')!, before = piano.trust;
+    delete piano.trust;
+    try {
+      const a = native(audio(19.9, [{ start: 0, end: 10 }], 1), 'piano', [{ start: 9.9, end: 19.9 }], 'source');
+      expect(shown(a)).toEqual(['source:piano']);
+    } finally { if (before) piano.trust = before; }
   });
-  it('uses the score supported outside coverage, without reviving a stronger score from inside it', () => {
+  it("needs the tagger to agree on piano in a 10-20 s clip (trust 'both', docs/evaluations/piano-agree-2026-11-07)", () => {
+    expect(TAGGER_POLICY.tags.find(t => t.output === 'piano')!.trust).toBe('both');
+    const a = native(audio(19.9, [{ start: 0, end: 10 }], 1), 'piano', [{ start: 9.9, end: 19.9 }], 'source');
+    expect(shown(a)).toEqual([]);
+    const b = native(audio(19.9, [{ start: 0, end: 10 }], 1), 'piano', [{ start: 9.9, end: 19.9 }], 'source');
+    b.tagger!.scores.piano = .9;
+    expect(shown(b)).toEqual(['source:piano']);
+  });
+  it('uses the score supported outside coverage, without reviving a stronger score from inside it', () => withDefaultDrumsTrust(() => {
     const a = audio(); a.recognition = createRecognition(180, 'full');
     recordEvidence(a.recognition, 'jamendo', { start: 0, end: 10 }, [{ dimension: 'source', labelId: 'drum kit', score: .55 }]);
     recordEvidence(a.recognition, 'jamendo', { start: 75, end: 85 }, [{ dimension: 'source', labelId: 'drum kit', score: .99 }]);
     expect(confidentSoundSummary(a)).toMatchObject([{ label: 'drums', scores: [{ model: FULL_MIX_JAMENDO_SCORE, score: .55 }] }]);
+  }));
+  it("drops drums the tagger did not hear, outside its excerpt too (trust 'both', reports/drums-precision-2026-11-10)", () => {
+    const a = audio(); a.recognition = createRecognition(180, 'full');
+    recordEvidence(a.recognition, 'jamendo', { start: 0, end: 10 }, [{ dimension: 'source', labelId: 'drum kit', score: .99 }]);
+    expect(confidentSoundSummary(a)).toEqual([]);
   });
   it('keeps the full-coverage 30 s display policy unchanged', () => {
     const a = native(audio(30, [{ start: 0, end: 10 }, { start: 10, end: 20 }, { start: 20, end: 30 }]), 'rain ambience');
@@ -148,7 +175,7 @@ describe('coverage from the real native accumulators', () => {
     recordEvidence(a.recognition, 'clap', { start: 0, end: 10 }, [{ dimension: 'effect', labelId: 'rain ambience', score: .8 }]);
     expect(confidentSoundSummary(a)).toEqual([{ dimension: 'effect', label: 'rain ambience', origin: 'model estimate', tier: 'possible', coverageUnknown: true }]);
   });
-  it('recomputes the existing full-mix aggregation from actual outside probabilities', () => {
+  it('recomputes the existing full-mix aggregation from actual outside probabilities', () => withDefaultDrumsTrust(() => {
     const weights = Array(513).fill(0); weights[512] = 1;
     const model: FullMixModel = { version: 1, revision: FULL_MIX_REVISION!, inputs: { clap: 512, ast: ['drums'], jamendo: [] }, aggregation: { top: 2 },
       heads: [{ label: 'drums', weights, bias: 0, threshold: .5 }] };
@@ -160,7 +187,7 @@ describe('coverage from the real native accumulators', () => {
     const saved = sanitizeMusicAnalysis(a)!;
     expect(saved.fullMix?.labels[0].windowEvidence).toEqual(a.fullMix!.labels[0].windowEvidence);
     expect(confidentSoundSummary(saved)).toMatchObject([{ label: 'drums', scores: [{ model: 'Full-mix head score', score: .55 }] }]);
-  });
+  }));
   it('bounds accumulated scored windows and marks omitted evidence incomplete', () => {
     const a = accumulated(Array.from({ length: NATIVE_WINDOW_EVIDENCE_LIMIT + 1 }, (_, i) => [i * 5, i * 5 + 10, .9]));
     a.durationSeconds = 900;
@@ -228,17 +255,17 @@ describe('cymbal aliases across source and effect dimensions', () => {
     expect(shown(cymbal())).toEqual([]);
   });
   it('shows one canonical label when both the native and tagger detectors report cymbals', () => {
-    const a = cymbal(); a.tagger!.scores.cymbals = 1;
+    const a = cymbal(); a.tagger!.scores['cat:cymbal'] = 1;
     expect(confidentSoundSummary(a)).toMatchObject([{ dimension: 'source', label: 'cymbals', scores: [{ model: 'Trained tagger score', score: 1 }] }]);
     expect(shown(a)).toEqual(['source:cymbals']);
   });
   it.each(['rejected', 'uncertain'] as const)('respects a listener %s decision on the effect alias', decision => {
-    const a = cymbal(); a.tagger!.scores.cymbals = 1;
+    const a = cymbal(); a.tagger!.scores['cat:cymbal'] = 1;
     a.soundReviews = [{ dimension: 'effect', labelId: 'cymbal', decision, scope: 'track', at: 'now', evidenceRunId: 'r' }];
     expect(shown(a)).toEqual([]);
   });
   it('keeps a confirmed effect alias without adding a duplicate source estimate', () => {
-    const a = cymbal(); a.tagger!.scores.cymbals = 1;
+    const a = cymbal(); a.tagger!.scores['cat:cymbal'] = 1;
     a.soundReviews = [{ dimension: 'effect', labelId: 'cymbal', decision: 'confirmed', scope: 'track', at: 'now', evidenceRunId: 'r' }];
     expect(confidentSoundSummary(a)).toEqual([{ dimension: 'effect', label: 'cymbal', origin: 'confirmed by you' }]);
   });
@@ -287,5 +314,53 @@ describe('a merged-away label folding into a tagger-decided tag', () => {
     a.tagger!.scores['cat:foley'] = 1;
     expect(shown(a).filter(s => s === 'source:foley')).toHaveLength(1);
     expect(shown(a)).not.toContain('effect:foley hit');
+  });
+});
+it('the ambience umbrella carries the child tag\'s tier and unknown coverage', () => {
+  const a = native(audio(180, undefined, 2), 'rain ambience');
+  const [child, umbrella] = fullSummary(a);
+  expect(child).toMatchObject({ label: 'rain ambience' });
+  expect(umbrella).toEqual({ ...child, label: 'ambience' });
+});
+
+describe('per-tag trust (taggerPolicy trust)', () => {
+  const withTrust = <T>(output: string, trust: TaggerTrust | undefined, run: () => T): T => {
+    const tag = TAGGER_POLICY.tags.find(t => t.output === output)!, before = tag.trust;
+    if (trust) tag.trust = trust; else delete tag.trust;
+    try { return run(); } finally { if (before) tag.trust = before; else delete tag.trust; }
+  };
+  // A 15 s clip: the tagger hears 0-10 s only, a native rain detection sits in the unheard tail.
+  const tail = (taggerScore: number) => {
+    const a = native(audio(15, [{ start: 0, end: 10 }], 1), 'rain ambience', [{ start: 10, end: 15 }]);
+    a.tagger!.scores['cat:rain ambience'] = taggerScore; return a;
+  };
+  it("default keeps a native positive in the unheard tail of a short clip", () => {
+    expect(withTrust('cat:rain ambience', undefined, () => shown(tail(0)))).toEqual(['effect:rain ambience']);
+  });
+  it("'sole' lets the tagger's no stand for the whole clip up to 30 s", () => {
+    expect(withTrust('cat:rain ambience', 'sole', () => shown(tail(0)))).toEqual([]);
+    expect(withTrust('cat:rain ambience', 'sole', () => shown(tail(.99)))).toEqual(['effect:rain ambience']);
+  });
+  it("'sole' does not reach past 30 s, where the tagger only hears the middle", () => {
+    expect(withTrust('cat:rain ambience', 'sole', () => shown(native(audio(), 'rain ambience', [{ start: 0, end: 10 }])))).toEqual(['effect:rain ambience']);
+  });
+  it("'either' keeps a native positive inside the excerpt when the tagger says no", () => {
+    const inside = () => shown(native(audio(), 'rain ambience', [{ start: 75, end: 85 }]));
+    expect(withTrust('cat:rain ambience', undefined, inside)).toEqual([]);
+    expect(withTrust('cat:rain ambience', 'either', inside)).toEqual(['effect:rain ambience']);
+  });
+  it("'both' needs the tagger and the other detectors to agree", () => {
+    const clip = (nativeToo: boolean) => { const a = audio(8, [{ start: 0, end: 8 }], 1); a.tagger!.scores['cat:rain ambience'] = .99; return nativeToo ? native(a, 'rain ambience') : a; };
+    expect(withTrust('cat:rain ambience', 'both', () => shown(clip(false)))).toEqual([]);
+    expect(withTrust('cat:rain ambience', 'both', () => shown(clip(true)))).toEqual(['effect:rain ambience']);
+  });
+});
+
+describe("'both' when the tagger says no", () => {
+  it('drops a native positive in the unheard tail too', () => {
+    const tag = TAGGER_POLICY.tags.find(t => t.output === 'cat:rain ambience')!, before = tag.trust;
+    tag.trust = 'both';
+    try { expect(shown(native(audio(15, [{ start: 0, end: 10 }], 1), 'rain ambience', [{ start: 10, end: 15 }]))).toEqual([]); }
+    finally { if (before) tag.trust = before; else delete tag.trust; }
   });
 });

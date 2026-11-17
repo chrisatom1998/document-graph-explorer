@@ -5,7 +5,7 @@ is never heard with an effect in testing. 20% of notes are held out from fitting
 threshold choice. Heads are exported in the exact form learnedDjModel.ts evaluates:
 logit = bias + sum(w_i * v_i / |v|), shown when sigmoid(logit) >= threshold (0.5..1).
 Usage: train-effect-heads.py <manifest.json> <embeddings dir> <out dir>"""
-import json, sys, glob, hashlib, datetime, os
+import json, sys, glob, datetime, os
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GroupKFold, GroupShuffleSplit

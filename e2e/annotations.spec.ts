@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { closeDetails, corpusCount, details } from './resonance';
+import { closeDetails, corpusCount, details, waitForGraphReady } from './resonance';
 
 test('competing tabs retain committed notes and deletion versions when an older save retries', async ({ page, context }) => {
   // This checks persistence across two active tabs; software-rendering two
@@ -9,16 +9,16 @@ test('competing tabs retain committed notes and deletion versions when an older 
   await page.goto('/');
   await page.getByRole('button', { name: 'Load demo corpus' }).click();
   await expect(corpusCount(page)).toContainText('100 files', { timeout: 270_000 });
+  await waitForGraphReady(page, 270_000);
   const restoredCount = async (tab: Page) => {
     await expect(corpusCount(tab)).toContainText('100 files', { timeout: 150_000 });
     await closeDetails(tab);
   };
   const openNote = async (tab: Page) => {
-    const tour = tab.getByRole('button', { name: 'Dismiss getting started' });
-    if (await tour.isVisible()) await tour.click();
     await tab.getByRole('button', { name: 'Search documents', exact: true }).click();
     await tab.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('Postgres Performance Tuning Guide');
-    await tab.getByRole('option', { name: /^Postgres Performance Tuning Guide/ }).click();
+    // The library column lists the same document, so pick the search result, not the library row.
+    await tab.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /Postgres Performance Tuning Guide/ }).first().click();
     await expect(details(tab)).toBeVisible({ timeout: 150_000 });
     await tab.getByRole('button', { name: 'About', exact: true }).click();
     await expect(tab.getByRole('textbox', { name: 'Document note' })).toBeVisible();

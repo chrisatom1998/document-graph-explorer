@@ -66,7 +66,7 @@ describe('side-by-side model families', () => {
       if (kind === 'rhythm' || kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: Math.min(60, duration), instruments: [], notes: [] } as T;
       if (kind === 'instruments') return { scores: { piano: .6 + n * .3, guitar: .4 + n * .2 }, musicScore: .9 } as T;
       if (kind === 'jamendo') return { synthesizer: .5 + n * .3, drums: .3 + n / 3 } as T;
-      if (kind === 'tagger') return { drums: .8, piano: .2, 'cat:reverse effect': .75 } as T;
+      if (kind === 'tagger') return { 'cat:drums': .8, piano: .2, 'cat:reverse effect': .75 } as T;
       return [{group:'source',label:'piano',score:.5 + n * .2}] as T;
     };
     return { run: () => analyzeDecodedMusic(decoder, request, options), stats: () => ({ maxActive, maxReads, familyOverlap }) };
@@ -107,7 +107,7 @@ describe('side-by-side model families', () => {
       if (message.kind === 'tagger') {
         expect(activeHeavy).toBeGreaterThan(0);
         release();
-        return { drums: .8 } as T;
+        return { 'cat:drums': .8 } as T;
       }
       if (message.kind === 'instruments') return { scores: { piano: .9 }, musicScore: .8 } as T;
       if (message.kind === 'profile') return [] as T;
@@ -119,7 +119,7 @@ describe('side-by-side model families', () => {
       mode: 'full', tagger: true, concurrentModels: true, onPreview: observe, onPartial: observe,
     });
     expect(previews).toBeGreaterThan(0);
-    expect(result.tagger?.scores.drums).toBe(.8);
+    expect(result.tagger?.scores['cat:drums']).toBe(.8);
     expect(result.recognition?.status).toBe('complete');
   });
 
@@ -133,7 +133,7 @@ describe('side-by-side model families', () => {
       if (message.kind === 'tagger') {
         controller.abort();
         await tagger;
-        return { drums: .9 } as T;
+        return { 'cat:drums': .9 } as T;
       }
       if (message.kind === 'instruments') return { scores: {}, musicScore: 0 } as T;
       if (message.kind === 'profile') return [] as T;

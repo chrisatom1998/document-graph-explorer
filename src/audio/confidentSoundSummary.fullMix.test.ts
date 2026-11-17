@@ -1,6 +1,7 @@
 import {beforeEach,expect,it,vi} from 'vitest';
 import {FUSION_LABELS,type FusionDecision} from './fusion';
 import type {MusicAnalysis} from './musicTypes';
+import {TAGGER_POLICY,TAGGER_REVISION} from './tagger';
 
 // The fusion release check is covered in fusionPresentation.test.ts; here every window counts as qualified.
 const windows:{start:number;end:number;status:'complete';decisions:FusionDecision[]}[]=[];
@@ -48,4 +49,10 @@ it('lets the fusion voice head veto other voice estimates on full mixes',()=>{
  // A voice the user confirmed is never hidden.
  const confirmed={...sung(30,.01),soundReviews:[{dimension:'source',labelId:'voice',decision:'confirmed'}]} as unknown as MusicAnalysis;
  expect(shown(confirmed)).toEqual(['voice']);
+ // The tagger decides voice through its 30 s handoff, so the veto leaves it alone; after that the detectors (and the veto) decide.
+ const voiceTag=TAGGER_POLICY.tags.find(t=>t.output==='cat:voice')!;
+ const tagged=(duration:number)=>({...sung(duration,.01),tagger:{revision:TAGGER_REVISION,windows:Math.ceil(duration/30),scores:{'cat:voice':voiceTag.threshold}}}) as unknown as MusicAnalysis;
+ expect(shown(tagged(10))).toEqual(['voice']);
+ expect(shown(tagged(30))).toEqual(['voice']);
+ expect(shown(tagged(31))).toEqual([]);
 });

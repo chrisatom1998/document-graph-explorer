@@ -27,6 +27,7 @@ import { createMusicCacheContext } from '../audio/musicAnalysisCache';
 import { INSTRUMENT_LABELS } from '../audio/instrumentLabels';
 import { sanitizeSoundReviews, type SoundReview } from '../audio/recognition';
 import { canonicalReviewLabel, latestSoundReview } from '../audio/soundReviewIdentity';
+import { sanitizeSoundTagFixes, SOUND_TAG_FIX_LIMIT, type SoundTagFix } from '../audio/soundTagFixes';
 import { getOriginal } from '../persistence/originals';
 import {
   DUP_SIM_THRESHOLD,
@@ -128,6 +129,7 @@ import {
 import { addToSemanticIndex, edgesFromIndex, type SemanticIndex } from './similarity';
 import { synthesizeTopicNodes } from './topicNodes';
 import { selectFallbackTopics } from './topics';
+import { createAudioDemoFiles } from '../demo/audioDemo';
 import { createGeneratedDemoDocuments } from '../demo/generatedDocuments';
 import { fetchDemoManifest } from '../demo/manifest';
 
@@ -340,6 +342,13 @@ const audioAnalysisOwners = new Map<string, symbol>();
 
 function ownsAudioAnalysis(id: string, owner: symbol, epoch: number): boolean {
   return corpusEpoch === epoch && audioAnalysisOwners.get(id) === owner;
+}
+
+/** A preview must not overwrite a finished analysis. A cancelled run is not
+ * finished: it carries no new evidence, so the next run's preview replaces it
+ * instead of leaving "Analysis: cancelled" up while that run is in progress. */
+function previewMayReplace(audio: DocNode['audio']): boolean {
+  return !audio || audio.stage === 'preview' || audio.recognition?.status === 'cancelled';
 }
 
 let modelProgressWired = false;
@@ -887,6 +896,7 @@ async function runIngestBodyInner(
   // (e) lexical aggregation over the WHOLE corpus (idf + title mentions
   // are corpus-wide, so every drop rebuilds them)
   const { lexEdges, boilerplate, complete: lexicalComplete } = await runLexicalPass(pool, signal);
+  if (lexicalComplete) await runPreliminaryLexicalClusters(lexEdges, signal);
 
   // (f) embeddings for docs that still need a vector. hasDocTextSync counts
   // evicted-but-persisted text as readable (runLexicalPass just rehydrated it).
@@ -1179,6 +1189,10 @@ async function runLexicalPass(
     store().setEdges(lexEdges);
     layoutSetLinks(toLinkInput(lexEdges));
     layoutReheat(0.8);
+    // This is the first complete, internally consistent graph state: titles,
+    // explicit references, keywords and lexical edges are all committed.
+    // Embedding and semantic clustering refine these same nodes in place.
+    store().setGraphUsable(true);
     complete = true;
   } catch (err) {
     // cancellation must propagate, not degrade into a "linking failed" toast
@@ -1190,6 +1204,38 @@ async function runLexicalPass(
       .pushToast('Keyword linking failed — connections may be incomplete.', 'warning');
   }
   return { lexEdges, boilerplate, complete };
+}
+
+/** Give a fresh graph stable groups immediately; the semantic pass replaces them later. */
+async function runPreliminaryLexicalClusters(
+  lexEdges: Edge[],
+  signal?: AbortSignal,
+): Promise<void> {
+  const store = useGraphStore.getState;
+  const docs = documentNodes();
+  if (docs.length === 0 || docs.some((node) => node.cluster >= 0)) return;
+  try {
+    throwIfAborted(signal);
+    const result = await aggRequest<ClusterDone>(
+      {
+        requestId: 0,
+        type: 'cluster',
+        ids: docs.map((node) => node.id),
+        edges: toLinkInput(lexEdges),
+      },
+      undefined,
+      { signal },
+    );
+    throwIfAborted(signal);
+    store().patchNodes(new Map(
+      Object.entries(result.clusters).map(([id, cluster]) => [id, { cluster }]),
+    ));
+    store().setLocalClusterNames(computeLocalClusterNames(store().nodes));
+    layoutSetClusters(result.clusters);
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    console.warn('preliminary lexical clustering failed', error);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1880,6 +1926,12 @@ export async function loadDemoCorpus(): Promise<void> {
   if (files.length > 0) await ingestFiles(files);
 }
 
+/** Synthesizes a short clip pack in the browser and ingests it. */
+export async function loadDemoAudio(): Promise<void> {
+  const files = createAudioDemoFiles();
+  if (files.length > 0) await ingestFiles(files);
+}
+
 /** Embeds a search query to a unit vector (used by the search subsystem). */
 export async function embedQuery(text: string): Promise<Float32Array> {
   wireModelProgress();
@@ -1928,7 +1980,10 @@ function preloadAudioModels(): void {
 
 /** No finished whole-track analysis yet: never analyzed, still a preview, or a scan that stopped early. */
 function audioUnfinished(n: DocNode): boolean {
-  return !n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || !n.audio.instrumentScan?.complete;
+  const audio = n.audio;
+  if (!audio || audio.stage === 'preview' || audio.instrumentScan?.mode === 'fast') return true;
+  // Completed v1 results predate scan metadata; an explicit incomplete scan still needs finishing.
+  return audio.instrumentScan ? !audio.instrumentScan.complete : audio.version !== 1;
 }
 
 /** A finished analysis made by an older analysis version or detector release. */
@@ -1997,7 +2052,7 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
               if (!ownsAudioAnalysis(node.id, analysisOwner, analysisEpoch)) return false;
               const current = store().nodes.find(n => n.id === node.id);
               if (!current) return false;
-              store().patchNodes(new Map([[node.id, { audio: { ...partial, confirmedInstruments: current.audio?.confirmedInstruments, soundReviews: current.audio?.soundReviews, confirmedDjTags: current.audio?.confirmedDjTags, copilotProperties: current.audio?.copilotProperties } }]]));
+              store().patchNodes(new Map([[node.id, { audio: { ...partial, confirmedInstruments: current.audio?.confirmedInstruments, soundReviews: current.audio?.soundReviews, confirmedDjTags: current.audio?.confirmedDjTags, copilotProperties: current.audio?.copilotProperties, soundTagFixes: current.audio?.soundTagFixes } }]]));
               markDocsDirty([node.id]);
               scheduleVersionCatchUp();
               return true;
@@ -2021,8 +2076,8 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
             preview(result);
             const applyPreview=()=>{
               const current=store().nodes.find(n=>n.id===node.id);
-              if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!current||!isCurrentMusicJob(node.id,controller)||(current.audio&&current.audio.stage!=='preview'))return;
-              store().patchNodes(new Map([[node.id,{audio:{...result,confirmedInstruments:current.audio?.confirmedInstruments,soundReviews:current.audio?.soundReviews,confirmedDjTags:current.audio?.confirmedDjTags,copilotProperties:current.audio?.copilotProperties},warning:undefined}]]));
+              if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!current||!isCurrentMusicJob(node.id,controller)||!previewMayReplace(current.audio))return;
+              store().patchNodes(new Map([[node.id,{audio:{...result,confirmedInstruments:current.audio?.confirmedInstruments,soundReviews:current.audio?.soundReviews,confirmedDjTags:current.audio?.confirmedDjTags,copilotProperties:current.audio?.copilotProperties,soundTagFixes:current.audio?.soundTagFixes},warning:undefined}]]));
               markDocsDirty([node.id]);
             };
             // Show real estimates immediately, including previews that arrive after Quick ingest returns.
@@ -2048,7 +2103,7 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
           const publish = (result: import('../audio/musicTypes').MusicAnalysis)=>enqueueRun(async()=>{
               const current=store().nodes.find(n=>n.id===node.id);
               if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!current||!isCurrentMusicJob(node.id,controller))return;
-              store().patchNodes(new Map([[node.id,{audio:{...result,confirmedInstruments:current.audio?.confirmedInstruments,soundReviews:current.audio?.soundReviews,confirmedDjTags:current.audio?.confirmedDjTags,copilotProperties:current.audio?.copilotProperties},warning:undefined}]]));
+              store().patchNodes(new Map([[node.id,{audio:{...result,confirmedInstruments:current.audio?.confirmedInstruments,soundReviews:current.audio?.soundReviews,confirmedDjTags:current.audio?.confirmedDjTags,copilotProperties:current.audio?.copilotProperties,soundTagFixes:current.audio?.soundTagFixes},warning:undefined}]]));
               markDocsDirty([node.id]);
               scheduleVersionCatchUp();
             });
@@ -2067,17 +2122,18 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
         } else {
           cancelMusicJob(node.id);
           audio=await load(preview=>{
-            if(!queuedScopeActive||signal?.aborted||!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||(node.audio&&node.audio.stage!=='preview'))return;
-            store().patchNodes(new Map([[node.id,{audio:{...preview,confirmedInstruments:node.audio?.confirmedInstruments,soundReviews:node.audio?.soundReviews,confirmedDjTags:node.audio?.confirmedDjTags,copilotProperties:node.audio?.copilotProperties},warning:undefined}]]));markDocsDirty([node.id]);
+            if(!queuedScopeActive||signal?.aborted||!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!previewMayReplace(node.audio))return;
+            store().patchNodes(new Map([[node.id,{audio:{...preview,confirmedInstruments:node.audio?.confirmedInstruments,soundReviews:node.audio?.soundReviews,confirmedDjTags:node.audio?.confirmedDjTags,copilotProperties:node.audio?.copilotProperties,soundTagFixes:node.audio?.soundTagFixes},warning:undefined}]]));markDocsDirty([node.id]);
           });
         }
         throwIfAborted(signal);
         if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch))return;
-        if(audio.stage === 'preview' && node.audio && node.audio.stage !== 'preview')audio={...node.audio};
+        if(audio.stage === 'preview' && !previewMayReplace(node.audio))audio={...node.audio!};
         audio.confirmedInstruments = node.audio?.confirmedInstruments;
         audio.soundReviews = store().nodes.find(n => n.id === node.id)?.audio?.soundReviews;
         audio.confirmedDjTags = node.audio?.confirmedDjTags;
         audio.copilotProperties = node.audio?.copilotProperties;
+        audio.soundTagFixes = node.audio?.soundTagFixes;
         store().patchNodes(new Map([[node.id, { audio, warning: undefined, topics: [], keywords: [], entities: [], wordCount: 0 }]]));
         markDocsDirty([node.id]);
         const incomplete = audio.stage !== 'preview' && audio.instrumentScan?.complete !== true;
@@ -2174,6 +2230,23 @@ export function setAudioReview(id: string, labelId: string, dimension: SoundRevi
     useGraphStore.getState().setEdges(edges);layoutSetLinks(toLinkInput(edges));layoutReheat(.5);
     const {saveAudioGraph}=await import('../audio/saveAudioGraph');
     await saveAudioGraph();
+  });
+}
+
+/** Save a listener's fix for one shown sound tag ("Not sure? Fix it"). Display only: no scores, links or reviews change. */
+export function setAudioTagFix(id: string, fix: Omit<SoundTagFix, 'at'>): Promise<string> {
+  return enqueueRun(async () => {
+    if (useGraphStore.getState().phase !== 'ready') throw new Error('Wait for file processing to finish.');
+    const node = documentNodes().find(n => n.id === id && n.fileType === 'audio' && n.audio);
+    if (!node) throw new Error('No analyzed audio track is available to correct.');
+    const saved = sanitizeSoundTagFixes([{ ...fix, at: new Date().toISOString() }]);
+    if (saved?.length !== 1) throw new Error('Unsupported sound tag.');
+    const history = node.audio!.soundTagFixes ?? [];
+    if (history.length >= SOUND_TAG_FIX_LIMIT) throw new Error('Fix history limit reached. Export this graph before adding more fixes.');
+    useGraphStore.getState().patchNodes(new Map([[id, { audio: { ...node.audio!, soundTagFixes: [...history, saved[0]] } }]]));
+    markDocsDirty([id]);
+    const { saveAudioGraph } = await import('../audio/saveAudioGraph');
+    return saveAudioGraph();
   });
 }
 

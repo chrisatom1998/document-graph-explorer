@@ -20,12 +20,6 @@ export async function startIn3D(page: Page): Promise<void> {
   });
 }
 
-/** Dismiss the first-run tour when it is up; it swallows keyboard input. */
-export async function dismissTour(page: Page): Promise<void> {
-  const tour = page.getByRole('button', { name: 'Dismiss getting started' });
-  if (await tour.isVisible().catch(() => false)) await tour.click();
-}
-
 /** Switch the shell's view tabs. */
 export async function openTab(page: Page, tab: 'Graph' | 'Library' | 'Export'): Promise<void> {
   await page.getByRole('button', { name: tab, exact: true }).click();
@@ -33,7 +27,6 @@ export async function openTab(page: Page, tab: 'Graph' | 'Library' | 'Export'): 
 
 /** Open the Library tab and return its document listbox (replaces "Browse documents"). */
 export async function openFiles(page: Page): Promise<Locator> {
-  await dismissTour(page);
   await openTab(page, 'Library');
   const listbox = page.getByRole('listbox', { name: 'Graph nodes' });
   await expect(listbox).toBeVisible();
@@ -50,6 +43,11 @@ export async function openDocument(page: Page, name: RegExp | string): Promise<v
 /** How many documents the workspace holds, as the sidebar reports it ("100 files in project"). */
 export function corpusCount(page: Page): Locator {
   return page.locator('.rs-count');
+}
+
+/** Wait for the shell's ready-only node/link summary, not an earlier usable-search milestone. */
+export async function waitForGraphReady(page: Page, timeout = 30_000): Promise<void> {
+  await expect(page.locator('.rs-top__status')).toHaveText(/\d+ nodes · \d+ links/, { timeout });
 }
 
 /** The expanded "Full details" panel — the inline replacement for the modal side panel. */
@@ -107,15 +105,6 @@ export async function openSampleAssistant(page: Page): Promise<void> {
  * Make the filter column reachable. Below 860px (including the suite's
  * default 800x500 window) it hides behind a "Filters" button.
  */
-const tourHandled = new WeakSet<Page>();
-/** Dismiss the first-run tour whenever it appears in the way of an action. */
-export async function autoDismissTour(page: Page): Promise<void> {
-  if (tourHandled.has(page)) return;
-  tourHandled.add(page);
-  const tour = page.getByRole('button', { name: 'Dismiss getting started' });
-  await page.addLocatorHandler(tour, async () => { await tour.click(); });
-}
-
 export async function showFilters(page: Page): Promise<void> {
   // The empty workspace has no sidebar. Wait for import to mount it before
   // checking the compact-screen toggle, or a fast check misses that control.
@@ -126,8 +115,6 @@ export async function showFilters(page: Page): Promise<void> {
 
 /** Expand (or collapse) the sidebar's classic filter panel: clusters, connection counts, recency. */
 export async function advancedFilters(page: Page, open = true): Promise<void> {
-  // The first-run tour can open over the sidebar on compact windows at any point.
-  await autoDismissTour(page);
   await showFilters(page);
   const panel = page.locator('.rs-advanced');
   if ((await panel.evaluate(el => (el as HTMLDetailsElement).open)) !== open) {

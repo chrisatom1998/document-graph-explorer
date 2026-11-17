@@ -68,6 +68,8 @@ export interface PersistedSettings {
   embeddingQueryStyle: EmbeddingQueryStyle;
   ocrLanguage: OcrLanguageId;
   ocrMaxPages: OcrMaxPages;
+  /** Show model estimates of hidden tags (DJ_HIDDEN_LABELS) on clips. Off hides them everywhere tags are listed. */
+  showHiddenSoundTags: boolean;
 }
 
 // Chat and enrichment select models independently because their workloads pull
@@ -98,6 +100,7 @@ export const DEFAULTS: PersistedSettings = {
   embeddingQueryStyle: 'english',
   ocrLanguage: 'eng',
   ocrMaxPages: 20,
+  showHiddenSoundTags: true,
 };
 
 /**
@@ -192,6 +195,10 @@ export function loadPersistedSettings(): PersistedSettings {
           : DEFAULTS.embeddingQueryStyle,
       ocrLanguage: isOcrLanguage(parsed.ocrLanguage) ? parsed.ocrLanguage : DEFAULTS.ocrLanguage,
       ocrMaxPages: isOcrMaxPages(parsed.ocrMaxPages) ? parsed.ocrMaxPages : DEFAULTS.ocrMaxPages,
+      showHiddenSoundTags:
+        typeof parsed.showHiddenSoundTags === 'boolean'
+          ? parsed.showHiddenSoundTags
+          : DEFAULTS.showHiddenSoundTags,
     };
     // Rewrite storage eagerly when it still contains fields from removed
     // features (the Gemini-era key/model) or a session-only OpenRouter key.

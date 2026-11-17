@@ -14,8 +14,8 @@ Output audio uses opaque names so DGE's filename fallback cannot leak labels.
 
 Usage: python3 scripts/build-short-clip-bench.py   (idempotent; refuses to overwrite a frozen test split)
 """
-import csv, hashlib, io, json, os, random, subprocess, sys, wave, zipfile, tarfile, datetime
-from collections import Counter, defaultdict
+import csv, hashlib, io, json, os, subprocess, sys, wave, zipfile, tarfile
+from collections import Counter
 
 MEDIA = '/Users/chrisjohnson/Documents/Media'
 W = f'{MEDIA}/dj-training-fingerprints/short-clips'
@@ -121,7 +121,7 @@ def avp_truth():
 # ---- Audio helpers ------------------------------------------------------------------------------
 def wav_info(b):
     with wave.open(io.BytesIO(b)) as w:
-        n, r, c, sw = w.getnframes(), w.getframerate(), w.getnchannels(), w.getsampwidth()
+        n, r, _, sw = w.getnframes(), w.getframerate(), w.getnchannels(), w.getsampwidth()
         frames = w.readframes(n)
     import array
     a = array.array('h', frames) if sw == 2 else None

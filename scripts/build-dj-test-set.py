@@ -3,7 +3,7 @@ small MP3s. Sources: Freesound clips by tag, the user's own sample pack, expert-
 loops, and labelled drum one-shots. File names and source tags are hidden from the reviewer;
 they are kept only as `hint` so chosen clips can be excluded from training and compared later.
 Usage: build-dj-test-set.py <out dir>"""
-import json, sys, os, random, subprocess, hashlib, glob, io
+import json, sys, os, random, subprocess, hashlib, glob
 OUT = sys.argv[1]; SECONDS = 15; M = '/Users/chrisjohnson/Documents/Media'
 random.seed(20261004); chosen = []
 def add(path, source, hint, data=None): chosen.append({'path': path, 'source': source, 'hint': hint, 'data': data})

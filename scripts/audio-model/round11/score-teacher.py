@@ -11,7 +11,6 @@ import csv, importlib.util, json, os, sys
 from collections import defaultdict
 
 import numpy as np
-import torch
 
 D = "/mnt/project-files/datasets"
 here = os.path.dirname(os.path.abspath(__file__))

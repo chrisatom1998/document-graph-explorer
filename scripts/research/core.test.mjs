@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { labelMetrics, bindingMetrics, retrievalMetrics, loadManifest, digest } from './core.mjs';
+import { labelMetrics, bindingMetrics, retrievalMetrics, loadManifest, digest, isCompleteRun } from './core.mjs';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -39,4 +39,17 @@ test('retrieval excludes same-original crops and skips unmeasurable queries', ()
   rows.push({ id: 'c', status: 'complete', embedding: [1, 1] });
   const r = retrievalMetrics(clips, rows, 1).results.find(x => x.id === 'a');
   assert.equal(r.gallery, 2); assert.equal(r.top[0].id, 'b'); assert.equal(r.precision, 0);
+});
+
+test('browser runs require every clip complete and no aborted session', () => {
+  const rows = [{ status: 'complete' }, { status: 'complete' }];
+  assert.equal(isCompleteRun({ rows }, 2), true);
+  assert.equal(isCompleteRun({ rows, aborted: 'Browser page crashed' }, 2), false);
+  assert.equal(isCompleteRun({ rows: rows.slice(0, 1), aborted: 'Browser closed' }, 2), false);
+  assert.equal(isCompleteRun({ rows: rows.slice(0, 1) }, 2), false);
+  assert.equal(isCompleteRun({ rows: [] }, 2), false);
+  assert.equal(isCompleteRun({ rows }, 1), false);
+  for (const status of ['partial', 'failed']) {
+    assert.equal(isCompleteRun({ rows: [rows[0], { status }] }, 2), false);
+  }
 });

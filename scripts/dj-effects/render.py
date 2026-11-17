@@ -8,7 +8,7 @@ Held-out scoring stays on real tagged clips only; train.py uses renders only whe
 Every render is mono 48 kHz, at most 10 s, loudness-matched to its source. Deterministic (fixed seed).
 Usage: render.py <audio-manifest.json> <out dir>   env: PER_EFFECT (220), RENDER (dj | tags: the processing and space tags)
 Writes <out dir>/<id>.wav and <out dir>/manifest.json (clips: id, path, labels, group, split='train', kind='render')."""
-import json, sys, os, subprocess, wave, hashlib, random
+import json, sys, os, subprocess, wave, random
 import numpy as np
 from scipy.signal import butter, sosfilt, sosfilt_zi, fftconvolve
 

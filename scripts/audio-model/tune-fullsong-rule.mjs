@@ -8,6 +8,9 @@
 // chosen keeps precision at or above main's and has the highest recall (ties: higher precision, then the simpler rule,
 // then the lower threshold).
 // Only aggregates are written.
+// Optional env: ONLY_OUTPUT=<policy output> tunes one tag; THRESHOLDS=0.3,0.4,... adds best window / 2 windows / mean
+// candidates at those fixed thresholds (lower than the clip threshold too); MAIN_REPORT=<score-tags.mjs report of main's
+// own build on the same tracks> makes main's displayed precision the bar instead of the "detectors" row.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { confidentSoundSummary } from '../../src/audio/confidentSoundSummary';
 import { TAGGER_POLICY } from '../../src/audio/tagger';
@@ -38,15 +41,20 @@ function score(cls) {
 }
 const FRACTIONS = [0.2, 0.4, 0.6, 0.8];
 const report = { manifest: process.env.MANIFEST, items: manifest.items.length, analysed: items.length, tags: {} };
-for (const tag of TAGGER_POLICY.tags.filter(t => t.dimension === 'source')) {
+const FIXED = (process.env.THRESHOLDS ?? '').split(',').filter(Boolean).map(Number);
+const mainReport = process.env.MAIN_REPORT ? JSON.parse(readFileSync(process.env.MAIN_REPORT, 'utf8')).displayedIncludingMaybe : null;
+for (const tag of TAGGER_POLICY.tags.filter(t => t.dimension === 'source' && (!process.env.ONLY_OUTPUT || t.output === process.env.ONLY_OUTPUT))) {
   const cls = Object.keys(MAP).find(c => MAP[c].includes(tag.label));
   const saved = tag.long;
   const raise = f => +(tag.threshold + (1 - tag.threshold) * f).toFixed(4);
   const candidates = [{ rule: 'detectors' }, { rule: 'max' }, { rule: 'windows', windows: 2 }, { rule: 'windows', windows: 3 }, { rule: 'mean' }, { rule: 'agree' },
-    ...['max', 'windows', 'mean'].flatMap(rule => FRACTIONS.map(f => ({ rule, ...(rule === 'windows' ? { windows: 2 } : {}), threshold: raise(f) })))];
+    ...['max', 'windows', 'mean'].flatMap(rule => FRACTIONS.map(f => ({ rule, ...(rule === 'windows' ? { windows: 2 } : {}), threshold: raise(f) }))),
+    ...['max', 'windows', 'mean'].flatMap(rule => FIXED.map(threshold => ({ rule, ...(rule === 'windows' ? { windows: 2 } : {}), threshold })))];
   const rows = candidates.map(c => { tag.long = c; return { rule: c, ...score(cls) }; });
   tag.long = saved;
-  const main = rows[0], current = rows[1];
+  const m = mainReport?.[`source:${cls}`];
+  const main = m ? { rule: { rule: 'main build' }, precision: m.precision, recall: m.recall, truePositives: m.truePositives, falseDetections: m.falseDetections, positives: m.positives } : rows[0];
+  const current = rows[1];
   const ok = rows.filter(r => r.precision !== null && main.precision !== null && r.precision >= main.precision);
   // Highest recall, then highest precision; remaining ties keep the earlier (simpler, lower-threshold) candidate.
   const chosen = ok.length ? ok.reduce((a, b) => (b.recall > a.recall || (b.recall === a.recall && b.precision > a.precision) ? b : a)) : main;

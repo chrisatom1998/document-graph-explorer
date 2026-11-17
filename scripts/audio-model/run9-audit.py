@@ -22,7 +22,7 @@ EXTRA_EXCL (optional): paths, comma-separated, to training-exclusions.json files
 ({"freesound_ids": [...], "freesound_uploaders": [...], "audio_md5": [...]}; md5 of the 32 kHz mono s16le decode, whole
 or first 10 s). Training items matching any of them are dropped.
 """
-import csv, hashlib, importlib.util, io, json, os, re, subprocess, sys, tarfile, tempfile, urllib.parse
+import csv, hashlib, importlib.util, json, os, re, subprocess, sys, tarfile, tempfile, urllib.parse
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
@@ -114,7 +114,6 @@ def read_part(folder):
 
 def stage_nc(st, sha, staged_rows):
     """Stage the CED mapped list's NC rows for TARGETS tags (see module doc); returns the staged folder name or None."""
-    import numpy as np
     from huggingface_hub import snapshot_download
     me = api.whoami()['name']
     d = snapshot_download(f'{me}/dge-eval-runs', repo_type='dataset', allow_patterns=[f'{st.CED_RUN}/candidates.csv'], local_dir='ced')

@@ -40,7 +40,7 @@ def ask(item):
             msg = e.read().decode()[:200]
             if e.code in (429, 500, 503): time.sleep(10 * (attempt + 1)); continue
             print('error', e.code, msg); return
-        except Exception as e:
+        except Exception:
             time.sleep(5 * (attempt + 1))
     print('gave up on', item['id'])
 

@@ -84,8 +84,8 @@ export async function readMusicCache(key:string,mime?:string):Promise<MusicAnaly
 }
 export async function writeMusicCache(key:string,audio:MusicAnalysis,mime?:string):Promise<void>{
  if(!completeCurrent(audio,mime))return;
- const {confirmedDjTags:_tags,confirmedInstruments:_instruments,copilotProperties:_copilot,soundReviews:_reviews,...automatic}=audio;
- void _tags;void _instruments;void _copilot;void _reviews;
+ const {confirmedDjTags:_tags,confirmedInstruments:_instruments,copilotProperties:_copilot,soundReviews:_reviews,soundTagFixes:_fixes,...automatic}=audio;
+ void _tags;void _instruments;void _copilot;void _reviews;void _fixes;
  try {
   const db=await getDb(),tx=db.transaction('settings','readwrite');
   void tx.done.catch(()=>{});

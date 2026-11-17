@@ -39,6 +39,7 @@ OPENMIC = list(CLASSES)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from labelmap import CAT, FREESOUND, FSLD_ROLES, SAME  # noqa: E402
 import fsd50k_extra  # noqa: E402
+import drum_sounds  # noqa: E402
 import absent_fix  # noqa: E402
 import charts  # noqa: E402
 # Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth, the effect renders and Freesound, plus the music
@@ -60,6 +61,7 @@ SOFT = {}   # round 11 (--soft): item id -> {app tag: teacher probability, shift
 SOFT_MIX = 0.5   # where the item has a strong label of its own, the target is this share of it plus the rest from the teacher
 DROP = set()   # round 13 (--drop): training ids left out entirely (train-side near-duplicates of test clips)
 MERGE = {}   # round 12 (--merge): merged-away tag -> the tag it is shown as; a clip with the child present counts the parent present
+DRUMS_ANY = True   # 2026-10-31 (drum_sounds.py): any drum sound present counts drums present; --drums-kit-only turns it off
 
 def load_source(name, mel_path, items, weak):
     if DROP: items = [dict(it, row=it.get('row', i)) for i, it in enumerate(items) if it['id'] not in DROP]   # keep each window's own row
@@ -70,11 +72,11 @@ def load_source(name, mel_path, items, weak):
         if it.get('weakAll') == 'run9':   # run 9 (prepare-run9.py): every run 9 tag the item does not list is a weak absence
             for l in RUN9_TAGS:
                 if f'cat:{l}' not in labels: labels[f'cat:{l}'] = 0.0; weak_set.add(f'cat:{l}')
-        absent_fix.relabel(it['id'], labels, weak_set)   # label cleanup: wrong-sense positives, before merges so parents follow
         for c, p in MERGE.items():
             if labels.get(f'cat:{c}', 0) >= 0.5: labels[f'cat:{p}'] = 1.0; weak_set.discard(f'cat:{p}')
         for c, l in ALIAS.items():   # the same sound under the app's name, unless the source labels that name itself
             if c in labels and f'cat:{l}' not in labels: labels[f'cat:{l}'] = labels[c]; weak_set |= {f'cat:{l}'} if c in weak_set else set()
+        if DRUMS_ANY: drum_sounds.apply(labels, weak_set)
         for c, r in labels.items():
             j = col[c]; y[i, j] = float(r >= 0.5); w[i, j] = weak if c in weak_set else 1.0
         yv[i] = y[i]; wv[i] = w[i]   # validation scores the clip's own labels and weights, never the teacher's soft targets
@@ -111,8 +113,6 @@ def main():
     ap.add_argument('--pos-weight', type=float, default=1.0, help='recall push: loss weight on a present label of a --pos-tags output (1 = off)')
     ap.add_argument('--pos-tags', default='', help="outputs --pos-weight applies to, named like --rare-tags (app tag names match their cat: output); "
                     "'tag:k' gives that tag its own weight k")
-    ap.add_argument('--neg-weight', type=float, default=1.0, help='precision push: loss weight on a sure (non-weak) absent label of a --neg-tags output (1 = off)')
-    ap.add_argument('--neg-tags', default='', help="outputs --neg-weight applies to, named like --pos-tags; 'tag:k' gives that tag its own weight k")
     ap.add_argument('--threads', type=int, default=os.cpu_count()); ap.add_argument('--resume', action='store_true')
     ap.add_argument('--limit', type=int, default=0, help='first N clips per source only (smoke test)')
     ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
@@ -123,16 +123,17 @@ def main():
     ap.add_argument('--repeat', default='', help='name=k,...: times each training window of that source is seen per epoch (e.g. iowa=2,chrisdrive=4)')
     ap.add_argument('--merge', help="round 12: JSON whose 'merge' maps a merged-away tag to the tag it is shown as (round12/round12.json)")
     ap.add_argument('--drop', help='round 13: JSON list of training item ids to leave out')
+    ap.add_argument('--drums-kit-only', action='store_true', help='the old kit-only drums labels (before 2026-10-31); default: any drum sound counts as drums (drum_sounds.py)')
     ap.add_argument('--soft', help="round 11 teacher soft labels (round11/build-soft.py JSON: {'items': {id: {tag: p}}})")
     ap.add_argument('--absent-fix', help="coverage #2: JSON {'drop': {id: [tag]}, 'add': {id: [tag]}, 'absent': {id: [tag]}} (coverage/labelfix/build-absent-fix.py, coverage/merge-absent.py); "
                     'drop sets a likely-present weak absence to weight 0, add makes it a full-weight positive. Default off')
     args = ap.parse_args()
+    global DRUMS_ANY
+    DRUMS_ANY = not args.drums_kit_only; print(f'drums labels: {"any drum sound (drum_sounds.py)" if DRUMS_ANY else "kit only (old)"}', flush=True)
     if args.merge:
         MERGE.update(json.load(open(args.merge)).get('merge', {})); print(f'merged tags: {MERGE or "none"}', flush=True)
     if args.absent_fix:
         nd, na = absent_fix.load(args.absent_fix); print(f'absent fix: weak absences dropped on {nd} items, positives added on {na} items, sure absences on {len(absent_fix.FIX["absent"])} items', flush=True)
-        fx = absent_fix.FIX
-        if fx['wrong'] or fx['unsure'] or fx['rules']: print(f'label cleanup: wrong positives on {len(fx["wrong"])} items, unsure on {len(fx["unsure"])} items, {len(fx["rules"])} id rules', flush=True)
     if args.drop:
         DROP.update(json.load(open(args.drop))); print(f'leaving out {len(DROP)} training ids', flush=True)
     if args.soft:
@@ -150,7 +151,7 @@ def main():
         sources.append(load_source('soundcloud', os.path.join(args.soundcloud, 'soundcloud-mel.npy'), json.load(open(os.path.join(args.soundcloud, 'soundcloud.json')))['items'], args.weak))
     if args.fsd50k:
         fsd_items = json.load(open(os.path.join(args.fsd50k, 'fsd50k.json')))['items']
-        print(f'FSD50K: {fsd50k_extra.relabel(fsd_items, "dev")} labels added from FSD50K classes the prep leaves out (fsd50k_extra.py)', flush=True)
+        print(f'FSD50K: {fsd50k_extra.relabel(fsd_items, "dev", drums_any=DRUMS_ANY)} labels added from FSD50K classes the prep leaves out (fsd50k_extra.py)', flush=True)
         sources.append(load_source('fsd50k', os.path.join(args.fsd50k, 'fsd50k-mel.npy'), fsd_items, args.weak))
     if args.nsynth:
         sources.append(load_source('nsynth', os.path.join(args.nsynth, 'nsynth-mel.npy'), json.load(open(os.path.join(args.nsynth, 'nsynth.json')))['items'], args.weak))
@@ -167,20 +168,12 @@ def main():
     # Recall push (--pos-weight): a missed present label of these outputs costs more than a false alarm, so they fire more often.
     pos_w = torch.ones(len(CLASSES)); pos = {}
     for e in filter(None, args.pos_tags.split(',')):
-        t, _, k = e.partition(':') if not e.startswith('cat:') else (e, '', '')
+        t, _, k = e.rpartition(':')
+        if not t or not k.replace('.', '', 1).isdigit(): t, k = e, ''   # a weight is an optional numeric suffix (cat:kick, cat:kick:3)
         for c in CLASSES:
             if c == t or SAME.get(c) == SAME.get(t, t) or c.startswith('cat:') and c[4:] == SAME.get(t, t): pos[c] = float(k or args.pos_weight)
     for c, k in pos.items(): pos_w[CLASSES.index(c)] = k
     if pos: print(f'recall push, loss weight on present labels: {dict(sorted(pos.items()))}', flush=True)
-    # Precision push (--neg-weight): a false alarm on a clip known NOT to hold the sound (a sure absence, e.g. a hard negative)
-    # costs more, so these outputs stop firing on look-alikes. Weak absences keep their --weak weight.
-    neg_w = torch.ones(len(CLASSES)); neg = {}
-    for e in filter(None, args.neg_tags.split(',')):
-        t, _, k = e.partition(':') if not e.startswith('cat:') else (e, '', '')
-        for c in CLASSES:
-            if c == t or SAME.get(c) == SAME.get(t, t) or c.startswith('cat:') and c[4:] == SAME.get(t, t): neg[c] = float(k or args.neg_weight)
-    for c, k in neg.items(): neg_w[CLASSES.index(c)] = k
-    if neg: print(f'precision push, loss weight on sure absences: {dict(sorted(neg.items()))}', flush=True)
     for src in sources: src['rare'] = (src['y'][:, rare_cols] >= 0.5).any(1) if len(rare_cols) else np.zeros(len(src['y']), bool)
     src_repeat = {k: int(v) for k, v in (p.split('=') for p in args.repeat.split(',') if p)}
     pool = [(s, i) for s, src in enumerate(sources) for i in np.flatnonzero(~src['val'])[:args.limit or None]
@@ -253,9 +246,7 @@ def main():
                 yt = yt * lam.view(-1, 1) + yt[p2] * (1 - lam.view(-1, 1))
                 wt = wt * (wt[p2] > 0)                                          # score a pair only where both clips label it
             logits, _ = model(x); logits = logits.reshape(-1, len(CLASSES))
-            sure = (wt >= 1).float()                                         # full-weight labels, before the pushes below
             wt = wt * (1 + (pos_w.to(dev) - 1) * yt)                       # --pos-weight: present (or partly present) labels weigh more
-            wt = wt * (1 + (neg_w.to(dev) - 1) * (1 - yt) * sure)          # --neg-weight: sure absences weigh more
             loss = (F.binary_cross_entropy_with_logits(logits, yt, reduction='none') * wt).sum() / wt.sum().clamp(min=1)
             opt.zero_grad(); loss.backward(); opt.step(); sched.step(); losses.append(loss.item())
             if len(losses) % 50 == 0:

@@ -1,8 +1,8 @@
 import { CHARACTER_LABELS, RESEMBLANCE_LABELS, ROLE_LABELS, VOCAL_LABELS } from './soundProfile';
-import { appendNativeWindow, type NativeWindowEvidence } from './nativeWindowEvidence';
+import { appendNativeWindow, sustainedHeadMissing, type NativeWindowEvidence } from './nativeWindowEvidence';
 import type { Interval } from './recognition';
 export type DescriptionGroup = 'embedding' | 'source' | 'articulation' | 'tone' | 'space' | 'role' | 'vocal' | 'sample' | 'dj-type' | 'breath' | 'dj-tone' | 'dj-rhythm' | `dj-${string}`;
-export interface DescriptionScore { group: DescriptionGroup; label: string | null; score: number; alternative?: string; learnedGroup?: 'source' | 'production' | 'character'; decision?: 'include' | 'exclude'; /** Set when a trained head, not a reviewed example, produced this score. */ basis?: 'head'; /** The head passed at 50% but not 65% on unseen brands: show it as a maybe. */ maybe?: boolean; /** Only on group 'embedding': the window's 512-d CLAP audio vector. */ embedding?: number[]; /** Scored head intervals supplied by the recording accumulator, never inferred from its aggregate peak. */ windowEvidence?: NativeWindowEvidence; }
+export interface DescriptionScore { group: DescriptionGroup; label: string | null; score: number; alternative?: string; learnedGroup?: 'source' | 'production' | 'character'; decision?: 'include' | 'exclude'; /** Set when a trained head, not a reviewed example, produced this score. */ basis?: 'head'; /** The head passed at 50% but not 65% on unseen brands: show it as a maybe. */ maybe?: boolean; /** Only on group 'embedding': the window's 512-d CLAP audio vector. */ embedding?: number[]; /** Scored head intervals supplied by the recording accumulator, never inferred from its aggregate peak. */ windowEvidence?: NativeWindowEvidence; /** Trained head for a sustained sound: see LearnedDjHead.minWindows. */ minWindows?: number; }
 /** The worker appends the window's audio vector to its scores; peel it off before scoring. */
 export function splitEmbedding(output: DescriptionScore[]): { scores: DescriptionScore[]; embedding?: number[] } {
   const entry = output.find(s => s.group === 'embedding');
@@ -107,6 +107,6 @@ export class DescriptionAccumulator {
       const opposite=this.reviewed.get(`${s.learnedGroup}:${s.label}:${s.decision==='include'?'exclude':'include'}`);
       return !opposite || s.score-opposite.score >= .04;
     });
-    return [...this.sums.values()].map(s=>({...s,score:s.score/this.count})).concat(reviewed);
+    return [...this.sums.values()].map(s=>({...s,score:s.score/this.count})).concat(reviewed.filter(s=>!sustainedHeadMissing(s.minWindows,this.count,s.windowEvidence)));
   }
 }

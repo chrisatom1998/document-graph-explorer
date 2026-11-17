@@ -1,4 +1,4 @@
-import os, sys, torch, numpy as np
+import os, sys, torch
 PT, OUT = sys.argv[1:3]
 src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'train_tempo.py')).read().split("ok = lambda")[0]
 ck = torch.load(PT, map_location='cpu')

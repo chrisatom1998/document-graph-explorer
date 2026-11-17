@@ -2,7 +2,7 @@
 notes it plays, so loop types come from what is actually in the loop, not from file names:
 no kick -> top loop, only hats -> hi-hat loop, only hand percussion -> percussion loop.
 Usage: waivops-manifest.py <out manifest.json> [clips per set]"""
-import json, sys, glob, os, random, collections
+import json, sys, glob, random, collections
 ROOT = '/Users/chrisjohnson/Documents/Media/audio-datasets'
 OUT = sys.argv[1]; PER_SET = int(sys.argv[2]) if len(sys.argv) > 2 else 1500
 SETS = {'waivops-edm-tech': 'json/*.json', 'waivops-edm-hse': 'json/*/*.json', 'waivops-hh-trp': 'json/*.json'}

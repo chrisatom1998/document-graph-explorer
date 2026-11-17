@@ -14,6 +14,7 @@ import { initPersistence } from './persistence/session';
 import { initChatHistorySync } from './persistence/chatHistorySync';
 import { useSettingsStore } from './store/settingsStore';
 import { audioAnalysisUsedBefore } from './audio/speculativePreload';
+import { audioModelPackInstalled } from './audio/modelPack';
 import './styles.css';
 
 /** Fetch and warm the audio models once a restored graph that contains audio has
@@ -41,8 +42,13 @@ function preloadAudioModelsWhenIdle(): void {
     // model workers on every launch for nothing; their first audio drop still
     // preloads while the files are hashed and parsed (coordinator.ts).
     if (!audioAnalysisUsedBefore() && !useGraphStore.getState().nodes.some(n => n.kind === 'document' && n.fileType === 'audio')) return;
+    // Never let a restored workspace pull optional weights that this build
+    // does not have installed.
     const mode = useSettingsStore.getState().musicAnalysisMode;
-    void import('./audio/analyzeMusic').then(m => m.preloadMusicModels(mode, { speculative: true })).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
+    void audioModelPackInstalled().then(installed => {
+      if (!installed) return;
+      return import('./audio/analyzeMusic').then(m => m.preloadMusicModels(mode, { speculative: true }));
+    }).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
   };
   if (typeof globalThis.requestIdleCallback === 'function') globalThis.requestIdleCallback(start, { timeout: 3000 });
   else setTimeout(start, 1500);
@@ -54,12 +60,10 @@ const NebulaCanvas = lazy(() => import('./scene/NebulaCanvas'));
 const DropZone = lazy(() => import('./ingest/DropZone'));
 // The welcome and ingest UI pull in the component library, but neither needs
 // to delay the interactive shell or graph bundle on a restored workspace.
-const EmptyState = lazy(() => import('./ui/EmptyState'));
 const ProgressStrip = lazy(() => import('./ui/ProgressStrip'));
 // The Resonance shell owns the toolbar, filters and inspector around the graph.
 const ResonanceShell = lazy(() => import('./ui/resonance/ResonanceShell'));
 const InsightsDigest = lazy(() => import('./ui/InsightsDigest'));
-const FirstRunGuide = lazy(() => import('./ui/FirstRunGuide'));
 const InsightsPanel = lazy(() => import('./ui/InsightsPanel'));
 const PathPanel = lazy(() => import('./ui/PathPanel'));
 const ComparePanel = lazy(() => import('./ui/ComparePanel'));
@@ -105,6 +109,7 @@ declare global {
 export default function App() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const phase = useGraphStore((s) => s.phase);
+  const graphUsable = useGraphStore((s) => s.graphUsable);
   const searchOpen = useUiStore((s) => s.searchOpen);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
   const insightsOpen = useUiStore((s) => s.insightsOpen);
@@ -259,10 +264,11 @@ export default function App() {
       const ui = useUiStore.getState();
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        // The overlay only renders once the graph is ready, so opening it
+        // The overlay only renders once the lexical graph is usable, so opening it
         // earlier just sets invisible state that then swallows the next
         // Escape. Closing a stray open state stays allowed.
-        if (useGraphStore.getState().phase !== 'ready' && !ui.searchOpen) return;
+        const graph = useGraphStore.getState();
+        if (!graph.graphUsable && graph.phase !== 'ready' && !ui.searchOpen) return;
         const nextSearchOpen = !ui.searchOpen;
         ui.setSearchOpen(nextSearchOpen);
         if (nextSearchOpen) {
@@ -343,11 +349,8 @@ export default function App() {
           </Suspense>
         </ResonanceShell>
       </Suspense>
-      <Suspense fallback={null}><InsightsDigest /><FirstRunGuide /></Suspense>
+      <Suspense fallback={null}><InsightsDigest /></Suspense>
       <Suspense fallback={null}><DropZone /></Suspense>
-      {!hasNodes && phase === 'idle' && (
-        <Suspense fallback={null}><EmptyState /></Suspense>
-      )}
       {phase === 'ready' && (
         <Suspense fallback={null}>
           <ComparePanel />
@@ -361,7 +364,7 @@ export default function App() {
         <Suspense fallback={null}><PathPanel /></Suspense>
       )}
       <Tooltip />
-      {phase === 'ready' && searchOpen && (
+      {(graphUsable || phase === 'ready') && searchOpen && (
         <Suspense fallback={null}><SearchOverlay /></Suspense>
       )}
       {settingsOpen && (

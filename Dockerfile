@@ -11,6 +11,9 @@ ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
 # Browser inference uses bundled WASM, not the optional Node/CUDA provider.
 # Keep the npm package's bundled CPU files; skip its extra GPU-provider download.
 ENV ONNXRUNTIME_NODE_INSTALL=skip
+# Pass --build-arg DGE_MODELS=core for a document-only image.
+ARG DGE_MODELS=full
+ENV DGE_MODELS=$DGE_MODELS
 
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm --mount=type=cache,target=/app/node_modules npm ci --prefer-offline --no-audit

@@ -20,7 +20,7 @@ def get(url, tries=4, referer=None):
             # Audio downloads are hotlink-protected: they need a browser agent and the file page as referer.
             extra = ['-A', 'Mozilla/5.0 (X11; Linux x86_64) Chrome/120', '-e', referer] if referer else []
             return subprocess.run(['curl', '-sSfL', '-m', '300', *extra, url], check=True, capture_output=True).stdout
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             if attempt == tries - 1: raise
             time.sleep(2 ** (attempt + 1))
 

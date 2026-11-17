@@ -64,9 +64,13 @@ def main():
         d = json.load(open(os.path.join(ROOT, f)))
         bad_ids |= set(map(str, d.get('freesoundIds', [])))
         bad_users |= {u.removeprefix('freesound-user:') for k in ('freesoundUploaders', 'fsdUploaders') for u in d.get(k, [])}
+    # judge-set and FSD50K-eval uploaders stay out of training too (keep uploaders in one split)
+    bad_users |= {r['uploader'] for r in csv.DictReader(open(os.path.join(ROOT, 'docs/evaluations/tag-baseline-2026-10-31/manifest.csv')))}
+    bad_users |= {u for sid, u in zip(meta['id'], meta['username']) if str(sid) in fsd_eval}
+    bad_users = {u.casefold() for u in bad_users}
     T = targets(); hits = {l: [] for l in T}; named = {}
     for sid, title, tags, user in zip(meta['id'], meta['title'], meta['tags:'], meta['username']):
-        if str(sid) in bad_ids or user in bad_users or synth_held(user): continue
+        if str(sid) in bad_ids or (user or '').casefold() in bad_users or synth_held(user): continue
         ts = {norm(x) for x in (tags or '').split(',') if x.strip()}; ttl = ' ' + norm(title or '') + ' '
         ls = [l for l, terms in T.items() if any(t in ts or (' ' in t and f' {t} ' in ttl) for t in terms)]
         if ls: named[sid] = (user, ls)
