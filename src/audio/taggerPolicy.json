@@ -1,7 +1,7 @@
 {
  "version": 1,
- "revision": "all-tags-2026-11-11+ep-bright+tail+cymbal+shout-r31+synthbass-r31+laugh-r32+drums-2026-11-13",
- "modelSha256": "5a7067d033c9a8b1b0babc5f910635c1f2b8b373e0b39aa31653ab2fd7bb0e61",
+ "revision": "all-tags-2026-11-11+ep-bright+tail+cymbal+shout-r31+synthbass-r31+laugh-r32+drums-2026-11-13+thunder-r33",
+ "modelSha256": "fc39eb42266c520514acbe4745e6aebe1d2b0dac1ab56f007e0d6e5b1411028a",
  "input": {
   "name": "samples32k",
   "output": "scores",
@@ -950,6 +950,20 @@
    "threshold": 0.1219,
    "decides": [
     "reese bass"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors",
+    "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:thunder",
+   "label": "thunder",
+   "dimension": "effect",
+   "threshold": 0.0834,
+   "decides": [
+    "thunder"
    ],
    "tested": true,
    "long": {
